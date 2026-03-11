@@ -1,42 +1,40 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f8fafc; /* Light gray background from your design */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.content-container {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.overview-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b; /* Dark text */
+  margin: 0;
 }
 
-.card {
-  padding: 2em;
+.overview-subtitle {
+  color: #64748b; /* Gray text */
+  margin: 4px 0 32px 0;
 }
 
-.read-the-docs {
-  color: #888;
+/* Base styles for the stats grid we'll build */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
 }
