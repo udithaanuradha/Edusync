@@ -1,68 +1,321 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* General Reset */
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+body { 
+  font-family: 'Inter', sans-serif; 
+  background-color: #f9fafb; 
+  color: #1f2937; 
+  line-height: 1.5; 
 }
 
-body {
-  margin: 0;
+/* --- Navbar --- */
+.navbar {
+  position: absolute; 
+  top: 0; 
+  width: 100%; 
+  z-index: 20;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  padding: 20px 40px; 
+  color: white; 
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.nav-logo {
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Hero Section --- */
+.hero {
+  height: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  position: relative;
+  color: white;
+}
+
+.hero-overlay {
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  /* Gradient blend: Darker at edges to make white text pop */
+  background: linear-gradient(
+    to bottom, 
+    rgba(15, 23, 42, 0.7) 0%, 
+    rgba(15, 23, 42, 0.4) 50%, 
+    rgba(15, 23, 42, 0.8) 100%
+  );
+  z-index: 1;
+}
+
+.hero-content {
+  position: relative; 
+  z-index: 2;
+  max-width: 800px; 
+  padding: 0 20px;
+}
+
+.hero h1 {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Buttons --- */
+.btn-group { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
+.btn { padding: 12px 40px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; transition: 0.3s ease; }
+.btn-white { background: white; color: #111827; }
+.btn-white:hover { background: #f3f4f6; transform: translateY(-2px); }
+.btn-blue { background: #2563eb; color: white; }
+.btn-blue:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+/* --- Floating Feature Cards (White Section) --- */
+.features-container {
+  max-width: 1100px; 
+  margin: -80px auto 60px; 
+  display: grid; 
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 30px; 
+  position: relative; 
+  z-index: 15;
+  padding: 0 20px;
+}
+
+.card {
+  background: #ffffff; 
+  padding: 40px 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); 
+  border-top: 5px solid #2563eb; 
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.card-icon { color: #2563eb; margin-bottom: 20px; }
+
+/* --- Middle Process Section (Navy Blue Gradient) --- */
+.process-mid-section {
+  /* Updated to match the deep navy from your video */
+  background: radial-gradient(circle at center, #154c8c 0%, #011a33 100%);
+  padding: 100px 20px;
+  text-align: center;
+  color: white;
+}
+
+.process-title {
+  font-size: 2.2rem; 
+  margin-bottom: 60px; 
+  font-weight: 700;
+}
+
+.process-grid-container {
+  display: grid; 
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px; 
+  max-width: 1200px; 
+  margin: 0 auto;
+}
+
+.process-step-card {
+  /* Glass-morphism effect from the video */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 45px 25px;
+  transition: all 0.3s ease;
+}
+
+.process-step-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-5px);
+}
+
+.step-icon { 
+  color: #ffcc00; /* Gold/Yellow icons to match your video */
+  margin-bottom: 25px; 
+  display: flex; 
+  justify-content: center; 
+}
+
+/* --- Final Footer Section (Charcoal Match) --- */
+.main-footer {
+  background: #222222; 
+  color: #9ca3af;
+  padding: 80px 20px 20px;
+}
+
+.footer-top {
+  display: grid; 
+  grid-template-columns: 2fr 1fr 1fr;
+  max-width: 1200px; 
+  margin: 0 auto; 
+  gap: 50px;
+}
+
+.brand-logo { color: white; display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 20px; }
+
+.footer-brand p { font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; }
+
+.social-links { display: flex; gap: 15px; margin-top: 10px; }
+.social-icon { color: #9ca3af; transition: color 0.3s; }
+.social-icon:hover { color: white; }
+
+.footer-links h4, .footer-contact h4 { color: white; font-size: 13px; letter-spacing: 1px; margin-bottom: 20px; }
+
+.footer-links ul { list-style: none; padding: 0; }
+.footer-links li { margin-bottom: 12px; cursor: pointer; transition: color 0.3s; }
+.footer-links li:hover { color: white; }
+
+.get-touch-btn {
+  background: white; 
+  color: #222222; 
+  border: none;
+  padding: 12px 24px; 
+  border-radius: 4px; 
+  font-weight: bold;
+  cursor: pointer; 
+  transition: background 0.3s;
+}
+.get-touch-btn:hover { background: #e5e7eb; }
+
+.footer-bottom {
+  text-align: center; 
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 50px; 
+  padding-top: 20px; 
+  font-size: 0.8rem;
+}
+
+/* --- Responsive Layouts --- */
+@media (max-width: 1024px) {
+  .process-grid-container { grid-template-columns: repeat(2, 1fr); }
+  .features-container { grid-template-columns: repeat(2, 1fr); margin-top: -50px; }
+}
+
+@media (max-width: 768px) {
+  .footer-top { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+  .brand-logo, .social-links { justify-content: center; }
+  .hero h1 { font-size: 2.5rem; }
+}
+
+@media (max-width: 600px) {
+  .process-grid-container, .features-container { grid-template-columns: 1fr; }
+}
+
+
+
+
+/* --- Login & Signup Specific Styles --- */
+.auth-container {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Specific overlay for Auth pages to match your screenshot */
+.auth-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(30, 75, 108, 0.85), rgba(95, 143, 168, 0.75));
+  z-index: 1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+.auth-card {
+  background-color: #dbece5; /* The greenish-grey from your screenshot */
+  width: 100%;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 10;
+}
+
+.auth-back-btn {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  z-index: 20;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.auth-input-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.auth-input-group i, .auth-input-group svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border-radius: 6px;
+  border: none;
+  background: white;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.auth-input:focus {
+  box-shadow: 0 0 0 2px #94a3b8;
+}
+
+.btn-auth {
+  width: 100%;
+  background-color: #222222;
+  color: white;
+  padding: 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 10px;
+}
+
+.btn-auth:hover {
+  background-color: #000000;
 }
