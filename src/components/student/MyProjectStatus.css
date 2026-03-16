@@ -1,0 +1,52 @@
+ /* Container for the 5-column row */
+.student-stats-grid {
+  display: grid;
+  /* FORCES 5 EQUAL COLUMNS */
+  grid-template-columns: repeat(5, 1fr); 
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+/* Individual Card (StatCard View) */
+.stat-card-view {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center; /* Icon and text side-by-side */
+  gap: 12px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  min-width: 0;
+}
+
+/* The colored box for the icon */
+.stat-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+}
+
+.stat-text-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.stat-label-text {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
