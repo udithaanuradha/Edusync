@@ -1,31 +1,36 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface AuthContextType {
   user: { name: string; role: string } | null;
+  switchRole: (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => void;
   logout: () => void;
 }
 
-// We export the context itself and the Provider
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-const [user, setUser] = useState<{ name: string; role: string } | null>({ 
-  name: 'Coordinator', 
-  role: 'admin' 
-});
+  // Initial state
+  const [user, setUser] = useState<{ name: string; role: string } | null>({ 
+    name: 'User Name', 
+    role: 'admin' // Start as coordinator
+  });
+
+  // This function updates the role
+  const switchRole = (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => {
+    setUser(prev => prev ? { ...prev, role: newRole } : null);
+  };
+
   const logout = () => {
-    console.log("Logging out...");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, logout }}>
+    <AuthContext.Provider value={{ user, switchRole, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// This is the "Hook" your Header uses
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

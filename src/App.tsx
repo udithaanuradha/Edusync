@@ -1,53 +1,42 @@
+ // src/App.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Sidebar from './components/shared/Sidebar';
-import Header from './components/shared/Header';
+import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 
-// Coordinator Components
-import StatCards from './components/coordinator/StatCards'; 
-import RecentProjects from './components/coordinator/RecentProjects';
-import UpcomingDeadlines from './components/coordinator/UpcomingDeadlines'; 
-import Announcements from './components/coordinator/Announcements'; 
-
-import './App.css';
+// Import Role Pages
+import AdminPage from './Pages/AdminPages/AdmonDashboard'; 
+import SupervisorPage from './Pages/SupervisorPages/SupervisorDashboard';
+import MentorPage from './Pages/MentorPages/MentorDashboard';
+import CoordinatorPage from './Pages/CoordinatorPages/CoordinatorDashboard';
+import StudentPage from './Pages/StudentPages/StudentDashboard';
 
 const App: React.FC = () => {
+  const { user } = useAuth();
+  const role = user?.role;
+
+  const RoleRedirector = () => {
+    if (!role) return <Navigate to="/login" />;
+    return <Navigate to={`/${role}`} replace />;
+  };
+
   return (
-    <div className="app-layout">
-      <Sidebar />
-      <div className="main-viewport">
-        <Header />
-        <main className="content-container">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <div className="dashboard-content">
-                  <div className="dashboard-header-section">
-                     <h2 className="overview-title">Dashboard Overview</h2>
-                     <p className="overview-subtitle">Welcome back! Here's what's happening with your projects.</p>
-                  </div>
-                  
-                  <StatCards />
-                  
-                  <div className="dashboard-middle-row" style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
-                    <RecentProjects />
-                    <UpcomingDeadlines /> 
-                  </div>
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<RoleRedirector />} />
 
-                  <div className="dashboard-bottom-row" style={{ display: 'flex', gap: '24px' }}>
-                    <Announcements />
-                  </div>
+      {/* FIXED: Added '/*' to all paths so internal dashboard routes work */}
+      <Route path="/admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+      <Route path="/supervisor/*" element={<ProtectedRoute><SupervisorPage /></ProtectedRoute>} />
+      <Route path="/mentor/*" element={<ProtectedRoute><MentorPage /></ProtectedRoute>} />
+      <Route path="/coordinator/*" element={<ProtectedRoute><CoordinatorPage /></ProtectedRoute>} />
+      <Route path="/student/*" element={<ProtectedRoute><StudentPage /></ProtectedRoute>} />
 
-                </div>
-              </ProtectedRoute>
-            } />
-            <Route path="/login" element={<div>Please Login</div>} />
-          </Routes>
-        </main>
-      </div>
-    </div>
+      <Route path="/login" element={<div>Please Login</div>} />
+      
+      {/* Optional: Add a catch-all redirect to prevent staying on a blank page */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

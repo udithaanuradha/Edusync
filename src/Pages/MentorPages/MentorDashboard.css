@@ -1,0 +1,26 @@
+ /* Update these in your MentorDashboard.css or Global CSS */
+
+.app-layout {
+  display: flex;
+  height: 100vh; /* Lock height to the screen */
+  width: 100vw;
+  overflow: hidden; /* Prevent the whole body from scrolling */
+}
+
+.main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden; /* Keep the header fixed at the top */
+}
+
+.content-container {
+  flex: 1;
+  padding: 30px;
+  background-color: #f8fafc; /* Light gray background like your example */
+  overflow-y: auto; /* ONLY this part should scroll */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
