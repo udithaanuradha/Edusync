@@ -1,0 +1,150 @@
+/* src/components/mentor/StudentAttention.css */
+
+.attention-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.attention-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.attention-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.attention-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.attention-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.student-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: #fff7f7;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.student-item:hover {
+  border-color: #f87171;
+}
+
+.student-avatar {
+  width: 40px;
+  height: 40px;
+  background: #f87171;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.student-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.student-group-badge {
+  font-size: 11px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.student-project {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0 0 8px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-flags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.flag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.flag-delayed { color: #dc2626; }
+.flag-low     { color: #ea580c; }
+
+.student-tasks {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.tasks-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.mini-track {
+  width: 100%;
+  height: 4px;
+  background: #fce7f3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mini-fill {
+  height: 100%;
+  background: linear-gradient(to right, #f87171, #fca5a5);
+  border-radius: 999px;
+}
