@@ -22,6 +22,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(prev => prev ? { ...prev, role: newRole } : null);
   };
 
+  const login = (userData: { name: string; role: string }) => {
+    setUser(userData);
+  };
+
   const logout = () => {
     setUser(null);
   };
