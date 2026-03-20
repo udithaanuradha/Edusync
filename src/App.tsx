@@ -1,32 +1,47 @@
- import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+
+// Import your pages (Double check these file paths match your folders!)
 import LandingPage from './pages/LandingPage';
- import LoginPage from './pages/LoginPage';
+import Login from './pages/auth/Login';
 import SignUpPage from './pages/SignUpPage';
+import AdminDashboard from './pages/AdminPages/AdminDashboard';
+import StudentDashboard from './pages/StudentPages/StudentDashboard';
+import CoordinatorDashboard from './pages/CoordinatorPages/CoordinatorDashboard';
+// Add Supervisor and Mentor imports here too...
 
-/**
- * App Component
- * Handles the main routing for the University Project Management System (EduSync).
- * Global styles are managed in index.css.
- */
 function App() {
-  return (
-    <Router>
-      <Routes>
-        {/* The Landing Page: The first interface users see */}
-        <Route path="/" element={<LandingPage />} />
+  const { user } = useAuth();
 
-        {/* Auth Routes: Created from your HTML/Tailwind templates */}
-        <Route path="/login" element={<LoginPage />} />
+  return (
+    <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Future Route Example: 
-            Once you build the dashboard for the EduSync project, 
-            you can add it here.
-        */}
-      </Routes>
-    </Router>
-  );
-}
+        {/* Protected Dashboard Routes */}
+        {/* If user role matches, show dashboard. If not, send them back to login */}
+        
+        <Route 
+          path="/admin" 
+          element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} 
+        />
+        
+        <Route 
+          path="/student" 
+          element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} 
+        />
 
-export default App;
+        <Route 
+          path="/coordinator" 
+          element={user?.role === 'coordinator' ? <CoordinatorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        {/* Add Supervisor and Mentor routes here following the same pattern */}
+
+      </Routes>
+    );
+  }
+  
+  export default App;

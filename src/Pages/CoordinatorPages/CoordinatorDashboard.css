@@ -1,0 +1,43 @@
+ /* --- Dashboard Main Layout --- */
+.dashboard-grid {
+  display: flex;
+  gap: 24px;
+  margin-top: 32px;
+  width: 100%;
+  /* Ensures items don't stretch vertically, keeping cards their natural size */
+  align-items: flex-start; 
+}
+
+/* The Wider Left Column (Recent Projects) */
+.main-content-column {
+  /* This gives it the 70% look while allowing it to grow/shrink */
+  flex: 7;
+  min-width: 0; 
+  display: flex;
+  flex-direction: column;
+}
+
+/* The Narrower Right Column (Deadlines & Announcements) */
+.side-content-column {
+  /* This gives it the 30% look */
+  flex: 3;
+  min-width: 320px; /* Prevents the sidebar from getting too "squashed" */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* --- Responsive Layout (Mobile/Tablet) --- */
+@media (max-width: 1200px) {
+  /* We bump this up to 1200px so the side-by-side stays clean 
+     on larger screens but stacks on laptops/tablets */
+  .dashboard-grid {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .side-content-column {
+    width: 100%;
+    min-width: 100%;
+  }
+}

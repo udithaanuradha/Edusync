@@ -1,4 +1,16 @@
-/* General Reset */
+/* ==========================================================================
+   1. GLOBAL RESET & BASE STYLES
+   ========================================================================== */
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 * { 
   margin: 0; 
   padding: 0; 
@@ -6,11 +18,35 @@
 }
 
 body { 
-  font-family: 'Inter', sans-serif; 
-  background-color: #f9fafb; 
+  display: block;
+  min-width: 100vw;
+  min-height: 100vh;
+  background-color: #f8fafc; 
   color: #1f2937; 
-  line-height: 1.5; 
 }
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+/* ==========================================================================
+   2. PUBLIC PAGES (LANDING PAGE)
+   ========================================================================== */
 
 /* --- Navbar --- */
 .navbar {
@@ -53,7 +89,6 @@ body {
   left: 0; 
   width: 100%; 
   height: 100%;
-  /* Gradient blend: Darker at edges to make white text pop */
   background: linear-gradient(
     to bottom, 
     rgba(15, 23, 42, 0.7) 0%, 
@@ -85,7 +120,7 @@ body {
 .btn-blue { background: #2563eb; color: white; }
 .btn-blue:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-/* --- Floating Feature Cards (White Section) --- */
+/* --- Floating Feature Cards --- */
 .features-container {
   max-width: 1100px; 
   margin: -80px auto 60px; 
@@ -114,9 +149,8 @@ body {
 
 .card-icon { color: #2563eb; margin-bottom: 20px; }
 
-/* --- Middle Process Section (Navy Blue Gradient) --- */
+/* --- Middle Process Section --- */
 .process-mid-section {
-  /* Updated to match the deep navy from your video */
   background: radial-gradient(circle at center, #154c8c 0%, #011a33 100%);
   padding: 100px 20px;
   text-align: center;
@@ -138,7 +172,6 @@ body {
 }
 
 .process-step-card {
-  /* Glass-morphism effect from the video */
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -152,13 +185,13 @@ body {
 }
 
 .step-icon { 
-  color: #ffcc00; /* Gold/Yellow icons to match your video */
+  color: #ffcc00; 
   margin-bottom: 25px; 
   display: flex; 
   justify-content: center; 
 }
 
-/* --- Final Footer Section (Charcoal Match) --- */
+/* --- Main Footer --- */
 .main-footer {
   background: #222222; 
   color: #9ca3af;
@@ -174,7 +207,6 @@ body {
 }
 
 .brand-logo { color: white; display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 20px; }
-
 .footer-brand p { font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; }
 
 .social-links { display: flex; gap: 15px; margin-top: 10px; }
@@ -207,26 +239,9 @@ body {
   font-size: 0.8rem;
 }
 
-/* --- Responsive Layouts --- */
-@media (max-width: 1024px) {
-  .process-grid-container { grid-template-columns: repeat(2, 1fr); }
-  .features-container { grid-template-columns: repeat(2, 1fr); margin-top: -50px; }
-}
-
-@media (max-width: 768px) {
-  .footer-top { grid-template-columns: 1fr; gap: 40px; text-align: center; }
-  .brand-logo, .social-links { justify-content: center; }
-  .hero h1 { font-size: 2.5rem; }
-}
-
-@media (max-width: 600px) {
-  .process-grid-container, .features-container { grid-template-columns: 1fr; }
-}
-
-
-
-
-/* --- Login & Signup Specific Styles --- */
+/* ==========================================================================
+   3. AUTHENTICATION (LOGIN/SIGNUP)
+   ========================================================================== */
 .auth-container {
   min-height: 100vh;
   display: flex;
@@ -240,7 +255,6 @@ body {
   background-attachment: fixed;
 }
 
-/* Specific overlay for Auth pages to match your screenshot */
 .auth-overlay {
   position: absolute;
   top: 0;
@@ -252,7 +266,7 @@ body {
 }
 
 .auth-card {
-  background-color: #dbece5; /* The greenish-grey from your screenshot */
+  background-color: #dbece5; 
   width: 100%;
   border-radius: 12px;
   padding: 40px;
@@ -318,4 +332,46 @@ body {
 
 .btn-auth:hover {
   background-color: #000000;
+}
+
+/* ==========================================================================
+   4. PROTECTED ROLE DASHBOARDS (TEAM CODE)
+   ========================================================================== */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  background-color: #f8fafc;
+}
+
+/* ==========================================================================
+   5. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .process-grid-container { grid-template-columns: repeat(2, 1fr); }
+  .features-container { grid-template-columns: repeat(2, 1fr); margin-top: -50px; }
+}
+
+@media (max-width: 768px) {
+  .footer-top { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+  .brand-logo, .social-links { justify-content: center; }
+  .hero h1 { font-size: 2.5rem; }
+}
+
+@media (max-width: 600px) {
+  .process-grid-container, .features-container { grid-template-columns: 1fr; }
 }

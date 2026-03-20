@@ -1,0 +1,113 @@
+.deadlines-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+  width: 350px; /* This locks the width so RecentProjects takes the rest of the space */
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.header-icon { color: #64748b; }
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.deadlines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1; 
+}
+
+.deadline-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  transition: transform 0.2s;
+  border: 1px solid transparent;
+}
+
+.deadline-item:hover {
+  transform: translateX(4px);
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+/* The sleek calendar box */
+.date-box {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  min-width: 54px;
+  height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.date-day {
+  font-size: 18px;
+  font-weight: 700;
+  color: #3b82f6;
+  line-height: 1;
+}
+
+.date-month {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.deadline-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deadline-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.deadline-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.view-all-btn {
+  margin-top: 24px;
+  width: 100%;
+  padding: 10px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #3b82f6;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.view-all-btn:hover {
+  background-color: #f8fafc;
+}
