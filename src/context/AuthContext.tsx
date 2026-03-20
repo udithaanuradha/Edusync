@@ -1,9 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+  import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// 1. Added 'login' to the interface so the app knows it exists
 interface AuthContextType {
   user: { name: string; role: string } | null;
-  login: (userData: { name: string; role: string }) => void;
   switchRole: (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => void;
   logout: () => void;
 }
@@ -27,8 +25,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    // 4. Added 'login' to the Provider so other pages can use it
-    <AuthContext.Provider value={{ user, login, switchRole, logout }}>
+    <AuthContext.Provider value={{ user, switchRole, logout }}>
       {children}
     </AuthContext.Provider>
   );
