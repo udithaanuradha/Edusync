@@ -10,6 +10,10 @@ import StudentDashboard from './pages/StudentPages/StudentDashboard';
 import CoordinatorDashboard from './pages/CoordinatorPages/CoordinatorDashboard';
 import SupervisorDashboard from './pages/SupervisorPages/SupervisorDashboard';
 import MentorDashboard from './pages/MentorPages/MentorDashboard';
+import Level1Page from './pages/CoordinatorPages/Level1Page';
+import Level2Page from './pages/CoordinatorPages/Level2Page';
+import Level3Page from './pages/CoordinatorPages/Level3Page';
+import Level4Page from './pages/CoordinatorPages/Level4Page';
 
 function App() {
   const { user } = useAuth();
@@ -47,6 +51,26 @@ function App() {
         <Route 
           path="/mentor" 
           element={user?.role === 'mentor' ? <MentorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-1" 
+          element={user?.role === 'coordinator' ? <Level1Page /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-2" 
+          element={user?.role === 'coordinator' ? <Level2Page /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-3" 
+          element={user?.role === 'coordinator' ? <Level3Page /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-4" 
+          element={user?.role === 'coordinator' ? <Level4Page /> : <Navigate to="/login" />} 
         />
 
       </Routes>
