@@ -8,7 +8,8 @@ import SignUpPage from './pages/SignUpPage';
 import AdminDashboard from './pages/AdminPages/AdminDashboard';
 import StudentDashboard from './pages/StudentPages/StudentDashboard';
 import CoordinatorDashboard from './pages/CoordinatorPages/CoordinatorDashboard';
-// Add Supervisor and Mentor imports here too...
+import SupervisorDashboard from './pages/SupervisorPages/SupervisorDashboard';
+import MentorDashboard from './pages/MentorPages/MentorDashboard';
 
 function App() {
   const { user } = useAuth();
@@ -38,7 +39,15 @@ function App() {
           element={user?.role === 'coordinator' ? <CoordinatorDashboard /> : <Navigate to="/login" />} 
         />
 
-        {/* Add Supervisor and Mentor routes here following the same pattern */}
+        <Route 
+          path="/supervisor" 
+          element={user?.role === 'supervisor' ? <SupervisorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/mentor" 
+          element={user?.role === 'mentor' ? <MentorDashboard /> : <Navigate to="/login" />} 
+        />
 
       </Routes>
     );
