@@ -53,7 +53,8 @@ function App() {
           element={user?.role === 'mentor' ? <MentorDashboard /> : <Navigate to="/login" />} 
         />
 
-        <Route  
+        <Route 
+          path="/dashboard/level-1"
           element={user?.role === 'coordinator' ? <Level1Page /> : <Navigate to="/login" />} 
         />
 
