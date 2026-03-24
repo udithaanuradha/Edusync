@@ -8,11 +8,12 @@ import SignUpPage from './pages/SignUpPage';
 import AdminDashboard from './pages/AdminPages/AdminDashboard';
 import StudentDashboard from './pages/StudentPages/StudentDashboard';
 import CoordinatorDashboard from './pages/CoordinatorPages/CoordinatorDashboard';
+import SupervisorDashboard from './pages/SupervisorPages/SupervisorDashboard';
+import MentorDashboard from './pages/MentorPages/MentorDashboard';
 import Level1Page from './pages/CoordinatorPages/Level1Page';
 import Level2Page from './pages/CoordinatorPages/Level2Page';
 import Level3Page from './pages/CoordinatorPages/Level3Page';
 import Level4Page from './pages/CoordinatorPages/Level4Page';
-// Add Supervisor and Mentor imports here too...
 
 function App() {
   const { user } = useAuth();
@@ -43,7 +44,16 @@ function App() {
         />
 
         <Route 
-          path="/dashboard/level-1" 
+          path="/supervisor" 
+          element={user?.role === 'supervisor' ? <SupervisorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/mentor" 
+          element={user?.role === 'mentor' ? <MentorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        <Route  
           element={user?.role === 'coordinator' ? <Level1Page /> : <Navigate to="/login" />} 
         />
 
@@ -61,8 +71,6 @@ function App() {
           path="/dashboard/level-4" 
           element={user?.role === 'coordinator' ? <Level4Page /> : <Navigate to="/login" />} 
         />
-
-        {/* Add Supervisor and Mentor routes here following the same pattern */}
 
       </Routes>
     );
