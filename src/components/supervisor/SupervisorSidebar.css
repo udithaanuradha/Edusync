@@ -1,0 +1,121 @@
+.supervisor-sidebar {
+  width: 228px;
+  background: linear-gradient(180deg, #151c2f 0%, #11182a 100%);
+  color: #d5dced;
+  border-right: 1px solid #1f2941;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.supervisor-sidebar.compact {
+  width: 100%;
+  background: #1a202c;
+  border-right: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 0 14px;
+  gap: 8px;
+}
+
+.supervisor-brand {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.brand-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #e8ecf5;
+  color: #162038;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.brand-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f5f8ff;
+}
+
+.supervisor-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.supervisor-sidebar.compact .supervisor-nav {
+  gap: 4px;
+}
+
+.supervisor-nav-item {
+  text-decoration: none;
+  color: #bcc7de;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+
+.supervisor-sidebar.compact .supervisor-nav-item {
+  margin: 0;
+  border-radius: 0;
+  padding: 12px 20px;
+  color: #a0aec0;
+}
+
+.supervisor-nav-item:hover {
+  background: rgba(111, 137, 255, 0.2);
+  color: #f4f7ff;
+}
+
+.supervisor-nav-item.active {
+  background: #2e4da7;
+  color: #ffffff;
+}
+
+.supervisor-sidebar.compact .supervisor-nav-item.active {
+  background: rgba(102, 126, 234, 0.2);
+  border-left: 4px solid #667eea;
+}
+
+@media (max-width: 900px) {
+  .supervisor-sidebar {
+    width: 80px;
+  }
+
+  .supervisor-sidebar.compact {
+    width: 100%;
+  }
+
+  .brand-text,
+  .supervisor-nav-item span {
+    display: none;
+  }
+
+  .supervisor-sidebar.compact .supervisor-nav-item span {
+    display: none;
+  }
+
+  .supervisor-nav-item {
+    justify-content: center;
+  }
+
+  .supervisor-sidebar.compact .supervisor-nav-item {
+    justify-content: center;
+    padding: 12px 0;
+    border-left: none;
+  }
+}

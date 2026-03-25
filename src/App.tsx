@@ -1,46 +1,80 @@
- // src/App.tsx
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import ProtectedRoute from './components/shared/ProtectedRoute';
 
-// Import Role Pages
-import AdminPage from './Pages/AdminPages/AdminDashboard'; 
-import SupervisorPage from './Pages/SupervisorPages/SupervisorDashboard';
-import MentorPage from './Pages/MentorPages/MentorDashboard';
-import CoordinatorPage from './Pages/CoordinatorPages/CoordinatorDashboard';
-import StudentPage from './Pages/StudentPages/StudentDashboard';
-import AdminDashboard from './Pages/AdminPages/AdminDashboard';
+// Import your pages (Double check these file paths match your folders!)
+import LandingPage from './pages/LandingPage';
+import Login from './pages/auth/Login';
+import SignUpPage from './pages/SignUpPage';
+import AdminDashboard from './pages/AdminPages/AdminDashboard';
+import StudentDashboard from './pages/StudentPages/StudentDashboard';
+import CoordinatorDashboard from './pages/CoordinatorPages/CoordinatorDashboard';
+import SupervisorDashboard from './pages/SupervisorPages/SupervisorDashboard';
+import MentorDashboard from './pages/MentorPages/MentorDashboard';
+import Level1Page from './pages/CoordinatorPages/Level1Page';
+import Level2Page from './pages/CoordinatorPages/Level2Page';
+import Level3Page from './pages/CoordinatorPages/Level3Page';
+import Level4Page from './pages/CoordinatorPages/Level4Page';
 
-const App: React.FC = () => {
+function App() {
   const { user } = useAuth();
-  const role = user?.role;
-
-  const RoleRedirector = () => {
-    if (!role) return <Navigate to="/login" />;
-    return <Navigate to={`/${role}`} replace />;
-  };
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/dashboard" element={<RoleRedirector />} />
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUpPage />} />
 
-      {/* FIXED: Added '/*' to all paths so internal dashboard routes work */}
-      <Route path="/admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-      <Route path="/supervisor/*" element={<ProtectedRoute><SupervisorPage /></ProtectedRoute>} />
-      <Route path="/mentor/*" element={<ProtectedRoute><MentorPage /></ProtectedRoute>} />
-      <Route path="/coordinator/*" element={<ProtectedRoute><CoordinatorPage /></ProtectedRoute>} />
-      <Route path="/student/*" element={<ProtectedRoute><StudentPage /></ProtectedRoute>} />
-      // Inside your Routes in App.tsx
-     <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        {/* Protected Dashboard Routes */}
+        {/* If user role matches, show dashboard. If not, send them back to login */}
+        
+        <Route 
+          path="/admin" 
+          element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} 
+        />
+        
+        <Route 
+          path="/student" 
+          element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} 
+        />
 
-      <Route path="/login" element={<div>Please Login</div>} />
-      
-      {/* Optional: Add a catch-all redirect to prevent staying on a blank page */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
+        <Route 
+          path="/coordinator" 
+          element={user?.role === 'coordinator' ? <CoordinatorDashboard /> : <Navigate to="/login" />} 
+        />
 
-export default App;
+        <Route 
+          path="/supervisor" 
+          element={user?.role === 'supervisor' ? <SupervisorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/mentor" 
+          element={user?.role === 'mentor' ? <MentorDashboard /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-1" 
+          element={user?.role === 'coordinator' ? <Level1Page /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-2" 
+          element={user?.role === 'coordinator' ? <Level2Page /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-3" 
+          element={user?.role === 'coordinator' ? <Level3Page /> : <Navigate to="/login" />} 
+        />
+
+        <Route 
+          path="/dashboard/level-4" 
+          element={user?.role === 'coordinator' ? <Level4Page /> : <Navigate to="/login" />} 
+        />
+
+      </Routes>
+    );
+  }
+  
+  export default App;

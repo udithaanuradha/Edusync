@@ -24,7 +24,7 @@ interface SubMenuItem {
 
 interface AcademicLevel {
   label: string;
-  items: SubMenuItem[];
+  path: string;
 }
 
 interface MenuItem {
@@ -62,40 +62,19 @@ const Sidebar = () => {
       submenu: [
         { 
           label: 'Level 1', 
-          items: [
-            { path: '/dashboard/level-1/proposal', label: 'Proposal' },
-            { path: '/dashboard/level-1/interim', label: 'Interim' },
-            { path: '/dashboard/level-1/final', label: 'Final Evaluation' },
-            { path: '/dashboard/level-1/submission', label: 'File Submission' },
-          ]
+          path: '/dashboard/level-1'
         },
         { 
           label: 'Level 2', 
-          items: [
-            { path: '/dashboard/level-2/proposal', label: 'Proposal' },
-            { path: '/dashboard/level-2/interim', label: 'Interim' },
-            { path: '/dashboard/level-2/code-review', label: 'Code Review' },
-            { path: '/dashboard/level-2/final', label: 'Final Evaluation' },
-            { path: '/dashboard/level-2/submission', label: 'File Submission' },
-          ]
+          path: '/dashboard/level-2'
         },
         { 
           label: 'Level 3', 
-          items: [
-            { path: '/dashboard/level-3/proposal', label: 'Proposal' },
-            { path: '/dashboard/level-3/interim', label: 'Interim' },
-            { path: '/dashboard/level-3/final', label: 'Final Evaluation' },
-            { path: '/dashboard/level-3/submission', label: 'File Submission' },
-          ]
+          path: '/dashboard/level-3'
         },
         { 
           label: 'Level 4', 
-          items: [
-            { path: '/dashboard/level-4/proposal', label: 'Proposal' },
-            { path: '/dashboard/level-4/interim', label: 'Interim' },
-            { path: '/dashboard/level-4/final', label: 'Final Evaluation' },
-            { path: '/dashboard/level-4/submission', label: 'File Submission' },
-          ]
+          path: '/dashboard/level-4'
         },
       ]
     },
@@ -103,7 +82,6 @@ const Sidebar = () => {
     { path: '/dashboard/communication', icon: MessageSquare, label: 'Communication' },
     { path: '/dashboard/announcements', icon: ClipboardList, label: 'Announcements' },
     { path: '/dashboard/project-groups', icon: FolderOpen, label: 'Project Groups' },
-    { path: '/dashboard/guidelines', icon: UserCog, label: 'Guidelines' },
     { path: '/dashboard/project-delays', icon: AlertTriangle, label: 'Project Delays' },
   ];
 
@@ -151,20 +129,15 @@ const Sidebar = () => {
                   <div className="submenu">
                     {item.key === 'academicLevel' ? (
                       (item.submenu as AcademicLevel[]).map((level, levelIndex) => (
-                        <div key={levelIndex} className="submenu-section">
-                          <div className="submenu-title">{level.label}</div>
-                          {level.items.map((subItem, subIndex) => (
-                            <NavLink
-                              key={subIndex}
-                              to={subItem.path}
-                              className={({ isActive }) =>
-                                `submenu-item ${isActive ? 'active' : ''}`
-                              }
-                            >
-                              {subItem.label}
-                            </NavLink>
-                          ))}
-                        </div>
+                        <NavLink
+                          key={levelIndex}
+                          to={level.path}
+                          className={({ isActive }) =>
+                            `submenu-item ${isActive ? 'active' : ''}`
+                          }
+                        >
+                          {level.label}
+                        </NavLink>
                       ))
                     ) : (
                       (item.submenu as SubMenuItem[]).map((subItem, subIndex) => (
