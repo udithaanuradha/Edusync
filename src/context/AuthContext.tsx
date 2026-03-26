@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // 1. Added 'login' to the interface so the app knows it exists
 interface AuthContextType {
@@ -14,7 +14,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Initial state
   const [user, setUser] = useState<{ name: string; role: string } | null>({ 
     name: 'User Name', 
-    role: 'coordinator' // Start as coordinator
+    role: 'coordinator' 
   });
 
   // This function updates the role
