@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 // Import your pages (Double check these file paths match your folders!)
@@ -14,6 +14,10 @@ import Level1Page from './pages/CoordinatorPages/Level1Page';
 import Level2Page from './pages/CoordinatorPages/Level2Page';
 import Level3Page from './pages/CoordinatorPages/Level3Page';
 import Level4Page from './pages/CoordinatorPages/Level4Page';
+import Level1Student from './Pages/StudentPages/Level1Student';
+import Level2Student from './Pages/StudentPages/Level2Student';
+import Level3Student from './Pages/StudentPages/Level3Student';
+import Level4Student from './Pages/StudentPages/Level4Student';
 
 function App() {
   const { user } = useAuth();
@@ -72,6 +76,27 @@ function App() {
           path="/dashboard/level-4" 
           element={user?.role === 'coordinator' ? <Level4Page /> : <Navigate to="/login" />} 
         />
+ <Route 
+  path="/studentDashboard/level-1" 
+  element={user?.role?.toLowerCase() === 'student' ? <Level1Student /> : <Navigate to="/login" />} 
+/>
+
+<Route 
+  path="/studentDashboard/level-2" 
+  element={user?.role?.toLowerCase() === 'student' ? <Level2Student /> : <Navigate to="/login" />} 
+/>
+
+<Route 
+  path="/studentDashboard/level-3" 
+  element={user?.role?.toLowerCase() === 'student' ? <Level3Student /> : <Navigate to="/login" />} 
+/>
+
+<Route 
+  path="/studentDashboard/level-4" 
+  element={user?.role?.toLowerCase() === 'student' ? <Level4Student /> : <Navigate to="/login" />} 
+/>
+
+{/* Repeat for Level 3 and 4... */}
 
       </Routes>
     );
