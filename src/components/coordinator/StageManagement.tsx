@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
-import { Trash2, Plus, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trash2, Plus, X, Edit2 } from 'lucide-react';
 import './StageManagement.css';
 
 interface Stage {
-  id: string;
-  name: string;
+  stage_id: string;
+  stage_name: string;
   description: string;
-  files?: { name: string; size: number }[];
+  deadline?: string;
+  level?: string;
+  files?: Array<{
+    file_id?: number;
+    file_name: string;
+    file_url: string;
+    uploaded_by?: number;
+    uploaded_at?: string;
+  }>;
 }
 
 interface FormFile {
@@ -20,28 +28,62 @@ interface StageManagementProps {
 }
 
 const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
-  const [stages, setStages] = useState<Stage[]>([
-    {
-      id: '1',
-      name: 'Proposal',
-      description: 'Submit project proposal',
-    },
-    {
-      id: '2',
-      name: 'Interim',
-      description: 'Interim project submission',
-    },
-  ]);
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch stages from backend when component mounts
+  useEffect(() => {
+    const fetchStages = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch stages: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Stages fetched from backend:', data.data); // Debug log
+        
+        if (data.success && Array.isArray(data.data)) {
+          setStages(data.data);
+        } else {
+          throw new Error('Invalid response format from backend');
+        }
+        
+        setError(null);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('❌ Error fetching stages:', errorMessage);
+        setError(errorMessage);
+        setStages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStages();
+  }, [levelNumber]);
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    deadline: '',
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<FormFile[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStage, setEditingStage] = useState<Stage | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    stage_name: '',
+    description: '',
+    deadline: '',
+  });
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -51,22 +93,151 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     }));
   };
 
-  const handleAddStage = () => {
-    if (formData.name) {
+  const handleAddStage = async () => {
+    if (!formData.name) return;
+
+    try {
+      setUploadingFiles(true);
+
+      // Step 1: Create the stage in the backend first
+      const createResponse = await fetch('http://localhost:5000/api/projects/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          level: levelNumber,
+          stage_name: formData.name,
+          description: formData.description,
+          deadline: formData.deadline || null,
+          created_by: 1, // TODO: Replace with actual user ID from auth
+          user_role: 'admin', // TODO: Replace with actual role from auth
+        }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error(`Failed to create stage: ${createResponse.statusText}`);
+      }
+
+      const createResult = await createResponse.json();
+      if (!createResult.success) {
+        throw new Error(createResult.message || 'Failed to create stage');
+      }
+
+      // Get the real stage_id from the database
+      const realStageId = createResult.id;
+      console.log('✅ Stage created with ID:', realStageId);
+
+      // Step 2: Upload files with the real stage_id
+      const filesData: any[] = [];
+      if (uploadedFiles.length > 0) {
+        for (const fileObj of uploadedFiles) {
+          try {
+            const uploadResponse = await fetch('http://localhost:5000/api/projects/upload-file', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                stage_id: realStageId,
+                file_name: fileObj.file.name,
+                file_url: `/uploads/stage_files/${fileObj.file.name}`,
+                uploaded_by: 1, // TODO: Replace with actual user ID from auth
+              }),
+            });
+
+            if (!uploadResponse.ok) {
+              throw new Error(`File upload failed: ${uploadResponse.statusText}`);
+            }
+
+            const uploadResult = await uploadResponse.json();
+            if (uploadResult.success) {
+              filesData.push({
+                file_name: fileObj.file.name,
+                file_url: `/uploads/stage_files/${fileObj.file.name}`,
+              });
+              console.log(`✅ File saved: ${fileObj.file.name}`);
+            }
+          } catch (fileErr) {
+            console.error(`Error uploading file ${fileObj.file.name}:`, fileErr);
+          }
+        }
+      }
+
+      // Step 3: Add the stage to local state with real data from backend
       const newStage: Stage = {
-        id: Date.now().toString(),
-        ...formData,
-        files: uploadedFiles.map(({ name, size }) => ({ name, size })),
+        stage_id: realStageId.toString(),
+        stage_name: formData.name,
+        description: formData.description,
+        deadline: formData.deadline || undefined,
+        level: levelNumber.toString(),
+        files: filesData,
       };
+
       setStages([...stages, newStage]);
-      setFormData({ name: '', description: '' });
+      
+      // Reset form and close modal
+      setFormData({ name: '', description: '', deadline: '' });
       setUploadedFiles([]);
       setShowModal(false);
+      setUploadingFiles(false);
+
+      console.log('✅ Stage created successfully:', newStage);
+    } catch (err) {
+      console.error('❌ Error creating stage:', err);
+      setUploadingFiles(false);
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
   const handleDeleteStage = (id: string) => {
-    setStages(stages.filter(stage => stage.id !== id));
+    setStages(stages.filter(stage => stage.stage_id !== id));
+  };
+
+  const handleStageClick = (stageId: string) => {
+    // Removed collapse/expand functionality
+  };
+
+  const handleEditStage = (stage: Stage) => {
+    setEditingStage(stage);
+    setEditFormData({
+      stage_name: stage.stage_name,
+      description: stage.description,
+      deadline: stage.deadline || '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingStage || !editFormData.stage_name) return;
+
+    try {
+      // TODO: Call backend to update the stage
+      // For now, just update locally
+      const updatedStages = stages.map(s =>
+        s.stage_id === editingStage.stage_id
+          ? { ...s, ...editFormData }
+          : s
+      );
+      setStages(updatedStages);
+      setShowEditModal(false);
+      setEditingStage(null);
+    } catch (err) {
+      console.error('Error updating stage:', err);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingStage(null);
   };
 
   const handleFilesSelected = (files: FileList) => {
@@ -107,7 +278,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ name: '', description: '' });
+    setFormData({ name: '', description: '', deadline: '' });
     setUploadedFiles([]);
   };
 
@@ -125,7 +296,18 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
       {/* Master List View */}
       <div className="stages-timeline">
-        {stages.length === 0 ? (
+        {loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">⏳</div>
+            <h4>Loading stages...</h4>
+          </div>
+        ) : error ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">⚠️</div>
+            <h4>Error loading stages</h4>
+            <p>{error}</p>
+          </div>
+        ) : stages.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📋</div>
             <h4>No stages created yet</h4>
@@ -134,36 +316,110 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
         ) : (
           <div className="timeline-list">
             {stages.map((stage, index) => (
-              <div key={stage.id} className="timeline-item">
+              <div 
+                key={stage.stage_id} 
+                className="timeline-item"
+                style={{ transition: 'all 0.3s ease' }}
+              >
                 <div className="timeline-marker">
                   <span className="stage-number">{index + 1}</span>
                 </div>
 
                 <div className="timeline-content">
                   <div className="stage-header-row">
-                    <h4 className="stage-name">{stage.name}</h4>
+                    <div style={{ flex: 1 }}>
+                      <h4 className="stage-name">{stage.stage_name}</h4>
+                    </div>
                     <button
                       className="btn-delete-small"
-                      onClick={() => handleDeleteStage(stage.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteStage(stage.stage_id);
+                      }}
                       aria-label="Delete stage"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
 
-                  <div className="stage-info">
+                  <div className="stage-info" style={{ marginTop: '12px' }}>
                     {stage.description && (
                       <div className="info-item">
                         <span className="info-label">Description:</span>
                         <span className="info-value">{stage.description}</span>
                       </div>
                     )}
+                    {stage.deadline && (
+                      <div className="info-item">
+                        <span className="info-label">Deadline:</span>
+                        <span className="info-value">
+                          {new Date(stage.deadline).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    {stage.level && (
+                      <div className="info-item">
+                        <span className="info-label">Level:</span>
+                        <span className="info-value">Level {stage.level}</span>
+                      </div>
+                    )}
                     {stage.files && stage.files.length > 0 && (
                       <div className="info-item">
                         <span className="info-label">Documents:</span>
-                        <span className="info-value">{stage.files.length} file(s) attached</span>
+                        <div style={{ marginTop: '8px' }}>
+                          {stage.files.map((file, idx) => (
+                            <div key={idx} style={{ marginBottom: '6px' }}>
+                              <a
+                                href={file.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: '#3b82f6',
+                                  textDecoration: 'none',
+                                  fontSize: '14px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                                onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}
+                              >
+                                📄 {file.file_name}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditStage(stage);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 14px',
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                      >
+                        <Edit2 size={16} />
+                        Edit Stage
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -217,6 +473,16 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
               </div>
 
               <div className="form-group">
+                <label>Deadline</label>
+                <input
+                  type="date"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Supporting Documents</label>
                 <div
                   className={`drag-drop-zone ${isDragActive ? 'active' : ''}`}
@@ -265,11 +531,78 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
             </div>
 
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseModal}>
+              <button className="btn-cancel" onClick={handleCloseModal} disabled={uploadingFiles}>
                 Cancel
               </button>
-              <button className="btn-save" onClick={handleAddStage}>
-                Save Stage
+              <button className="btn-save" onClick={handleAddStage} disabled={uploadingFiles}>
+                {uploadingFiles ? 'Uploading files...' : 'Save Stage'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Stage Modal */}
+      {showEditModal && editingStage && (
+        <div className="modal-overlay" onClick={handleCloseEditModal}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Edit Stage</h4>
+              <button
+                className="btn-close-modal"
+                onClick={handleCloseEditModal}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="level-badge-section">
+                <p className="level-badge-label">Editing stage for:</p>
+                <div className="level-badge">Level {editingStage.level || levelNumber}</div>
+              </div>
+
+              <div className="form-group">
+                <label>Stage Name *</label>
+                <input
+                  type="text"
+                  name="stage_name"
+                  value={editFormData.stage_name}
+                  onChange={handleEditInputChange}
+                  placeholder="e.g., Proposal, Interim, Final Evaluation"
+                  autoFocus
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  name="description"
+                  value={editFormData.description}
+                  onChange={handleEditInputChange}
+                  placeholder="Brief description of this stage"
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Deadline</label>
+                <input
+                  type="date"
+                  name="deadline"
+                  value={editFormData.deadline ? editFormData.deadline.split('T')[0] : ''}
+                  onChange={handleEditInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={handleCloseEditModal}>
+                Cancel
+              </button>
+              <button className="btn-save" onClick={handleSaveEdit}>
+                Save Changes
               </button>
             </div>
           </div>

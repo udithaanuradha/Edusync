@@ -1,20 +1,5 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-
-// Inside Sidebar.tsx
-submenu: [
-  { label: 'Level 1', path: '/studentDashboard/level-1' },
-  { label: 'Level 2', path: '/studentDashboard/level-2' },
-  { label: 'Level 3', path: '/studentDashboard/level-3' },
-  { label: 'Level 4', path: '/studentDashboard/level-4' },
-]
-
-
- 
- 
- 
-
 import {
   LayoutDashboard,
   Users as UsersGroup,
@@ -27,8 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  LucideIcon,
-  Link
+  LucideIcon
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -58,7 +42,6 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     academicLevel: false,
   });
-  const { user } = useAuth();
 
   const toggleMenu = (menuKey?: string) => {
     if (!collapsed && menuKey) {
@@ -69,26 +52,6 @@ const Sidebar = () => {
     }
   };
 
-  // Different routes based on user role
-  const getAcademicLevelSubmenu = () => {
-    if (user?.role === 'student') {
-      return [
-        { label: 'Level 1', path: '/studentDashboard/level-1' },
-        { label: 'Level 2', path: '/studentDashboard/level-2' },
-        { label: 'Level 3', path: '/studentDashboard/level-3' },
-        { label: 'Level 4', path: '/studentDashboard/level-4' },
-      ];
-    } else {
-      // For coordinator and other roles
-      return [
-        { label: 'Level 1', path: '/dashboard/level-1' },
-        { label: 'Level 2', path: '/dashboard/level-2' },
-        { label: 'Level 3', path: '/dashboard/level-3' },
-        { label: 'Level 4', path: '/dashboard/level-4' },
-      ];
-    }
-  };
-
   const menuItems: MenuItem[] = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { 
@@ -96,7 +59,24 @@ const Sidebar = () => {
       icon: UsersGroup, 
       label: 'Academic Level',
       hasSubmenu: true,
-      submenu: getAcademicLevelSubmenu()
+      submenu: [
+        { 
+          label: 'Level 1', 
+          path: '/dashboard/level-1'
+        },
+        { 
+          label: 'Level 2', 
+          path: '/dashboard/level-2'
+        },
+        { 
+          label: 'Level 3', 
+          path: '/dashboard/level-3'
+        },
+        { 
+          label: 'Level 4', 
+          path: '/dashboard/level-4'
+        },
+      ]
     },
     { path: '/dashboard/calendar', icon: CalendarDays, label: 'Calendar' },
     { path: '/dashboard/communication', icon: MessageSquare, label: 'Communication' },
