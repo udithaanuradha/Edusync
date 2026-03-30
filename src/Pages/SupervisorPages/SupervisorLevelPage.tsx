@@ -2,7 +2,7 @@ import React from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import SupervisorSidebar from '../../components/supervisor/SupervisorSidebar';
-import StageManagement from '../../components/coordinator/StageManagement';
+import CoordinatorInstructionsView from '../../components/supervisor/CoordinatorInstructionsView';
 import './SupervisorDashboard.css';
 import './SupervisorLevelPage.css';
 
@@ -26,11 +26,11 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({ levelNumber }
             <div className="supervisor-level-header">
               <h2>Level {levelNumber} Coordinator Instructions</h2>
               <p>
-                Review and manage the coordinator stage instructions configured for Level {levelNumber}.
+                Review the coordinator stage instructions configured for Level {levelNumber}.
               </p>
             </div>
 
-            <StageManagement levelNumber={levelNumber} />
+            <CoordinatorInstructionsView levelNumber={levelNumber} />
           </div>
         </main>
       </div>

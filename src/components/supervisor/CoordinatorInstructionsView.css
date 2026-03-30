@@ -1,0 +1,30 @@
+@import '../coordinator/StageManagement.css';
+
+/*
+  Dedicated stylesheet for supervisor instructions view.
+  Keep selector scope under .supervisor-instructions-view so changes stay isolated.
+*/
+
+.supervisor-instructions-view {
+  --civ-accent: #2563eb;
+  --civ-surface: #ffffff;
+  --civ-text: #0f172a;
+  --civ-muted: #64748b;
+}
+
+.supervisor-instructions-view .timeline-item {
+  background: var(--civ-surface);
+}
+
+.supervisor-instructions-view .stage-name {
+  color: var(--civ-text);
+}
+
+.supervisor-instructions-view .info-label {
+  color: var(--civ-muted);
+}
+
+.supervisor-instructions-view .info-value a,
+.supervisor-instructions-view a {
+  color: var(--civ-accent);
+}
