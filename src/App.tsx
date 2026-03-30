@@ -8,6 +8,7 @@ import SignUpPage from './Pages/SignUpPage';
 import AdminDashboard from './Pages/AdminPages/AdminDashboard';
 import StudentDashboard from './Pages/StudentPages/StudentDashboard';
 import CoordinatorDashboard from './Pages/CoordinatorPages/CoordinatorDashboard';
+import SupervisorDashboard from './Pages/SupervisorPages/SupervisorDashboard';
 import Level1Page from './Pages/CoordinatorPages/Level1Page';
 import Level2Page from './Pages/CoordinatorPages/Level2Page';
 import Level3Page from './Pages/CoordinatorPages/Level3Page';
@@ -16,6 +17,7 @@ import Level1Student from './Pages/StudentPages/Level1Student';
 import Level2Student from './Pages/StudentPages/Level2Student';
 import Level3Student from './Pages/StudentPages/Level3Student';
 import Level4Student from './Pages/StudentPages/Level4Student';
+import SupervisorLevelPage from './Pages/SupervisorPages/SupervisorLevelPage';
 // Add Supervisor and Mentor imports here too...
 
 function App() {
@@ -47,6 +49,11 @@ function App() {
         />
 
         <Route
+          path="/supervisor"
+          element={user?.role === 'supervisor' ? <SupervisorDashboard /> : <Navigate to="/login" />}
+        />
+
+        <Route
           path="/dashboard"
           element={
             user?.role === 'student' ? (
@@ -63,7 +70,8 @@ function App() {
           path="/dashboard/level-1" 
           element={
             user?.role === 'student' ? <Level1Student /> : 
-            user?.role === 'coordinator' ? <Level1Page /> : <Navigate to="/login" />
+            user?.role === 'coordinator' ? <Level1Page /> :
+            user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={1} /> : <Navigate to="/login" />
           } 
         />
 
@@ -71,7 +79,8 @@ function App() {
           path="/dashboard/level-2" 
           element={
             user?.role === 'student' ? <Level2Student /> : 
-            user?.role === 'coordinator' ? <Level2Page /> : <Navigate to="/login" />
+            user?.role === 'coordinator' ? <Level2Page /> :
+            user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={2} /> : <Navigate to="/login" />
           } 
         />
 
@@ -79,7 +88,8 @@ function App() {
           path="/dashboard/level-3" 
           element={
             user?.role === 'student' ? <Level3Student /> : 
-            user?.role === 'coordinator' ? <Level3Page /> : <Navigate to="/login" />
+            user?.role === 'coordinator' ? <Level3Page /> :
+            user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={3} /> : <Navigate to="/login" />
           } 
         />
 
@@ -87,7 +97,8 @@ function App() {
           path="/dashboard/level-4" 
           element={
             user?.role === 'student' ? <Level4Student /> : 
-            user?.role === 'coordinator' ? <Level4Page /> : <Navigate to="/login" />
+            user?.role === 'coordinator' ? <Level4Page /> :
+            user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={4} /> : <Navigate to="/login" />
           } 
         />
 
