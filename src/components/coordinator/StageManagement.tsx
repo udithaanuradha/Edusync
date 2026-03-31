@@ -190,8 +190,32 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     }
   };
 
-  const handleDeleteStage = (id: string) => {
-    setStages(stages.filter(stage => stage.stage_id !== id));
+  const handleDeleteStage = async (id: string) => {
+    try {
+      // Step 1: Ask backend to delete the stage and its files
+      const response = await fetch(`http://localhost:5000/api/projects/delete/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        // Step 2: Only remove from UI after successful database deletion
+        setStages(stages.filter(stage => stage.stage_id !== id));
+        console.log('✅ Stage deleted successfully:', id);
+      } else {
+        throw new Error(result.message || 'Failed to delete stage');
+      }
+    } catch (err) {
+      console.error('❌ Error deleting stage:', err);
+      alert(`Error deleting stage: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   const handleStageClick = (stageId: string) => {
