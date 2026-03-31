@@ -128,38 +128,49 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
       const realStageId = createResult.id;
       console.log('✅ Stage created with ID:', realStageId);
 
-      // Step 2: Upload files with the real stage_id
+      // Step 2: Upload files with the real stage_id using FormData
       const filesData: any[] = [];
       if (uploadedFiles.length > 0) {
         for (const fileObj of uploadedFiles) {
           try {
+            console.log(`📤 Starting upload for: ${fileObj.file.name}`);
+            
+            // Use FormData to send the actual file binary
+            const fileFormData = new FormData();
+            fileFormData.append('file', fileObj.file);  // Actual file binary
+            fileFormData.append('stage_id', realStageId.toString());
+            fileFormData.append('uploaded_by', '1');
+
+            console.log(`📨 Sending to backend: http://localhost:5000/api/projects/upload-file`);
             const uploadResponse = await fetch('http://localhost:5000/api/projects/upload-file', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                stage_id: realStageId,
-                file_name: fileObj.file.name,
-                file_url: `/uploads/stage_files/${fileObj.file.name}`,
-                uploaded_by: 1, // TODO: Replace with actual user ID from auth
-              }),
+              // Don't set Content-Type - browser will set it correctly for FormData
+              body: fileFormData,
             });
 
-            if (!uploadResponse.ok) {
-              throw new Error(`File upload failed: ${uploadResponse.statusText}`);
+            console.log(`📥 Response status: ${uploadResponse.status}`);
+            
+            // Try to parse response
+            let uploadResult;
+            const responseText = await uploadResponse.text();
+            console.log(`📋 Response text: ${responseText}`);
+            
+            if (uploadResponse.ok && responseText) {
+              uploadResult = JSON.parse(responseText);
+            } else {
+              throw new Error(`Server returned ${uploadResponse.status}: ${responseText}`);
             }
 
-            const uploadResult = await uploadResponse.json();
             if (uploadResult.success) {
               filesData.push({
                 file_name: fileObj.file.name,
-                file_url: `/uploads/stage_files/${fileObj.file.name}`,
+                file_url: uploadResult.file_url, // Use the actual Cloudinary URL from response
               });
-              console.log(`✅ File saved: ${fileObj.file.name}`);
+              console.log(`✅ File uploaded to Cloudinary: ${fileObj.file.name}`);
             }
           } catch (fileErr) {
-            console.error(`Error uploading file ${fileObj.file.name}:`, fileErr);
+            console.error(`❌ Error uploading file ${fileObj.file.name}:`, fileErr);
+            alert(`Error uploading ${fileObj.file.name}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`);
           }
         }
       }
@@ -394,7 +405,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
                           {stage.files.map((file, idx) => (
                             <div key={idx} style={{ marginBottom: '6px' }}>
                               <a
-                                href={file.file_url}
+                                href={file.file_url.startsWith('http') ? file.file_url : `http://localhost:5000${file.file_url}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
@@ -514,6 +525,13 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
                   onDragLeave={(e) => handleDrag(e, false)}
                   onDragOver={(e) => handleDrag(e, true)}
                   onDrop={handleDrop}
+                  onClick={(e) => {
+                    // Click on the zone triggers the hidden file input
+                    const fileInput = e.currentTarget.querySelector('input[type="file"]');
+                    if (fileInput) {
+                      (fileInput as HTMLInputElement).click();
+                    }
+                  }}
                 >
                   <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
