@@ -1,0 +1,19 @@
+.supervisor-level-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.supervisor-level-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.supervisor-level-header p {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 15px;
+}

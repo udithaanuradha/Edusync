@@ -1,0 +1,102 @@
+.stage-updates-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.stage-updates-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stage-updates-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: #eff6ff;
+  border-radius: 14px;
+  color: #2563eb;
+}
+
+.stage-updates-card h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.stage-updates-card p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.stage-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.stage-update-item {
+  padding: 20px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.stage-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.stage-item-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.stage-item-note {
+  margin: 0 0 12px;
+  color: #475569;
+  line-height: 1.7;
+}
+
+.stage-item-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.stage-badge {
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: white;
+}
+
+.stage-badge.completed {
+  background: #16a34a;
+}
+
+.stage-badge.in-progress {
+  background: #2563eb;
+}
+
+.stage-badge.needs-action {
+  background: #d97706;
+}
+
+.stage-badge.pending {
+  background: #f97316;
+}

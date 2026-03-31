@@ -1,35 +1,65 @@
- .projects-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
+ /* src/components/mentor/RecentNotifications.css */
 
-.project-card {
-  background: white;
-  border: 1px solid #f1f5f9;
+.notifications-card {
+  background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  border: 1px solid #e8eaf0;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
-.status-pill {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
 }
 
-.on-track { background: #dcfce7; color: #166534; }
-.delayed { background: #fee2e2; color: #991b1b; }
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-.progress-bar-bg {
-  height: 6px;
-  background: #f1f5f9;
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
   border-radius: 10px;
-  margin-top: 8px;
 }
 
-.progress-bar-fill {
-  height: 100%;
-  border-radius: 10px;
+.notif-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notif-icon-file     { background: #dbeafe; color: #3b82f6; }
+.notif-icon-alert    { background: #fee2e2; color: #ef4444; }
+.notif-icon-feedback { background: #dcfce7; color: #22c55e; }
+.notif-icon-deadline { background: #ffedd5; color: #f97316; }
+
+.notif-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0 0 3px 0;
+}
+
+.notif-date {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0;
 }
