@@ -1,6 +1,6 @@
- import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-// 1. Added 'login' to the interface so the app knows it exists
+// Auth context type
 interface AuthContextType {
   user: { name: string; role: string } | null;
   login: (userData: { name: string; role: string }) => void;
@@ -8,10 +8,11 @@ interface AuthContextType {
   logout: () => void;
 }
 
+// Create context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize state - will be set by useEffect
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -20,8 +21,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        console.log('✅ User loaded from localStorage:', JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        console.log('✅ User loaded from localStorage:', parsedUser);
       }
     } catch (err) {
       console.error('❌ Error loading user from localStorage:', err);
@@ -29,7 +31,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(false);
   }, []);
 
-  // This function updates the role
+  // Login function (ONLY ONE)
+  const login = (userData: { name: string; role: string }) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    console.log('✅ User logged in and saved to localStorage:', userData);
+  };
+
+  // Switch role
   const switchRole = (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => {
     setUser(prev => {
       const updated = prev ? { ...prev, role: newRole } : null;
@@ -40,28 +49,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const login = (userData: { name: string; role: string }) => {
-    setUser(userData);
-    // Save to localStorage so user stays logged in after page refresh
-    localStorage.setItem('user', JSON.stringify(userData));
-    console.log('✅ User logged in and saved to localStorage:', userData);
-  };
-
+  // Logout function
   const logout = () => {
     setUser(null);
-    // Clear from localStorage
     localStorage.removeItem('user');
     console.log('✅ User logged out and cleared from localStorage');
   };
 
   return (
-    // 4. Added 'login' to the Provider so other pages can use it
     <AuthContext.Provider value={{ user, login, switchRole, logout }}>
-      {children}
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 };
 
+// Custom hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
