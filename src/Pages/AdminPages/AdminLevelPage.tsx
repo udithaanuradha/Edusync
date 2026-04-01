@@ -36,28 +36,20 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   const fetchStagesWithFiles = async () => {
     try {
       setLoading(true);
-      const stagesRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
-      const stagesData = await stagesRes.json();
+      setError('');
+      
+      // We only need this one call because the backend already joins the files table
+      const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+      const data = await response.json();
 
-      if (!stagesData.success) {
+      if (data.success) {
+        // data.data already contains the stages with their nested files array
+        setStages(data.data);
+      } else {
         setError('Failed to load stages');
-        return;
       }
-
-      const stagesWithFiles = await Promise.all(
-        stagesData.data.map(async (stage: Stage) => {
-          try {
-            const filesRes = await fetch(`http://localhost:5000/api/projects/files/${stage.stage_id}`);
-            const filesData = await filesRes.json();
-            return { ...stage, files: filesData.success ? filesData.data : [] };
-          } catch {
-            return { ...stage, files: [] };
-          }
-        })
-      );
-
-      setStages(stagesWithFiles);
     } catch (err) {
+      console.error("Fetch error:", err);
       setError('Failed to connect to server');
     } finally {
       setLoading(false);
@@ -73,6 +65,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     });
   };
 
+  // Styles
   const cardStyle: React.CSSProperties = {
     backgroundColor: '#ffffff',
     border: '1px solid #e5e7eb',
@@ -90,7 +83,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: '700' as const,
+    fontWeight: '700',
     fontSize: '16px',
     flexShrink: 0,
   };
@@ -146,7 +139,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
               {stages.map((stage, index) => (
                 <div key={stage.stage_id} style={cardStyle}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-
                     <div style={badgeStyle}>
                       {index + 1}
                     </div>
@@ -175,6 +167,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                         <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
                       </div>
 
+                      {/* File Rendering Section */}
                       {stage.files && stage.files.length > 0 ? (
                         <div>
                           <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
@@ -182,7 +175,13 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                           </p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {stage.files.map((file) => (
-                              <a key={file.file_id} href={file.file_url} target="_blank" rel="noopener noreferrer" style={fileLinkStyle}>
+                              <a 
+                                key={file.file_id} 
+                                href={file.file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={fileLinkStyle}
+                              >
                                 📄 {file.file_name}
                               </a>
                             ))}
@@ -204,7 +203,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                     }}>
                       View Only
                     </div>
-
                   </div>
                 </div>
               ))}
