@@ -8,6 +8,7 @@ import AdminDashboard from './Pages/AdminPages/AdminDashboard';
 import StudentDashboard from './Pages/StudentPages/StudentDashboard';
 import CoordinatorDashboard from './Pages/CoordinatorPages/CoordinatorDashboard';
 import SupervisorDashboard from './Pages/SupervisorPages/SupervisorDashboard';
+import MentorDashboard from './Pages/MentorPages/MentorDashboard';
 import Level1Page from './Pages/CoordinatorPages/Level1Page';
 import Level2Page from './Pages/CoordinatorPages/Level2Page';
 import Level3Page from './Pages/CoordinatorPages/Level3Page';
@@ -17,7 +18,9 @@ import Level2Student from './Pages/StudentPages/Level2Student';
 import Level3Student from './Pages/StudentPages/Level3Student';
 import Level4Student from './Pages/StudentPages/Level4Student';
 import SupervisorLevelPage from './Pages/SupervisorPages/SupervisorLevelPage';
-import AdminLevelPage from './Pages/AdminPages/AdminLevelPage';
+import AdminLevelPage from './Pages/AdminPages/AdminLevelPage';       
+import Level2mentor from './Pages/MentorPages/Level2mentor';          
+import Level4mentor from './Pages/MentorPages/Level4mentor';          
 
 function App() {
   const { user } = useAuth();
@@ -50,6 +53,12 @@ function App() {
         element={user?.role === 'supervisor' ? <SupervisorDashboard /> : <Navigate to="/login" />}
       />
 
+      <Route 
+        path="/mentor" 
+        element={user?.role === 'mentor' ? <MentorDashboard /> : <Navigate to="/login" />} 
+      />
+
+      {/* ✅ Dashboard redirect - kept all roles including admin + supervisor */}
       <Route
         path="/dashboard"
         element={
@@ -57,6 +66,7 @@ function App() {
           user?.role === 'coordinator' ? <CoordinatorDashboard /> :
           user?.role === 'admin' ? <AdminDashboard /> :
           user?.role === 'supervisor' ? <SupervisorDashboard /> :
+          user?.role === 'mentor' ? <MentorDashboard /> :
           <Navigate to="/login" />
         }
       />
@@ -79,6 +89,7 @@ function App() {
           user?.role === 'coordinator' ? <Level2Page /> :
           user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={2} /> :
           user?.role === 'admin' ? <AdminLevelPage levelNumber={2} /> :
+          user?.role === 'mentor' ? <Level2mentor /> :   
           <Navigate to="/login" />
         } 
       />
@@ -101,6 +112,7 @@ function App() {
           user?.role === 'coordinator' ? <Level4Page /> :
           user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={4} /> :
           user?.role === 'admin' ? <AdminLevelPage levelNumber={4} /> :
+          user?.role === 'mentor' ? <Level4mentor /> :   
           <Navigate to="/login" />
         } 
       />
