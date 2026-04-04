@@ -7,16 +7,15 @@ import {
   MessageSquare,
   ClipboardList,
   FolderOpen,
-  UserCog,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   LucideIcon
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import './Sidebar.css';
 
-// --- TYPESCRIPT INTERFACES ---
 interface SubMenuItem {
   path: string;
   label: string;
@@ -35,9 +34,9 @@ interface MenuItem {
   hasSubmenu?: boolean;
   submenu?: AcademicLevel[] | SubMenuItem[];
 }
-// -----------------------------
 
 const Sidebar = () => {
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     academicLevel: false,
@@ -52,31 +51,42 @@ const Sidebar = () => {
     }
   };
 
+  // Build level items based on user role and level
+  const getLevelItems = (): AcademicLevel[] => {
+    const allLevels = [
+      { label: 'Level 1', path: '/dashboard/level-1' },
+      { label: 'Level 2', path: '/dashboard/level-2' },
+      { label: 'Level 3', path: '/dashboard/level-3' },
+      { label: 'Level 4', path: '/dashboard/level-4' },
+    ];
+
+    // Admin, coordinator, supervisor, mentor see all levels
+    if (
+      user?.role === 'admin' ||
+      user?.role === 'coordinator' ||
+      user?.role === 'supervisor' ||
+      user?.role === 'mentor'
+    ) {
+      return allLevels;
+    }
+
+    // Students only see their current level
+    if (user?.role === 'student') {
+      const studentLevel = user?.level || 1;
+      return allLevels.filter((_, index) => index + 1 === studentLevel);
+    }
+
+    return allLevels;
+  };
+
   const menuItems: MenuItem[] = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { 
+    {
       key: 'academicLevel',
-      icon: UsersGroup, 
+      icon: UsersGroup,
       label: 'Academic Level',
       hasSubmenu: true,
-      submenu: [
-        { 
-          label: 'Level 1', 
-          path: '/dashboard/level-1'
-        },
-        { 
-          label: 'Level 2', 
-          path: '/dashboard/level-2'
-        },
-        { 
-          label: 'Level 3', 
-          path: '/dashboard/level-3'
-        },
-        { 
-          label: 'Level 4', 
-          path: '/dashboard/level-4'
-        },
-      ]
+      submenu: getLevelItems()
     },
     { path: '/dashboard/calendar', icon: CalendarDays, label: 'Calendar' },
     { path: '/dashboard/communication', icon: MessageSquare, label: 'Communication' },
@@ -106,7 +116,7 @@ const Sidebar = () => {
           <div key={item.key || item.path || index}>
             {item.hasSubmenu ? (
               <>
-                <div 
+                <div
                   className={`nav-item expandable ${item.key && expandedMenus[item.key] ? 'expanded' : ''}`}
                   onClick={() => toggleMenu(item.key)}
                 >
@@ -114,10 +124,10 @@ const Sidebar = () => {
                   {!collapsed && (
                     <>
                       <span>{item.label}</span>
-                      <ChevronDown 
-                        size={18} 
+                      <ChevronDown
+                        size={18}
                         className="expand-icon"
-                        style={{ 
+                        style={{
                           transform: item.key && expandedMenus[item.key] ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.2s'
                         }}
