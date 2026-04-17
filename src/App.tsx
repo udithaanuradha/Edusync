@@ -71,11 +71,10 @@ function App() {
         }
       />
 
-      {/* Level 1 */}
+      {/* Level Routes - no restrictions */}
       <Route
         path="/dashboard/level-1"
         element={
-          user?.role === 'student' && user?.level !== 1 ? <Navigate to="/dashboard" /> :
           user?.role === 'student' ? <Level1Student /> :
           user?.role === 'coordinator' ? <Level1Page /> :
           user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={1} /> :
@@ -84,11 +83,9 @@ function App() {
         }
       />
 
-      {/* Level 2 */}
       <Route
         path="/dashboard/level-2"
         element={
-          user?.role === 'student' && user?.level !== 2 ? <Navigate to="/dashboard" /> :
           user?.role === 'student' ? <Level2Student /> :
           user?.role === 'coordinator' ? <Level2Page /> :
           user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={2} /> :
@@ -98,11 +95,9 @@ function App() {
         }
       />
 
-      {/* Level 3 */}
       <Route
         path="/dashboard/level-3"
         element={
-          user?.role === 'student' && user?.level !== 3 ? <Navigate to="/dashboard" /> :
           user?.role === 'student' ? <Level3Student /> :
           user?.role === 'coordinator' ? <Level3Page /> :
           user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={3} /> :
@@ -111,11 +106,9 @@ function App() {
         }
       />
 
-      {/* Level 4 */}
       <Route
         path="/dashboard/level-4"
         element={
-          user?.role === 'student' && user?.level !== 4 ? <Navigate to="/dashboard" /> :
           user?.role === 'student' ? <Level4Student /> :
           user?.role === 'coordinator' ? <Level4Page /> :
           user?.role === 'supervisor' ? <SupervisorLevelPage levelNumber={4} /> :
