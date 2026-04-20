@@ -21,6 +21,7 @@ import SupervisorLevelPage from './Pages/SupervisorPages/SupervisorLevelPage';
 import AdminLevelPage from './Pages/AdminPages/AdminLevelPage';
 import Level2mentor from './Pages/MentorPages/Level2mentor';
 import Level4mentor from './Pages/MentorPages/Level4mentor';
+import GroupRequest from './components/student/GroupRequest';
 
 function App() {
   const { user } = useAuth();
@@ -117,6 +118,8 @@ function App() {
           <Navigate to="/login" />
         }
       />
+
+      <Route path="/group-request" element={<GroupRequest />} />
 
     </Routes>
   );

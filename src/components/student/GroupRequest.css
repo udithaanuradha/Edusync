@@ -1,0 +1,123 @@
+.group-container {
+    max-width: 850px;
+    margin: 40px auto;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border: 1px solid #eee;
+}
+
+.group-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.group-header h1 {
+    color: #1a202c;
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.group-header p {
+    color: #718096;
+    font-size: 14px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.input-group input, 
+.input-group textarea, 
+.input-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    outline: none;
+    transition: border 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: #4299e1;
+    background-color: #fff;
+}
+
+.action-area {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #edf2f7;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* Button Styling */
+button {
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-request.none {
+    background-color: #3182ce;
+    color: white;
+}
+
+.btn-request.none:hover {
+    background-color: #2b6cb0;
+}
+
+.btn-request.pending {
+    background-color: #fefcbf;
+    color: #b7791f;
+    cursor: not-allowed;
+}
+
+.btn-request.approved {
+    background-color: #c6f6d5;
+    color: #2f855a;
+    border: 2px solid #48bb78;
+}
+
+.btn-final {
+    background-color: #667eea;
+    color: white;
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+}
+
+.btn-final:hover {
+    background-color: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.btn-final:disabled {
+    background-color: #cbd5e0;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
