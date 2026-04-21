@@ -4,6 +4,7 @@ import './GroupRequest.css';
 const GroupRequest = () => {
   const [supervisors, setSupervisors] = useState<{ id: number, name: string }[]>([]);
   const [requestStatus, setRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [rejectReason, setRejectReason] = useState('');
   const [isFinalized, setIsFinalized] = useState(false);
   const [requestId, setRequestId] = useState<number | null>(null); 
   
@@ -52,6 +53,7 @@ const GroupRequest = () => {
         setRequestStatus(data.status);
         setRequestId(data.request_id);
         setIsFinalized(!!data.is_final_submitted);
+        setRejectReason(data.reject_reason || data.rejection_reason || data.reason || '');
       }
     } catch (err) {
       console.error("Status check failed", err);
@@ -235,6 +237,12 @@ const GroupRequest = () => {
           >
             {isFinalized ? "Submitted to Coordinator" : "Final Submit to Coordinator"}
           </button>
+        )}
+
+        {requestStatus === 'rejected' && rejectReason && (
+          <div className="rejection-reason-box">
+            <strong>Rejected Reason:</strong> {rejectReason}
+          </div>
         )}
       </div>
     </div>
