@@ -7,14 +7,16 @@ import {
   MessageSquare,
   ClipboardList,
   FolderOpen,
+  UserCog,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   LucideIcon
 } from 'lucide-react';
-import './Sidebar.css';
+import '../shared/Sidebar.css'; // Path to your common CSS file
 
+// --- TYPESCRIPT INTERFACES ---
 interface SubMenuItem {
   path: string;
   label: string;
@@ -34,7 +36,7 @@ interface MenuItem {
   submenu?: AcademicLevel[] | SubMenuItem[];
 }
 
-const Sidebar = () => {
+const MentorSidebar = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     academicLevel: false,
@@ -50,16 +52,14 @@ const Sidebar = () => {
   };
 
   const menuItems: MenuItem[] = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    {
+    { path: '/mentor', icon: LayoutDashboard, label: 'Dashboard' },
+    { 
       key: 'academicLevel',
-      icon: UsersGroup,
+      icon: UsersGroup, 
       label: 'Academic Level',
       hasSubmenu: true,
       submenu: [
-        { label: 'Level 1', path: '/dashboard/level-1' },
         { label: 'Level 2', path: '/dashboard/level-2' },
-        { label: 'Level 3', path: '/dashboard/level-3' },
         { label: 'Level 4', path: '/dashboard/level-4' },
       ]
     },
@@ -91,7 +91,7 @@ const Sidebar = () => {
           <div key={item.key || item.path || index}>
             {item.hasSubmenu ? (
               <>
-                <div
+                <div 
                   className={`nav-item expandable ${item.key && expandedMenus[item.key] ? 'expanded' : ''}`}
                   onClick={() => toggleMenu(item.key)}
                 >
@@ -99,10 +99,10 @@ const Sidebar = () => {
                   {!collapsed && (
                     <>
                       <span>{item.label}</span>
-                      <ChevronDown
-                        size={18}
+                      <ChevronDown 
+                        size={18} 
                         className="expand-icon"
-                        style={{
+                        style={{ 
                           transform: item.key && expandedMenus[item.key] ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.2s'
                         }}
@@ -112,31 +112,17 @@ const Sidebar = () => {
                 </div>
                 {!collapsed && item.key && expandedMenus[item.key] && item.submenu && (
                   <div className="submenu">
-                    {item.key === 'academicLevel' ? (
-                      (item.submenu as AcademicLevel[]).map((level, levelIndex) => (
-                        <NavLink
-                          key={levelIndex}
-                          to={level.path}
-                          className={({ isActive }) =>
-                            `submenu-item ${isActive ? 'active' : ''}`
-                          }
-                        >
-                          {level.label}
-                        </NavLink>
-                      ))
-                    ) : (
-                      (item.submenu as SubMenuItem[]).map((subItem, subIndex) => (
-                        <NavLink
-                          key={subIndex}
-                          to={subItem.path}
-                          className={({ isActive }) =>
-                            `submenu-item ${isActive ? 'active' : ''}`
-                          }
-                        >
-                          {subItem.label}
-                        </NavLink>
-                      ))
-                    )}
+                    {(item.submenu as AcademicLevel[]).map((level, levelIndex) => (
+                      <NavLink
+                        key={levelIndex}
+                        to={level.path}
+                        className={({ isActive }) =>
+                          `submenu-item ${isActive ? 'active' : ''}`
+                        }
+                      >
+                        {level.label}
+                      </NavLink>
+                    ))}
                   </div>
                 )}
               </>
@@ -158,5 +144,5 @@ const Sidebar = () => {
     </aside>
   );
 };
-
-export default Sidebar;
+ 
+export default MentorSidebar;

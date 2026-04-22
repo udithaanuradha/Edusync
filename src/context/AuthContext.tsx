@@ -1,69 +1,55 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Auth context type
+interface User {
+  id: number;
+  name: string;
+  role: string;
+  email: string;
+  level?: number;
+}
+
 interface AuthContextType {
-  user: { name: string; role: string } | null;
-  login: (userData: { name: string; role: string }) => void;
+  user: User | null;
+  login: (userData: User) => void;
   switchRole: (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => void;
   logout: () => void;
 }
 
-// Create context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    // Persist user across page refresh
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-  // Load user from localStorage on app start
-  useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        console.log('✅ User loaded from localStorage:', parsedUser);
-      }
-    } catch (err) {
-      console.error('❌ Error loading user from localStorage:', err);
-    }
-    setIsLoading(false);
-  }, []);
-
-  // Login function (ONLY ONE)
-  const login = (userData: { name: string; role: string }) => {
+  const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    console.log('✅ User logged in and saved to localStorage:', userData);
   };
 
-  // Switch role
   const switchRole = (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => {
     setUser(prev => {
-      const updated = prev ? { ...prev, role: newRole } : null;
-      if (updated) {
-        localStorage.setItem('user', JSON.stringify(updated));
-      }
+      if (!prev) return null;
+      const updated = { ...prev, role: newRole };
+      localStorage.setItem('user', JSON.stringify(updated));
       return updated;
     });
   };
 
-  // Logout function
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    console.log('✅ User logged out and cleared from localStorage');
   };
 
   return (
     <AuthContext.Provider value={{ user, login, switchRole, logout }}>
-      {!isLoading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
