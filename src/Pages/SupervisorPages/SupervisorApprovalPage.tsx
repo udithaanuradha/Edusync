@@ -100,18 +100,18 @@ const getViewerIdentity = (): ViewerIdentity => {
 };
 
 const getPendingPaths = (viewer: ViewerIdentity): string[] => {
-  const idQuery = viewer.idStr ? `&supervisor_id=${encodeURIComponent(viewer.idStr)}` : '';
-  const nameQuery = viewer.name ? `&supervisor_name=${encodeURIComponent(viewer.name)}` : '';
   const idPath = viewer.idStr ? `/${encodeURIComponent(viewer.idStr)}` : '';
 
   return [
+    `/pending${idPath}`,
+    `/pending?supervisor_id=${encodeURIComponent(viewer.idStr)}`,
     '/pending-requests',
     '/pending-requests?status=pending',
     '/supervisor/pending-requests',
     `/supervisor/pending-requests${idPath}`,
     `/supervisor${idPath}/pending-requests`,
-    `/supervisor/requests?status=pending${idQuery}${nameQuery}`,
-    `/requests?status=pending${idQuery}${nameQuery}`,
+    `/supervisor/requests?status=pending&supervisor_id=${encodeURIComponent(viewer.idStr)}`,
+    `/requests?status=pending&supervisor_id=${encodeURIComponent(viewer.idStr)}`,
     `/requests/supervisor${idPath}?status=pending`,
     '/supervisor/requests?status=pending',
   ];
@@ -138,6 +138,7 @@ const SupervisorApprovalPage: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [actionBusy, setActionBusy] = useState<number | null>(null);
   const viewer = getViewerIdentity();
+  const hasViewerId = Boolean(viewer.idStr);
 
   const authHeaders = {
     Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -146,6 +147,12 @@ const SupervisorApprovalPage: React.FC = () => {
   const loadPendingRequests = async () => {
     setLoading(true);
     setError('');
+
+    if (!hasViewerId) {
+      setError('Supervisor identity not found. Please login again.');
+      setLoading(false);
+      return;
+    }
 
     try {
       let loaded = false;
@@ -212,8 +219,9 @@ const SupervisorApprovalPage: React.FC = () => {
   };
 
   const handleApprove = async (requestId: number) => {
-    const body = JSON.stringify({ approved_by: viewer.idStr, supervisor_id: viewer.idStr });
+    const body = JSON.stringify({ request_id: requestId, approved_by: viewer.idStr, supervisor_id: viewer.idStr });
     await runAction(requestId, [
+      { path: '/approve', method: 'PUT', body },
       { path: `/requests/${requestId}/approve`, method: 'PUT', body },
       { path: `/approve/${requestId}`, method: 'PUT', body },
       { path: `/approve/${requestId}`, method: 'POST', body },
@@ -240,12 +248,15 @@ const SupervisorApprovalPage: React.FC = () => {
     }
 
     const body = JSON.stringify({
+      request_id: rejectingId,
+      rejection_reason: trimmedReason,
       reason: trimmedReason,
       reject_reason: trimmedReason,
       rejected_by: viewer.idStr,
       supervisor_id: viewer.idStr,
     });
     const success = await runAction(rejectingId, [
+      { path: '/reject', method: 'PUT', body },
       { path: `/requests/${rejectingId}/reject`, method: 'PUT', body },
       { path: `/reject/${rejectingId}`, method: 'PUT', body },
       { path: `/reject/${rejectingId}`, method: 'POST', body },

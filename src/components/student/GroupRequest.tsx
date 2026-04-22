@@ -45,15 +45,34 @@ const GroupRequest = () => {
     if (!user?.id) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await res.json();
-      if (res.ok && data) {
-        setRequestStatus(data.status);
-        setRequestId(data.request_id);
-        setIsFinalized(!!data.is_final_submitted);
-        setRejectReason(data.reject_reason || data.rejection_reason || data.reason || '');
+      const endpoints = [
+        `http://localhost:5000/api/groups/student/${user.id}/requests`,
+        `http://localhost:5000/api/groups/student/${user.id}`,
+        `http://localhost:5000/api/groups/my-requests/${user.id}`,
+        `http://localhost:5000/api/groups/my-status/${user.id}`,
+      ];
+
+      for (const endpoint of endpoints) {
+        const res = await fetch(endpoint, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        if (!res.ok) continue;
+
+        const data = await res.json();
+        const latest = Array.isArray(data)
+          ? data[0]
+          : Array.isArray(data?.requests)
+            ? data.requests[0]
+            : data;
+
+        if (!latest) continue;
+
+        setRequestStatus((latest.status || 'none') as 'none' | 'pending' | 'approved' | 'rejected');
+        setRequestId(Number(latest.request_id || latest.requestId || latest.id || null));
+        setIsFinalized(Boolean(latest.is_final_submitted));
+        setRejectReason(latest.reject_reason || latest.rejection_reason || latest.reason || latest.decision_message || '');
+        break;
       }
     } catch (err) {
       console.error("Status check failed", err);
