@@ -5,7 +5,7 @@ import StatCards from '../../components/coordinator/StatCards';
 import RecentProjects from '../../components/coordinator/RecentProjects';
 import './CoordinatorDashboard.css'; 
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
-import Announcements from '../../components/coordinator/Announcements'; 
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 
 const CoordinatorDashboard: React.FC = () => {
   return (
@@ -40,11 +40,10 @@ const CoordinatorDashboard: React.FC = () => {
   {/* Right Column (Narrower) */}
   <div className="side-content-column">
     <UpcomingDeadlines />
-    {/* You can also add Announcements here if you want them on the right */}
+    <AnnouncementWidget title="Announcements" maxItems={3} showEditDeleteButtons={false} />
   </div>
 
 </div>
-   <Announcements />
 
           </div>
         </main>

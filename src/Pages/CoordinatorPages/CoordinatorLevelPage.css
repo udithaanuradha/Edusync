@@ -1,0 +1,41 @@
+.level-tabs-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 6px;
+  margin-bottom: 16px;
+}
+
+.level-tab-btn {
+  border: none;
+  background: transparent;
+  color: #475569;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.level-tab-btn.active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.level-tab-panel {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .level-tabs-wrap {
+    width: 100%;
+  }
+
+  .level-tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+  }
+}
