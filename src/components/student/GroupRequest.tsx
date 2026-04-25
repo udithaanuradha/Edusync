@@ -210,9 +210,12 @@ const GroupRequest = () => {
             />
           </div>
           <div className="input-group">
-            <label>Primary Supervisor</label>
-            <select 
-              name="primarySupervisor" 
+            <label htmlFor="primarySupervisor">Primary Supervisor</label>
+<select 
+  id="primarySupervisor"  // Add this ID
+  name="primarySupervisor"
+   
+ 
               value={formData.primarySupervisor}
               onChange={handleInputChange}
               disabled={requestStatus !== 'none' && requestStatus !== 'rejected'}
