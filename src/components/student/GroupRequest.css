@@ -1,34 +1,38 @@
 .group-container {
-    max-width: 850px;
-    margin: 40px auto;
-    padding: 40px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 32px;
     background: #ffffff;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    border: 1px solid #eee;
+    border: 1px solid #e2e8f0;
 }
 
 .group-header {
-    text-align: center;
-    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 28px;
 }
 
 .group-header h1 {
-    color: #1a202c;
+    color: #0f172a;
     font-size: 28px;
-    margin-bottom: 8px;
+    margin: 0;
 }
 
 .group-header p {
-    color: #718096;
-    font-size: 14px;
+    color: #475569;
+    font-size: 15px;
+    margin: 0;
 }
 
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    gap: 24px;
 }
 
 .input-group {
@@ -38,35 +42,38 @@
 .input-group label {
     display: block;
     font-weight: 600;
-    margin-bottom: 8px;
-    color: #4a5568;
+    margin-bottom: 10px;
+    color: #334155;
     font-size: 14px;
 }
 
-.input-group input, 
-.input-group textarea, 
+.input-group input,
+.input-group textarea,
 .input-group select {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 14px;
     background-color: #f8fafc;
     outline: none;
-    transition: border 0.3s ease;
+    transition: border 0.3s ease, background 0.3s ease;
 }
 
-.input-group input:focus {
-    border-color: #4299e1;
-    background-color: #fff;
+.input-group input:focus,
+.input-group textarea:focus,
+.input-group select:focus {
+    border-color: #2563eb;
+    background-color: #ffffff;
 }
 
 .action-area {
-    margin-top: 40px;
-    padding-top: 30px;
-    border-top: 1px solid #edf2f7;
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid #e2e8f0;
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 16px;
 }
 
 /* Button Styling */
