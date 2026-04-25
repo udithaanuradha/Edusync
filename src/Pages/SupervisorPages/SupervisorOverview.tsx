@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import './SupervisorOverview.css';
 
 const notificationTabs = ['overall', 'Level1', 'level2', 'level3', 'admin', 'coordinator'] as const;
@@ -140,10 +141,7 @@ const SupervisorOverview: React.FC = () => {
             </div>
           </div>
 
-          <div className="announcement-card">
-            <h3>Create announcement</h3>
-            <button className="create-btn" type="button">create</button>
-          </div>
+          <AnnouncementWidget title="Announcements" maxItems={4} />
 
           <div className="message-card">
             <div className="message-header">

@@ -14,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard' }) => {
     <header className="header">
       <div className="header-content">
         <div className="header-left">
-          <h1 className="page-title">{pageTitle}</h1>
+          {/* Page title removed - each page displays its own title below */}
         </div>
 
         <div className="header-right">

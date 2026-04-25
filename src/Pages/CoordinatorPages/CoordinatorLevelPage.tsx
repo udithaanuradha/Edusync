@@ -3,10 +3,12 @@ import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
+import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
+import { ApprovedGroupRequest } from '../../components/coordinator/groupRequestTypes';
 import './CoordinatorDashboard.css';
 import './CoordinatorLevelPage.css';
 
-type TabKey = 'stages' | 'groups';
+type TabKey = 'stages' | 'groups' | 'requests';
 
 interface CoordinatorLevelPageProps {
   levelNumber: number;
@@ -14,6 +16,12 @@ interface CoordinatorLevelPageProps {
 
 const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('stages');
+  const [prefillRequest, setPrefillRequest] = useState<ApprovedGroupRequest | null>(null);
+
+  const handleCreateGroupFromRequest = (request: ApprovedGroupRequest) => {
+    setPrefillRequest(request);
+    setActiveTab('groups');
+  };
 
   return (
     <div className="app-layout" style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}>
@@ -50,13 +58,30 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
               >
                 Project Groups
               </button>
+              <button
+                role="tab"
+                className={`level-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
+                aria-selected={activeTab === 'requests'}
+                onClick={() => setActiveTab('requests')}
+              >
+                Student Submissions
+              </button>
             </div>
 
             <section className="level-tab-panel">
               {activeTab === 'stages' ? (
                 <StageManagement levelNumber={levelNumber} />
+              ) : activeTab === 'groups' ? (
+                <GroupManagement
+                  levelNumber={levelNumber}
+                  initialRequest={prefillRequest}
+                  onPrefillHandled={() => setPrefillRequest(null)}
+                />
               ) : (
-                <GroupManagement levelNumber={levelNumber} />
+                <ApprovedRequests
+                  levelNumber={levelNumber}
+                  onCreateGroup={handleCreateGroupFromRequest}
+                />
               )}
             </section>
           </div>

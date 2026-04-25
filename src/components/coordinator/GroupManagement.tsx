@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Users, X } from 'lucide-react';
 import './GroupManagement.css';
+import { ApprovedGroupRequest } from './groupRequestTypes';
 
 type GroupApiRecord = Record<string, unknown>;
 
@@ -35,7 +36,11 @@ interface GroupView {
 
 interface GroupManagementProps {
   levelNumber: number;
+  initialRequest?: ApprovedGroupRequest | null;
+  onPrefillHandled?: () => void;
 }
+
+const STUDENT_INDEX_REGEX = /\b\d{6}[A-Za-z]\b/g;
 
 const normalizeGroup = (raw: GroupApiRecord): GroupView => {
   const id =
@@ -76,7 +81,7 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
   return { id, name, supervisor, memberCount, members, leaderName };
 };
 
-const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber }) => {
+const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialRequest = null, onPrefillHandled }) => {
   const [groups, setGroups] = useState<GroupView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,12 +176,12 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber }) => {
       .filter((item): item is SupervisorOption => item !== null);
   };
 
-  const fetchSupervisors = async (query: string) => {
+  const fetchSupervisors = async (query: string): Promise<SupervisorOption[]> => {
     const q = query.trim();
     if (!q) {
       setSupervisorOptions([]);
       setSupervisorSearchError(null);
-      return;
+      return [];
     }
 
     const customEndpoint = (import.meta.env.VITE_SUPERVISOR_SEARCH_ENDPOINT as string | undefined)?.trim();
@@ -216,7 +221,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber }) => {
           if (mapped.length > 0) {
             setSupervisorOptions(mapped);
             setSupervisorSearchError(null);
-            return;
+            return mapped;
           }
         } catch {
           // Try the next endpoint shape.
@@ -229,10 +234,102 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber }) => {
           'Supervisor list API is not available. Please add a backend endpoint for supervisor search or set VITE_SUPERVISOR_SEARCH_ENDPOINT.'
         );
       }
+      return [];
     } finally {
       setSupervisorSearching(false);
     }
   };
+
+  const fetchStudentByIndex = async (indexNumber: string): Promise<Student | null> => {
+    const response = await fetch(
+      `http://localhost:5000/api/users/search?uniId=${encodeURIComponent(indexNumber)}&level=${levelNumber}`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (!data?.success || !data?.student) {
+      return null;
+    }
+
+    return data.student as Student;
+  };
+
+  const prefillFromApprovedRequest = async (request: ApprovedGroupRequest) => {
+    setIsModalOpen(true);
+    setGroupName(request.groupName || '');
+    setSearchIndex('');
+
+    const supervisorName = request.supervisorName?.trim() || '';
+    setSupervisorQuery(supervisorName);
+    if (supervisorName) {
+      const supervisorCandidates = await fetchSupervisors(supervisorName);
+      const normalizedTarget = supervisorName.toLowerCase();
+      const exact = supervisorCandidates.find(
+        (candidate) => candidate.name.toLowerCase() === normalizedTarget
+      );
+      if (exact) {
+        setSelectedSupervisor(exact);
+        setSupervisorQuery(exact.name);
+        setSupervisorOptions([]);
+      }
+    }
+
+    let resolvedMembers: Student[] = [];
+
+    if (Array.isArray(request.resolvedMembers) && request.resolvedMembers.length > 0) {
+      resolvedMembers = request.resolvedMembers
+        .slice(0, 5)
+        .map((member) => ({
+          id: member.id,
+          name: member.name,
+          university_id: member.university_id,
+          email: member.email || '',
+          level: member.level || levelNumber,
+        }));
+    } else {
+      const extractedIndexes = [...new Set((request.membersList.match(STUDENT_INDEX_REGEX) || []).map((id) => id.toUpperCase()))]
+        .slice(0, 5);
+
+      for (const index of extractedIndexes) {
+        try {
+          const student = await fetchStudentByIndex(index);
+          if (student && !resolvedMembers.some((member) => member.id === student.id)) {
+            resolvedMembers.push(student);
+          }
+        } catch {
+          // Skip invalid entries and continue parsing the rest.
+        }
+      }
+    }
+
+    setMembers(resolvedMembers);
+
+    const normalizedLeader = (request.groupLeader || '').trim().toLowerCase();
+    const leader = resolvedMembers.find((member) => {
+      const memberName = member.name.trim().toLowerCase();
+      return memberName.includes(normalizedLeader) || normalizedLeader.includes(memberName);
+    });
+
+    if (leader) {
+      setLeaderId(String(leader.id));
+    } else {
+      setLeaderId(resolvedMembers.length > 0 ? String(resolvedMembers[0].id) : '');
+    }
+  };
+
+  useEffect(() => {
+    if (!initialRequest) return;
+
+    const run = async () => {
+      await prefillFromApprovedRequest(initialRequest);
+      onPrefillHandled?.();
+    };
+
+    void run();
+  }, [initialRequest, onPrefillHandled]);
 
   useEffect(() => {
     if (!isModalOpen) return;

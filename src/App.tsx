@@ -21,6 +21,9 @@ import SupervisorLevelPage from './pages/SupervisorPages/SupervisorLevelPage';
 import AdminLevelPage from './pages/AdminPages/AdminLevelPage';
 import Level2mentor from './pages/MentorPages/Level2mentor';
 import Level4mentor from './pages/MentorPages/Level4mentor';
+import GroupRequest from './components/student/GroupRequest';
+import SupervisorApprovalPage from './pages/SupervisorPages/SupervisorApprovalPage';
+import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
 
 function App() {
   const { user } = useAuth();
@@ -116,6 +119,21 @@ function App() {
           user?.role === 'mentor' ? <Level4mentor /> :
           <Navigate to="/login" />
         }
+      />
+
+      <Route path="/group-request" element={<GroupRequest />} />
+
+      <Route
+        path="/dashboard/announcements"
+        element={
+          user?.role === 'coordinator' ? <AnnouncementsPage /> :
+          <Navigate to="/login" />
+        }
+      />
+
+      <Route
+        path="/supervisor/approval"
+        element={user?.role === 'supervisor' ? <SupervisorApprovalPage /> : <Navigate to="/login" />}
       />
 
     </Routes>
