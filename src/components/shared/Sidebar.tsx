@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users as UsersGroup,
@@ -11,9 +11,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  LucideIcon
-} from 'lucide-react';
-import './Sidebar.css';
+  LucideIcon,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import "./Sidebar.css";
 
 interface SubMenuItem {
   path: string;
@@ -36,42 +37,60 @@ interface MenuItem {
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
+  const { user } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     academicLevel: false,
   });
 
+  const announcementsPath =
+    user?.role === "supervisor"
+      ? "/supervisor/announcements"
+      : "/dashboard/announcements";
+
   const toggleMenu = (menuKey?: string) => {
     if (!collapsed && menuKey) {
-      setExpandedMenus(prev => ({
+      setExpandedMenus((prev) => ({
         ...prev,
-        [menuKey]: !prev[menuKey]
+        [menuKey]: !prev[menuKey],
       }));
     }
   };
 
   const menuItems: MenuItem[] = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     {
-      key: 'academicLevel',
+      key: "academicLevel",
       icon: UsersGroup,
-      label: 'Academic Level',
+      label: "Academic Level",
       hasSubmenu: true,
       submenu: [
-        { label: 'Level 1', path: '/dashboard/level-1' },
-        { label: 'Level 2', path: '/dashboard/level-2' },
-        { label: 'Level 3', path: '/dashboard/level-3' },
-        { label: 'Level 4', path: '/dashboard/level-4' },
-      ]
+        { label: "Level 1", path: "/dashboard/level-1" },
+        { label: "Level 2", path: "/dashboard/level-2" },
+        { label: "Level 3", path: "/dashboard/level-3" },
+        { label: "Level 4", path: "/dashboard/level-4" },
+      ],
     },
-    { path: '/dashboard/calendar', icon: CalendarDays, label: 'Calendar' },
-    { path: '/dashboard/communication', icon: MessageSquare, label: 'Communication' },
-    { path: '/dashboard/announcements', icon: ClipboardList, label: 'Announcements' },
-    { path: '/dashboard/project-groups', icon: FolderOpen, label: 'Project Groups' },
-    { path: '/dashboard/project-delays', icon: AlertTriangle, label: 'Project Delays' },
+    { path: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
+    {
+      path: "/dashboard/communication",
+      icon: MessageSquare,
+      label: "Communication",
+    },
+    { path: announcementsPath, icon: ClipboardList, label: "Announcements" },
+    {
+      path: "/dashboard/project-groups",
+      icon: FolderOpen,
+      label: "Project Groups",
+    },
+    {
+      path: "/dashboard/project-delays",
+      icon: AlertTriangle,
+      label: "Project Delays",
+    },
   ];
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-header">
         <div className="logo-container">
           <div className="logo-icon">E</div>
@@ -80,7 +99,7 @@ const Sidebar = () => {
         <button
           className="collapse-btn"
           onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
@@ -92,7 +111,7 @@ const Sidebar = () => {
             {item.hasSubmenu ? (
               <>
                 <div
-                  className={`nav-item expandable ${item.key && expandedMenus[item.key] ? 'expanded' : ''}`}
+                  className={`nav-item expandable ${item.key && expandedMenus[item.key] ? "expanded" : ""}`}
                   onClick={() => toggleMenu(item.key)}
                 >
                   <item.icon size={22} />
@@ -103,49 +122,57 @@ const Sidebar = () => {
                         size={18}
                         className="expand-icon"
                         style={{
-                          transform: item.key && expandedMenus[item.key] ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s'
+                          transform:
+                            item.key && expandedMenus[item.key]
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                          transition: "transform 0.2s",
                         }}
                       />
                     </>
                   )}
                 </div>
-                {!collapsed && item.key && expandedMenus[item.key] && item.submenu && (
-                  <div className="submenu">
-                    {item.key === 'academicLevel' ? (
-                      (item.submenu as AcademicLevel[]).map((level, levelIndex) => (
-                        <NavLink
-                          key={levelIndex}
-                          to={level.path}
-                          className={({ isActive }) =>
-                            `submenu-item ${isActive ? 'active' : ''}`
-                          }
-                        >
-                          {level.label}
-                        </NavLink>
-                      ))
-                    ) : (
-                      (item.submenu as SubMenuItem[]).map((subItem, subIndex) => (
-                        <NavLink
-                          key={subIndex}
-                          to={subItem.path}
-                          className={({ isActive }) =>
-                            `submenu-item ${isActive ? 'active' : ''}`
-                          }
-                        >
-                          {subItem.label}
-                        </NavLink>
-                      ))
-                    )}
-                  </div>
-                )}
+                {!collapsed &&
+                  item.key &&
+                  expandedMenus[item.key] &&
+                  item.submenu && (
+                    <div className="submenu">
+                      {item.key === "academicLevel"
+                        ? (item.submenu as AcademicLevel[]).map(
+                            (level, levelIndex) => (
+                              <NavLink
+                                key={levelIndex}
+                                to={level.path}
+                                className={({ isActive }) =>
+                                  `submenu-item ${isActive ? "active" : ""}`
+                                }
+                              >
+                                {level.label}
+                              </NavLink>
+                            ),
+                          )
+                        : (item.submenu as SubMenuItem[]).map(
+                            (subItem, subIndex) => (
+                              <NavLink
+                                key={subIndex}
+                                to={subItem.path}
+                                className={({ isActive }) =>
+                                  `submenu-item ${isActive ? "active" : ""}`
+                                }
+                              >
+                                {subItem.label}
+                              </NavLink>
+                            ),
+                          )}
+                    </div>
+                  )}
               </>
             ) : (
               <NavLink
-                to={item.path || '#'}
-                end={item.path === '/dashboard'}
+                to={item.path || "#"}
+                end={item.path === "/dashboard"}
                 className={({ isActive }) =>
-                  `nav-item ${isActive ? 'active' : ''}`
+                  `nav-item ${isActive ? "active" : ""}`
                 }
               >
                 <item.icon size={22} />
