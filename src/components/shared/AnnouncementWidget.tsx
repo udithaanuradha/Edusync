@@ -1,7 +1,12 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { Megaphone } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import './AnnouncementWidget.css';
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { Megaphone } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import "./AnnouncementWidget.css";
 
 type AnnouncementItem = {
   id: number;
@@ -9,34 +14,90 @@ type AnnouncementItem = {
   message: string;
   target_audience: string;
   author_name: string;
+  author_role?: string;
+  supervisor_id?: number | string;
   created_at: string;
 };
 
-const API_BASE = 'http://localhost:5000/api/announcements';
+const API_BASE = "http://localhost:5000/api/announcements";
 
 interface AnnouncementWidgetProps {
   title?: string;
   maxItems?: number;
   refreshDep?: number;
   showEditDeleteButtons?: boolean;
+  scope?: "all" | "own" | "others";
+  useRoleQuery?: boolean;
 }
 
-const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidgetProps>(
-  ({ title = 'Announcements', maxItems = 5, refreshDep = 0, showEditDeleteButtons = false }, ref) => {
+const AnnouncementWidget = forwardRef<
+  { refresh: () => void },
+  AnnouncementWidgetProps
+>(
+  (
+    {
+      title = "Announcements",
+      maxItems = 5,
+      refreshDep = 0,
+      showEditDeleteButtons = false,
+      scope = "all",
+      useRoleQuery = true,
+    },
+    ref,
+  ) => {
     const { user } = useAuth();
     const [items, setItems] = useState<AnnouncementItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [editTitle, setEditTitle] = useState('');
-    const [editMessage, setEditMessage] = useState('');
+    const [editTitle, setEditTitle] = useState("");
+    const [editMessage, setEditMessage] = useState("");
 
     const roleLabel = user?.role
       ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
-      : '';
+      : "";
+
+    const normalize = (value?: string) => value?.trim().toLowerCase() ?? "";
+
+    const isOwnedByCurrentSupervisor = (item: AnnouncementItem) => {
+      if (user?.role !== "supervisor") {
+        return false;
+      }
+
+      const currentSupervisorId = String(user?.id ?? "").trim();
+      const itemSupervisorId = String(item.supervisor_id ?? "").trim();
+      if (
+        currentSupervisorId &&
+        itemSupervisorId &&
+        currentSupervisorId === itemSupervisorId
+      ) {
+        return true;
+      }
+
+      const currentName = normalize(user?.name);
+      const authorName = normalize(item.author_name);
+      const authorRole = normalize(item.author_role);
+
+      return (
+        authorRole === "supervisor" &&
+        Boolean(currentName && authorName && currentName === authorName)
+      );
+    };
+
+    const applyScopeFilter = (items: AnnouncementItem[]) => {
+      if (scope === "own") {
+        return items.filter((item) => isOwnedByCurrentSupervisor(item));
+      }
+
+      if (scope === "others") {
+        return items.filter((item) => !isOwnedByCurrentSupervisor(item));
+      }
+
+      return items;
+    };
 
     const loadAnnouncements = async () => {
-      if (!roleLabel && !user?.name) {
+      if (useRoleQuery && !roleLabel && !user?.name) {
         setItems([]);
         setLoading(false);
         return;
@@ -44,29 +105,49 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
 
       try {
         setLoading(true);
-        setError('');
+        setError("");
 
         let url = API_BASE;
-        
-        // Pass role, level, and user name for smart filtering based on Rule of Relevance
-        const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : '';
-        const nameParam = user?.name ? `&name=${encodeURIComponent(user.name)}` : '';
-        url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}`;
-        
-        console.log('Fetching announcements from:', url);
-        console.log('User details:', { roleLabel, level: user?.level, name: user?.name });
-        
+
+        if (useRoleQuery) {
+          // Pass role, level, and user name for smart filtering based on Rule of Relevance
+          const levelParam = user?.level
+            ? `&level=${encodeURIComponent(String(user.level))}`
+            : "";
+          const nameParam = user?.name
+            ? `&name=${encodeURIComponent(user.name)}`
+            : "";
+          const supervisorParam =
+            user?.role === "supervisor" && user?.id
+              ? `&supervisor_id=${encodeURIComponent(String(user.id))}`
+              : "";
+          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}${supervisorParam}`;
+        }
+
+        console.log("Fetching announcements from:", url);
+        console.log("User details:", {
+          roleLabel,
+          level: user?.level,
+          name: user?.name,
+        });
+
         const response = await fetch(url);
 
-        console.log('Fetch response status:', response.status, response.statusText);
+        console.log(
+          "Fetch response status:",
+          response.status,
+          response.statusText,
+        );
 
         if (!response.ok) {
-          throw new Error(`Failed to load announcements: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Failed to load announcements: ${response.status} ${response.statusText}`,
+          );
         }
 
         const data = await response.json();
-        console.log('Raw API response:', data);
-        
+        console.log("Raw API response:", data);
+
         // Handle both array and object responses
         let list = [];
         if (Array.isArray(data)) {
@@ -76,13 +157,15 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         } else if (data?.data && Array.isArray(data.data)) {
           list = data.data;
         }
-        
-        console.log('Parsed announcements list:', list);
-        
-        setItems(list.slice(0, maxItems));
+
+        console.log("Parsed announcements list:", list);
+
+        const filteredList = applyScopeFilter(list);
+        setItems(filteredList.slice(0, maxItems));
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load announcements.';
-        console.error('Load announcements error:', err);
+        const message =
+          err instanceof Error ? err.message : "Failed to load announcements.";
+        console.error("Load announcements error:", err);
         setError(message);
         setItems([]);
       } finally {
@@ -95,25 +178,30 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
     }));
 
     const deleteAnnouncement = async (id: number) => {
-      if (!window.confirm('Are you sure you want to delete this announcement?')) {
+      if (
+        !window.confirm("Are you sure you want to delete this announcement?")
+      ) {
         return;
       }
 
       try {
         const response = await fetch(`${API_BASE}/${id}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to delete announcement: ${response.statusText}`);
+          throw new Error(
+            `Failed to delete announcement: ${response.statusText}`,
+          );
         }
 
-        console.log('Announcement deleted successfully');
+        console.log("Announcement deleted successfully");
         loadAnnouncements(); // Refresh the list
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to delete announcement.';
-        console.error('Delete announcement error:', err);
+        const message =
+          err instanceof Error ? err.message : "Failed to delete announcement.";
+        console.error("Delete announcement error:", err);
         alert(`Error: ${message}`);
       }
     };
@@ -126,20 +214,20 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
 
     const cancelEdit = () => {
       setEditingId(null);
-      setEditTitle('');
-      setEditMessage('');
+      setEditTitle("");
+      setEditMessage("");
     };
 
     const updateAnnouncement = async (id: number) => {
       if (!editTitle.trim() || !editMessage.trim()) {
-        alert('Title and message cannot be empty');
+        alert("Title and message cannot be empty");
         return;
       }
 
       try {
         const response = await fetch(`${API_BASE}/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: editTitle.trim(),
             message: editMessage.trim(),
@@ -147,26 +235,38 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to update announcement: ${response.statusText}`);
+          throw new Error(
+            `Failed to update announcement: ${response.statusText}`,
+          );
         }
 
-        console.log('Announcement updated successfully');
+        console.log("Announcement updated successfully");
         setEditingId(null);
         loadAnnouncements(); // Refresh the list
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to update announcement.';
-        console.error('Update announcement error:', err);
+        const message =
+          err instanceof Error ? err.message : "Failed to update announcement.";
+        console.error("Update announcement error:", err);
         alert(`Error: ${message}`);
       }
     };
 
     useEffect(() => {
       loadAnnouncements();
-    }, [roleLabel, user?.level, user?.name, maxItems, refreshDep]);
+    }, [
+      roleLabel,
+      user?.level,
+      user?.name,
+      maxItems,
+      refreshDep,
+      scope,
+      useRoleQuery,
+      user?.id,
+    ]);
 
     const formatTime = (value: string) => {
       const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return 'Unknown time';
+      if (Number.isNaN(date.getTime())) return "Unknown time";
       return date.toLocaleString();
     };
 
@@ -177,15 +277,25 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
             <Megaphone size={18} />
             <h3>{title}</h3>
           </div>
-          <button type="button" className="announcement-widget-refresh" onClick={loadAnnouncements}>
+          <button
+            type="button"
+            className="announcement-widget-refresh"
+            onClick={loadAnnouncements}
+          >
             Refresh
           </button>
         </div>
 
-        {loading && <p className="announcement-widget-muted">Loading announcements...</p>}
-        {!loading && error && <p className="announcement-widget-error">{error}</p>}
+        {loading && (
+          <p className="announcement-widget-muted">Loading announcements...</p>
+        )}
+        {!loading && error && (
+          <p className="announcement-widget-error">{error}</p>
+        )}
         {!loading && !error && items.length === 0 && (
-          <p className="announcement-widget-muted">No announcements available.</p>
+          <p className="announcement-widget-muted">
+            No announcements available.
+          </p>
         )}
 
         {!loading && !error && items.length > 0 && (
@@ -215,10 +325,7 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
                       >
                         Save
                       </button>
-                      <button
-                        className="edit-cancel-btn"
-                        onClick={cancelEdit}
-                      >
+                      <button className="edit-cancel-btn" onClick={cancelEdit}>
                         Cancel
                       </button>
                     </div>
@@ -248,9 +355,10 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="announcement-metadata-line">
-                      Target: {item.target_audience} • By: {item.author_name} • {formatTime(item.created_at)}
+                      Target: {item.target_audience} • By: {item.author_name} •{" "}
+                      {formatTime(item.created_at)}
                     </div>
 
                     <div className="announcement-content">
@@ -264,9 +372,9 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         )}
       </div>
     );
-  }
+  },
 );
 
-AnnouncementWidget.displayName = 'AnnouncementWidget';
+AnnouncementWidget.displayName = "AnnouncementWidget";
 
 export default AnnouncementWidget;

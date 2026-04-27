@@ -1,0 +1,67 @@
+.supervisor-announcements-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.supervisor-announcements-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supervisor-announcements-block-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.supervisor-announcements-block-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.supervisor-announcements-block-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dashboard-header-section {
+  margin-bottom: 4px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.overview-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.overview-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+.supervisor-announcements-note {
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #e2e8f0;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.12);
+}
+
+.supervisor-announcements-note strong {
+  color: #fff;
+}
