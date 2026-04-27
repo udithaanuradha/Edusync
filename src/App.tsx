@@ -23,7 +23,9 @@ import AdminLevelPage from './Pages/AdminPages/AdminLevelPage';
 import Level2mentor from './Pages/MentorPages/Level2mentor';
 import Level4mentor from './Pages/MentorPages/Level4mentor';
 import GroupRequest from './components/student/GroupRequest';
-import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
+import AnnouncementsPage from './Pages/CoordinatorPages/AnnouncementsPage';
+import SupervisorAnnouncementsPage from './Pages/SupervisorPages/SupervisorAnnouncementsPage';
+import SupervisorApprovalPage from './Pages/SupervisorPages/SupervisorApprovalPage';
 
 function App() {
   const { user } = useAuth();
