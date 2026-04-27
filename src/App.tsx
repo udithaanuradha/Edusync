@@ -25,6 +25,8 @@ import GroupRequest from "./components/student/GroupRequest";
 import SupervisorApprovalPage from "./Pages/SupervisorPages/SupervisorApprovalPage";
 import AnnouncementsPage from "./Pages/CoordinatorPages/AnnouncementsPage";
 import SupervisorAnnouncementsPage from "./Pages/SupervisorPages/SupervisorAnnouncementsPage";
+import SupervisorCommunicationPage from "./Pages/SupervisorPages/SupervisorCommunicationPage";
+import CommunicationPage from "./Pages/CommunicationPage";
 
 function App() {
   const { user } = useAuth();
@@ -214,6 +216,18 @@ function App() {
             <Navigate to="/login" />
           )
         }
+      />
+
+      <Route
+        path="/supervisor/communication"
+        element={
+          user ? <SupervisorCommunicationPage /> : <Navigate to="/login" />
+        }
+      />
+
+      <Route
+        path="/dashboard/communication"
+        element={user ? <CommunicationPage /> : <Navigate to="/login" />}
       />
     </Routes>
   );

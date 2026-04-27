@@ -1,0 +1,80 @@
+.communication-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.communication-layout > div:first-of-type {
+  display: flex;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.communication-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.communication-layout > header {
+  flex-shrink: 0;
+}
+
+.communication-layout > div {
+  flex: 1;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.communication-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Supervisor variant styles */
+.communication-main > nav {
+  flex-shrink: 0;
+}
+
+.supervisor-communication-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+
+/* Supervisor variant styles */
+.supervisor-communication-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.supervisor-communication-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
+.supervisor-communication-content {
+  flex: 1;
+  overflow: hidden;
+}
+  background-color: #f5f5f5;
+}
+
+.supervisor-communication-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
+.supervisor-communication-content {
+  flex: 1;
+  overflow: hidden;
+}
