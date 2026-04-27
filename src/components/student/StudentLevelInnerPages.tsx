@@ -43,7 +43,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
       setLoadingGroups(true);
       try {
         const response = await fetch(
-          `http://localhost:5000/api/groups/my-status/${user.id}`,
+          `http://localhost:5000/api/groups/level/${levelNumber}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -85,7 +85,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
               item.request_status ??
               "Pending",
             members: Array.isArray(item.members)
-              ? item.members.join(", ")
+              ? item.members.map((m: any) => typeof m === "string" ? m : m.name).join(", ")
               : (item.members_list ?? item.members ?? "Not available"),
             supervisor:
               item.supervisor_name ??
