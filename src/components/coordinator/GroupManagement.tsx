@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Users, X } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
 
@@ -96,6 +96,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [leaderId, setLeaderId] = useState<string>('');
   const [searchIndex, setSearchIndex] = useState('');
   const [members, setMembers] = useState<Student[]>([]);
+  const [editingGroup, setEditingGroup] = useState<GroupView | null>(null);
   const [saving, setSaving] = useState(false);
   const [searching, setSearching] = useState(false);
 
@@ -104,6 +105,9 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     if (members.length !== 5) return false;
     return members.some((m) => String(m.id) === leaderId);
   }, [groupName, members, leaderId]);
+
+  const isEditMode = editingGroup !== null;
+  const canSubmit = canCreate;
 
   const loadGroups = async () => {
     try {
@@ -145,6 +149,65 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setLeaderId('');
     setSearchIndex('');
     setMembers([]);
+    setEditingGroup(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = async (group: GroupView) => {
+    setEditingGroup(group);
+    setGroupName(group.name);
+    setSupervisorQuery(group.supervisor === 'Not assigned' ? '' : group.supervisor);
+    setSelectedSupervisor(null);
+    setSupervisorOptions([]);
+    setSupervisorSearchError(null);
+    setLeaderId('');
+    setSearchIndex('');
+    setMembers([]);
+    setIsModalOpen(true);
+
+    const resolvedMembers: Student[] = [];
+
+    for (const member of group.members) {
+      if (typeof member.id === 'number') {
+        resolvedMembers.push({
+          id: member.id,
+          name: member.name,
+          university_id: member.university_id || '',
+          email: '',
+          level: levelNumber,
+        });
+        continue;
+      }
+
+      if (member.university_id) {
+        try {
+          const student = await fetchStudentByIndex(member.university_id);
+          if (student && !resolvedMembers.some((existing) => existing.id === student.id)) {
+            resolvedMembers.push(student);
+          }
+        } catch {
+          // Skip unresolved member rows and keep loading other students.
+        }
+      }
+    }
+
+    setMembers(resolvedMembers.slice(0, 5));
+
+    const normalizedLeader = group.leaderName.trim().toLowerCase();
+    const leader = resolvedMembers.find((member) => {
+      const memberName = member.name.trim().toLowerCase();
+      return memberName.includes(normalizedLeader) || normalizedLeader.includes(memberName);
+    });
+
+    if (leader) {
+      setLeaderId(String(leader.id));
+    } else {
+      setLeaderId(resolvedMembers.length > 0 ? String(resolvedMembers[0].id) : '');
+    }
   };
 
   const mapSupervisors = (data: unknown): SupervisorOption[] => {
@@ -258,6 +321,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   };
 
   const prefillFromApprovedRequest = async (request: ApprovedGroupRequest) => {
+    setEditingGroup(null);
     setIsModalOpen(true);
     setGroupName(request.groupName || '');
     setSearchIndex('');
@@ -386,7 +450,133 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     }
   };
 
+  const handleDeleteGroup = async (group: GroupView) => {
+    if (String(group.id).startsWith('temp-')) {
+      alert('This group cannot be deleted because it does not have a valid server ID.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete group "${group.name}"? This action cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const endpoints = [
+        `http://localhost:5000/api/groups/${group.id}`,
+        `http://localhost:5000/api/groups/delete/${group.id}`,
+      ];
+
+      let deleted = false;
+
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, { method: 'DELETE' });
+        if (!response.ok) {
+          continue;
+        }
+
+        deleted = true;
+        break;
+      }
+
+      if (!deleted) {
+        throw new Error('Group delete API endpoint is not available yet.');
+      }
+
+      await loadGroups();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete group.';
+      alert(message);
+    }
+  };
+
   const handleCreateGroup = async () => {
+    const trimmedGroupName = groupName.trim();
+
+    if (isEditMode) {
+      if (!canCreate) {
+        alert('Enter a group name, keep exactly 5 members, and select a group leader.');
+        return;
+      }
+
+      if (!editingGroup) {
+        alert('No group selected for editing.');
+        return;
+      }
+
+      const leader = members.find((m) => String(m.id) === leaderId);
+      if (!leader) {
+        alert('Selected leader must be one of the selected members.');
+        return;
+      }
+
+      const duplicate = groups.some(
+        (group) =>
+          String(group.id) !== String(editingGroup.id) &&
+          group.name.trim().toLowerCase() === trimmedGroupName.toLowerCase()
+      );
+
+      if (duplicate) {
+        alert('A group with this name already exists for this level.');
+        return;
+      }
+
+      try {
+        setSaving(true);
+
+        const payload = {
+          groupName: trimmedGroupName,
+          level: levelNumber,
+          supervisorName: selectedSupervisor?.name ?? (supervisorQuery.trim() || null),
+          supervisorId: selectedSupervisor?.id ?? null,
+          leaderId: leader.id,
+          memberIds: members.map((m) => m.id),
+        };
+
+        const endpoints = [
+          `http://localhost:5000/api/groups/${editingGroup.id}`,
+          `http://localhost:5000/api/groups/update/${editingGroup.id}`,
+        ];
+
+        let updated = false;
+
+        for (const endpoint of endpoints) {
+          const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) continue;
+
+          const contentType = response.headers.get('content-type') || '';
+          const result = contentType.includes('application/json')
+            ? await response.json()
+            : { success: true };
+
+          if (result?.success === false) continue;
+
+          updated = true;
+          break;
+        }
+
+        if (!updated) {
+          throw new Error('Group update API endpoint is not available yet.');
+        }
+
+        setIsModalOpen(false);
+        resetForm();
+        await loadGroups();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update group.';
+        alert(message);
+      } finally {
+        setSaving(false);
+      }
+
+      return;
+    }
+
     if (!canCreate) {
       alert('Enter a group name, add exactly 5 members, and select a group leader.');
       return;
@@ -398,10 +588,19 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       return;
     }
 
+    const duplicate = groups.some(
+      (group) => group.name.trim().toLowerCase() === trimmedGroupName.toLowerCase()
+    );
+
+    if (duplicate) {
+      alert('This group already exists for this level.');
+      return;
+    }
+
     try {
       setSaving(true);
       const payload = {
-        groupName: groupName.trim(),
+        groupName: trimmedGroupName,
         level: levelNumber,
         supervisorName: selectedSupervisor?.name ?? null,
         supervisorId: selectedSupervisor?.id ?? null,
@@ -441,7 +640,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   return (
     <div className="group-management-container">
       <div className="groups-toolbar">
-        <button className="btn-create-group" onClick={() => setIsModalOpen(true)}>
+        <button className="btn-create-group" onClick={openCreateModal}>
           <Plus size={16} />
           Create Group
         </button>
@@ -482,6 +681,16 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                     ))}
                   </ul>
                 )}
+                <div className="group-card-actions">
+                  <button type="button" className="group-edit-btn" onClick={() => void openEditModal(group)}>
+                    <Pencil size={14} />
+                    Edit
+                  </button>
+                  <button type="button" className="group-delete-btn" onClick={() => void handleDeleteGroup(group)}>
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -492,7 +701,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         <div className="group-modal-overlay" role="dialog" aria-modal="true" aria-label="Create Group Modal">
           <div className="group-modal">
             <div className="group-modal-header">
-              <h2>Create Level {levelNumber} Group</h2>
+              <h2>{isEditMode ? `Edit Level ${levelNumber} Group` : `Create Level ${levelNumber} Group`}</h2>
               <button
                 className="icon-close"
                 onClick={() => {
@@ -630,8 +839,8 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               >
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleCreateGroup} disabled={saving || !canCreate}>
-                {saving ? 'Creating...' : 'Create Group'}
+              <button className="btn-primary" onClick={handleCreateGroup} disabled={saving || !canSubmit}>
+                {saving ? (isEditMode ? 'Saving...' : 'Creating...') : isEditMode ? 'Save Changes' : 'Create Group'}
               </button>
             </div>
           </div>

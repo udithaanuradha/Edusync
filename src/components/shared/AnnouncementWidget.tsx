@@ -28,12 +28,11 @@ interface AnnouncementWidgetProps {
   showEditDeleteButtons?: boolean;
   scope?: "all" | "own" | "others";
   useRoleQuery?: boolean;
+  showOnlyMyAnnouncements?: boolean;
+  showOnlyAllAudience?: boolean;
 }
 
-const AnnouncementWidget = forwardRef<
-  { refresh: () => void },
-  AnnouncementWidgetProps
->(
+const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidgetProps>(
   (
     {
       title = "Announcements",
@@ -42,8 +41,10 @@ const AnnouncementWidget = forwardRef<
       showEditDeleteButtons = false,
       scope = "all",
       useRoleQuery = true,
+      showOnlyMyAnnouncements = false,
+      showOnlyAllAudience = false,
     },
-    ref,
+    ref
   ) => {
     const { user } = useAuth();
     const [items, setItems] = useState<AnnouncementItem[]>([]);
@@ -109,14 +110,14 @@ const AnnouncementWidget = forwardRef<
 
         let url = API_BASE;
 
-        if (useRoleQuery) {
+        if (showOnlyMyAnnouncements && user?.name) {
+          url += `?author=${encodeURIComponent(user.name)}`;
+        } else if (showOnlyAllAudience) {
+          url += '?all_audience=true';
+        } else if (useRoleQuery) {
           // Pass role, level, and user name for smart filtering based on Rule of Relevance
-          const levelParam = user?.level
-            ? `&level=${encodeURIComponent(String(user.level))}`
-            : "";
-          const nameParam = user?.name
-            ? `&name=${encodeURIComponent(user.name)}`
-            : "";
+          const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : "";
+          const nameParam = user?.name ? `&name=${encodeURIComponent(user.name)}` : "";
           const supervisorParam =
             user?.role === "supervisor" && user?.id
               ? `&supervisor_id=${encodeURIComponent(String(user.id))}`
@@ -129,6 +130,8 @@ const AnnouncementWidget = forwardRef<
           roleLabel,
           level: user?.level,
           name: user?.name,
+          showOnlyMyAnnouncements,
+          showOnlyAllAudience,
         });
 
         const response = await fetch(url);
@@ -262,6 +265,8 @@ const AnnouncementWidget = forwardRef<
       scope,
       useRoleQuery,
       user?.id,
+      showOnlyMyAnnouncements,
+      showOnlyAllAudience,
     ]);
 
     const formatTime = (value: string) => {

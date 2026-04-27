@@ -75,6 +75,28 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
     const authHeaders = { Authorization: `Bearer ${localStorage.getItem('token')}` };
 
     try {
+      let existingGroupNames = new Set<string>();
+
+      try {
+        const groupsResponse = await fetch(`http://localhost:5000/api/groups/level/${levelNumber}`);
+        if (groupsResponse.ok) {
+          const groupsPayload = await groupsResponse.json();
+          const groupList = Array.isArray(groupsPayload?.data)
+            ? groupsPayload.data
+            : Array.isArray(groupsPayload?.groups)
+              ? groupsPayload.groups
+              : [];
+
+          existingGroupNames = new Set(
+            (groupList as ApiRecord[])
+              .map((group) => String(group.group_name ?? group.groupName ?? group.name ?? '').trim().toLowerCase())
+              .filter((name) => !!name)
+          );
+        }
+      } catch {
+        // Continue without filtering if groups endpoint is not available.
+      }
+
       for (const endpoint of endpoints) {
         const response = await fetch(endpoint, { headers: authHeaders });
         if (!response.ok) continue;
@@ -84,7 +106,11 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
           .map(normalizeRequest)
           .filter((request) => request.id > 0);
 
-        setRequests(normalized);
+        const filtered = normalized.filter(
+          (request) => !existingGroupNames.has(request.groupName.trim().toLowerCase())
+        );
+
+        setRequests(filtered);
         setLoading(false);
         return;
       }
