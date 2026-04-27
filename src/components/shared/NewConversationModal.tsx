@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
-// 1. Import useAuth
 import { useAuth } from "../../context/AuthContext";
 import "./NewConversationModal.css";
 
-type Role = "supervisor" | "student" | "coordinator" | "admin" | "mentor";
+type Role =
+  | "supervisor"
+  | "student"
+  | "group_leader"
+  | "coordinator"
+  | "admin"
+  | "mentor";
 
 type User = {
   id: number;
@@ -22,6 +27,7 @@ interface NewConversationModalProps {
 const AVAILABLE_ROLES: Role[] = [
   "supervisor",
   "student",
+  "group_leader",
   "coordinator",
   "admin",
   "mentor",
@@ -32,13 +38,40 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   onClose,
   onSelectUser,
 }) => {
-  // 2. Get the current logged-in user
   const { user: currentUser } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // NEW: State to track if the current user is a leader
+  const [isCurrentUserLeader, setIsCurrentUserLeader] = useState(false);
+
+  // NEW: Check if the logged-in student is a group leader when the modal opens
+  useEffect(() => {
+    if (isOpen && currentUser?.role === "student") {
+      const checkLeadershipStatus = async () => {
+        try {
+          const response = await fetch(
+            "http://localhost:5000/api/messages/leaders",
+          );
+          if (response.ok) {
+            const leaders = await response.json();
+            // If the current user's ID is in the leaders list, set to true!
+            const isLeader = leaders.some(
+              (leader: User) => leader.id === currentUser.id,
+            );
+            setIsCurrentUserLeader(isLeader);
+          }
+        } catch (error) {
+          console.error("Failed to verify leadership status", error);
+        }
+      };
+
+      checkLeadershipStatus();
+    }
+  }, [isOpen, currentUser]);
 
   // Fetch users by role
   useEffect(() => {
@@ -48,9 +81,14 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       try {
         setLoading(true);
         setError("");
-        const response = await fetch(
-          `http://localhost:5000/api/users?role=${selectedRole}`,
-        );
+
+        // Route group_leader requests to the special messages backend endpoint
+        const endpoint =
+          selectedRole === "group_leader"
+            ? `http://localhost:5000/api/messages/leaders`
+            : `http://localhost:5000/api/users?role=${selectedRole}`;
+
+        const response = await fetch(endpoint);
 
         if (response.ok) {
           const data = await response.json();
@@ -62,7 +100,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           setUsers(usersByRole);
         } else {
           setUsers([]);
-          setError(`Failed to load ${selectedRole} users`);
+          setError(`Failed to load ${selectedRole.replace("_", " ")}s`);
         }
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -78,11 +116,23 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 3. Filter the roles to hide 'admin' if the current user is a 'student'
+  // Filter roles based on who is currently logged in
   const displayRoles = AVAILABLE_ROLES.filter((role) => {
-    if (currentUser?.role === "student" && role === "admin") {
+    // 1. Prevent students from messaging admins
+    if (currentUser?.role === "student" && role === "admin") return false;
+
+    // 2. Coordinators should only message Group Leaders, not regular Students
+    if (currentUser?.role === "coordinator" && role === "student") return false;
+
+    // 3. Regular Students cannot message Coordinators (only leaders can)
+    // We now use our new isCurrentUserLeader state instead of the AuthContext
+    if (
+      currentUser?.role === "student" &&
+      !isCurrentUserLeader &&
+      role === "coordinator"
+    )
       return false;
-    }
+
     return true;
   });
 
@@ -103,7 +153,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                 Select a role to start conversation:
               </p>
               <div className="roles-grid">
-                {/* 4. Map over displayRoles instead of AVAILABLE_ROLES */}
                 {displayRoles.map((role) => (
                   <button
                     key={role}
@@ -113,12 +162,15 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                     <div className="role-icon">
                       {role === "supervisor" && "👨‍🏫"}
                       {role === "student" && "👨‍🎓"}
+                      {role === "group_leader" && "⭐"}
                       {role === "coordinator" && "📋"}
                       {role === "admin" && "⚙️"}
                       {role === "mentor" && "💼"}
                     </div>
                     <span className="role-name">
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                      {role
+                        .replace("_", " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </span>
                   </button>
                 ))}
@@ -137,15 +189,17 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
               </button>
 
               <p className="selection-title">
-                Select {selectedRole} to message:
+                Select {selectedRole.replace("_", " ")} to message:
               </p>
 
               {loading ? (
-                <div className="loading-spinner">Loading users...</div>
+                <div className="loading-spinner">Loading...</div>
               ) : error ? (
                 <div className="no-users">{error}</div>
               ) : users.length === 0 ? (
-                <div className="no-users">No {selectedRole}s available</div>
+                <div className="no-users">
+                  No {selectedRole.replace("_", " ")}s available
+                </div>
               ) : (
                 <div className="users-list">
                   {users.map((user) => (
