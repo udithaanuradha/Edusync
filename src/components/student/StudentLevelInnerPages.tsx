@@ -68,22 +68,35 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
 
         setGroups(
           rawItems.map((item: any, index: number) => ({
-            id: item.id ?? item.group_id ?? item.request_id ?? item.groupId ?? index,
+            id:
+              item.id ??
+              item.group_id ??
+              item.request_id ??
+              item.groupId ??
+              index,
             name:
               item.group_name ??
               item.groupName ??
               item.group ??
               `Group ${index + 1}`,
             status:
-              item.status ?? item.group_status ?? item.request_status ?? "Pending",
-            members:
-              Array.isArray(item.members)
-                ? item.members.join(", ")
-                : item.members_list ?? item.members ?? "Not available",
+              item.status ??
+              item.group_status ??
+              item.request_status ??
+              "Pending",
+            members: Array.isArray(item.members)
+              ? item.members.join(", ")
+              : (item.members_list ?? item.members ?? "Not available"),
             supervisor:
-              item.supervisor_name ?? item.supervisor ?? item.supervisor_id ?? "TBD",
+              item.supervisor_name ??
+              item.supervisor ??
+              item.supervisor_id ??
+              "TBD",
             groupLeader:
-              item.leader ?? item.group_leader ?? item.groupLeader ?? "Not Assigned",
+              item.leader ??
+              item.group_leader ??
+              item.groupLeader ??
+              "Not Assigned",
           })),
         );
       } catch (error) {
@@ -105,7 +118,8 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
             <div className="student-inner-tab-heading">
               <h3>Project States</h3>
               <p>
-                Review your current project status and phase updates for Level {levelNumber}.
+                Review your current project status and phase updates for Level{" "}
+                {levelNumber}.
               </p>
             </div>
             <CoordinatorStageUpdates levelNumber={levelNumber} />
@@ -118,8 +132,8 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
             <div className="student-inner-tab-heading">
               <h3>Group Formation</h3>
               <p>
-                Submit a new project group formation request, select a supervisor,
-                and track your request status.
+                Submit a new project group formation request, select a
+                supervisor, and track your request status.
               </p>
             </div>
             <GroupRequest />
@@ -131,14 +145,18 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
               <h3>Groups</h3>
-              <p>See your current groups and membership details for Level {levelNumber}.</p>
+              <p>
+                See your current groups and membership details for Level{" "}
+                {levelNumber}.
+              </p>
             </div>
             <div className="student-groups-wrapper">
               {loadingGroups ? (
                 <div className="student-tab-empty">Loading groups...</div>
               ) : groups.length === 0 ? (
                 <div className="student-tab-empty">
-                  No registered groups were found for your account yet. Use the Group Formation tab to create one.
+                  No registered groups were found for your account yet. Use the
+                  Group Formation tab to create one.
                 </div>
               ) : (
                 <div className="student-groups-grid">
@@ -146,7 +164,9 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                     <div key={group.id} className="student-group-card">
                       <div className="group-card-header">
                         <h4>{group.name}</h4>
-                        <span className="group-status-badge">{group.status}</span>
+                        <span className="group-status-badge">
+                          {group.status}
+                        </span>
                       </div>
                       <div className="group-card-body">
                         <p className="group-meta">

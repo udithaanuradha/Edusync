@@ -50,7 +50,11 @@ function App() {
       <Route
         path="/student"
         element={
-          user?.role === "student" ? <StudentDashboard /> : <Navigate to="/login" />
+          user?.role === "student" ? (
+            <StudentDashboard />
+          ) : (
+            <Navigate to="/login" />
+          )
         }
       />
 
@@ -79,7 +83,11 @@ function App() {
       <Route
         path="/mentor"
         element={
-          user?.role === "mentor" ? <MentorDashboard /> : <Navigate to="/login" />
+          user?.role === "mentor" ? (
+            <MentorDashboard />
+          ) : (
+            <Navigate to="/login" />
+          )
         }
       />
 
