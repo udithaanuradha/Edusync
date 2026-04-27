@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CoordinatorStageUpdates from './CoordinatorStageUpdates';
 import GroupRequest from './GroupRequest';
 import './StudentLevelInnerPages.css';
@@ -17,52 +18,72 @@ type GroupItem = {
   status: string;
   members: string;
   supervisor: string;
+  groupLeader: string;
 };
 
 const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('projectStates');
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const userString = localStorage.getItem('user');
-    const user = userString ? JSON.parse(userString) : null;
-    if (!user?.id) return;
+    // Only fetch data when the user explicitly clicks the 'groups' tab
+    if (activeTab !== 'groups') return;
 
     const fetchGroups = async () => {
       setLoadingGroups(true);
+
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+
+      // Use the level from the logged-in user profile as a fallback
+      let targetLevel = levelNumber;
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          targetLevel = user.level || levelNumber;
+        } catch (e) {
+          console.error("Error parsing user data", e);
+        }
+      }
+
       try {
-        const response = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
+        const user = storedUser ? JSON.parse(storedUser) : null;
+        if (!user || !user.id) throw new Error('User not found');
+
+        const fetchUrl = `http://localhost:5000/api/groups/display/${levelNumber}`;
+        console.log(`🌐 Fetching groups for Level ${levelNumber} from: ${fetchUrl}`);
+
+        const response = await fetch(fetchUrl, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
         });
 
         if (!response.ok) {
-          setGroups([]);
-          return;
+          console.error(`❌ Fetch failed with status: ${response.status}`);
+          throw new Error('Failed to fetch');
         }
 
         const data = await response.json();
-        const rawItems = Array.isArray(data)
-          ? data
-          : Array.isArray(data.groups)
-            ? data.groups
-            : Array.isArray(data.requests)
-              ? data.requests
-              : [data];
+        console.log(`📥 Received data:`, data);
 
-        setGroups(
-          rawItems.map((item: any, index: number) => ({
-            id: item.id ?? item.group_id ?? item.request_id ?? index,
-            name: item.group_name ?? item.groupName ?? item.group ?? `Group ${index + 1}`,
-            status: item.status ?? item.group_status ?? item.request_status ?? 'Pending',
-            members: item.members_list ?? item.members ?? 'Not available',
-            supervisor: item.supervisor_name ?? item.supervisor ?? item.supervisor_id ?? 'TBD',
-          }))
-        );
+        // backend returns an array of objects: { groupId, groupName, supervisor, leader, members[] }
+        const mappedGroups = data.map((item: any) => ({
+          id: item.groupId,
+          name: item.groupName,
+          status: 'Formed',
+          members: Array.isArray(item.members) ? item.members.join(', ') : 'No members listed',
+          supervisor: item.supervisor || 'TBD',
+          groupLeader: item.leader || 'Not Assigned',
+        }));
+
+        setGroups(mappedGroups);
+        console.log(`✅ Groups loaded for level ${targetLevel}`);
       } catch (error) {
-        console.error('Unable to load student groups', error);
+        console.error('Unable to load student groups:', error);
         setGroups([]);
       } finally {
         setLoadingGroups(false);
@@ -70,7 +91,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
     };
 
     fetchGroups();
-  }, []);
+  }, [activeTab, levelNumber]); // Re-runs if tab changes or level prop updates
 
   const renderContent = () => {
     switch (activeTab) {
@@ -90,7 +111,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
               <h3>Group Formation</h3>
-              <p>Submit a new project group formation request, select a supervisor, and track your request status.</p>
+              <p>Submit a new project group formation request and track status.</p>
             </div>
             <GroupRequest />
           </div>
@@ -101,14 +122,14 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
               <h3>Groups</h3>
-              <p>See your current groups and membership details in one place.</p>
+              <p>See your current groups and membership details for Level {levelNumber}.</p>
             </div>
             <div className="student-groups-wrapper">
               {loadingGroups ? (
                 <div className="student-tab-empty">Loading groups...</div>
               ) : groups.length === 0 ? (
                 <div className="student-tab-empty">
-                  No registered groups were found for your account yet. Use the Group Formation tab to create one.
+                  No registered groups were found for Level {levelNumber} yet.
                 </div>
               ) : (
                 <div className="student-groups-grid">
@@ -118,16 +139,29 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
                         <h4>{group.name}</h4>
                         <span className="group-status-badge">{group.status}</span>
                       </div>
-                      <p className="group-meta">
-                        <strong>Supervisor:</strong> {group.supervisor}
-                      </p>
-                      <p className="group-meta">
-                        <strong>Members:</strong> {group.members}
-                      </p>
+                      <div className="group-card-body">
+                        <p className="group-meta">
+                          <strong>Supervisor:</strong> {group.supervisor}
+                        </p>
+                        <p className="group-meta">
+                          <strong>Group Leader:</strong> {group.groupLeader}
+                        </p>
+                        <p className="group-meta">
+                          <strong>Members:</strong> {group.members}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+              <div className="manage-project-section">
+                <button
+                  className="manage-project-btn"
+                  onClick={() => navigate('/student/project-management')}
+                >
+                  Start Manage the Project
+                </button>
+              </div>
             </div>
           </div>
         );

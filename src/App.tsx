@@ -17,6 +17,7 @@ import Level1Student from './pages/StudentPages/Level1Student';
 import Level2Student from './pages/StudentPages/Level2Student';
 import Level3Student from './pages/StudentPages/Level3Student';
 import Level4Student from './pages/StudentPages/Level4Student';
+import ProjectManagementPage from './pages/StudentPages/ProjectManagementPage';
 import SupervisorLevelPage from './pages/SupervisorPages/SupervisorLevelPage';
 import AdminLevelPage from './pages/AdminPages/AdminLevelPage';
 import Level2mentor from './pages/MentorPages/Level2mentor';
@@ -44,6 +45,11 @@ function App() {
       <Route
         path="/student"
         element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="/student/project-management"
+        element={user?.role === 'student' ? <ProjectManagementPage /> : <Navigate to="/login" />}
       />
 
       <Route
