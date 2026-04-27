@@ -6,13 +6,12 @@ import {
   CalendarDays,
   MessageSquare,
   ClipboardList,
-  FolderOpen,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   LucideIcon,
-} from "lucide-react";
+} from 'lucide-react';
 import { useAuth } from "../../context/AuthContext";
 import "./Sidebar.css";
 
@@ -77,11 +76,6 @@ const Sidebar = () => {
       label: "Communication",
     },
     { path: announcementsPath, icon: ClipboardList, label: "Announcements" },
-    {
-      path: "/dashboard/project-groups",
-      icon: FolderOpen,
-      label: "Project Groups",
-    },
     {
       path: "/dashboard/project-delays",
       icon: AlertTriangle,

@@ -42,6 +42,8 @@ interface GroupManagementProps {
 
 const STUDENT_INDEX_REGEX = /\b\d{6}[A-Za-z]\b/g;
 
+const normalizeIndex = (value?: string | null) => value?.trim().toUpperCase() ?? '';
+
 const normalizeGroup = (raw: GroupApiRecord): GroupView => {
   const id =
     (raw.group_id as number | string | undefined) ??
@@ -108,6 +110,35 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
   const isEditMode = editingGroup !== null;
   const canSubmit = canCreate;
+
+  const getUsedStudentIndexes = (excludeGroupId?: number | string) => {
+    const excludedId = excludeGroupId !== undefined ? String(excludeGroupId) : null;
+    const usedIndexes = new Set<string>();
+
+    groups.forEach((group) => {
+      if (excludedId && String(group.id) === excludedId) {
+        return;
+      }
+
+      group.members.forEach((member) => {
+        const indexValue = normalizeIndex(member.university_id);
+        if (indexValue) {
+          usedIndexes.add(indexValue);
+        }
+      });
+    });
+
+    return usedIndexes;
+  };
+
+  const isStudentIndexAssignedElsewhere = (indexNumber: string, excludeGroupId?: number | string) => {
+    const normalized = normalizeIndex(indexNumber);
+    if (!normalized) {
+      return false;
+    }
+
+    return getUsedStudentIndexes(excludeGroupId).has(normalized);
+  };
 
   const loadGroups = async () => {
     try {
@@ -434,6 +465,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         return;
       }
 
+      if (isStudentIndexAssignedElsewhere(student.university_id, editingGroup?.id)) {
+        alert('This student already belongs to another group, so you cannot add the same index again.');
+        return;
+      }
+
       setMembers((prev) => [...prev, student]);
       setSearchIndex('');
     } catch {
@@ -579,6 +615,15 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
     if (!canCreate) {
       alert('Enter a group name, add exactly 5 members, and select a group leader.');
+      return;
+    }
+
+    const editingGroupId = editingGroup ? (editingGroup as GroupView).id : undefined;
+    const duplicateStudent: Student | undefined = members.find((member: Student) =>
+      isStudentIndexAssignedElsewhere(member.university_id, editingGroupId)
+    );
+    if (duplicateStudent) {
+      alert(`Student ${duplicateStudent.university_id} already belongs to another group.`);
       return;
     }
 
