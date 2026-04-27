@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
+// 1. Import useAuth
+import { useAuth } from "../../context/AuthContext";
 import "./NewConversationModal.css";
 
 type Role = "supervisor" | "student" | "coordinator" | "admin" | "mentor";
@@ -30,6 +32,9 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   onClose,
   onSelectUser,
 }) => {
+  // 2. Get the current logged-in user
+  const { user: currentUser } = useAuth();
+
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +78,14 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 
   if (!isOpen) return null;
 
+  // 3. Filter the roles to hide 'admin' if the current user is a 'student'
+  const displayRoles = AVAILABLE_ROLES.filter((role) => {
+    if (currentUser?.role === "student" && role === "admin") {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -90,7 +103,8 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                 Select a role to start conversation:
               </p>
               <div className="roles-grid">
-                {AVAILABLE_ROLES.map((role) => (
+                {/* 4. Map over displayRoles instead of AVAILABLE_ROLES */}
+                {displayRoles.map((role) => (
                   <button
                     key={role}
                     className="role-button"

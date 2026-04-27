@@ -35,9 +35,15 @@ const CommunicationPage: React.FC<CommunicationPageProps> = ({
       }
 
       try {
-        // 1. Fetch all users across all roles
+        // 1. Filter out the 'admin' role from the fetch queue if the user is a student
+        const rolesToFetch = ALL_ROLES.filter((role) => {
+          if (user?.role === "student" && role === "admin") return false;
+          return true;
+        });
+
+        // 2. Fetch all permitted users across roles
         const responses = await Promise.all(
-          ALL_ROLES.map((role) =>
+          rolesToFetch.map((role) =>
             fetch(`${USER_API_BASE}?role=${role}`, {
               method: "GET",
               headers: { "Content-Type": "application/json" },
@@ -68,7 +74,7 @@ const CommunicationPage: React.FC<CommunicationPageProps> = ({
           new Map(allUsers.map((item) => [item.id, item])).values(),
         );
 
-        // 2. Filter down to ONLY users who have a message history
+        // 3. Filter down to ONLY users who have a message history
         const activeConversationsPromises = uniqueUsers.map(async (person) => {
           try {
             const params = new URLSearchParams({
@@ -110,7 +116,7 @@ const CommunicationPage: React.FC<CommunicationPageProps> = ({
           }
         });
 
-        // 3. Wait for all checks to finish and filter out the nulls
+        // 4. Wait for all checks to finish and filter out the nulls
         const resolvedConversations = await Promise.all(
           activeConversationsPromises,
         );
@@ -118,7 +124,7 @@ const CommunicationPage: React.FC<CommunicationPageProps> = ({
           (recipient) => recipient !== null,
         ) as Recipient[];
 
-        // 4. Send the filtered list to the chat window
+        // 5. Send the filtered list to the chat window
         callback(activeRecipients);
       } catch (error) {
         console.error("Error loading recipients:", error);
