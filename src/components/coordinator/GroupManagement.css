@@ -93,6 +93,47 @@
   font-size: 13px;
 }
 
+.group-card-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.group-edit-btn {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.group-edit-btn:hover {
+  background: #dbeafe;
+}
+
+.group-delete-btn {
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.group-delete-btn:hover {
+  background: #fee2e2;
+}
+
 .group-modal-overlay {
   position: fixed;
   inset: 0;
@@ -302,6 +343,11 @@
   border-radius: 8px;
   background: #e2e8f0;
   cursor: pointer;
+}
+
+.selected-members-box li button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .group-modal-footer {

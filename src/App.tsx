@@ -24,6 +24,7 @@ import Level4mentor from './pages/MentorPages/Level4mentor';
 import GroupRequest from './components/student/GroupRequest';
 import SupervisorApprovalPage from './pages/SupervisorPages/SupervisorApprovalPage';
 import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
+import CalendarPage from './pages/CalendarPage';
 
 function App() {
   const { user } = useAuth();
@@ -122,6 +123,11 @@ function App() {
       />
 
       <Route path="/group-request" element={<GroupRequest />} />
+
+      <Route
+        path="/dashboard/calendar"
+        element={user ? <CalendarPage /> : <Navigate to="/login" />}
+      />
 
       <Route
         path="/dashboard/announcements"

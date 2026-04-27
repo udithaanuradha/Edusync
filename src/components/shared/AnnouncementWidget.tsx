@@ -19,10 +19,22 @@ interface AnnouncementWidgetProps {
   maxItems?: number;
   refreshDep?: number;
   showEditDeleteButtons?: boolean;
+  showOnlyMyAnnouncements?: boolean;
+  showOnlyAllAudience?: boolean;
 }
 
 const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidgetProps>(
-  ({ title = 'Announcements', maxItems = 5, refreshDep = 0, showEditDeleteButtons = false }, ref) => {
+  (
+    {
+      title = 'Announcements',
+      maxItems = 5,
+      refreshDep = 0,
+      showEditDeleteButtons = false,
+      showOnlyMyAnnouncements = false,
+      showOnlyAllAudience = false,
+    },
+    ref
+  ) => {
     const { user } = useAuth();
     const [items, setItems] = useState<AnnouncementItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,14 +59,24 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         setError('');
 
         let url = API_BASE;
-        
-        // Pass role, level, and user name for smart filtering based on Rule of Relevance
-        const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : '';
-        const nameParam = user?.name ? `&name=${encodeURIComponent(user.name)}` : '';
-        url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}`;
+
+        if (showOnlyMyAnnouncements && user?.name) {
+          url += `?author=${encodeURIComponent(user.name)}`;
+        } else if (showOnlyAllAudience) {
+          url += '?all_audience=true';
+        } else {
+          const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : '';
+          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}`;
+        }
         
         console.log('Fetching announcements from:', url);
-        console.log('User details:', { roleLabel, level: user?.level, name: user?.name });
+        console.log('User details:', {
+          roleLabel,
+          level: user?.level,
+          name: user?.name,
+          showOnlyMyAnnouncements,
+          showOnlyAllAudience,
+        });
         
         const response = await fetch(url);
 
@@ -162,7 +184,15 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
 
     useEffect(() => {
       loadAnnouncements();
-    }, [roleLabel, user?.level, user?.name, maxItems, refreshDep]);
+    }, [
+      roleLabel,
+      user?.level,
+      user?.name,
+      maxItems,
+      refreshDep,
+      showOnlyMyAnnouncements,
+      showOnlyAllAudience,
+    ]);
 
     const formatTime = (value: string) => {
       const date = new Date(value);
