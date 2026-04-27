@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import CoordinatorStageUpdates from './CoordinatorStageUpdates';
-import GroupRequest from './GroupRequest';
-import './StudentLevelInnerPages.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import CoordinatorStageUpdates from "./CoordinatorStageUpdates";
+import GroupRequest from "./GroupRequest";
+import "./StudentLevelInnerPages.css";
 
 const tabItems = [
-  { key: 'projectStates', label: 'Project States' },
-  { key: 'groupFormation', label: 'Group Formation' },
-  { key: 'groups', label: 'Groups' },
+  { key: "projectStates", label: "Project States" },
+  { key: "groupFormation", label: "Group Formation" },
+  { key: "groups", label: "Groups" },
 ] as const;
 
-type TabKey = (typeof tabItems)[number]['key'];
+type TabKey = (typeof tabItems)[number]["key"];
 
 type GroupItem = {
   id: number | string;
@@ -21,69 +21,73 @@ type GroupItem = {
   groupLeader: string;
 };
 
-const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
-  const [activeTab, setActiveTab] = useState<TabKey>('projectStates');
+const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
+  levelNumber,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabKey>("projectStates");
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only fetch data when the user explicitly clicks the 'groups' tab
-    if (activeTab !== 'groups') return;
+    if (activeTab !== "groups") return;
+
+    const userString = localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+    if (!user?.id) {
+      setGroups([]);
+      return;
+    }
 
     const fetchGroups = async () => {
       setLoadingGroups(true);
-
-      const token = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-
-      // Use the level from the logged-in user profile as a fallback
-      let targetLevel = levelNumber;
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          targetLevel = user.level || levelNumber;
-        } catch (e) {
-          console.error("Error parsing user data", e);
-        }
-      }
-
       try {
-        const user = storedUser ? JSON.parse(storedUser) : null;
-        if (!user || !user.id) throw new Error('User not found');
-
-        const fetchUrl = `http://localhost:5000/api/groups/display/${levelNumber}`;
-        console.log(`🌐 Fetching groups for Level ${levelNumber} from: ${fetchUrl}`);
-
-        const response = await fetch(fetchUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+        const response = await fetch(
+          `http://localhost:5000/api/groups/my-status/${user.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
 
         if (!response.ok) {
-          console.error(`❌ Fetch failed with status: ${response.status}`);
-          throw new Error('Failed to fetch');
+          setGroups([]);
+          return;
         }
 
         const data = await response.json();
-        console.log(`📥 Received data:`, data);
+        const rawItems = Array.isArray(data)
+          ? data
+          : Array.isArray(data.groups)
+            ? data.groups
+            : Array.isArray(data.requests)
+              ? data.requests
+              : [data];
 
-        // backend returns an array of objects: { groupId, groupName, supervisor, leader, members[] }
-        const mappedGroups = data.map((item: any) => ({
-          id: item.groupId,
-          name: item.groupName,
-          status: 'Formed',
-          members: Array.isArray(item.members) ? item.members.join(', ') : 'No members listed',
-          supervisor: item.supervisor || 'TBD',
-          groupLeader: item.leader || 'Not Assigned',
-        }));
-
-        setGroups(mappedGroups);
-        console.log(`✅ Groups loaded for level ${targetLevel}`);
+        setGroups(
+          rawItems.map((item: any, index: number) => ({
+            id: item.id ?? item.group_id ?? item.request_id ?? item.groupId ?? index,
+            name:
+              item.group_name ??
+              item.groupName ??
+              item.group ??
+              `Group ${index + 1}`,
+            status:
+              item.status ?? item.group_status ?? item.request_status ?? "Pending",
+            members:
+              Array.isArray(item.members)
+                ? item.members.join(", ")
+                : item.members_list ?? item.members ?? "Not available",
+            supervisor:
+              item.supervisor_name ?? item.supervisor ?? item.supervisor_id ?? "TBD",
+            groupLeader:
+              item.leader ?? item.group_leader ?? item.groupLeader ?? "Not Assigned",
+          })),
+        );
       } catch (error) {
-        console.error('Unable to load student groups:', error);
+        console.error("Unable to load student groups", error);
         setGroups([]);
       } finally {
         setLoadingGroups(false);
@@ -91,33 +95,38 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
     };
 
     fetchGroups();
-  }, [activeTab, levelNumber]); // Re-runs if tab changes or level prop updates
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'projectStates':
+      case "projectStates":
         return (
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
               <h3>Project States</h3>
-              <p>Review your current project status and phase updates for Level {levelNumber}.</p>
+              <p>
+                Review your current project status and phase updates for Level {levelNumber}.
+              </p>
             </div>
             <CoordinatorStageUpdates levelNumber={levelNumber} />
           </div>
         );
 
-      case 'groupFormation':
+      case "groupFormation":
         return (
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
               <h3>Group Formation</h3>
-              <p>Submit a new project group formation request and track status.</p>
+              <p>
+                Submit a new project group formation request, select a supervisor,
+                and track your request status.
+              </p>
             </div>
             <GroupRequest />
           </div>
         );
 
-      case 'groups':
+      case "groups":
         return (
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
@@ -129,7 +138,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
                 <div className="student-tab-empty">Loading groups...</div>
               ) : groups.length === 0 ? (
                 <div className="student-tab-empty">
-                  No registered groups were found for Level {levelNumber} yet.
+                  No registered groups were found for your account yet. Use the Group Formation tab to create one.
                 </div>
               ) : (
                 <div className="student-groups-grid">
@@ -157,7 +166,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
               <div className="manage-project-section">
                 <button
                   className="manage-project-btn"
-                  onClick={() => navigate('/student/project-management')}
+                  onClick={() => navigate("/student/project-management")}
                 >
                   Start Manage the Project
                 </button>
@@ -177,7 +186,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({ levelNumber
         {tabItems.map((tab) => (
           <button
             key={tab.key}
-            className={`student-inner-tab ${activeTab === tab.key ? 'active' : ''}`}
+            className={`student-inner-tab ${activeTab === tab.key ? "active" : ""}`}
             type="button"
             onClick={() => setActiveTab(tab.key)}
           >

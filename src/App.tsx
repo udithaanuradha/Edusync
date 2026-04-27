@@ -1,31 +1,33 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
-import LandingPage from './Pages/LandingPage';
-import Login from './Pages/auth/Login';
-import SignUpPage from './Pages/SignUpPage';
-import AdminDashboard from './Pages/AdminPages/AdminDashboard';
-import StudentDashboard from './Pages/StudentPages/StudentDashboard';
-import CoordinatorDashboard from './Pages/CoordinatorPages/CoordinatorDashboard';
-import SupervisorDashboard from './Pages/SupervisorPages/SupervisorDashboard';
-import MentorDashboard from './Pages/MentorPages/MentorDashboard';
-import Level1Page from './Pages/CoordinatorPages/Level1Page';
-import Level2Page from './Pages/CoordinatorPages/Level2Page';
-import Level3Page from './Pages/CoordinatorPages/Level3Page';
-import Level4Page from './Pages/CoordinatorPages/Level4Page';
-import Level1Student from './Pages/StudentPages/Level1Student';
-import Level2Student from './Pages/StudentPages/Level2Student';
-import Level3Student from './Pages/StudentPages/Level3Student';
-import Level4Student from './Pages/StudentPages/Level4Student';
-import ProjectManagementPage from './Pages/StudentPages/ProjectManagementPage';
-import SupervisorLevelPage from './Pages/SupervisorPages/SupervisorLevelPage';
-import AdminLevelPage from './Pages/AdminPages/AdminLevelPage';
-import Level2mentor from './Pages/MentorPages/Level2mentor';
-import Level4mentor from './Pages/MentorPages/Level4mentor';
-import GroupRequest from './components/student/GroupRequest';
-import AnnouncementsPage from './Pages/CoordinatorPages/AnnouncementsPage';
-import SupervisorAnnouncementsPage from './Pages/SupervisorPages/SupervisorAnnouncementsPage';
-import SupervisorApprovalPage from './Pages/SupervisorPages/SupervisorApprovalPage';
+import LandingPage from "./Pages/LandingPage";
+import Login from "./Pages/auth/Login";
+import SignUpPage from "./Pages/SignUpPage";
+import AdminDashboard from "./Pages/AdminPages/AdminDashboard";
+import StudentDashboard from "./Pages/StudentPages/StudentDashboard";
+import CoordinatorDashboard from "./Pages/CoordinatorPages/CoordinatorDashboard";
+import SupervisorDashboard from "./Pages/SupervisorPages/SupervisorDashboard";
+import MentorDashboard from "./Pages/MentorPages/MentorDashboard";
+import Level1Page from "./Pages/CoordinatorPages/Level1Page";
+import Level2Page from "./Pages/CoordinatorPages/Level2Page";
+import Level3Page from "./Pages/CoordinatorPages/Level3Page";
+import Level4Page from "./Pages/CoordinatorPages/Level4Page";
+import Level1Student from "./Pages/StudentPages/Level1Student";
+import Level2Student from "./Pages/StudentPages/Level2Student";
+import Level3Student from "./Pages/StudentPages/Level3Student";
+import Level4Student from "./Pages/StudentPages/Level4Student";
+import ProjectManagementPage from "./Pages/StudentPages/ProjectManagementPage";
+import SupervisorLevelPage from "./Pages/SupervisorPages/SupervisorLevelPage";
+import AdminLevelPage from "./Pages/AdminPages/AdminLevelPage";
+import Level2mentor from "./Pages/MentorPages/Level2mentor";
+import Level4mentor from "./Pages/MentorPages/Level4mentor";
+import GroupRequest from "./components/student/GroupRequest";
+import SupervisorApprovalPage from "./Pages/SupervisorPages/SupervisorApprovalPage";
+import AnnouncementsPage from "./Pages/CoordinatorPages/AnnouncementsPage";
+import SupervisorAnnouncementsPage from "./Pages/SupervisorPages/SupervisorAnnouncementsPage";
+import SupervisorCommunicationPage from "./Pages/SupervisorPages/SupervisorCommunicationPage";
+import CommunicationPage from "./Pages/CommunicationPage";
 
 function App() {
   const { user } = useAuth();
@@ -48,17 +50,8 @@ function App() {
       <Route
         path="/student"
         element={
-          user?.role === "student" ? (
-            <StudentDashboard />
-          ) : (
-            <Navigate to="/login" />
-          )
+          user?.role === "student" ? <StudentDashboard /> : <Navigate to="/login" />
         }
-      />
-
-      <Route
-        path="/student/project-management"
-        element={user?.role === 'student' ? <ProjectManagementPage /> : <Navigate to="/login" />}
       />
 
       <Route
@@ -86,11 +79,7 @@ function App() {
       <Route
         path="/mentor"
         element={
-          user?.role === "mentor" ? (
-            <MentorDashboard />
-          ) : (
-            <Navigate to="/login" />
-          )
+          user?.role === "mentor" ? <MentorDashboard /> : <Navigate to="/login" />
         }
       />
 
@@ -114,7 +103,7 @@ function App() {
         }
       />
 
-      {/* Level Routes - no restrictions */}
+      {/* Level Routes */}
       <Route
         path="/dashboard/level-1"
         element={
@@ -190,6 +179,17 @@ function App() {
       <Route path="/group-request" element={<GroupRequest />} />
 
       <Route
+        path="/student/project-management"
+        element={
+          user?.role === "student" ? (
+            <ProjectManagementPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
         path="/dashboard/announcements"
         element={
           user?.role === "coordinator" ? (
@@ -220,6 +220,22 @@ function App() {
             <Navigate to="/login" />
           )
         }
+      />
+
+      <Route
+        path="/supervisor/communication"
+        element={
+          user?.role === "supervisor" ? (
+            <SupervisorCommunicationPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/dashboard/communication"
+        element={user ? <CommunicationPage /> : <Navigate to="/login" />}
       />
     </Routes>
   );
