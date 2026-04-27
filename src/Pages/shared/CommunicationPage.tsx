@@ -11,6 +11,8 @@ type Recipient = {
   name: string;
   role: string;
   email?: string;
+  last_message?: string;
+  last_message_time?: string;
 };
 
 type CommunicationPageProps = {
@@ -33,6 +35,7 @@ const CommunicationPage: React.FC<CommunicationPageProps> = ({
       }
 
       try {
+        // 1. Fetch all users across all roles
         const responses = await Promise.all(
           ALL_ROLES.map((role) =>
             fetch(`${USER_API_BASE}?role=${role}`, {
@@ -57,21 +60,66 @@ const CommunicationPage: React.FC<CommunicationPageProps> = ({
           }),
         );
 
-        const recipients = payloads
+        const allUsers = payloads
           .flat()
-          .filter((person) => person && person.id !== user.id)
-          .map((person) => ({
-            id: person.id,
-            name: person.name,
-            role: person.role,
-            email: person.email,
-          }));
+          .filter((person) => person && person.id !== user.id);
 
-        const uniqueRecipients = Array.from(
-          new Map(recipients.map((item) => [item.id, item])).values(),
+        const uniqueUsers = Array.from(
+          new Map(allUsers.map((item) => [item.id, item])).values(),
         );
 
-        callback(uniqueRecipients);
+        // 2. Filter down to ONLY users who have a message history
+        const activeConversationsPromises = uniqueUsers.map(async (person) => {
+          try {
+            const params = new URLSearchParams({
+              sender_id: user.id.toString(),
+              receiver_id: person.id.toString(),
+            });
+
+            const msgResponse = await fetch(
+              `http://localhost:5000/api/messages?${params}`,
+              {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+
+            if (msgResponse.ok) {
+              const messages = await msgResponse.json();
+
+              if (messages && messages.length > 0) {
+                const lastMsg = messages[messages.length - 1];
+
+                return {
+                  id: person.id,
+                  name: person.name,
+                  role: person.role,
+                  email: person.email,
+                  last_message: lastMsg.message_text,
+                  last_message_time: lastMsg.created_at,
+                };
+              }
+            }
+            return null;
+          } catch (err) {
+            console.error(
+              `Failed to fetch messages for user ${person.id}`,
+              err,
+            );
+            return null;
+          }
+        });
+
+        // 3. Wait for all checks to finish and filter out the nulls
+        const resolvedConversations = await Promise.all(
+          activeConversationsPromises,
+        );
+        const activeRecipients = resolvedConversations.filter(
+          (recipient) => recipient !== null,
+        ) as Recipient[];
+
+        // 4. Send the filtered list to the chat window
+        callback(activeRecipients);
       } catch (error) {
         console.error("Error loading recipients:", error);
         callback([]);
