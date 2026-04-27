@@ -117,7 +117,16 @@ const makeMonthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMon
 
 const CalendarPage: React.FC = () => {
   const { user } = useAuth();
-  const isCoordinator = user?.role === 'coordinator';
+  const storedUserRole = useMemo(() => {
+    const stored = loadStoredJson<Record<string, unknown> | null>('user', null);
+    if (!stored || typeof stored.role !== 'string') {
+      return null;
+    }
+
+    return stored.role;
+  }, []);
+  const userRole = user?.role ?? storedUserRole;
+  const isCoordinator = userRole === 'coordinator';
 
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [drawerMode, setDrawerMode] = useState<DrawerMode>('schedule');
@@ -192,6 +201,10 @@ const CalendarPage: React.FC = () => {
   };
 
   const openEditPanelDrawer = (panel: ScheduledPanel) => {
+    if (!isCoordinator) {
+      return;
+    }
+
     setEditingPanelId(panel.id);
     setDrawerMode('schedule');
     setIsDrawerOpen(true);
@@ -432,6 +445,10 @@ const CalendarPage: React.FC = () => {
   };
 
   const deletePanel = (panelId: string) => {
+    if (!isCoordinator) {
+      return;
+    }
+
     const panel = scheduledPanels.find((item) => item.id === panelId);
     const confirmed = window.confirm(`Delete ${panel?.title ?? 'this panel'}?`);
     if (!confirmed) {
@@ -540,16 +557,18 @@ const CalendarPage: React.FC = () => {
                           <span>{panel.groupName} • Level {panel.level}</span>
                           <span>{panel.kind}</span>
                           <span className="panel-time">{panel.time} • {panel.duration}</span>
-                          <div className="panel-action-row">
-                            <button type="button" className="panel-action-btn edit" onClick={() => openEditPanelDrawer(panel)}>
-                              <Pencil size={13} />
-                              Edit
-                            </button>
-                            <button type="button" className="panel-action-btn delete" onClick={() => deletePanel(panel.id)}>
-                              <Trash2 size={13} />
-                              Delete
-                            </button>
-                          </div>
+                          {isCoordinator && (
+                            <div className="panel-action-row">
+                              <button type="button" className="panel-action-btn edit" onClick={() => openEditPanelDrawer(panel)}>
+                                <Pencil size={13} />
+                                Edit
+                              </button>
+                              <button type="button" className="panel-action-btn delete" onClick={() => deletePanel(panel.id)}>
+                                <Trash2 size={13} />
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </article>
                     ))
