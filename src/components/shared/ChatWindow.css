@@ -417,3 +417,28 @@
 .messages-list::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Refresh Button Styles */
+.refresh-messages-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: auto; /* Pushes the button to the far right side */
+}
+
+.refresh-messages-btn:hover {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+.refresh-messages-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

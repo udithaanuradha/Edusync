@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Send, Loader, Plus } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Send, Loader, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NewConversationModal from "./NewConversationModal";
 import "./ChatWindow.css";
@@ -47,6 +47,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,13 +81,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     loadRecipients();
   }, [getAvailableRecipients, selectedRecipient]);
 
-  // Load messages for selected recipient
-  useEffect(() => {
-    if (!selectedRecipient || !user) return;
+  // Extracted message loading logic into a reusable function
+  const fetchMessages = useCallback(
+    async (isManualRefresh = false) => {
+      if (!selectedRecipient || !user) return;
 
-    const loadMessages = async () => {
       try {
-        setLoading(true);
+        if (isManualRefresh) {
+          setIsRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+
         const params = new URLSearchParams({
           sender_id: user.id.toString(),
           receiver_id: selectedRecipient.id.toString(),
@@ -105,11 +111,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         console.error("Error loading messages:", error);
       } finally {
         setLoading(false);
+        setIsRefreshing(false);
       }
-    };
+    },
+    [selectedRecipient, user],
+  );
 
-    loadMessages();
-  }, [selectedRecipient, user]);
+  // Load messages automatically when recipient changes
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -149,22 +160,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  // Handle new conversation - user selected from modal
   const handleSelectUserFromModal = (selectedUser: Recipient) => {
-    // Create or switch to conversation with selected user
     const newRecipient: Recipient = {
       id: selectedUser.id,
       name: selectedUser.name,
       role: selectedUser.role,
     };
 
-    // Check if recipient already exists in list
     const existingRecipient = recipients.find((r) => r.id === newRecipient.id);
 
     if (existingRecipient) {
       setSelectedRecipient(existingRecipient);
     } else {
-      // Add new recipient to the list
       setRecipients([...recipients, newRecipient]);
       setSelectedRecipient(newRecipient);
     }
@@ -246,6 +253,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <h3>{selectedRecipient.name}</h3>
                   <p>{selectedRecipient.role}</p>
                 </div>
+                {/* Refresh Button */}
+                <button
+                  className="refresh-messages-btn"
+                  onClick={() => fetchMessages(true)}
+                  disabled={isRefreshing}
+                  title="Refresh messages"
+                >
+                  <RefreshCw
+                    size={20}
+                    className={isRefreshing ? "spinner" : ""}
+                  />
+                </button>
               </div>
 
               <div className="messages-list">
