@@ -1,15 +1,17 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { ClipboardCheck, CalendarDays } from 'lucide-react';
-import './SupervisorSidebar.css';
+import React from "react";
+import { NavLink } from "react-router-dom";
+import { ClipboardCheck, CalendarDays } from "lucide-react";
+import "./SupervisorSidebar.css";
 
 interface SupervisorSidebarProps {
   compact?: boolean;
 }
 
-const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({ compact = false }) => {
+const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({
+  compact = false,
+}) => {
   return (
-    <aside className={`supervisor-sidebar ${compact ? 'compact' : ''}`}>
+    <aside className={`supervisor-sidebar ${compact ? "compact" : ""}`}>
       {!compact && (
         <div className="supervisor-brand">
           <div className="brand-icon">E</div>
@@ -20,7 +22,9 @@ const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({ compact = false }
       <nav className="supervisor-nav">
         <NavLink
           to="/supervisor/approval"
-          className={({ isActive }) => `supervisor-nav-item ${isActive ? 'active' : ''}`}
+          className={({ isActive }) =>
+            `supervisor-nav-item ${isActive ? "active" : ""}`
+          }
         >
           <ClipboardCheck size={18} />
           <span>Approval</span>
@@ -28,7 +32,9 @@ const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({ compact = false }
 
         <NavLink
           to="/supervisor/schedule-meeting"
-          className={({ isActive }) => `supervisor-nav-item ${isActive ? 'active' : ''}`}
+          className={({ isActive }) =>
+            `supervisor-nav-item ${isActive ? "active" : ""}`
+          }
         >
           <CalendarDays size={18} />
           <span>Schedule Meeting</span>

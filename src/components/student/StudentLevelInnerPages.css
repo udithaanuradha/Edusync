@@ -1,0 +1,146 @@
+.student-inner-pages {
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.student-inner-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 10px;
+  margin-bottom: 24px;
+}
+
+.student-inner-tab {
+  background: transparent;
+  border: none;
+  color: #475569;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-inner-tab:hover {
+  background: #f1f5f9;
+}
+
+.student-inner-tab.active {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+}
+
+.student-inner-content {
+  min-height: 520px;
+}
+
+.student-inner-panel {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+}
+
+.student-inner-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.student-inner-tab-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-inner-tab-heading h3 {
+  margin: 0;
+  font-size: 24px;
+  color: #0f172a;
+}
+
+.student-inner-tab-heading p {
+  margin: 0;
+  color: #475569;
+  max-width: 740px;
+  line-height: 1.75;
+}
+
+.student-groups-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.student-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.student-group-card {
+  padding: 20px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.group-card-header h4 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.group-status-badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.group-meta {
+  margin: 0;
+  color: #475569;
+  line-height: 1.75;
+}
+
+.student-tab-empty {
+  padding: 28px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  font-size: 15px;
+}
+
+@media (max-width: 850px) {
+  .student-inner-pages {
+    padding: 18px;
+  }
+
+  .student-inner-tab {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}

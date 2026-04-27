@@ -4,9 +4,14 @@ import { ArrowLeft } from 'lucide-react';
 import heroBg from '../assets/background.png';
 import uomLogo from '../assets/uom_logo.png';
 
+const STUDENT_ID_REGEX = /^\d{6}[A-Za-z]$/;
+
+const normalizeStudentId = (value: string) => value.replace(/\s+/g, '').toUpperCase();
+
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [universityIdError, setUniversityIdError] = useState('');
   
   // 1. State for form data
   const [formData, setFormData] = useState({
@@ -22,24 +27,69 @@ const SignUpPage: React.FC = () => {
 
   // 2. Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === 'universityId') {
+      const normalizedValue = normalizeStudentId(value);
+      setFormData({ ...formData, universityId: normalizedValue });
+      if (universityIdError) {
+        setUniversityIdError('');
+      }
+      return;
+    }
+
+    if (name === 'role' && value !== 'student') {
+      setUniversityIdError('');
+      setFormData({ ...formData, role: value, universityId: '' });
+      return;
+    }
+
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const validateStudentUniversityId = (value: string) => {
+    if (!value) {
+      return 'University ID is required for student role.';
+    }
+
+    if (!STUDENT_ID_REGEX.test(value)) {
+      return 'Invalid format. Use 6 digits followed by 1 letter (example: 123456A).';
+    }
+
+    return '';
   };
 
   // 3. Handle Form Submission
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setUniversityIdError('');
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match!");
       return;
     }
 
+    const normalizedUniversityId = normalizeStudentId(formData.universityId);
+
+    if (formData.role === 'student') {
+      const idValidationError = validateStudentUniversityId(normalizedUniversityId);
+      if (idValidationError) {
+        setUniversityIdError(idValidationError);
+        return;
+      }
+    }
+
+    const payload = {
+      ...formData,
+      universityId: formData.role === 'student' ? normalizedUniversityId : '',
+    };
+
     try {
       const response = await fetch('http://localhost:5000/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -120,11 +170,17 @@ const SignUpPage: React.FC = () => {
                   <input 
                     name="universityId" 
                     type="text" 
-                    placeholder="e.g., 190000X" 
+                    placeholder="e.g., 123456A" 
+                    maxLength={7}
+                    value={formData.universityId}
                     onChange={handleChange} 
+                    onBlur={() => setUniversityIdError(validateStudentUniversityId(formData.universityId))}
                     className="auth-input" 
                     style={{ paddingLeft: '16px' }} 
                   />
+                  {universityIdError && (
+                    <p style={{ color: 'red', fontSize: '12px', marginTop: '6px' }}>{universityIdError}</p>
+                  )}
                 </>
               )}
             </div>

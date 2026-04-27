@@ -1,0 +1,172 @@
+.supervisor-approval-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.approval-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.approval-page-head h2 {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.approval-refresh-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.approval-refresh-btn:hover {
+  background: #f1f5f9;
+}
+
+.approval-request-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.approval-request-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.approval-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.approval-card-head h3 {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.approval-level-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.approval-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.approval-btn.approve {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.approval-btn.approve:hover {
+  background: #15803d;
+}
+
+.approval-btn.reject {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.approval-btn.reject:hover {
+  background: #b91c1c;
+}
+
+.approval-btn.ghost {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.approval-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.approval-muted {
+  color: #64748b;
+}
+
+.approval-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.approval-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 70;
+}
+
+.approval-modal {
+  width: min(540px, 92vw);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.approval-modal h3 {
+  color: #0f172a;
+}
+
+.approval-modal p {
+  color: #475569;
+}
+
+.approval-modal textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+.approval-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 1024px) {
+  .approval-request-grid {
+    grid-template-columns: 1fr;
+  }
+}
