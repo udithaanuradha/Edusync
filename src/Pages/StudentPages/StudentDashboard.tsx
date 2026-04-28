@@ -2,7 +2,7 @@
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
-import Announcements from '../../components/coordinator/Announcements';
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
 import RecentProjects from '../../components/coordinator/RecentProjects';
 
@@ -40,7 +40,7 @@ const StudentDashboard: React.FC = () => {
 
             {/* ROW 3: Split View */}
             <div className="dashboard-row equal-split">
-              <Announcements />
+              <AnnouncementWidget />
               <UpcomingDeadlines />
             </div>
 

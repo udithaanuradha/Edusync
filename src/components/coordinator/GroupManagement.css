@@ -1,0 +1,389 @@
+.group-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.groups-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-create-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  cursor: pointer;
+}
+
+.groups-list-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.groups-empty-state {
+  text-align: center;
+  color: #475569;
+  padding: 24px 8px;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.group-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.group-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-card-head h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.group-meta-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.group-meta {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.group-members-preview {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-members-preview li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.group-card-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.group-edit-btn {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.group-edit-btn:hover {
+  background: #dbeafe;
+}
+
+.group-delete-btn {
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.group-delete-btn:hover {
+  background: #fee2e2;
+}
+
+.group-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 1100;
+  padding: 16px;
+}
+
+.group-modal {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.group-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.group-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.icon-close {
+  border: none;
+  background: #f1f5f9;
+  color: #334155;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.group-modal-body {
+  padding: 16px 18px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-modal-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.group-modal-body input {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.group-modal-body select {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.supervisor-picker-wrap {
+  position: relative;
+}
+
+.supervisor-options-box {
+  margin-top: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.supervisor-options-box p {
+  margin: 0;
+  padding: 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.supervisor-options-box ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.supervisor-options-box li + li {
+  border-top: 1px solid #e2e8f0;
+}
+
+.supervisor-options-box li button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.supervisor-options-box li button:hover {
+  background: #f8fafc;
+}
+
+.supervisor-options-box li button span {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.supervisor-options-box li button small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.supervisor-selected-text {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #1d4ed8;
+}
+
+.member-search-row {
+  display: flex;
+  gap: 10px;
+}
+
+.member-search-row input {
+  flex: 1;
+}
+
+.member-search-row button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1d4ed8;
+  color: #fff;
+  cursor: pointer;
+}
+
+.member-search-row button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.selected-members-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.selected-members-box h4 {
+  margin: 0 0 10px;
+  color: #0f172a;
+}
+
+.selected-members-box p {
+  margin: 0;
+  color: #64748b;
+}
+
+.selected-members-box ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selected-members-box li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: #334155;
+  font-size: 13px;
+}
+
+.selected-members-box li button {
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #e2e8f0;
+  cursor: pointer;
+}
+
+.selected-members-box li button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.group-modal-footer {
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+}
+
+.btn-secondary,
+.btn-primary {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .member-search-row {
+    flex-direction: column;
+  }
+}
