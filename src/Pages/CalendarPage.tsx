@@ -7,7 +7,10 @@ import CalendarGrid, {
 import Header from "../components/shared/Header";
 import { useAuth } from "../context/AuthContext";
 import "./CalendarPage.css";
-import SupervisorPartInCalendar from "./SupervisorPages/supervisorPartInCalendar"; // NEW: Imported the supervisor component
+
+// Importing both Supervisor components
+import SupervisorPartInCalendar from "./SupervisorPages/supervisorPartInCalendar";
+import SupervisorTaskScheduler from "./SupervisorPages/SupervisorTaskScheduler";
 
 type SupervisorOption = {
   id: number;
@@ -613,7 +616,6 @@ const CalendarPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* NEW: Display specific buttons based on user role */}
               {(isCoordinator || userRole === "supervisor") && (
                 <div className="calendar-action-row">
                   {isCoordinator && (
@@ -638,8 +640,13 @@ const CalendarPage: React.FC = () => {
                     </>
                   )}
 
-                  {/* Supervisor Recurring Freeze Component placed right here */}
-                  {userRole === "supervisor" && <SupervisorPartInCalendar />}
+                  {/* Supervisor Tools! Both components are rendered here side-by-side */}
+                  {userRole === "supervisor" && (
+                    <>
+                      <SupervisorTaskScheduler />
+                      <SupervisorPartInCalendar />
+                    </>
+                  )}
                 </div>
               )}
             </div>
