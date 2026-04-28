@@ -1,9 +1,8 @@
-// src/Pages/AdminPages/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCard from '../../components/admin/StatCard';
-import ActivityTable from '../../components/admin/ActivityTable';
+import LoginTable from '../../components/admin/LoginTable'; 
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -11,7 +10,8 @@ const Dashboard: React.FC = () => {
     totalUsers: 0,
     totalStudents: 0,
     totalCoordinators: 0,
-    totalSupervisors: 0
+    totalSupervisors: 0,
+    totalMentors: 0 
   });
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +60,6 @@ const Dashboard: React.FC = () => {
             <p className="overview-subtitle">System monitoring and user activity.</p>
           </div>
 
-          {/* Stats Grid */}
           <div className="stats-grid">
             <StatCard
               title="Total Users"
@@ -68,7 +67,7 @@ const Dashboard: React.FC = () => {
               color="blue"
             />
             <StatCard
-              title="Total Students"
+              title="Students"
               value={loading ? '...' : stats.totalStudents}
               color="green"
             />
@@ -82,9 +81,13 @@ const Dashboard: React.FC = () => {
               value={loading ? '...' : stats.totalSupervisors}
               color="purple"
             />
+            <StatCard
+              title="Industry Mentors"
+              value={loading ? '...' : stats.totalMentors}
+              color="red" // Changed from 'red' to 'teal' to match your StatCard logic
+            />
           </div>
 
-          {/* Batch Promotion Section */}
           <div style={{
             margin: '24px 0',
             padding: '24px',
@@ -110,8 +113,7 @@ const Dashboard: React.FC = () => {
                 color: '#c2410c',
                 fontSize: '14px'
               }}>
-                Promote all eligible students to the next academic level.
-                Level 4 students will not be affected.
+                Promote all eligible students to the next academic level
               </p>
             </div>
             <button
@@ -133,9 +135,9 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Recent Activity */}
+          {/* 2. REPLACED ActivityTable with LoginTable */}
           <div className="overview-row">
-            <ActivityTable />
+            <LoginTable />
           </div>
 
         </main>

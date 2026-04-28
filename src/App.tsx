@@ -30,6 +30,7 @@ import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommu
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 
 function App() {
   const { user } = useAuth();
@@ -204,28 +205,21 @@ function App() {
         element={user ? <CalendarPage /> : <Navigate to="/login" />}
       />
 
-      <Route
-        path="/dashboard/announcements"
-        element={
-          user?.role === "coordinator" ? (
-            <AnnouncementsPage />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-
-      <Route
-        path="/supervisor/announcements"
-        element={
-          user?.role === "supervisor" ? (
-            <SupervisorAnnouncementsPage />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-
+     {/* Combined Announcement Route for All Roles */}
+<Route
+  path="/dashboard/announcements"
+  element={
+    user?.role === "admin" ? (
+      <AdminAnnouncements />
+    ) : user?.role === "coordinator" ? (
+      <AnnouncementsPage />
+    ) : user?.role === "supervisor" ? (
+      <SupervisorAnnouncementsPage />
+    ) : (
+      <Navigate to="/login" />
+    )
+  }
+/>
       <Route
         path="/supervisor/approval"
         element={
