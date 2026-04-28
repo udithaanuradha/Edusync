@@ -1,23 +1,18 @@
 // src/Pages/AdminPages/AdminDashboard.tsx
-// src/Pages/AdminPages/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCard from '../../components/admin/StatCard';
 import ActivityTable from '../../components/admin/ActivityTable';
-import AnnouncementWidget from '../../components/shared/AnnouncementWidget'; 
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
-  // FIXED: Removed extra closing braces/parentheses here
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalStudents: 0,
     totalCoordinators: 0,
-    totalSupervisors: 0,
-    totalIndustryMentors: 0  
+    totalSupervisors: 0
   });
-  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,13 +62,29 @@ const Dashboard: React.FC = () => {
 
           {/* Stats Grid */}
           <div className="stats-grid">
-            <StatCard title="Total Users" value={loading ? '...' : stats.totalUsers} color="blue" />
-            <StatCard title="Students" value={loading ? '...' : stats.totalStudents} color="green" />
-            <StatCard title="Coordinators" value={loading ? '...' : stats.totalCoordinators} color="amber" />
-            <StatCard title="Supervisors" value={loading ? '...' : stats.totalSupervisors} color="purple" />
-            <StatCard title="Industry Mentors" value={loading ? '...' : stats.totalIndustryMentors} color="red" />
+            <StatCard
+              title="Total Users"
+              value={loading ? '...' : stats.totalUsers}
+              color="blue"
+            />
+            <StatCard
+              title="Total Students"
+              value={loading ? '...' : stats.totalStudents}
+              color="green"
+            />
+            <StatCard
+              title="Coordinators"
+              value={loading ? '...' : stats.totalCoordinators}
+              color="amber"
+            />
+            <StatCard
+              title="Supervisors"
+              value={loading ? '...' : stats.totalSupervisors}
+              color="purple"
+            />
           </div>
 
+          {/* Batch Promotion Section */}
           <div style={{
             margin: '24px 0',
             padding: '24px',
@@ -86,11 +97,21 @@ const Dashboard: React.FC = () => {
             gap: '16px'
           }}>
             <div>
-              <h3 style={{ margin: '0 0 4px 0', color: '#9a3412', fontSize: '16px', fontWeight: '600' }}>
+              <h3 style={{
+                margin: '0 0 4px 0',
+                color: '#9a3412',
+                fontSize: '16px',
+                fontWeight: '600'
+              }}>
                 🎓 End of Year Student Promotion
               </h3>
-              <p style={{ margin: 0, color: '#c2410c', fontSize: '14px' }}>
+              <p style={{
+                margin: 0,
+                color: '#c2410c',
+                fontSize: '14px'
+              }}>
                 Promote all eligible students to the next academic level.
+                Level 4 students will not be affected.
               </p>
             </div>
             <button
@@ -103,22 +124,16 @@ const Dashboard: React.FC = () => {
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '600',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
               Promote All Students
             </button>
           </div>
-          
-          <div className="overview-row" style={{ marginTop: '24px' }}>
-            <AnnouncementWidget 
-              title="All Announcements" 
-              showEditDeleteButtons={true} 
-              scope="all" 
-            />
-          </div>
 
-
+          {/* Recent Activity */}
           <div className="overview-row">
             <ActivityTable />
           </div>
