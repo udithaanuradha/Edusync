@@ -29,6 +29,7 @@ import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnou
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
 
 function App() {
   const { user } = useAuth();
@@ -250,6 +251,11 @@ function App() {
       <Route
         path="/dashboard/communication"
         element={user ? <CommunicationPage /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="/profile-settings"
+        element={user ? <ProfileSettingsPage /> : <Navigate to="/login" />}
       />
     </Routes>
   );

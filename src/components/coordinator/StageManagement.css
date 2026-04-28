@@ -1,24 +1,26 @@
 .stage-management-container {
   background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e5e7eb;
 }
 
 .stages-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
   gap: 24px;
+  flex-wrap: wrap;
 }
 
 .stages-header h3 {
   margin: 0;
   color: #0f172a;
   font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .stages-subtitle {
@@ -36,7 +38,7 @@
   background: #2563eb;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
@@ -86,7 +88,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -95,7 +97,7 @@
   display: flex;
   gap: 16px;
   padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e5e7eb;
   transition: all 0.2s;
   position: relative;
   background: white;
@@ -150,7 +152,7 @@
   color: #0f172a;
   font-size: 17px;
   font-weight: 700;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.02em;
 }
 
 .btn-delete-small {
@@ -226,7 +228,7 @@
   border-radius: 12px;
   width: 90%;
   max-width: 520px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 24px 50px -18px rgba(15, 23, 42, 0.25);
   animation: slideUp 0.3s ease-out;
   overflow: hidden;
 }
@@ -247,8 +249,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 .modal-header h4 {

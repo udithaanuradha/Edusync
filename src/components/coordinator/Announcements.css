@@ -2,14 +2,15 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
+  width: 100%;
 }
 
 .announcements-card {
   background: #fff;
-  border-radius: 12px;
-  padding: 28px;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e5e7eb;
 }
 
 .announcements-card:first-child {
@@ -23,7 +24,7 @@
   gap: 12px;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #eff6ff;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-icon {
@@ -44,14 +45,14 @@
 .announcements-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .announcements-form input,
 .announcements-form textarea,
 .announcements-form select {
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 12px 14px;
   font-size: 14px;
   font-family: inherit;
@@ -69,8 +70,8 @@
 .announcements-form textarea:focus,
 .announcements-form select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 0.1);
   background: #fff;
 }
 
@@ -115,7 +116,7 @@
   padding: 12px 16px;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   color: #fff;
   font-weight: 700;
   font-size: 14px;
