@@ -29,6 +29,7 @@ import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnou
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
+import ProjectTimeline from './Pages/StudentPages/ProjectTimeline';
 
 function App() {
   const { user } = useAuth();
@@ -192,6 +193,17 @@ function App() {
         element={
           user?.role === "student" ? (
             <ProjectManagementPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/student/project-timeline"
+        element={
+          user?.role === "student" ? (
+            <ProjectTimeline />
           ) : (
             <Navigate to="/login" />
           )
