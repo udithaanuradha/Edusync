@@ -301,14 +301,16 @@ const SupervisorTaskScheduler: React.FC = () => {
                     setCurrentWeekStart(addDays(currentWeekStart, -7))
                   }
                 >
-                  <ChevronLeft size={16} /> Prev
+                  <ChevronLeft size={16} /> prev
                 </button>
+
                 <button
                   className="timeline-nav-btn"
                   onClick={() => setCurrentWeekStart(getMonday(new Date()))}
                 >
-                  Today
+                  This week
                 </button>
+
                 <button
                   className="timeline-nav-btn"
                   onClick={() =>

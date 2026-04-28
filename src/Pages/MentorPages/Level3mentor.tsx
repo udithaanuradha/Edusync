@@ -1,23 +1,25 @@
 import React from 'react';
-import MentorSidebarWrapper from '../../components/mentor/MentorSidebarWrapper'; // Use the wrapper
+
+import Sidebar from '../../components/shared/Sidebar'; 
 import Header from '../../components/shared/Header';
+import MentorSidebarWrapper from '../../components/mentor/MentorSidebarWrapper'; // Use the wrapper
 import MentorStageManagement from '../../components/mentor/MentorStageManagement';
 import './MentorDashboard.css';
 
-const Level4mentor = () => {
+const Level3mentor = () => {
   return (
     <div className="app-layout">
-      {/* This brings back your full sidebar with Calendar, etc. */}
       <MentorSidebarWrapper /> 
       
       <div className="main-viewport">
         <Header />
         <main className="content-container">
-          <MentorStageManagement levelNumber={4} />
+          {/* 3. This component handles the specific level content */}
+          <MentorStageManagement levelNumber={3} />
         </main>
       </div>
     </div>
   );
 };
 
-export default Level4mentor;
+export default Level3mentor;

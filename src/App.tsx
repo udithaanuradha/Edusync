@@ -26,11 +26,12 @@ import ProjectManagementPage from './pages/StudentPages/ProjectManagementPage';
 import SupervisorApprovalPage from './pages/SupervisorPages/SupervisorApprovalPage';
 import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
 import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnouncementsPage';
+import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
-import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
+import Level3mentor from './Pages/MentorPages/Level3mentor';
 
 function App() {
   const { user } = useAuth();
@@ -162,6 +163,8 @@ function App() {
             <SupervisorLevelPage levelNumber={3} />
           ) : user?.role === "admin" ? (
             <AdminLevelPage levelNumber={3} />
+          ) : user?.role === "mentor" ? (
+            <Level3mentor />
           ) : (
             <Navigate to="/login" />
           )
@@ -205,7 +208,7 @@ function App() {
         element={user ? <CalendarPage /> : <Navigate to="/login" />}
       />
 
-     {/* Combined Announcement Route for All Roles */}
+      {/* Combined Announcement Route for All Roles */}
 <Route
   path="/dashboard/announcements"
   element={
@@ -220,6 +223,7 @@ function App() {
     )
   }
 />
+
       <Route
         path="/supervisor/approval"
         element={
