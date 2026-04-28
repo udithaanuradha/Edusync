@@ -1,10 +1,11 @@
- import React, { useState,useMemo  } from 'react';
- import './ProjectTimeline.css'; 
+ import React, { useState, useMemo, useEffect } from 'react';
+import './ProjectTimeline.css'; 
 interface Task {
   id: string;
   name: string;
   startDate: string;
   endDate: string;
+  isSaved?: boolean;
 }
 
 const ProjectTimeline: React.FC = () => {
@@ -21,6 +22,56 @@ const ProjectTimeline: React.FC = () => {
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskEnd, setNewTaskEnd] = useState('');
   const [taskError, setTaskError] = useState('');
+  const [groupId, setGroupId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadMilestones = async () => {
+      try {
+        const userString = localStorage.getItem("user");
+        const user = userString ? JSON.parse(userString) : null;
+        if (!user || !user.id) return;
+
+        const groupRes = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const groupData = await groupRes.json();
+        if (!groupData || groupData.length === 0) return;
+        const gId = groupData[0].groupId;
+        setGroupId(gId);
+
+        const mileRes = await fetch(`http://localhost:5000/api/milestones/group/${gId}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const mileData = await mileRes.json();
+        
+        if (mileData.success && mileData.data) {
+          const loadedTasks: Task[] = mileData.data.map((m: any) => ({
+            id: m.id.toString(),
+            name: m.title,
+            startDate: m.start_date ? m.start_date.split('T')[0] : '',
+            endDate: m.due_date ? m.due_date.split('T')[0] : '',
+            isSaved: true
+          }));
+          setTasks(loadedTasks);
+        }
+
+        // Fetch Overview
+        const overviewRes = await fetch(`http://localhost:5000/api/milestones/overview/group/${gId}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const overviewData = await overviewRes.json();
+        if (overviewData.success && overviewData.data) {
+          if (overviewData.data.start_date) setTimelineStart(overviewData.data.start_date.split('T')[0]);
+          if (overviewData.data.end_date) setTimelineEnd(overviewData.data.end_date.split('T')[0]);
+          if (overviewData.data.workflow_name) setWorkflowName(overviewData.data.workflow_name);
+        }
+      } catch (err) {
+        console.error("Error loading milestones:", err);
+      }
+    };
+    
+    loadMilestones();
+  }, []);
 
   const durationDays = useMemo(() => {
     if (!timelineStart || !timelineEnd) return 0;
@@ -62,6 +113,7 @@ const ProjectTimeline: React.FC = () => {
       name: newTaskName,
       startDate: newTaskStart,
       endDate: newTaskEnd,
+      isSaved: false
     };
 
     setTasks([...tasks, newTask]);
@@ -70,7 +122,18 @@ const ProjectTimeline: React.FC = () => {
     setNewTaskEnd('');
   };
 
-  const removeTask = (id: string) => {
+  const removeTask = async (id: string) => {
+    const taskToRemove = tasks.find(t => t.id === id);
+    if (taskToRemove?.isSaved) {
+      try {
+        await fetch(`http://localhost:5000/api/milestones/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+      } catch (err) {
+        console.error("Failed to delete milestone from database", err);
+      }
+    }
     setTasks(tasks.filter(task => task.id !== id));
   };
 
@@ -94,31 +157,79 @@ const ProjectTimeline: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/project-timeline', {
+      const userString = localStorage.getItem("user");
+      const user = userString ? JSON.parse(userString) : null;
+      if (!user || !user.id) {
+        throw new Error('User not found. Please log in.');
+      }
+
+      const groupRes = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const groupData = await groupRes.json();
+      if (!groupData || groupData.length === 0) {
+        throw new Error('You do not belong to any group. Please join a group first.');
+      }
+      const groupId = groupData[0].groupId;
+      const token = localStorage.getItem('token');
+
+      // 1. Save Project Overview
+      await fetch('http://localhost:5000/api/milestones/overview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({
-          startDate: timelineStart,
-          endDate: timelineEnd,
-          workflowName,
-          durationDays,
-          tasks,
-          submittedTo: ['coordinator', 'supervisor'],
-          status: 'submitted'
+          group_id: groupId,
+          start_date: timelineStart,
+          end_date: timelineEnd,
+          workflow_name: workflowName
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Submission failed');
+      // 2. Save New Milestones
+      const newTasks = tasks.filter(t => !t.isSaved);
+      
+      if (newTasks.length === 0 && tasks.length > 0) {
+        setSubmitMessage('Timeline is already up to date.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      for (const task of newTasks) {
+        const payload = {
+          group_id: groupId,
+          title: task.name,
+          description: `Part of workflow: ${workflowName}`,
+          start_date: task.startDate,
+          due_date: task.endDate
+        };
+
+        const response = await fetch('http://localhost:5000/api/milestones', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to submit milestone: ${task.name}`);
+        }
       }
 
       setSubmitMessage('Timeline submitted successfully to coordinator and supervisor.');
       setSubmitError(false);
-    } catch (error) {
+      
+      // Mark all tasks as saved so they don't submit again
+      setTasks(prev => prev.map(t => ({ ...t, isSaved: true })));
+    } catch (error: any) {
       setSubmitError(true);
-      setSubmitMessage('Failed to submit timeline. Please try again.');
+      setSubmitMessage(error.message || 'Failed to submit timeline. Please try again.');
       console.error(error);
     } finally {
       setIsSubmitting(false);
