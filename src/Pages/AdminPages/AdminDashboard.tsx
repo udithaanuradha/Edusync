@@ -1,20 +1,23 @@
 // src/Pages/AdminPages/AdminDashboard.tsx
+// src/Pages/AdminPages/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCard from '../../components/admin/StatCard';
 import ActivityTable from '../../components/admin/ActivityTable';
-// Import the shared widget
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget'; 
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
+  // FIXED: Removed extra closing braces/parentheses here
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalStudents: 0,
     totalCoordinators: 0,
-    totalSupervisors: 0
+    totalSupervisors: 0,
+    totalIndustryMentors: 0  
   });
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,22 +68,12 @@ const Dashboard: React.FC = () => {
           {/* Stats Grid */}
           <div className="stats-grid">
             <StatCard title="Total Users" value={loading ? '...' : stats.totalUsers} color="blue" />
-            <StatCard title="Total Students" value={loading ? '...' : stats.totalStudents} color="green" />
+            <StatCard title="Students" value={loading ? '...' : stats.totalStudents} color="green" />
             <StatCard title="Coordinators" value={loading ? '...' : stats.totalCoordinators} color="amber" />
             <StatCard title="Supervisors" value={loading ? '...' : stats.totalSupervisors} color="purple" />
+            <StatCard title="Industry Mentors" value={loading ? '...' : stats.totalIndustryMentors} color="red" />
           </div>
 
-          {/* Announcements Widget */}
-          {/* CHANGED: scope="all" now displays announcements from everyone */}
-          <div className="overview-row" style={{ marginTop: '24px' }}>
-            <AnnouncementWidget 
-              title="All Announcements" 
-              showEditDeleteButtons={true} 
-              scope="all" 
-            />
-          </div>
-
-          {/* Batch Promotion Section */}
           <div style={{
             margin: '24px 0',
             padding: '24px',
@@ -116,8 +109,16 @@ const Dashboard: React.FC = () => {
               Promote All Students
             </button>
           </div>
+          
+          <div className="overview-row" style={{ marginTop: '24px' }}>
+            <AnnouncementWidget 
+              title="All Announcements" 
+              showEditDeleteButtons={true} 
+              scope="all" 
+            />
+          </div>
 
-          {/* Recent Activity */}
+
           <div className="overview-row">
             <ActivityTable />
           </div>

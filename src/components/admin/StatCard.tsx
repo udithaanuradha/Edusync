@@ -1,6 +1,7 @@
 import React from 'react';
 
-type ColorType = 'blue' | 'green' | 'purple' | 'amber';
+// 1. Add your new color to the type
+type ColorType = 'blue' | 'green' | 'purple' | 'amber' | 'red'; 
 
 interface StatCardProps {
   title: string;
@@ -8,11 +9,13 @@ interface StatCardProps {
   color?: ColorType;
 }
 
+// 2. Define the styles for your new color
 const colorStyles: Record<ColorType, React.CSSProperties> = {
   blue: { backgroundColor: '#eff6ff', color: '#2563eb' },
   green: { backgroundColor: '#f0fdf4', color: '#16a34a' },
   purple: { backgroundColor: '#faf5ff', color: '#9333ea' },
   amber: { backgroundColor: '#fffbeb', color: '#d97706' },
+  red: { backgroundColor: '#fef2f2', color: '#dc2626' }, 
 };
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, color = 'blue' }) => {

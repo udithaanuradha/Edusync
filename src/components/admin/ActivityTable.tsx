@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
+// Define the interface for the data coming from your database
 interface ActivityRow {
   username: string;
   role: string;
@@ -9,44 +10,22 @@ interface ActivityRow {
 }
 
 const ActivityTable: React.FC = () => {
+  const [activities, setActivities] = useState<ActivityRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const activities: ActivityRow[] = [
-    {
-      username: 'pererahav.23',
-      role: 'Student',
-      roleColor: '#2563eb',
-      action: 'Uploaded level-2 interim report',
-      time: '2 minutes ago',
-    },
-    {
-      username: 'nimaljk_IT.62',
-      role: 'Coordinator',
-      roleColor: '#16a34a',
-      action: 'Created new level-1 project group',
-      time: '10 minutes ago',
-    },
-    {
-      username: 'jayalathwp_IT.88',
-      role: 'Supervisor',
-      roleColor: '#9333ea',
-      action: 'Approved level-1 proposal submissions',
-      time: '40 minutes ago',
-    },
-    {
-      username: 'dissana_codegen.126',
-      role: 'Mentor',
-      roleColor: '#db2777',
-      action: 'Wrote feedback',
-      time: '45 minutes ago',
-    },
-    {
-      username: 'samanthiks.21',
-      role: 'Student',
-      roleColor: '#2563eb',
-      action: 'Submitted final project documentation',
-      time: '55 minutes ago',
-    },
-  ];
+  // Fetch real data on component mount
+  useEffect(() => {
+    fetch('http://localhost:5000/api/admin/recent-activity')
+      .then((res) => res.json())
+      .then((data) => {
+        setActivities(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching activity:", err);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div style={{
@@ -67,7 +46,6 @@ const ActivityTable: React.FC = () => {
       </h2>
 
       <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-
         <thead>
           <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
             <th style={{ padding: '8px' }}>Username</th>
@@ -76,24 +54,28 @@ const ActivityTable: React.FC = () => {
             <th style={{ padding: '8px' }}>Time</th>
           </tr>
         </thead>
-
         <tbody style={{ color: '#4b5563' }}>
-          {activities.map((activity: ActivityRow, index: number) => (
-            <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <td style={{ padding: '12px 8px' }}>{activity.username}</td>
-              <td style={{ 
-                padding: '12px 8px', 
-                fontWeight: '600',
-                color: activity.roleColor 
-              }}>
-                {activity.role}
-              </td>
-              <td style={{ padding: '12px 8px' }}>{activity.action}</td>
-              <td style={{ padding: '12px 8px' }}>{activity.time}</td>
+          {loading ? (
+            <tr>
+              <td colSpan={4} style={{ padding: '12px', textAlign: 'center' }}>Loading activities...</td>
             </tr>
-          ))}
+          ) : (
+            activities.map((activity, index) => (
+              <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <td style={{ padding: '12px 8px' }}>{activity.username}</td>
+                <td style={{ 
+                  padding: '12px 8px', 
+                  fontWeight: '600',
+                  color: activity.roleColor 
+                }}>
+                  {activity.role}
+                </td>
+                <td style={{ padding: '12px 8px' }}>{activity.action}</td>
+                <td style={{ padding: '12px 8px' }}>{activity.time}</td>
+              </tr>
+            ))
+          )}
         </tbody>
-
       </table>
     </div>
   );
