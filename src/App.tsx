@@ -30,6 +30,7 @@ import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommu
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import Level3mentor from './Pages/MentorPages/Level3mentor';
 
 function App() {
   const { user } = useAuth();
@@ -161,6 +162,8 @@ function App() {
             <SupervisorLevelPage levelNumber={3} />
           ) : user?.role === "admin" ? (
             <AdminLevelPage levelNumber={3} />
+          ) : user?.role === "mentor" ? (
+            <Level3mentor />
           ) : (
             <Navigate to="/login" />
           )
