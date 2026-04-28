@@ -1,0 +1,138 @@
+.supervisor-level-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.supervisor-level-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.supervisor-level-header p {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 15px;
+}
+
+.supervisor-level-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.supervisor-level-tab {
+  border: none;
+  background: transparent;
+  color: #334155;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.supervisor-level-tab.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.supervisor-level-panel {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.supervisor-level-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.supervisor-level-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.supervisor-level-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.supervisor-level-card-head h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.supervisor-level-card-desc {
+  margin: 0;
+  color: #475569;
+}
+
+.supervisor-level-card-meta {
+  margin: 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.supervisor-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.supervisor-doc-list p {
+  margin: 0 0 6px;
+  color: #334155;
+}
+
+.supervisor-doc-list ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.supervisor-doc-list a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.supervisor-doc-list a:hover {
+  text-decoration: underline;
+}
+
+.supervisor-level-muted {
+  margin: 0;
+  color: #64748b;
+}
+
+.supervisor-level-error {
+  margin: 0;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  padding: 10px;
+  border-radius: 8px;
+}

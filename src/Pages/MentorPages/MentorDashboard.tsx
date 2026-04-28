@@ -6,6 +6,7 @@ import StatCards from '../../components/mentor/StatCard'; // FIXED: Plural impor
 import RecentProjects from '../../components/mentor/RecentProjects';
 import StudentAttention from '../../components/mentor/StudentAttention';
 import RecentNotifications from '../../components/mentor/RecentNotification';
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import './MentorDashboard.css';
 
 // 1. Internal Dashboard Content
@@ -23,6 +24,7 @@ const MentorDashboard: React.FC = () => {
       <StatCards />
     
       <div className="overview-row"><RecentProjects /></div>
+      <div className="overview-row"><AnnouncementWidget title="Announcements" maxItems={4} /></div>
       <div className="overview-row"><StudentAttention /></div>
       <div className="overview-row"><RecentNotifications /></div>
     </div>

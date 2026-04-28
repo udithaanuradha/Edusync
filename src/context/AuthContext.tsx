@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// 1. Added 'login' to the interface so the app knows it exists
+interface User {
+  id: number;
+  name: string;
+  role: string;
+  email: string;
+  level?: number;
+}
+
 interface AuthContextType {
-  user: { name: string; role: string } | null;
-  login: (userData: { name: string; role: string }) => void;
+  user: User | null;
+  login: (userData: User) => void;
   switchRole: (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => void;
   logout: () => void;
 }
@@ -11,24 +18,32 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // 2. Changed this to 'null' so the app starts at the Login screen!
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Persist user across page refresh
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-  // 3. Created the login function to save the data from your Node backend
-  const login = (userData: { name: string; role: string }) => {
+  const login = (userData: User) => {
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const switchRole = (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => {
-    setUser(prev => prev ? { ...prev, role: newRole } : null);
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, role: newRole };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
   };
 
   return (
-    // 4. Added 'login' to the Provider so other pages can use it
     <AuthContext.Provider value={{ user, login, switchRole, logout }}>
       {children}
     </AuthContext.Provider>

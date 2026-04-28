@@ -1,8 +1,10 @@
  /// <reference types="vite/client" />
 
+declare module "*.css";
 declare module "*.jpg";
 declare module "*.png";
 declare module "*.jpeg";
 declare module "*.gif";
 declare module "*.webp";
 declare module "*.svg";
+declare module "*.css";
