@@ -183,14 +183,16 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                   ))}
                 </div>
               )}
-              <div className="manage-project-section">
-                <button
-                  className="manage-project-btn"
-                  onClick={() => navigate("/student/project-management")}
-                >
-                  Start Manage the Project
-                </button>
-              </div>
+              {groups.length > 0 && (
+                <div className="manage-project-section">
+                  <button
+                    className="manage-project-btn"
+                    onClick={() => navigate("/student/project-management")}
+                  >
+                    Start Manage the Project
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
