@@ -1,5 +1,6 @@
 .calendar-shell {
   position: relative;
+  --calendar-header-offset: 70px;
 }
 
 .calendar-page-wrap {
@@ -355,7 +356,10 @@
 
 .drawer-overlay {
   position: fixed;
-  inset: 0;
+  top: var(--calendar-header-offset);
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: rgba(15, 23, 42, 0.38);
   display: flex;
   justify-content: flex-end;
@@ -364,7 +368,7 @@
 
 .schedule-drawer {
   width: min(460px, 100vw);
-  height: 100%;
+  height: calc(100vh - var(--calendar-header-offset));
   background: #ffffff;
   border-left: 1px solid #e2e8f0;
   box-shadow: -24px 0 50px rgba(15, 23, 42, 0.18);
@@ -655,6 +659,10 @@
 }
 
 @media (max-width: 680px) {
+  .calendar-shell {
+    --calendar-header-offset: 64px;
+  }
+
   .calendar-header-row {
     flex-direction: column;
     align-items: flex-start;

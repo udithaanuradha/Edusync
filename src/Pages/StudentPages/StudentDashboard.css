@@ -20,6 +20,21 @@
   overflow-y: auto;
 }
 
+.student-level-shell .content-container {
+  padding: 32px 40px;
+}
+
+.student-level-shell .dashboard-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: 24px;
+}
+
+.student-level-shell .dashboard-header-section {
+  margin-bottom: 0;
+}
+
 /* --- 2. HEADER SECTION --- */
 .dashboard-header-section {
   margin-bottom: 24px;
@@ -98,6 +113,10 @@
   grid-template-columns: 1fr 1fr; 
   gap: 20px; /* Space between the two columns */
   align-items: stretch;
+}
+
+.dashboard-row {
+  width: 100%;
 }
 
 .level-summary-card,

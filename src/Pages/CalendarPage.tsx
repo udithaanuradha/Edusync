@@ -174,6 +174,8 @@ const CalendarPage: React.FC = () => {
   const [meetingLink, setMeetingLink] = useState("");
   const [notes, setNotes] = useState("");
   const [freezeReason, setFreezeReason] = useState("");
+  const [freezeLevel, setFreezeLevel] = useState<string>('');
+  const [freezeGroupId, setFreezeGroupId] = useState<string>('');
   const [supervisors, setSupervisors] = useState<SupervisorOption[]>([]);
   const [supervisorsLoading, setSupervisorsLoading] = useState(false);
   const [supervisorsError, setSupervisorsError] = useState<string | null>(null);
@@ -193,6 +195,10 @@ const CalendarPage: React.FC = () => {
   });
 
   const normalizeList = (data: unknown) => {
+    if (Array.isArray(data)) {
+      return data as Record<string, unknown>[];
+    }
+
     const payload = data as Record<string, unknown> | null;
     if (Array.isArray(payload?.data))
       return payload.data as Record<string, unknown>[];
@@ -234,6 +240,8 @@ const CalendarPage: React.FC = () => {
     setMeetingLink("");
     setNotes("");
     setFreezeReason("");
+    setFreezeLevel("");
+    setFreezeGroupId("");
   };
 
   const openCreatePanelDrawer = () => {
@@ -324,7 +332,7 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const fetchGroups = async (level: string) => {
+  const fetchGroups = async (level: string, mode: DrawerMode = 'schedule') => {
     setGroupsLoading(true);
     setGroupsError(null);
 
@@ -371,18 +379,45 @@ const CalendarPage: React.FC = () => {
         .filter((item): item is GroupOption => item !== null);
 
       setGroups(list);
+<<<<<<< HEAD
       setSelectedGroupId((current) => {
         if (list.some((group) => String(group.id) === current)) {
           return current;
         }
         return list[0] ? String(list[0].id) : "";
       });
+=======
+
+      if (mode === 'schedule') {
+        setSelectedGroupId((current) => {
+          if (list.some((group) => String(group.id) === current)) {
+            return current;
+          }
+          return '';
+        });
+      } else {
+        setFreezeGroupId((current) => {
+          if (list.some((group) => String(group.id) === current)) {
+            return current;
+          }
+          return '';
+        });
+      }
+>>>>>>> b03a2c6 (refactor: widen academic level layouts)
     } catch (error) {
       setGroupsError(
         error instanceof Error ? error.message : "Failed to load groups.",
       );
       setGroups([]);
+<<<<<<< HEAD
       setSelectedGroupId("");
+=======
+      if (mode === 'schedule') {
+        setSelectedGroupId('');
+      } else {
+        setFreezeGroupId('');
+      }
+>>>>>>> b03a2c6 (refactor: widen academic level layouts)
     } finally {
       setGroupsLoading(false);
     }
@@ -408,8 +443,22 @@ const CalendarPage: React.FC = () => {
       return;
     }
 
-    fetchGroups(selectedLevel);
+    fetchGroups(selectedLevel, 'schedule');
   }, [drawerMode, isDrawerOpen, selectedLevel]);
+
+  useEffect(() => {
+    if (!isDrawerOpen || drawerMode !== 'freeze') {
+      return;
+    }
+
+    if (!freezeLevel) {
+      setGroups([]);
+      setFreezeGroupId('');
+      return;
+    }
+
+    fetchGroups(freezeLevel, 'freeze');
+  }, [drawerMode, freezeLevel, isDrawerOpen]);
 
   const sortedPanels = useMemo(
     () =>
@@ -837,6 +886,7 @@ const CalendarPage: React.FC = () => {
 
                 <label className="drawer-field">
                   <span>Select Group</span>
+<<<<<<< HEAD
                   <select
                     value={selectedGroupId}
                     onChange={(event) => setSelectedGroupId(event.target.value)}
@@ -845,6 +895,10 @@ const CalendarPage: React.FC = () => {
                     <option value="">
                       {groupsLoading ? "Loading groups..." : "Choose a group"}
                     </option>
+=======
+                  <select value={selectedGroupId} onChange={(event) => setSelectedGroupId(event.target.value)} disabled={groupsLoading || groups.length === 0}>
+                    <option value="" disabled>{groupsLoading ? 'Loading groups...' : 'Choose a group'}</option>
+>>>>>>> b03a2c6 (refactor: widen academic level layouts)
                     {groups.map((group) => (
                       <option key={String(group.id)} value={String(group.id)}>
                         {group.name}{" "}
@@ -985,6 +1039,33 @@ const CalendarPage: React.FC = () => {
                     Freezing a date blocks panel scheduling for that day.
                   </span>
                 </div>
+
+                <label className="drawer-field">
+                  <span>Level (Optional)</span>
+                  <select value={freezeLevel} onChange={(event) => { setFreezeLevel(event.target.value); setFreezeGroupId(''); }}>
+                    <option value="">All Levels</option>
+                    {levelOptions.map((level) => (
+                      <option key={level} value={String(level)}>
+                        Level {level}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {freezeLevel && (
+                  <label className="drawer-field">
+                    <span>Group (Optional)</span>
+                    <select value={freezeGroupId} onChange={(event) => setFreezeGroupId(event.target.value)} disabled={groupsLoading || groups.length === 0}>
+                      <option value="">{groupsLoading ? 'Loading groups...' : 'All Groups'}</option>
+                      {groups.map((group) => (
+                        <option key={String(group.id)} value={String(group.id)}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                    {groupsError && <span className="drawer-help error">{groupsError}</span>}
+                  </label>
+                )}
 
                 <label className="drawer-field">
                   <span>Freeze Date</span>

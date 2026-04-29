@@ -3,34 +3,31 @@ import { Calendar } from 'lucide-react';
 import './UpcomingDeadlines.css';
 
 interface Deadline {
-  day: string;
-  month: string;
+  date: string;
   title: string;
-  groupType: string;
+  academicLevel: number;
+  startTime?: string | null;
+  targetGroup?: string | null;
+  location?: string | null;
 }
 
-const deadlinesData: Deadline[] = [
-  {
-    day: '15',
-    month: 'DEC',
-    title: 'Project Proposal Review',
-    groupType: 'Level 2 Projects',
-  },
-  {
-    day: '20',
-    month: 'DEC',
-    title: 'Mid-Term Evaluation',
-    groupType: 'Level 3 Projects',
-  },
-  {
-    day: '05',
-    month: 'JAN',
-    title: 'Final Code Submission',
-    groupType: 'Level 4 Projects',
-  },
-];
+interface UpcomingDeadlinesProps {
+  deadlines?: Deadline[];
+}
 
-const UpcomingDeadlines: React.FC = () => {
+const formatDay = (date: string): { day: string; month: string } => {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    return { day: '--', month: '---' };
+  }
+
+  return {
+    day: String(parsed.getDate()).padStart(2, '0'),
+    month: parsed.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+  };
+};
+
+const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] }) => {
   return (
     <div className="deadlines-card">
       <div className="card-header">
@@ -39,23 +36,32 @@ const UpcomingDeadlines: React.FC = () => {
       </div>
 
       <div className="deadlines-list">
-        {deadlinesData.map((deadline, index) => (
-          <div className="deadline-item" key={index}>
-            
-            {/* The Calendar Date Box */}
-            <div className="date-box">
-              <span className="date-day">{deadline.day}</span>
-              <span className="date-month">{deadline.month}</span>
-            </div>
-
-            {/* The Deadline Details */}
-            <div className="deadline-info">
-              <h4 className="deadline-title">{deadline.title}</h4>
-              <p className="deadline-subtitle">{deadline.groupType}</p>
-            </div>
-
+        {deadlines.length === 0 ? (
+          <div style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
+            No upcoming deadlines found.
           </div>
-        ))}
+        ) : (
+          deadlines.map((deadline, index) => {
+            const { day, month } = formatDay(deadline.date);
+
+            return (
+              <div className="deadline-item" key={index}>
+                <div className="date-box">
+                  <span className="date-day">{day}</span>
+                  <span className="date-month">{month}</span>
+                </div>
+
+                <div className="deadline-info">
+                  <h4 className="deadline-title">{deadline.title}</h4>
+                  <p className="deadline-subtitle">
+                    {deadline.targetGroup || `Level ${deadline.academicLevel}`}
+                    {deadline.startTime ? ` • ${deadline.startTime}` : ''}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
       
       <button className="view-all-btn">View Full Calendar</button>

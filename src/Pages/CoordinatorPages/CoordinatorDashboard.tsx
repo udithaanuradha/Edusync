@@ -1,4 +1,4 @@
- import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from '../../components/shared/Sidebar'; 
 import Header from '../../components/shared/Header';
 import StatCards from '../../components/coordinator/StatCards';
@@ -7,9 +7,111 @@ import './CoordinatorDashboard.css';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 
+type DashboardStats = {
+  totalProjects: number;
+  activeStudents: number;
+  pendingEvaluations: number;
+  completedProjects: number;
+};
+
+type RecentProject = {
+  projectId: number;
+  groupName: string;
+  supervisorName: string;
+  status: string;
+  progress: number;
+  updatedAt?: string | null;
+};
+
+type UpcomingDeadline = {
+  id: number;
+  date: string;
+  title: string;
+  academicLevel: number;
+  startTime?: string | null;
+  targetGroup?: string | null;
+  location?: string | null;
+};
+
+type DashboardSummary = {
+  stats: DashboardStats;
+  recentProjects: RecentProject[];
+  upcomingDeadlines: UpcomingDeadline[];
+};
+
+const API_BASE = 'http://localhost:5000/api';
+
 const CoordinatorDashboard: React.FC = () => {
+  const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDashboardSummary = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/dashboard/coordinator/summary`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load dashboard summary');
+        }
+
+        const payload = await response.json();
+
+        if (isMounted) {
+          setDashboardData(payload.data ?? null);
+        }
+      } catch (fetchError) {
+        if (isMounted) {
+          setError(fetchError instanceof Error ? fetchError.message : 'Failed to load dashboard summary');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchDashboardSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const loadingState = (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '420px' }}>
+      <div style={{ textAlign: 'center', color: '#475569' }}>
+        <div
+          style={{
+            width: '42px',
+            height: '42px',
+            border: '4px solid #cbd5e1',
+            borderTopColor: '#2563eb',
+            borderRadius: '50%',
+            margin: '0 auto 14px',
+            animation: 'spin 0.9s linear infinite',
+          }}
+        />
+        <p style={{ margin: 0, fontWeight: 600 }}>Loading dashboard summary...</p>
+      </div>
+    </div>
+  );
+
+  const errorState = error ? (
+    <div style={{ marginTop: '24px', padding: '16px 18px', borderRadius: '16px', background: '#fff1f2', color: '#9f1239' }}>
+      {error}
+    </div>
+  ) : null;
+
   return (
-    /* Added minHeight and display flex to ensure the layout holds together */
     <div className="app-layout" style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
       
@@ -28,22 +130,24 @@ const CoordinatorDashboard: React.FC = () => {
               </p>
             </div>
 
-            {/* These are now properly called as components */}
-            <StatCards />
-             <div className="dashboard-grid">
-  
-  {/* Left Column (Wider) */}
-  <div className="main-content-column">
-    <RecentProjects />
-  </div>
+            {loading ? (
+              loadingState
+            ) : (
+              <>
+                <StatCards stats={dashboardData?.stats ?? null} />
+                <div className="dashboard-grid">
+                  <div className="main-content-column">
+                    <RecentProjects projects={dashboardData?.recentProjects ?? []} />
+                  </div>
 
-  {/* Right Column (Narrower) */}
-  <div className="side-content-column">
-    <UpcomingDeadlines />
-    <AnnouncementWidget title="Announcements" maxItems={3} showEditDeleteButtons={false} />
-  </div>
-
-</div>
+                  <div className="side-content-column">
+                    <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines ?? []} />
+                    <AnnouncementWidget title="Announcements" maxItems={3} showEditDeleteButtons={false} />
+                  </div>
+                </div>
+                {errorState}
+              </>
+            )}
 
           </div>
         </main>

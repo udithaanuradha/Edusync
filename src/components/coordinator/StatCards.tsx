@@ -2,6 +2,13 @@ import React from 'react';
 import { FolderKanban, Users, AlertCircle, CheckCircle2 } from 'lucide-react';
 import './StatCards.css';
 
+interface DashboardStats {
+  totalProjects: number;
+  activeStudents: number;
+  pendingEvaluations: number;
+  completedProjects: number;
+}
+
 interface StatCardProps {
   title: string;
   value: string;
@@ -10,38 +17,53 @@ interface StatCardProps {
   colorClass: string;
 }
 
-const statData: StatCardProps[] = [
-  {
-    title: 'Total Projects',
-    value: '24',
-    subtext: '+3 this month',
-    icon: <FolderKanban size={24} />,
-    colorClass: 'icon-blue',
-  },
-  {
-    title: 'Active Students',
-    value: '120',
-    subtext: '+8 new',
-    icon: <Users size={24} />,
-    colorClass: 'icon-green',
-  },
-  {
-    title: 'Pending Evaluations',
-    value: '8',
-    subtext: '3 due soon',
-    icon: <AlertCircle size={24} />,
-    colorClass: 'icon-orange',
-  },
-  {
-    title: 'Completed Projects',
-    value: '16',
-    subtext: '67% completion',
-    icon: <CheckCircle2 size={24} />,
-    colorClass: 'icon-teal',
-  },
-];
+interface StatCardsProps {
+  stats?: DashboardStats | null;
+}
 
-const StatCards: React.FC = () => {
+const StatCards: React.FC<StatCardsProps> = ({ stats }) => {
+  const resolvedStats: DashboardStats = stats ?? {
+    totalProjects: 0,
+    activeStudents: 0,
+    pendingEvaluations: 0,
+    completedProjects: 0,
+  };
+
+  const completionRate = resolvedStats.totalProjects > 0
+    ? Math.round((resolvedStats.completedProjects / resolvedStats.totalProjects) * 100)
+    : 0;
+
+  const statData: StatCardProps[] = [
+    {
+      title: 'Total Projects',
+      value: String(resolvedStats.totalProjects),
+      subtext: 'Across all coordinator groups',
+      icon: <FolderKanban size={24} />,
+      colorClass: 'icon-blue',
+    },
+    {
+      title: 'Active Students',
+      value: String(resolvedStats.activeStudents),
+      subtext: 'Registered student accounts',
+      icon: <Users size={24} />,
+      colorClass: 'icon-green',
+    },
+    {
+      title: 'Pending Evaluations',
+      value: String(resolvedStats.pendingEvaluations),
+      subtext: 'Still waiting for marks',
+      icon: <AlertCircle size={24} />,
+      colorClass: 'icon-orange',
+    },
+    {
+      title: 'Completed Projects',
+      value: String(resolvedStats.completedProjects),
+      subtext: `${completionRate}% completion rate`,
+      icon: <CheckCircle2 size={24} />,
+      colorClass: 'icon-teal',
+    },
+  ];
+
   return (
     <div className="stat-cards-container">
       {statData.map((stat, index) => (
