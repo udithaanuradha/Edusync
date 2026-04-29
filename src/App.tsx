@@ -30,6 +30,7 @@ import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
+import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage'; // Added import
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
 
@@ -203,26 +204,35 @@ function App() {
         }
       />
 
+      {/* Modified Calendar Route */}
       <Route
         path="/dashboard/calendar"
-        element={user ? <CalendarPage /> : <Navigate to="/login" />}
+        element={
+          user?.role === "admin" ? (
+            <AdminCalendarPage />
+          ) : user ? (
+            <CalendarPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       {/* Combined Announcement Route for All Roles */}
-<Route
-  path="/dashboard/announcements"
-  element={
-    user?.role === "admin" ? (
-      <AdminAnnouncements />
-    ) : user?.role === "coordinator" ? (
-      <AnnouncementsPage />
-    ) : user?.role === "supervisor" ? (
-      <SupervisorAnnouncementsPage />
-    ) : (
-      <Navigate to="/login" />
-    )
-  }
-/>
+      <Route
+        path="/dashboard/announcements"
+        element={
+          user?.role === "admin" ? (
+            <AdminAnnouncements />
+          ) : user?.role === "coordinator" ? (
+            <AnnouncementsPage />
+          ) : user?.role === "supervisor" ? (
+            <SupervisorAnnouncementsPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
 
       <Route
         path="/supervisor/approval"
