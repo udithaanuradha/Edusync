@@ -3,6 +3,7 @@ import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCard from '../../components/admin/StatCard';
 import LoginTable from '../../components/admin/LoginTable'; 
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget'; 
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -84,10 +85,11 @@ const Dashboard: React.FC = () => {
             <StatCard
               title="Industry Mentors"
               value={loading ? '...' : stats.totalMentors}
-              color="red" // Changed from 'red' to 'teal' to match your StatCard logic
+              color="red" 
             />
           </div>
 
+          {/* Promotion Banner */}
           <div style={{
             margin: '24px 0',
             padding: '24px',
@@ -135,7 +137,11 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* 2. REPLACED ActivityTable with LoginTable */}
+          {/* 2. Added AnnouncementWidget here */}
+          <div style={{ marginBottom: '24px' }}>
+            <AnnouncementWidget />
+          </div>
+
           <div className="overview-row">
             <LoginTable />
           </div>
