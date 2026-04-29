@@ -1,7 +1,11 @@
  import React, { useState, useEffect } from 'react';
 import './GroupRequest.css';
 
-const GroupRequest = () => {
+interface GroupRequestProps {
+  levelNumber: number;
+}
+
+const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
   const [supervisors, setSupervisors] = useState<{ id: number, name: string }[]>([]);
   const [requestStatus, setRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
   const [rejectReason, setRejectReason] = useState('');
@@ -37,19 +41,30 @@ const GroupRequest = () => {
       
     // Optional: Fetch existing request status on load to persist state
     checkExistingRequest();
-  }, []);
+  }, [levelNumber]);
 
   const checkExistingRequest = async () => {
     const userString = localStorage.getItem('user');
     const user = userString ? JSON.parse(userString) : null;
     if (!user?.id) return;
 
+    // Reset state before checking
+    setRequestStatus('none');
+    setRequestId(null);
+    setIsFinalized(false);
+    setRejectReason('');
+    setFormData({
+      projectName: '',
+      groupName: '',
+      groupLeader: '',
+      members: '',
+      message: '',
+      primarySupervisor: '',
+    });
+
     try {
       const endpoints = [
-        `http://localhost:5000/api/groups/student/${user.id}/requests`,
-        `http://localhost:5000/api/groups/student/${user.id}`,
         `http://localhost:5000/api/groups/my-requests/${user.id}`,
-        `http://localhost:5000/api/groups/my-status/${user.id}`,
       ];
 
       for (const endpoint of endpoints) {
@@ -60,11 +75,13 @@ const GroupRequest = () => {
         if (!res.ok) continue;
 
         const data = await res.json();
-        const latest = Array.isArray(data)
-          ? data[0]
+        const requests = Array.isArray(data)
+          ? data
           : Array.isArray(data?.requests)
-            ? data.requests[0]
-            : data;
+            ? data.requests
+            : [data];
+
+        const latest = requests.find((r: any) => Number(r.project_level || r.level) === Number(levelNumber));
 
         if (!latest) continue;
 
@@ -112,7 +129,7 @@ const GroupRequest = () => {
           request_message: `Project: ${formData.projectName}. ${formData.message}`,
           supervisor_id: formData.primarySupervisor,
           student_id: user.id,
-          project_level: user.level // Dynamically sending the student's level
+          project_level: levelNumber // Use the level from props
         })
       });
       

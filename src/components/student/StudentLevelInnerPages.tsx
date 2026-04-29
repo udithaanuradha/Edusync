@@ -43,7 +43,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
       setLoadingGroups(true);
       try {
         const response = await fetch(
-          `http://localhost:5000/api/groups/level/${levelNumber}`,
+          `http://localhost:5000/api/groups/student-group/${user.id}/${levelNumber}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -136,7 +136,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                 supervisor, and track your request status.
               </p>
             </div>
-            <GroupRequest />
+            <GroupRequest levelNumber={levelNumber} />
           </div>
         );
 
