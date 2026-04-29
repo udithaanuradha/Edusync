@@ -379,14 +379,6 @@ const CalendarPage: React.FC = () => {
         .filter((item): item is GroupOption => item !== null);
 
       setGroups(list);
-<<<<<<< HEAD
-      setSelectedGroupId((current) => {
-        if (list.some((group) => String(group.id) === current)) {
-          return current;
-        }
-        return list[0] ? String(list[0].id) : "";
-      });
-=======
 
       if (mode === 'schedule') {
         setSelectedGroupId((current) => {
@@ -403,21 +395,17 @@ const CalendarPage: React.FC = () => {
           return '';
         });
       }
->>>>>>> b03a2c6 (refactor: widen academic level layouts)
     } catch (error) {
       setGroupsError(
         error instanceof Error ? error.message : "Failed to load groups.",
       );
       setGroups([]);
-<<<<<<< HEAD
-      setSelectedGroupId("");
-=======
+
       if (mode === 'schedule') {
         setSelectedGroupId('');
       } else {
         setFreezeGroupId('');
       }
->>>>>>> b03a2c6 (refactor: widen academic level layouts)
     } finally {
       setGroupsLoading(false);
     }
@@ -886,19 +874,8 @@ const CalendarPage: React.FC = () => {
 
                 <label className="drawer-field">
                   <span>Select Group</span>
-<<<<<<< HEAD
-                  <select
-                    value={selectedGroupId}
-                    onChange={(event) => setSelectedGroupId(event.target.value)}
-                    disabled={groupsLoading || groups.length === 0}
-                  >
-                    <option value="">
-                      {groupsLoading ? "Loading groups..." : "Choose a group"}
-                    </option>
-=======
                   <select value={selectedGroupId} onChange={(event) => setSelectedGroupId(event.target.value)} disabled={groupsLoading || groups.length === 0}>
                     <option value="" disabled>{groupsLoading ? 'Loading groups...' : 'Choose a group'}</option>
->>>>>>> b03a2c6 (refactor: widen academic level layouts)
                     {groups.map((group) => (
                       <option key={String(group.id)} value={String(group.id)}>
                         {group.name}{" "}
