@@ -1,4 +1,4 @@
- import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
@@ -9,6 +9,38 @@ import RecentProjects from '../../components/coordinator/RecentProjects';
 import './StudentDashboard.css';
 
 const StudentDashboard: React.FC = () => {
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const userString = localStorage.getItem("user");
+        const user = userString ? JSON.parse(userString) : null;
+        if (!user || !user.id) {
+          setLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:5000/api/dashboard/student/summary/${user.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (res.ok) {
+          const payload = await res.json();
+          setDashboardData(payload.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch student dashboard summary", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSummary();
+  }, []);
+
   return (
     <div className="app-layout">
       {/* 1. SIDEBAR: Stays on the left */}
@@ -35,13 +67,13 @@ const StudentDashboard: React.FC = () => {
 
             {/* ROW 2: Full Width Section */}
             <div className="dashboard-row">
-              <RecentProjects />
+              <RecentProjects projects={dashboardData?.recentProjects || []} />
             </div>
 
             {/* ROW 3: Split View */}
             <div className="dashboard-row equal-split">
               <AnnouncementWidget />
-              <UpcomingDeadlines />
+              <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines || []} />
             </div>
 
           </div>

@@ -31,6 +31,19 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
 
   useEffect(() => {
     const loadMilestones = async () => {
+      // Reset state first to prevent carryover between different project groups (levels)
+      setTimelineStart('');
+      setTimelineEnd('');
+      setWorkflowName('');
+      setTasks([]);
+      setSubmitMessage('');
+      setTaskError('');
+      
+      // Also reset new task inputs
+      setNewTaskName('');
+      setNewTaskStart('');
+      setNewTaskEnd('');
+
       try {
         const userString = localStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : null;

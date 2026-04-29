@@ -1,4 +1,5 @@
- import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import ProjectTimeline from './ProjectTimeline';
@@ -15,10 +16,15 @@ const tabItems = [
 ] as const;
 
 const ProjectManagementPage: React.FC = () => {
+  const location = useLocation();
+  // Read level and groupId passed from StudentLevelInnerPages navigation
+  const navState = (location.state as { level?: number; groupId?: number | string } | null) || {};
+
   const [activeTab, setActiveTab] = useState<TabKey>('timeline');
   const [userRole, setUserRole] = useState<UserRole>('member');
   const [groupId, setGroupId] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentLevel, setCurrentLevel] = useState<number | null>(null);
 
   const [groupMembers, setGroupMembers] = useState<{id: number | string, name: string}[] | null>(null);
   const [milestoneOptions, setMilestoneOptions] = useState<{id: number | string, title: string}[] | null>(null);
@@ -64,6 +70,12 @@ const ProjectManagementPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Reset states to prevent carryover when switching groups/levels
+      setGroupMembers(null);
+      setMilestoneOptions(null);
+      setProjectTasks([]);
+      setError(null);
+      
       try {
         const userString = localStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : null;
@@ -72,13 +84,11 @@ const ProjectManagementPage: React.FC = () => {
           return;
         }
         setCurrentUser(user);
-        console.log("🔍 Current User:", user);
 
         const token = localStorage.getItem('token');
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Utility to fetch and handle errors
         const safeFetch = async (url: string) => {
           console.log(`📡 Fetching: ${url}`);
           const res = await fetch(url, { headers });
@@ -92,39 +102,54 @@ const ProjectManagementPage: React.FC = () => {
           return data;
         };
 
-        // 1. Get Group
-        let gId: any = null;
-        try {
-          const groupData = await safeFetch(`http://localhost:5000/api/groups/my-status/${user.id}`);
-          console.log("🔍 Group Data from API:", groupData);
-          if (!groupData || groupData.length === 0) {
-            setError("No group found for this user. Please form a group first.");
-            setGroupMembers([]);
-            setMilestoneOptions([]);
+        // ── Step 1: Resolve the correct groupId ─────────────────────────────
+        // Priority: groupId passed via navigation state > match by level > first group
+        let gId: number | null = null;
+        let resolvedLevel: number | null = null;
+
+        if (navState.groupId) {
+          // Came from a specific level's "Start Manage the Project" button
+          gId = Number(navState.groupId);
+          resolvedLevel = navState.level ? Number(navState.level) : null;
+          console.log(`🎯 Using navigation state — Group ID: ${gId}, Level: ${resolvedLevel}`);
+        } else {
+          // Fallback: fetch all groups and match by user level
+          try {
+            const groupData = await safeFetch(`http://localhost:5000/api/groups/my-status/${user.id}`);
+            if (!groupData || groupData.length === 0) {
+              setError("No group found for this user. Please form a group first.");
+              setGroupMembers([]);
+              setMilestoneOptions([]);
+              return;
+            }
+            const activeGroup =
+              groupData.find((g: any) => Number(g.level) === Number(user.level)) ||
+              groupData[0];
+            gId = activeGroup.groupId;
+            resolvedLevel = activeGroup.level ? Number(activeGroup.level) : null;
+            console.log(`🎯 Fallback group match — Group ID: ${gId}, Level: ${resolvedLevel}`);
+          } catch (e: any) {
+            setError(`Failed to find group: ${e.message}`);
             return;
           }
+        }
 
-          // More robust group selection: match by level, or fallback to first group
-          const activeGroup = groupData.find((g: any) => Number(g.level) === Number(user.level)) || groupData[0];
-          gId = activeGroup.groupId;
-          console.log(`🎯 Identified Active Group: ${activeGroup.groupName} (ID: ${gId}, Level: ${activeGroup.level})`);
-          setGroupId(gId);
-        } catch (e: any) {
-          setError(`Failed to find group: ${e.message}`);
+        if (!gId) {
+          setError("Could not resolve your project group. Please navigate from your Level page.");
           return;
         }
 
-        // 2. Get Members
+        setGroupId(gId);
+        setCurrentLevel(resolvedLevel);
+
+        // ── Step 2: Members ──────────────────────────────────────────────────
         try {
           const membersData = await safeFetch(`http://localhost:5000/api/groups/${gId}/members`);
           if (membersData.success && membersData.data) {
             setGroupMembers(membersData.data);
             const me = membersData.data.find((m: any) => String(m.id) === String(user.id));
-            if (me && me.is_leader) {
-              setUserRole('leader');
-            } else {
-              setUserRole('member');
-            }
+
+            setUserRole(me && me.is_leader ? 'leader' : 'member');
             if (membersData.data.length > 0) {
               setSelectedAssignee(membersData.data[0].id);
             }
@@ -136,10 +161,10 @@ const ProjectManagementPage: React.FC = () => {
           setGroupMembers([]);
         }
 
-        // 3. Get Milestones
+        // ── Step 3: Milestones for this group ────────────────────────────────
         await fetchMilestones(gId);
 
-        // 4. Get Tasks
+        // ── Step 4: Tasks for this group only ────────────────────────────────
         try {
           const tasksData = await safeFetch(`http://localhost:5000/api/milestones/tasks/group/${gId}`);
           if (tasksData.success && tasksData.data) {
@@ -155,12 +180,15 @@ const ProjectManagementPage: React.FC = () => {
               startDate: t.created_at ? t.created_at.split('T')[0] : '',
               endDate: t.due_date ? t.due_date.split('T')[0] : '',
             })));
+          } else {
+            setProjectTasks([]);
           }
         } catch (e) {
           console.error("Failed to load tasks", e);
+          setProjectTasks([]);
         }
 
-        console.log(`✅ Loaded project management data for Group ID: ${gId}`);
+        console.log(`✅ Loaded project data — Group: ${gId}, Level: ${resolvedLevel}`);
 
       } catch (err: any) {
         console.error("❌ Critical error in ProjectManagementPage:", err);
@@ -169,7 +197,8 @@ const ProjectManagementPage: React.FC = () => {
     };
 
     fetchData().finally(() => setLoading(false));
-  }, []);
+  // Re-run if navigation state changes (user navigates from a different level)
+  }, [navState.groupId, navState.level]);
 
   // Sync milestones when switching to Task Creation tab
   useEffect(() => {
@@ -288,10 +317,25 @@ const ProjectManagementPage: React.FC = () => {
               <h3>Project Timeline ({userRole === 'leader' ? 'Leader View' : 'Member View'})</h3>
               <p>View the timeline of your project stages and milestones.</p>
             </div>
-            <ProjectTimeline 
-              groupIdProp={groupId} 
-              onMilestonesSubmitted={() => groupId && fetchMilestones(groupId)} 
-            />
+            {loading ? (
+              <div className="loading-container">Loading project data...</div>
+            ) : error ? (
+              <div className="error-container">
+                <p><strong>Error:</strong> {error}</p>
+                <button 
+                  onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
+                  className="secondary-btn"
+                  style={{ marginTop: '15px', border: '1px solid #cbd5e1' }}
+                >
+                  Retry Loading
+                </button>
+              </div>
+            ) : (
+              <ProjectTimeline 
+                groupIdProp={groupId} 
+                onMilestonesSubmitted={() => groupId && fetchMilestones(groupId)} 
+              />
+            )}
           </div>
         );
       case 'createTasks':
@@ -446,7 +490,9 @@ const ProjectManagementPage: React.FC = () => {
           <div className="dashboard-content">
             <div className="dashboard-header-section">
               <div>
-                <h2 className="overview-title">Project Management</h2>
+                <h2 className="overview-title">
+                Project Management{currentLevel ? ` — Level ${currentLevel}` : ''}
+              </h2>
                 <p className="overview-subtitle">Manage your project milestones and tasks.</p>
               </div>
 
