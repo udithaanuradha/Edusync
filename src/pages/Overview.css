@@ -9,7 +9,7 @@
 
 .overview {
   padding: 24px;
-  background: #f1f5f9;
+  background: #f3f4f6;
   min-height: calc(100vh - 70px);
 }
 
@@ -21,14 +21,14 @@
 }
 
 .dashboard-header h1 {
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 36px;
+  font-weight: 800;
   margin: 0;
-  color: #1a202c;
-  border: 3px solid #0ea5e9;
-  padding: 8px 16px;
+  color: #0f172a;
+  border: none;
+  padding: 0;
   display: inline-block;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .welcome-section {
@@ -36,14 +36,15 @@
   align-items: center;
   gap: 12px;
   font-size: 14px;
-  color: #4a5568;
+  color: #64748b;
 }
 
 .profile-icon {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;

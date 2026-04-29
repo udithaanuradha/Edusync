@@ -20,16 +20,19 @@ import Level4Student from './pages/StudentPages/Level4Student';
 import SupervisorLevelPage from './pages/SupervisorPages/SupervisorLevelPage';
 import AdminLevelPage from './pages/AdminPages/AdminLevelPage';
 import Level2mentor from './pages/MentorPages/Level2mentor';
+import Level3mentor from './pages/MentorPages/Level3mentor';
 import Level4mentor from './pages/MentorPages/Level4mentor';
 import GroupRequest from './components/student/GroupRequest';
 import ProjectManagementPage from './pages/StudentPages/ProjectManagementPage';
+import ProjectTimeline from './pages/StudentPages/ProjectTimeline';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import SupervisorApprovalPage from './pages/SupervisorPages/SupervisorApprovalPage';
 import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
 import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnouncementsPage';
+import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
-import ProjectTimeline from './Pages/StudentPages/ProjectTimeline';
 
 function App() {
   const { user } = useAuth();
@@ -161,6 +164,8 @@ function App() {
             <SupervisorLevelPage levelNumber={3} />
           ) : user?.role === "admin" ? (
             <AdminLevelPage levelNumber={3} />
+          ) : user?.role === "mentor" ? (
+            <Level3mentor />
           ) : (
             <Navigate to="/login" />
           )
@@ -215,27 +220,21 @@ function App() {
         element={user ? <CalendarPage /> : <Navigate to="/login" />}
       />
 
-      <Route
-        path="/dashboard/announcements"
-        element={
-          user?.role === "coordinator" ? (
-            <AnnouncementsPage />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-
-      <Route
-        path="/supervisor/announcements"
-        element={
-          user?.role === "supervisor" ? (
-            <SupervisorAnnouncementsPage />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
+      {/* Combined Announcement Route for All Roles */}
+<Route
+  path="/dashboard/announcements"
+  element={
+    user?.role === "admin" ? (
+      <AdminAnnouncements />
+    ) : user?.role === "coordinator" ? (
+      <AnnouncementsPage />
+    ) : user?.role === "supervisor" ? (
+      <SupervisorAnnouncementsPage />
+    ) : (
+      <Navigate to="/login" />
+    )
+  }
+/>
 
       <Route
         path="/supervisor/approval"
@@ -262,6 +261,11 @@ function App() {
       <Route
         path="/dashboard/communication"
         element={user ? <CommunicationPage /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="/profile-settings"
+        element={user ? <ProfileSettingsPage /> : <Navigate to="/login" />}
       />
     </Routes>
   );

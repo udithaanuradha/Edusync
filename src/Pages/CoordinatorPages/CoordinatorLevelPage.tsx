@@ -4,11 +4,12 @@ import Header from '../../components/shared/Header';
 import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
+import GradebookTable from '../../components/coordinator/GradebookTable';
 import { ApprovedGroupRequest } from '../../components/coordinator/groupRequestTypes';
 import './CoordinatorDashboard.css';
 import './CoordinatorLevelPage.css';
 
-type TabKey = 'stages' | 'groups' | 'requests';
+type TabKey = 'stages' | 'requests' | 'groups' | 'marking';
 
 interface CoordinatorLevelPageProps {
   levelNumber: number;
@@ -24,13 +25,16 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   };
 
   return (
-    <div className="app-layout" style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}>
+    <div
+      className="app-layout coordinator-level-shell"
+      style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}
+    >
       <Sidebar />
 
       <div className="main-viewport" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Header />
 
-        <main className="content-container">
+        <main className="content-container coordinator-level-content">
           <div className="dashboard-content">
             <div className="dashboard-header-section">
               <h2 className="overview-title" style={{ color: '#0f172a' }}>
@@ -52,6 +56,14 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
               </button>
               <button
                 role="tab"
+                className={`level-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
+                aria-selected={activeTab === 'requests'}
+                onClick={() => setActiveTab('requests')}
+              >
+                Student Submissions
+              </button>
+              <button
+                role="tab"
                 className={`level-tab-btn ${activeTab === 'groups' ? 'active' : ''}`}
                 aria-selected={activeTab === 'groups'}
                 onClick={() => setActiveTab('groups')}
@@ -60,17 +72,22 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
               </button>
               <button
                 role="tab"
-                className={`level-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
-                aria-selected={activeTab === 'requests'}
-                onClick={() => setActiveTab('requests')}
+                className={`level-tab-btn ${activeTab === 'marking' ? 'active' : ''}`}
+                aria-selected={activeTab === 'marking'}
+                onClick={() => setActiveTab('marking')}
               >
-                Student Submissions
+                Marking & Evaluation
               </button>
             </div>
 
             <section className="level-tab-panel">
               {activeTab === 'stages' ? (
                 <StageManagement levelNumber={levelNumber} />
+              ) : activeTab === 'requests' ? (
+                <ApprovedRequests
+                  levelNumber={levelNumber}
+                  onCreateGroup={handleCreateGroupFromRequest}
+                />
               ) : activeTab === 'groups' ? (
                 <GroupManagement
                   levelNumber={levelNumber}
@@ -78,10 +95,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                   onPrefillHandled={() => setPrefillRequest(null)}
                 />
               ) : (
-                <ApprovedRequests
-                  levelNumber={levelNumber}
-                  onCreateGroup={handleCreateGroupFromRequest}
-                />
+                <GradebookTable levelNumber={levelNumber} />
               )}
             </section>
           </div>

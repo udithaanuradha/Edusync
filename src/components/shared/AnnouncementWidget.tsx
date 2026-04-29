@@ -122,7 +122,10 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
             user?.role === "supervisor" && user?.id
               ? `&supervisor_id=${encodeURIComponent(String(user.id))}`
               : "";
-          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}${supervisorParam}`;
+          // Exclude current user's own posts from dashboard view
+          const excludeAuthorParam =
+            user?.id ? `&exclude_author_id=${encodeURIComponent(String(user.id))}` : "";
+          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}${supervisorParam}${excludeAuthorParam}`;
         }
 
         console.log("Fetching announcements from:", url);

@@ -44,6 +44,28 @@ const STUDENT_INDEX_REGEX = /\b\d{6}[A-Za-z]\b/g;
 
 const normalizeIndex = (value?: string | null) => value?.trim().toUpperCase() ?? '';
 
+const toArray = (payload: unknown): GroupApiRecord[] => {
+  if (Array.isArray(payload)) {
+    return payload as GroupApiRecord[];
+  }
+
+  if (payload && typeof payload === 'object') {
+    const data = payload as {
+      data?: unknown[];
+      groups?: unknown[];
+      results?: unknown[];
+      requests?: unknown[];
+    };
+
+    if (Array.isArray(data.data)) return data.data as GroupApiRecord[];
+    if (Array.isArray(data.groups)) return data.groups as GroupApiRecord[];
+    if (Array.isArray(data.results)) return data.results as GroupApiRecord[];
+    if (Array.isArray(data.requests)) return data.requests as GroupApiRecord[];
+  }
+
+  return [];
+};
+
 const normalizeGroup = (raw: GroupApiRecord): GroupView => {
   const id =
     (raw.group_id as number | string | undefined) ??
@@ -141,23 +163,36 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   };
 
   const loadGroups = async () => {
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    const endpoints = [
+      `http://localhost:5000/api/groups/level/${levelNumber}`,
+      `http://localhost:5000/api/groups?level=${levelNumber}`,
+      `http://localhost:5000/api/groups/all?level=${levelNumber}`,
+      `http://localhost:5000/api/groups/coordinator/level/${levelNumber}`,
+    ];
+
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/groups/level/${levelNumber}`);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch groups: ${response.statusText}`);
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, { headers });
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = await response.json();
+        const list = toArray(data);
+        if (list.length === 0) {
+          continue;
+        }
+
+        setGroups(list.map((g: GroupApiRecord) => normalizeGroup(g)));
+        setError(null);
+        return;
       }
 
-      const data = await response.json();
-      const list = Array.isArray(data?.data)
-        ? data.data
-        : Array.isArray(data?.groups)
-          ? data.groups
-          : [];
-
-      setGroups(list.map((g: GroupApiRecord) => normalizeGroup(g)));
-      setError(null);
+      throw new Error('Failed to fetch groups: Not Found');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);

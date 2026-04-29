@@ -55,6 +55,17 @@ const normalizeRequest = (item: ApiRecord): ApprovedGroupRequest => ({
     : undefined,
 });
 
+const isRealStudentSubmission = (request: ApprovedGroupRequest): boolean => {
+  if (!request.studentId || request.studentId <= 0) {
+    return false;
+  }
+
+  const hasMeaningfulMembers = request.membersList.trim().length > 0;
+  const hasMeaningfulProject = request.projectName.trim().length > 0;
+
+  return hasMeaningfulMembers && hasMeaningfulProject;
+};
+
 const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCreateGroup }) => {
   const [requests, setRequests] = useState<ApprovedGroupRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +115,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
         const payload = await response.json();
         const normalized = toArray(payload)
           .map(normalizeRequest)
-          .filter((request) => request.id > 0);
+          .filter((request) => request.id > 0 && isRealStudentSubmission(request));
 
         const filtered = normalized.filter(
           (request) => !existingGroupNames.has(request.groupName.trim().toLowerCase())
