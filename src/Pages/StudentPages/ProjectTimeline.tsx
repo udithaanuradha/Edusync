@@ -53,7 +53,11 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
         
         if (!gId) {
           const groupRes = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'X-User-Id': user.id,
+              'X-User-Role': user.role,
+            }
           });
           const groupData = await groupRes.json();
           if (!groupData || groupData.length === 0) return;
@@ -66,7 +70,11 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
         else return;
 
         const mileRes = await fetch(`http://localhost:5000/api/milestones/group/${gId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-User-Id': user.id,
+            'X-User-Role': user.role,
+          }
         });
         const mileData = await mileRes.json();
         
@@ -83,7 +91,11 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
 
         // Fetch Overview
         const overviewRes = await fetch(`http://localhost:5000/api/milestones/overview/group/${gId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-User-Id': user.id,
+            'X-User-Role': user.role,
+          }
         });
         const overviewData = await overviewRes.json();
         if (overviewData.success && overviewData.data) {
@@ -199,7 +211,9 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+          'X-User-Id': user.id,
+          'X-User-Role': user.role,
         },
         body: JSON.stringify({
           group_id: groupId,
@@ -231,7 +245,9 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+            'X-User-Id': user.id,
+            'X-User-Role': user.role,
           },
           body: JSON.stringify(payload),
         });

@@ -44,7 +44,9 @@ const ProjectManagementPage: React.FC = () => {
       const token = localStorage.getItem('token');
       const headers = { 
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        'X-User-Id': currentUser?.id || JSON.parse(localStorage.getItem('user') || '{}').id,
+        'X-User-Role': currentUser?.role || JSON.parse(localStorage.getItem('user') || '{}').role,
       };
       
       console.log(`📡 [Frontend] Fetching Milestones for Group: ${gId}`);
@@ -86,7 +88,11 @@ const ProjectManagementPage: React.FC = () => {
         setCurrentUser(user);
 
         const token = localStorage.getItem('token');
-        const headers: any = { 'Content-Type': 'application/json' };
+        const headers: any = { 
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id,
+          'X-User-Role': user.role,
+        };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         const safeFetch = async (url: string) => {
