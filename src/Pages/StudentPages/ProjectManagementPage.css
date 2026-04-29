@@ -81,37 +81,28 @@
   align-items: flex-end;
 }
 
-/* Role Selector Styling */
-.role-selector-container {
-  display: flex;
-  background: #f1f5f9;
-  padding: 4px;
-  border-radius: 10px;
-  gap: 4px;
-  border: 1px solid #e2e8f0;
-}
-
-.role-btn {
-  padding: 6px 16px;
-  font-size: 12px;
+/* Role Badge — read-only, determined from DB */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 700;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #64748b;
-  background: transparent;
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 
-/* Specific colors for Leader vs Member */
-.role-btn.active-leader {
-  background: #0f172a; /* Dark Slate */
-  color: white;
+.role-badge-leader {
+  background: #0f172a;
+  color: #ffffff;
 }
 
-.role-btn.active-member {
-  background: #3b82f6; /* Blue */
-  color: white;
+.role-badge-member {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
 }
 
 .role-warning {
@@ -254,6 +245,22 @@
   text-align: left;
   padding: 16px 14px;
   border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.task-title-cell {
+  font-weight: 700;
+  color: #0f172a;
+  min-width: 140px;
+}
+
+.task-desc-cell {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-width: 250px;
+  word-wrap: break-word;
 }
 
 .task-table th {
@@ -279,17 +286,17 @@
   font-weight: 700;
 }
 
-.status-pill.available {
+.status-pill.todo {
   background: rgba(37, 99, 235, 0.12);
   color: #2563eb;
 }
 
-.status-pill.ongoing {
+.status-pill.in_progress {
   background: rgba(245, 158, 11, 0.12);
   color: #b45309;
 }
 
-.status-pill.finished {
+.status-pill.completed {
   background: rgba(16, 185, 129, 0.12);
   color: #047857;
 }
@@ -380,6 +387,55 @@
   line-height: 1.75;
 }
 
+/* Task Action Buttons */
+.task-action-btns {
+  white-space: nowrap;
+}
+
+.task-start-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.task-start-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.task-end-btn {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.task-end-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.task-done-badge {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 @media (max-width: 1100px) {
   .task-management-grid {
     grid-template-columns: 1fr;
@@ -396,4 +452,25 @@
   .student-inner-tabs {
     justify-content: center;
   }
+}
+
+.loading-container {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+  background: #f8fafc;
+  border-radius: 18px;
+}
+
+.error-container {
+  padding: 24px;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-all;
 }

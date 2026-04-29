@@ -1,4 +1,4 @@
- import React, { useMemo, useState } from 'react';
+ import React, { useMemo, useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import ProjectTimeline from './ProjectTimeline';
@@ -16,26 +16,168 @@ const tabItems = [
 
 const ProjectManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('timeline');
-  const [userRole, setUserRole] = useState<UserRole>('member'); // Default to member
+  const [userRole, setUserRole] = useState<UserRole>('member');
+  const [groupId, setGroupId] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const groupMembers = ['Kamal Udara', 'Nadeesha Perera', 'Tharindu Silva'];
-  const milestoneOptions = ['Research', 'Planning', 'Development', 'Testing', 'Deployment'];
-
-  const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([
-    {
-      id: 'task-1',
-      milestone: 'Research',
-      title: 'Draft research plan',
-      description: 'Create the initial research plan and milestone breakdown.',
-      assignedTo: 'Kamal Udara',
-      status: 'Ongoing',
-      startDate: '2026-05-01',
-      endDate: '2026-05-05',
-    },
-  ]);
-
+  const [groupMembers, setGroupMembers] = useState<{id: number | string, name: string}[] | null>(null);
+  const [milestoneOptions, setMilestoneOptions] = useState<{id: number | string, title: string}[] | null>(null);
+  const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [milestoneFilter, setMilestoneFilter] = useState('All');
-  const [selectedAssignee, setSelectedAssignee] = useState(groupMembers[0]);
+  const [selectedAssignee, setSelectedAssignee] = useState<string | number>('');
+
+  const fetchMilestones = async (gId: number) => {
+    if (!gId) {
+      console.warn("⚠️ [Frontend] fetchMilestones called without Group ID");
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { 
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      };
+      
+      console.log(`📡 [Frontend] Fetching Milestones for Group: ${gId}`);
+      const res = await fetch(`http://localhost:5000/api/milestones/group/${gId}`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch milestones");
+      
+      const data = await res.json();
+      console.log(`✅ [Frontend] Milestones received for Group ${gId}:`, data);
+
+      if (data.success && data.data) {
+        const options = data.data.map((m: any) => ({ id: m.id, title: m.title }));
+        console.log(`📋 [Frontend] Populating Milestone Options:`, options);
+        setMilestoneOptions(options);
+      } else {
+        console.warn(`⚠️ [Frontend] No milestones found for Group ${gId}`);
+        setMilestoneOptions([]);
+      }
+    } catch (e) {
+      console.error("❌ [Frontend] Failed to load milestones", e);
+      setMilestoneOptions([]);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userString = localStorage.getItem("user");
+        const user = userString ? JSON.parse(userString) : null;
+        if (!user || !user.id) {
+          setError("User session not found. Please log in again.");
+          return;
+        }
+        setCurrentUser(user);
+        console.log("🔍 Current User:", user);
+
+        const token = localStorage.getItem('token');
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Utility to fetch and handle errors
+        const safeFetch = async (url: string) => {
+          console.log(`📡 Fetching: ${url}`);
+          const res = await fetch(url, { headers });
+          if (!res.ok) {
+            const text = await res.text();
+            console.error(`❌ Fetch failed for ${url}:`, text);
+            throw new Error(`Server returned ${res.status} for ${url.split('/').pop()}. Check console for details.`);
+          }
+          const data = await res.json();
+          console.log(`✅ Response from ${url}:`, data);
+          return data;
+        };
+
+        // 1. Get Group
+        let gId: any = null;
+        try {
+          const groupData = await safeFetch(`http://localhost:5000/api/groups/my-status/${user.id}`);
+          console.log("🔍 Group Data from API:", groupData);
+          if (!groupData || groupData.length === 0) {
+            setError("No group found for this user. Please form a group first.");
+            setGroupMembers([]);
+            setMilestoneOptions([]);
+            return;
+          }
+
+          // More robust group selection: match by level, or fallback to first group
+          const activeGroup = groupData.find((g: any) => Number(g.level) === Number(user.level)) || groupData[0];
+          gId = activeGroup.groupId;
+          console.log(`🎯 Identified Active Group: ${activeGroup.groupName} (ID: ${gId}, Level: ${activeGroup.level})`);
+          setGroupId(gId);
+        } catch (e: any) {
+          setError(`Failed to find group: ${e.message}`);
+          return;
+        }
+
+        // 2. Get Members
+        try {
+          const membersData = await safeFetch(`http://localhost:5000/api/groups/${gId}/members`);
+          if (membersData.success && membersData.data) {
+            setGroupMembers(membersData.data);
+            const me = membersData.data.find((m: any) => String(m.id) === String(user.id));
+            if (me && me.is_leader) {
+              setUserRole('leader');
+            } else {
+              setUserRole('member');
+            }
+            if (membersData.data.length > 0) {
+              setSelectedAssignee(membersData.data[0].id);
+            }
+          } else {
+            setGroupMembers([]);
+          }
+        } catch (e) {
+          console.error("Failed to load members", e);
+          setGroupMembers([]);
+        }
+
+        // 3. Get Milestones
+        await fetchMilestones(gId);
+
+        // 4. Get Tasks
+        try {
+          const tasksData = await safeFetch(`http://localhost:5000/api/milestones/tasks/group/${gId}`);
+          if (tasksData.success && tasksData.data) {
+            setProjectTasks(tasksData.data.map((t: any) => ({
+              id: t.id.toString(),
+              milestoneId: t.milestone_id,
+              milestone: t.milestone_title,
+              title: t.task_name,
+              description: t.description || '',
+              assignedToId: t.assigned_to,
+              assignedTo: t.assigned_to_name || 'Unknown',
+              status: t.status,
+              startDate: t.created_at ? t.created_at.split('T')[0] : '',
+              endDate: t.due_date ? t.due_date.split('T')[0] : '',
+            })));
+          }
+        } catch (e) {
+          console.error("Failed to load tasks", e);
+        }
+
+        console.log(`✅ Loaded project management data for Group ID: ${gId}`);
+
+      } catch (err: any) {
+        console.error("❌ Critical error in ProjectManagementPage:", err);
+        setError(`System error: ${err.message}`);
+      }
+    };
+
+    fetchData().finally(() => setLoading(false));
+  }, []);
+
+  // Sync milestones when switching to Task Creation tab
+  useEffect(() => {
+    if (activeTab === 'createTasks' && groupId) {
+      fetchMilestones(groupId);
+    }
+  }, [activeTab, groupId]);
+
 
   const filteredTasks = useMemo(() => {
     let tasks = projectTasks;
@@ -47,35 +189,94 @@ const ProjectManagementPage: React.FC = () => {
 
   const visibleMyTasks = useMemo(() => {
     if (userRole === 'leader') {
-      return projectTasks.filter((task) => task.assignedTo === selectedAssignee);
+      return projectTasks.filter((task) => String(task.assignedToId) === String(selectedAssignee));
     }
-    return projectTasks.filter((task) => task.assignedTo === 'Kamal Udara');
-  }, [projectTasks, selectedAssignee, userRole]);
+    return projectTasks.filter((task) => currentUser && String(task.assignedToId) === String(currentUser.id));
+  }, [projectTasks, selectedAssignee, userRole, currentUser]);
 
   const taskSummary = useMemo(() => {
     const summary = {
-      Available: 0,
-      Ongoing: 0,
-      Finished: 0,
-    } as Record<'Available' | 'Ongoing' | 'Finished', number>;
+      TODO: 0,
+      IN_PROGRESS: 0,
+      COMPLETED: 0,
+    } as Record<'TODO' | 'IN_PROGRESS' | 'COMPLETED', number>;
     visibleMyTasks.forEach((task) => {
-      summary[task.status] += 1;
+      if (task.status in summary) {
+        summary[task.status as keyof typeof summary] += 1;
+      }
     });
     return summary;
   }, [visibleMyTasks]);
 
-  const handleSaveTask = (task: ProjectTask) => {
-    setProjectTasks((prev) => {
-      const existingIndex = prev.findIndex((item) => item.id === task.id);
-      if (existingIndex >= 0) {
-        return prev.map((item) => (item.id === task.id ? task : item));
+  const handleSaveTask = async (task: ProjectTask) => {
+    try {
+      const token = localStorage.getItem('token');
+      const isExisting = projectTasks.some((t) => t.id === task.id);
+
+      if (!isExisting) {
+        // Create new task in DB
+        const res = await fetch('http://localhost:5000/api/milestones/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            milestone_id: task.milestoneId,
+            assigned_to: task.assignedToId,
+            task_name: task.title,
+            description: task.description,
+            due_date: task.endDate
+          })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          setProjectTasks(prev => [...prev, { ...task, id: data.data.id.toString(), status: 'TODO' }]);
+        }
+      } else {
+        // We do not have full task edit API yet, but we have status update
+        // Optional: Update status if needed or just update local state
+        setProjectTasks((prev) => prev.map((item) => (item.id === task.id ? task : item)));
       }
-      return [...prev, task];
-    });
+    } catch (err) {
+      console.error("Error saving task:", err);
+    }
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    setProjectTasks((prev) => prev.filter((task) => task.id !== taskId));
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/milestones/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setProjectTasks((prev) => prev.filter((task) => task.id !== taskId));
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
+  };
+
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: 'TODO' | 'IN_PROGRESS' | 'COMPLETED') => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/milestones/tasks/${taskId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProjectTasks((prev) =>
+          prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t)
+        );
+      }
+    } catch (err) {
+      console.error("Error updating task status:", err);
+    }
   };
 
   const renderContent = () => {
@@ -87,7 +288,10 @@ const ProjectManagementPage: React.FC = () => {
               <h3>Project Timeline ({userRole === 'leader' ? 'Leader View' : 'Member View'})</h3>
               <p>View the timeline of your project stages and milestones.</p>
             </div>
-            <ProjectTimeline />
+            <ProjectTimeline 
+              groupIdProp={groupId} 
+              onMilestonesSubmitted={() => groupId && fetchMilestones(groupId)} 
+            />
           </div>
         );
       case 'createTasks':
@@ -101,13 +305,30 @@ const ProjectManagementPage: React.FC = () => {
                 <p className="role-warning">Only Leaders can create tasks. You are currently viewing as a Member.</p>
               )}
             </div>
-            {userRole === 'leader' ? (
+            {loading ? (
+              <div className="loading-container">Loading project data...</div>
+            ) : error ? (
+              <div className="error-container">
+                <p><strong>Error:</strong> {error}</p>
+                <p style={{ marginTop: '10px', fontSize: '12px', opacity: 0.8 }}>
+                  This usually means the backend at <code>http://localhost:5000</code> is unreachable or returning HTML instead of JSON. 
+                  Please ensure your backend is running and check the browser console (F12) for more details.
+                </p>
+                <button 
+                  onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
+                  className="secondary-btn"
+                  style={{ marginTop: '15px', border: '1px solid #cbd5e1' }}
+                >
+                  Retry Loading
+                </button>
+              </div>
+            ) : userRole === 'leader' ? (
               <TaskCreation
                 tasks={projectTasks}
                 onSaveTask={handleSaveTask}
                 onDeleteTask={handleDeleteTask}
-                groupMembers={groupMembers}
-                milestoneOptions={milestoneOptions}
+                groupMembers={groupMembers || []}
+                milestoneOptions={milestoneOptions || []}
               />
             ) : (
               <div className="member-task-note">
@@ -127,16 +348,16 @@ const ProjectManagementPage: React.FC = () => {
             </div>
             <div className="my-tasks-summary">
               <div className="status-card available-card">
-                <span className="status-count">{taskSummary.Available}</span>
-                <p>Available tasks</p>
+                <span className="status-count">{taskSummary.TODO}</span>
+                <p>To Do tasks</p>
               </div>
               <div className="status-card ongoing-card">
-                <span className="status-count">{taskSummary.Ongoing}</span>
-                <p>Ongoing tasks</p>
+                <span className="status-count">{taskSummary.IN_PROGRESS}</span>
+                <p>In Progress tasks</p>
               </div>
               <div className="status-card finished-card">
-                <span className="status-count">{taskSummary.Finished}</span>
-                <p>Finished tasks</p>
+                <span className="status-count">{taskSummary.COMPLETED}</span>
+                <p>Completed tasks</p>
               </div>
             </div>
             {userRole === 'leader' && (
@@ -147,8 +368,8 @@ const ProjectManagementPage: React.FC = () => {
                   value={selectedAssignee}
                   onChange={(e) => setSelectedAssignee(e.target.value)}
                 >
-                  {groupMembers.map((member) => (
-                    <option key={member} value={member}>{member}</option>
+                  {(groupMembers || []).map((member) => (
+                    <option key={member.id} value={member.id}>{member.name}</option>
                   ))}
                 </select>
               </div>
@@ -164,23 +385,45 @@ const ProjectManagementPage: React.FC = () => {
                     <tr>
                       <th>Milestone</th>
                       <th>Task</th>
+                      <th>Description</th>
                       <th>Assigned To</th>
                       <th>Status</th>
-                      <th>Dates</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {visibleMyTasks.map((task) => (
                       <tr key={task.id}>
                         <td>{task.milestone}</td>
-                        <td>{task.title}</td>
+                        <td className="task-title-cell">{task.title}</td>
+                        <td className="task-desc-cell">{task.description}</td>
                         <td>{task.assignedTo}</td>
                         <td>
                           <span className={`status-pill ${task.status.toLowerCase()}`}>
-                            {task.status}
+                            {task.status === 'TODO' ? 'Pending' : task.status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
                           </span>
                         </td>
-                        <td>{task.startDate} → {task.endDate}</td>
+                        <td className="task-action-btns">
+                          {task.status === 'TODO' && (
+                            <button
+                              className="task-start-btn"
+                              onClick={() => handleUpdateTaskStatus(task.id, 'IN_PROGRESS')}
+                            >
+                              ▶ Start
+                            </button>
+                          )}
+                          {task.status === 'IN_PROGRESS' && (
+                            <button
+                              className="task-end-btn"
+                              onClick={() => handleUpdateTaskStatus(task.id, 'COMPLETED')}
+                            >
+                              ✓ Done
+                            </button>
+                          )}
+                          {task.status === 'COMPLETED' && (
+                            <span className="task-done-badge">✓ Completed</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -207,20 +450,9 @@ const ProjectManagementPage: React.FC = () => {
                 <p className="overview-subtitle">Manage your project milestones and tasks.</p>
               </div>
 
-              {/* NEW ROLE SELECTOR BUTTONS */}
-              <div className="role-selector-container">
-                <button 
-                  className={`role-btn ${userRole === 'leader' ? 'active-leader' : ''}`}
-                  onClick={() => setUserRole('leader')}
-                >
-                  Leader
-                </button>
-                <button 
-                  className={`role-btn ${userRole === 'member' ? 'active-member' : ''}`}
-                  onClick={() => setUserRole('member')}
-                >
-                  Member
-                </button>
+              {/* ROLE BADGE — determined from database, not manually switchable */}
+              <div className={`role-badge ${userRole === 'leader' ? 'role-badge-leader' : 'role-badge-member'}`}>
+                {userRole === 'leader' ? '👑 Leader' : '👤 Member'}
               </div>
             </div>
 

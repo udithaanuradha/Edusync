@@ -8,7 +8,12 @@ interface Task {
   isSaved?: boolean;
 }
 
-const ProjectTimeline: React.FC = () => {
+interface ProjectTimelineProps {
+  groupIdProp?: number | null;
+  onMilestonesSubmitted?: () => void;
+}
+
+const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilestonesSubmitted }) => {
   const [timelineStart, setTimelineStart] = useState('');
   const [timelineEnd, setTimelineEnd] = useState('');
   const [workflowName, setWorkflowName] = useState('');
@@ -31,13 +36,21 @@ const ProjectTimeline: React.FC = () => {
         const user = userString ? JSON.parse(userString) : null;
         if (!user || !user.id) return;
 
-        const groupRes = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        const groupData = await groupRes.json();
-        if (!groupData || groupData.length === 0) return;
-        const gId = groupData[0].groupId;
-        setGroupId(gId);
+        let gId = groupIdProp;
+        
+        if (!gId) {
+          const groupRes = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          const groupData = await groupRes.json();
+          if (!groupData || groupData.length === 0) return;
+          // Use the same logic as ProjectManagementPage if possible
+          const activeGroup = groupData.find((g: any) => Number(g.level) === Number(user.level)) || groupData[0];
+          gId = activeGroup.groupId;
+        }
+        
+        if (gId) setGroupId(gId);
+        else return;
 
         const mileRes = await fetch(`http://localhost:5000/api/milestones/group/${gId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -71,7 +84,7 @@ const ProjectTimeline: React.FC = () => {
     };
     
     loadMilestones();
-  }, []);
+  }, [groupIdProp]);
 
   const durationDays = useMemo(() => {
     if (!timelineStart || !timelineEnd) return 0;
@@ -163,16 +176,9 @@ const ProjectTimeline: React.FC = () => {
         throw new Error('User not found. Please log in.');
       }
 
-      const groupRes = await fetch(`http://localhost:5000/api/groups/my-status/${user.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const groupData = await groupRes.json();
-      if (!groupData || groupData.length === 0) {
-        throw new Error('You do not belong to any group. Please join a group first.');
+      if (!groupId) {
+        throw new Error('Group ID not found. Please ensure you belong to a project group.');
       }
-      const groupId = groupData[0].groupId;
       const token = localStorage.getItem('token');
 
       // 1. Save Project Overview
@@ -227,6 +233,11 @@ const ProjectTimeline: React.FC = () => {
       
       // Mark all tasks as saved so they don't submit again
       setTasks(prev => prev.map(t => ({ ...t, isSaved: true })));
+      
+      // Notify parent to refresh milestones if callback provided
+      if (onMilestonesSubmitted) {
+        onMilestonesSubmitted();
+      }
     } catch (error: any) {
       setSubmitError(true);
       setSubmitMessage(error.message || 'Failed to submit timeline. Please try again.');

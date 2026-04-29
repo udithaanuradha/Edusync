@@ -146,6 +146,22 @@
   padding: 16px 14px;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
+  vertical-align: top;
+}
+
+.task-title-cell {
+  font-weight: 700;
+  color: #0f172a;
+  min-width: 140px;
+}
+
+.task-desc-cell {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-width: 250px;
+  word-wrap: break-word;
 }
 
 .task-creation-table th {
@@ -171,17 +187,17 @@
   font-weight: 700;
 }
 
-.status-pill.available {
+.status-pill.todo {
   background: rgba(37, 99, 235, 0.12);
   color: #2563eb;
 }
 
-.status-pill.ongoing {
+.status-pill.in_progress {
   background: rgba(245, 158, 11, 0.12);
   color: #b45309;
 }
 
-.status-pill.finished {
+.status-pill.completed {
   background: rgba(16, 185, 129, 0.12);
   color: #047857;
 }

@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import './TaskCreation.css';
 
-export type TaskStatus = 'Available' | 'Ongoing' | 'Finished';
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
 
 export type ProjectTask = {
   id: string;
+  milestoneId: number | string;
   milestone: string;
   title: string;
   description: string;
+  assignedToId: number | string;
   assignedTo: string;
   status: TaskStatus;
   startDate: string;
@@ -18,8 +20,8 @@ type TaskCreationProps = {
   tasks: ProjectTask[];
   onSaveTask: (task: ProjectTask) => void;
   onDeleteTask: (taskId: string) => void;
-  groupMembers: string[];
-  milestoneOptions: string[];
+  groupMembers: { id: number | string; name: string }[];
+  milestoneOptions: { id: number | string; title: string }[];
 };
 
 const TaskCreation: React.FC<TaskCreationProps> = ({
@@ -30,26 +32,50 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
   milestoneOptions,
 }) => {
   const [taskForm, setTaskForm] = useState({
-    milestone: milestoneOptions[0],
+    milestoneId: milestoneOptions[0]?.id || '',
     title: '',
     description: '',
-    assignedTo: groupMembers[0],
-    status: 'Available' as TaskStatus,
+    assignedToId: groupMembers[0]?.id || '',
+    status: 'TODO' as TaskStatus,
     startDate: '',
     endDate: '',
   });
   const [taskError, setTaskError] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    console.log("🔄 [TaskCreation] Props Updated:", { milestoneOptionsCount: milestoneOptions.length, groupMembersCount: groupMembers.length });
+    
+    if (milestoneOptions.length > 0) {
+      // If no milestone is selected OR the current selection is invalid, pick the first one
+      const currentValid = milestoneOptions.some(m => String(m.id) === String(taskForm.milestoneId));
+      if (!taskForm.milestoneId || !currentValid) {
+        console.log("🎯 [TaskCreation] Setting initial milestone:", milestoneOptions[0].title);
+        setTaskForm(prev => ({ ...prev, milestoneId: milestoneOptions[0].id }));
+      }
+    } else {
+      if (taskForm.milestoneId !== '') {
+        setTaskForm(prev => ({ ...prev, milestoneId: '' }));
+      }
+    }
+
+    if (groupMembers.length > 0) {
+      const currentValid = groupMembers.some(m => String(m.id) === String(taskForm.assignedToId));
+      if (!taskForm.assignedToId || !currentValid) {
+        setTaskForm(prev => ({ ...prev, assignedToId: groupMembers[0].id }));
+      }
+    }
+  }, [milestoneOptions, groupMembers]);
+
   const recentTasks = useMemo(() => [...tasks].reverse(), [tasks]);
 
   const resetForm = () => {
     setTaskForm({
-      milestone: milestoneOptions[0],
+      milestoneId: milestoneOptions[0]?.id || '',
       title: '',
       description: '',
-      assignedTo: groupMembers[0],
-      status: 'Available',
+      assignedToId: groupMembers[0]?.id || '',
+      status: 'TODO',
       startDate: '',
       endDate: '',
     });
@@ -65,8 +91,8 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
     event.preventDefault();
     setTaskError('');
 
-    if (!taskForm.title || !taskForm.description || !taskForm.startDate || !taskForm.endDate) {
-      setTaskError('Please complete all fields before saving the task.');
+    if (!taskForm.title || !taskForm.description || !taskForm.startDate || !taskForm.endDate || !taskForm.milestoneId) {
+      setTaskError('Please complete all fields, including the milestone, before saving the task.');
       return;
     }
 
@@ -75,9 +101,17 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
       return;
     }
 
+    const selectedMilestone = milestoneOptions.find(m => String(m.id) === String(taskForm.milestoneId));
+    const selectedMember = groupMembers.find(m => String(m.id) === String(taskForm.assignedToId));
+
     const nextTask: ProjectTask = {
       id: editingTaskId ?? Math.random().toString(36).substring(2, 9),
       ...taskForm,
+      milestoneId: taskForm.milestoneId,
+      milestone: selectedMilestone ? selectedMilestone.title : '',
+      assignedToId: taskForm.assignedToId,
+      assignedTo: selectedMember ? selectedMember.name : '',
+      status: taskForm.status as TaskStatus,
     };
 
     onSaveTask(nextTask);
@@ -87,10 +121,10 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
   const handleEdit = (task: ProjectTask) => {
     setEditingTaskId(task.id);
     setTaskForm({
-      milestone: task.milestone,
+      milestoneId: task.milestoneId,
       title: task.title,
       description: task.description,
-      assignedTo: task.assignedTo,
+      assignedToId: task.assignedToId,
       status: task.status,
       startDate: task.startDate,
       endDate: task.endDate,
@@ -105,7 +139,7 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
             <h4>{editingTaskId ? 'Edit Task' : 'Create Task for Student'}</h4>
             <p>Assign milestones, pick a student, and track the status of each work item.</p>
           </div>
-          <span className="task-count">{tasks.length} created</span>
+          <span className="task-count">{tasks.length} created | {groupMembers.length} members</span>
         </div>
 
         <form className="task-creation-form" onSubmit={handleSubmit}>
@@ -113,14 +147,18 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
             <label htmlFor="milestone-select">Milestone</label>
             <select
               id="milestone-select"
-              value={taskForm.milestone}
-              onChange={(e) => handleFormChange('milestone', e.target.value)}
+              value={taskForm.milestoneId}
+              onChange={(e) => handleFormChange('milestoneId', e.target.value)}
             >
-              {milestoneOptions.map((milestone) => (
-                <option key={milestone} value={milestone}>
-                  {milestone}
-                </option>
-              ))}
+              {milestoneOptions.length === 0 ? (
+                <option value="">No milestones found</option>
+              ) : (
+                milestoneOptions.map((milestone) => (
+                  <option key={milestone.id} value={milestone.id}>
+                    {milestone.title}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
@@ -150,14 +188,18 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
               <label htmlFor="assign-to-select">Assign To</label>
               <select
                 id="assign-to-select"
-                value={taskForm.assignedTo}
-                onChange={(e) => handleFormChange('assignedTo', e.target.value)}
+                value={taskForm.assignedToId}
+                onChange={(e) => handleFormChange('assignedToId', e.target.value)}
               >
-                {groupMembers.map((member) => (
-                  <option key={member} value={member}>
-                    {member}
-                  </option>
-                ))}
+                {groupMembers.length === 0 ? (
+                  <option value="">No members found</option>
+                ) : (
+                  groupMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             <div className="form-row">
@@ -167,9 +209,9 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
                 value={taskForm.status}
                 onChange={(e) => handleFormChange('status', e.target.value)}
               >
-                <option value="Available">Available</option>
-                <option value="Ongoing">Ongoing</option>
-                <option value="Finished">Finished</option>
+                <option value="TODO">TODO</option>
+                <option value="IN_PROGRESS">IN PROGRESS</option>
+                <option value="COMPLETED">COMPLETED</option>
               </select>
             </div>
           </div>
@@ -230,6 +272,7 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
                 <tr>
                   <th>Milestone</th>
                   <th>Task</th>
+                  <th>Description</th>
                   <th>Student</th>
                   <th>Status</th>
                   <th>Dates</th>
@@ -240,14 +283,15 @@ const TaskCreation: React.FC<TaskCreationProps> = ({
                 {recentTasks.map((task) => (
                   <tr key={task.id}>
                     <td>{task.milestone}</td>
-                    <td>{task.title}</td>
+                    <td className="task-title-cell">{task.title}</td>
+                    <td className="task-desc-cell">{task.description}</td>
                     <td>{task.assignedTo}</td>
                     <td>
                       <span className={`status-pill ${task.status.toLowerCase()}`}>
                         {task.status}
                       </span>
                     </td>
-                    <td>{task.startDate} ? {task.endDate}</td>
+                    <td>{task.startDate} → {task.endDate}</td>
                     <td className="task-action-cell">
                       <button type="button" className="secondary-btn" onClick={() => handleEdit(task)}>
                         Edit
