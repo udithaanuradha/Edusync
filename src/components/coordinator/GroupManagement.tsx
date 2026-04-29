@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
 
@@ -120,9 +120,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [leaderId, setLeaderId] = useState<string>('');
   const [searchIndex, setSearchIndex] = useState('');
   const [members, setMembers] = useState<Student[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [studentSearchLoading, setStudentSearchLoading] = useState(false);
   const [editingGroup, setEditingGroup] = useState<GroupView | null>(null);
   const [saving, setSaving] = useState(false);
-  const [searching, setSearching] = useState(false);
 
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
@@ -202,8 +203,24 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     }
   };
 
+  const fetchAllLevelStudents = async () => {
+    try {
+      setStudentSearchLoading(true);
+      const response = await fetch(`http://localhost:5000/api/users/level/${levelNumber}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAllStudents(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch students for level", err);
+    } finally {
+      setStudentSearchLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadGroups();
+    fetchAllLevelStudents();
   }, [levelNumber]);
 
   const resetForm = () => {
@@ -471,48 +488,6 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     return () => window.clearTimeout(timer);
   }, [supervisorQuery, isModalOpen]);
 
-  const handleSearchMember = async () => {
-    if (!searchIndex.trim()) {
-      alert('Please enter an index number.');
-      return;
-    }
-
-    if (members.length >= 5) {
-      alert('A project group cannot have more than 5 members.');
-      return;
-    }
-
-    try {
-      setSearching(true);
-      const response = await fetch(
-        `http://localhost:5000/api/users/search?uniId=${encodeURIComponent(searchIndex.trim())}&level=${levelNumber}`
-      );
-      const data = await response.json();
-
-      if (!data?.success || !data?.student) {
-        alert(data?.error || 'Student not found for this level.');
-        return;
-      }
-
-      const student = data.student as Student;
-      if (members.some((m) => m.id === student.id)) {
-        alert('This student is already in the list.');
-        return;
-      }
-
-      if (isStudentIndexAssignedElsewhere(student.university_id, editingGroup?.id)) {
-        alert('This student already belongs to another group, so you cannot add the same index again.');
-        return;
-      }
-
-      setMembers((prev) => [...prev, student]);
-      setSearchIndex('');
-    } catch {
-      alert('Failed to search student. Please check backend connection.');
-    } finally {
-      setSearching(false);
-    }
-  };
 
   const handleRemoveMember = (studentId: number) => {
     setMembers((prev) => prev.filter((m) => m.id !== studentId));
@@ -876,15 +851,37 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               </label>
 
               <div className="member-search-row">
-                <input
-                  type="text"
+                <select
                   value={searchIndex}
                   onChange={(e) => setSearchIndex(e.target.value)}
-                  placeholder="Search student index"
-                />
-                <button onClick={handleSearchMember} disabled={searching}>
-                  <Search size={14} />
-                  {searching ? 'Searching...' : 'Add'}
+                  disabled={studentSearchLoading || members.length >= 5}
+                  style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                >
+                  <option value="">{studentSearchLoading ? 'Loading students...' : 'Choose a student...'}</option>
+                  {allStudents
+                    .filter(s => !members.some(m => m.id === s.id))
+                    .map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.university_id})</option>
+                    ))
+                  }
+                </select>
+                <button 
+                  onClick={async () => {
+                    if (!searchIndex) return;
+                    const student = allStudents.find(s => String(s.id) === String(searchIndex));
+                    if (student) {
+                      if (isStudentIndexAssignedElsewhere(student.university_id, editingGroup?.id)) {
+                        alert('This student already belongs to another group.');
+                        return;
+                      }
+                      setMembers(prev => [...prev, student]);
+                      setSearchIndex('');
+                    }
+                  }} 
+                  disabled={!searchIndex || members.length >= 5}
+                >
+                  <Plus size={14} />
+                  Add
                 </button>
               </div>
 
