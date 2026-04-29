@@ -400,10 +400,6 @@ const CalendarPage: React.FC = () => {
         error instanceof Error ? error.message : "Failed to load groups.",
       );
       setGroups([]);
-<<<<<<< HEAD
-
-=======
->>>>>>> d4a52c5341477bfd6578a449548ed12cfbe1b72d
       if (mode === 'schedule') {
         setSelectedGroupId('');
       } else {
