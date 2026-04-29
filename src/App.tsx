@@ -28,7 +28,7 @@ import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
 import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnouncementsPage';
 import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
-import CommunicationPage from './pages/CommunicationPage';
+import CommunicationPage from './pages/shared/CommunicationPage';
 import CalendarPage from './pages/CalendarPage';
 import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage'; // Added import
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
