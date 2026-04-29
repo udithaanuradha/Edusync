@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Root documentation files no longer tracked
+COORDINATOR_GUIDE.md
+COORDINATOR_DEMO_SCRIPT.md
+IMPLEMENTATION_GUIDE.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
