@@ -1,0 +1,42 @@
+/* MentorAnnouncementsPage.css */
+
+.mentor-announcements-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mentor-announcements-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-header-section {
+  margin-bottom: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.overview-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.overview-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Specific styling for the Mentor layout */
+.mentor-shell .content-container {
+  padding: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}

@@ -1,19 +1,18 @@
-// src/components/mentor/StatCards.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FolderKanban, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import './StatCard.css';
 
-// ── Inline mock data (replace with API call when backend is ready) ─────────
-const projects = [
-  { status: 'On Track' },
-  { status: 'Delayed'  },
-  { status: 'On Track' },
-];
-// ──────────────────────────────────────────────────────────────────────────
+interface StatData {
+  totalGroups: number;
+  ongoingCount: number;
+  delayedCount: number;
+  completedCount: number;
+  completionRate: number;
+}
 
 interface StatCardProps {
   title: string;
-  value: number;
+  value: number | null;
   icon: React.ElementType;
   iconBgClass: string;
   iconColorClass: string;
@@ -31,47 +30,84 @@ const StatCard: React.FC<StatCardProps> = ({
       <Icon size={22} className={iconColorClass} />
     </div>
     <div className="stat-info">
-      <p className="stat-value">{value}</p>
+      <p className="stat-value">{value !== null ? value : <span className="stat-skeleton stat-skeleton-value" />}</p>
       <p className="stat-title">{title}</p>
-      <p className={`stat-subtitle ${subtitleColorClass}`}>{subtitle}</p>
+      <p className={`stat-subtitle ${subtitleColorClass}`}>
+        {value !== null ? subtitle : <span className="stat-skeleton stat-skeleton-subtitle" />}
+      </p>
     </div>
   </div>
 );
 
-const StatCards: React.FC = () => {
-  const total     = projects.length;
-  const ongoing   = projects.filter(p => p.status === 'On Track' || p.status === 'In Progress').length;
-  const delayed   = projects.filter(p => p.status === 'Delayed').length;
-  const completed = projects.filter(p => p.status === 'Completed').length;
-  const rate      = total > 0 ? Math.round((completed / total) * 100) : 0;
+const CARD_TEMPLATES = [
+  {
+    title: 'Assigned Groups',
+    icon: FolderKanban,
+    iconBgClass: 'icon-bg-blue',
+    iconColorClass: 'icon-color-blue',
+    subtitleColorClass: 'subtitle-blue',
+    getSubtitle: () => 'Total assignments',
+    getValue: (s: StatData) => s.totalGroups,
+  },
+  {
+    title: 'Ongoing Projects',
+    icon: Clock,
+    iconBgClass: 'icon-bg-green',
+    iconColorClass: 'icon-color-green',
+    subtitleColorClass: 'subtitle-green',
+    getSubtitle: () => 'Active now',
+    getValue: (s: StatData) => s.ongoingCount,
+  },
+  {
+    title: 'Delayed Projects',
+    icon: AlertCircle,
+    iconBgClass: 'icon-bg-orange',
+    iconColorClass: 'icon-color-orange',
+    subtitleColorClass: 'subtitle-orange',
+    getSubtitle: (s: StatData) => s.delayedCount > 0 ? `${s.delayedCount} need attention` : 'All on track',
+    getValue: (s: StatData) => s.delayedCount,
+  },
+  {
+    title: 'Completed',
+    icon: CheckCircle,
+    iconBgClass: 'icon-bg-teal',
+    iconColorClass: 'icon-color-teal',
+    subtitleColorClass: 'subtitle-teal',
+    getSubtitle: (s: StatData) => `${s.completionRate}% completion`,
+    getValue: (s: StatData) => s.completedCount,
+  },
+];
 
-  const cards: StatCardProps[] = [
-    {
-      title: 'Assigned Groups', value: total, icon: FolderKanban,
-      iconBgClass: 'icon-bg-blue', iconColorClass: 'icon-color-blue',
-      subtitle: '+3 this month', subtitleColorClass: 'subtitle-blue',
-    },
-    {
-      title: 'Ongoing Projects', value: ongoing, icon: Clock,
-      iconBgClass: 'icon-bg-green', iconColorClass: 'icon-color-green',
-      subtitle: '+2 active', subtitleColorClass: 'subtitle-green',
-    },
-    {
-      title: 'Delayed Projects', value: delayed, icon: AlertCircle,
-      iconBgClass: 'icon-bg-orange', iconColorClass: 'icon-color-orange',
-      subtitle: delayed > 0 ? `${delayed} need attention` : 'All on track',
-      subtitleColorClass: 'subtitle-orange',
-    },
-    {
-      title: 'Completed', value: completed, icon: CheckCircle,
-      iconBgClass: 'icon-bg-teal', iconColorClass: 'icon-color-teal',
-      subtitle: `${rate}% completion`, subtitleColorClass: 'subtitle-teal',
-    },
-  ];
+const StatCards: React.FC = () => {
+  const [stats, setStats] = useState<StatData | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/mentor/stats');
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <div className="stats-grid">
-      {cards.map(card => <StatCard key={card.title} {...card} />)}
+      {CARD_TEMPLATES.map(card => (
+        <StatCard
+          key={card.title}
+          title={card.title}
+          icon={card.icon}
+          iconBgClass={card.iconBgClass}
+          iconColorClass={card.iconColorClass}
+          subtitleColorClass={card.subtitleColorClass}
+          value={stats ? card.getValue(stats) : null}
+          subtitle={stats ? card.getSubtitle(stats) : ''}
+        />
+      ))}
     </div>
   );
 };
