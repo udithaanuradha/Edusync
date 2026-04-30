@@ -111,6 +111,11 @@ const CoordinatorDashboard: React.FC = () => {
     </div>
   ) : null;
 
+  // Keep the demo-specific "Innovex" group out of the coordinator dashboard summary.
+  const filteredRecentProjects = (dashboardData?.recentProjects ?? []).filter(
+    (project) => project.groupName.trim().toLowerCase() !== 'innovex'
+  );
+
   return (
     <div className="app-layout" style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
@@ -137,7 +142,7 @@ const CoordinatorDashboard: React.FC = () => {
                 <StatCards stats={dashboardData?.stats ?? null} />
                 <div className="dashboard-grid">
                   <div className="main-content-column">
-                    <RecentProjects projects={dashboardData?.recentProjects ?? []} />
+                    <RecentProjects projects={filteredRecentProjects} />
                   </div>
 
                   <div className="side-content-column">

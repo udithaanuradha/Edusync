@@ -19,6 +19,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   const [activeTab, setActiveTab] = useState<TabKey>('stages');
   const [prefillRequest, setPrefillRequest] = useState<ApprovedGroupRequest | null>(null);
 
+  // Let coordinators jump from an approved submission directly into group creation.
   const handleCreateGroupFromRequest = (request: ApprovedGroupRequest) => {
     setPrefillRequest(request);
     setActiveTab('groups');
@@ -46,6 +47,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
             </div>
 
             <div className="level-tabs-wrap" role="tablist" aria-label={`Level ${levelNumber} management tabs`}>
+              {/* Split the level workflow into stage setup, submissions, group management, and marking. */}
               <button
                 role="tab"
                 className={`level-tab-btn ${activeTab === 'stages' ? 'active' : ''}`}

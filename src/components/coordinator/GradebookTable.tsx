@@ -32,6 +32,7 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     const fetchMarks = async () => {
       try {
         setLoading(true);
+        // The coordinator view reads marks directly from the API so it always shows the latest evaluation data.
         const response = await fetch(
           `http://localhost:5000/api/marks/level/${levelNumber}`,
           {

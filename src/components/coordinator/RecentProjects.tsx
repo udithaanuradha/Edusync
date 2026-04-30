@@ -15,7 +15,7 @@ interface RecentProjectsProps {
 }
 
 const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
-  // Helper function to pick the right badge color
+  // Map backend status labels into stable dashboard badge styles.
   const getStatusClass = (status: string) => {
     switch (status) {
       case 'Completed': return 'status-progress';

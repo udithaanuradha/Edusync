@@ -43,6 +43,10 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] })
         ) : (
           deadlines.map((deadline, index) => {
             const { day, month } = formatDay(deadline.date);
+            const academicLevel = Number(deadline.academicLevel);
+            const displayLevel = Number.isFinite(academicLevel)
+              ? `Level ${Math.max(1, academicLevel)}`
+              : 'Level 1';
 
             return (
               <div className="deadline-item" key={index}>
@@ -54,7 +58,7 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] })
                 <div className="deadline-info">
                   <h4 className="deadline-title">{deadline.title}</h4>
                   <p className="deadline-subtitle">
-                    {deadline.targetGroup || `Level ${deadline.academicLevel}`}
+                    {deadline.targetGroup || displayLevel}
                     {deadline.startTime ? ` • ${deadline.startTime}` : ''}
                   </p>
                 </div>
@@ -63,8 +67,6 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] })
           })
         )}
       </div>
-      
-      <button className="view-all-btn">View Full Calendar</button>
     </div>
   );
 };

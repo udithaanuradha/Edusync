@@ -1,27 +1,37 @@
 .deadlines-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e5e7eb;
   width: 350px; /* This locks the width so RecentProjects takes the rest of the space */
   display: flex;
   flex-direction: column;
 }
 
-.card-header {
+.deadlines-card .card-header {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 12px;
   margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.header-icon { color: #64748b; }
-.card-title {
+.deadlines-card .header-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.deadlines-card .card-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #0f172a;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .deadlines-list {
