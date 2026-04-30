@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+<<<<<<< HEAD
 import { Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+=======
+import { Pencil, Search, Trash2, Users, X } from 'lucide-react';
+>>>>>>> d452b1e (feat: update coordinator dashboard components and UI spacing)
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
 
@@ -44,6 +48,7 @@ const STUDENT_INDEX_REGEX = /\b\d{6}[A-Za-z]\b/g;
 
 const normalizeIndex = (value?: string | null) => value?.trim().toUpperCase() ?? '';
 
+// Backends in this project return different wrappers, so normalize them into one list shape.
 const toArray = (payload: unknown): GroupApiRecord[] => {
   if (Array.isArray(payload)) {
     return payload as GroupApiRecord[];
@@ -61,15 +66,26 @@ const toArray = (payload: unknown): GroupApiRecord[] => {
     if (Array.isArray(data.groups)) return data.groups as GroupApiRecord[];
     if (Array.isArray(data.results)) return data.results as GroupApiRecord[];
     if (Array.isArray(data.requests)) return data.requests as GroupApiRecord[];
+    // Fallback: if any top-level property is an array, return it (tolerant parsing)
+    for (const val of Object.values(data)) {
+      if (Array.isArray(val)) return val as GroupApiRecord[];
+    }
   }
 
   return [];
 };
 
+// Accept multiple id and name aliases so the coordinator UI keeps working across API variants.
 const normalizeGroup = (raw: GroupApiRecord): GroupView => {
   const id =
     (raw.group_id as number | string | undefined) ??
     (raw.id as number | string | undefined) ??
+    (raw.groupId as number | string | undefined) ??
+    (raw.groupID as number | string | undefined) ??
+    (raw.project_group_id as number | string | undefined) ??
+    (raw.projectGroupId as number | string | undefined) ??
+    (raw.server_id as number | string | undefined) ??
+    (raw.serverId as number | string | undefined) ??
     `temp-${Math.random().toString(36).slice(2)}`;
 
   const name =
@@ -177,12 +193,14 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       setLoading(true);
 
       for (const endpoint of endpoints) {
+        if (import.meta.env.DEV) console.log('[GroupManagement] trying endpoint', endpoint);
         const response = await fetch(endpoint, { headers });
         if (!response.ok) {
           continue;
         }
 
         const data = await response.json();
+        if (import.meta.env.DEV) console.log('[GroupManagement] response payload', data);
         const list = toArray(data);
         if (list.length === 0) {
           continue;
@@ -233,11 +251,6 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setSearchIndex('');
     setMembers([]);
     setEditingGroup(null);
-  };
-
-  const openCreateModal = () => {
-    resetForm();
-    setIsModalOpen(true);
   };
 
   const openEditModal = async (group: GroupView) => {
@@ -694,13 +707,6 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
   return (
     <div className="group-management-container">
-      <div className="groups-toolbar">
-        <button className="btn-create-group" onClick={openCreateModal}>
-          <Plus size={16} />
-          Create Group
-        </button>
-      </div>
-
       <div className="groups-list-card">
         {loading ? (
           <div className="groups-empty-state">

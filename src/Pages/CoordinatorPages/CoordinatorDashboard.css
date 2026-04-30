@@ -1,4 +1,5 @@
- /* --- Dashboard Main Layout --- */
+/* --- Dashboard Main Layout --- */
+/* Two-column layout: projects stay wide on the left, while deadlines and announcements stack on the right. */
 .dashboard-grid {
   display: flex;
   gap: 24px;

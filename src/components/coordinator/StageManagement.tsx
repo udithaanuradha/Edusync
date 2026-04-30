@@ -37,6 +37,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     const fetchStages = async () => {
       try {
         setLoading(true);
+        // Stage records are loaded first so uploads can attach to the real database id.
         const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
         
         if (!response.ok) {
@@ -100,6 +101,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
       setUploadingFiles(true);
 
       // Step 1: Create the stage in the backend first
+      // The backend returns the persistent id we need for file uploads.
       const createResponse = await fetch('http://localhost:5000/api/projects/create', {
         method: 'POST',
         headers: {
@@ -110,8 +112,8 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           stage_name: formData.name,
           description: formData.description,
           deadline: formData.deadline || null,
-          created_by: 1, // TODO: Replace with actual user ID from auth
-          user_role: 'admin', // TODO: Replace with actual role from auth
+          created_by: 1, // TODO: Replace with the logged-in coordinator id.
+          user_role: 'admin', // TODO: Replace with the logged-in coordinator role.
         }),
       });
 

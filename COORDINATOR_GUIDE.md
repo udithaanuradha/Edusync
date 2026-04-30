@@ -5,8 +5,9 @@
 2. [Architecture Overview](#architecture-overview)
 3. [Feature 1: Announcements](#feature-1-announcements)
 4. [Feature 2: Calendar & Panel Scheduling](#feature-2-calendar--panel-scheduling)
-5. [Feature 3: Marking & Evaluation (Gradebook)](#feature-3-marking--evaluation-gradebook)
-6. [Quick Reference](#quick-reference)
+5. [Feature 3: Project Stages Creation & Management](#feature-3-project-stages-creation--management)
+6. [Feature 4: Marking & Evaluation (Gradebook)](#feature-4-marking--evaluation-gradebook)
+7. [Quick Reference](#quick-reference)
 
 ---
 
@@ -395,12 +396,13 @@ Frontend Files:
     └── Stores scheduled panels and frozen dates
 
 Backend Files:
-├── src/routes/marksRoutes.js
-│   └── Endpoint for assigning evaluators
-├── src/controllers/marksController.js
-│   └── Business logic for evaluator assignment
-└── Database: evaluator_assignments table
-```
+├── src/routes/calendarRoutes.js
+│   └── Panel scheduling and frozen-date endpoints
+├── src/controllers/calendarController.js
+│   └── Business logic for calendar operations
+└── Database: evaluation_panels table
+
+
 
 ### Frontend Implementation
 
@@ -758,7 +760,630 @@ CREATE TABLE evaluator_assignments (
 
 ---
 
-## Feature 3: Marking & Evaluation (Gradebook)
+## Feature 3: Project Stages Creation & Management
+
+### What It Does
+
+Coordinators create and manage project stages (phases) for each academic level. Each stage includes:
+- **Stage name** (e.g., "Proposal", "Interim Evaluation", "Final Presentation")
+- **Description** of what students must accomplish
+- **Deadline** for submission/completion
+- **Supporting documents** (PDFs, guidelines, rubrics) that students can download
+
+Students and supervisors can then view these stages and their associated documents, providing a clear timeline and requirements for the project.
+
+### Component Architecture
+
+```
+Frontend Files:
+├── src/pages/CoordinatorPages/CoordinatorLevelPage.tsx
+│   └── Tab interface with "Project Stages" tab
+├── src/components/coordinator/StageManagement.tsx
+│   └── Create, edit, delete stages with file uploads
+├── src/components/student/CoordinatorStageUpdates.tsx
+│   └── Student view of stages (read-only with download)
+├── src/components/mentor/MentorStageManagement.tsx
+│   └── Mentor view of stages (read-only with download)
+└── src/components/supervisor/CoordinatorInstructionsView.tsx
+    └── Supervisor view of stages (read-only)
+
+Backend Files:
+├── src/routes/projectRoutes.js
+│   └── Endpoints for stage CRUD and file uploads
+├── src/controllers/projectController.js
+│   └── Business logic for stage management
+└── Database: project_stages, stage_files tables
+    └── Cloudinary integration for file storage
+```
+
+### Frontend Implementation
+
+#### StageManagement.tsx (Coordinator Create/Edit Interface)
+
+```typescript
+// Located: src/components/coordinator/StageManagement.tsx
+
+interface Stage {
+  stage_id: string;
+  stage_name: string;
+  description: string;
+  deadline?: string;
+  level?: string;
+  files?: Array<{
+    file_id?: number;
+    file_name: string;
+    file_url: string;
+    uploaded_by?: number;
+    uploaded_at?: string;
+  }>;
+}
+
+const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    deadline: '',
+  });
+
+  // Fetch existing stages on mount
+  useEffect(() => {
+    const fetchStages = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+        const data = await response.json();
+        
+        if (data.success && Array.isArray(data.data)) {
+          setStages(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching stages:', err);
+      }
+    };
+
+    fetchStages();
+  }, [levelNumber]);
+
+  // Create new stage with file uploads
+  const handleAddStage = async () => {
+    if (!formData.name) {
+      alert('Stage name is required');
+      return;
+    }
+
+    try {
+      // Step 1: Create the stage in backend
+      const createResponse = await fetch('http://localhost:5000/api/projects/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          level: levelNumber,
+          stage_name: formData.name,
+          description: formData.description,
+          deadline: formData.deadline || null,
+          created_by: userId,              // From useAuth().user?.id
+          user_role: userRole,             // From useAuth().user?.role
+        }),
+      });
+
+      const createResult = await createResponse.json();
+      if (!createResult.success) {
+        throw new Error(createResult.message);
+      }
+
+      const stageId = createResult.id;  // Real stage_id from database
+
+      // Step 2: Upload files (if any) with the real stage_id
+      const filesData: any[] = [];
+      
+      for (const fileObj of uploadedFiles) {
+        const fileFormData = new FormData();
+        fileFormData.append('file', fileObj.file);
+        fileFormData.append('stage_id', stageId.toString());
+        fileFormData.append('uploaded_by', userId.toString());
+
+        const uploadResponse = await fetch('http://localhost:5000/api/projects/upload-file', {
+          method: 'POST',
+          body: fileFormData,  // FormData, don't set Content-Type
+        });
+
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success) {
+          filesData.push({
+            file_name: fileObj.file.name,
+            file_url: uploadResult.file_url,  // Cloudinary URL
+          });
+        }
+      }
+
+      // Step 3: Add to local state
+      const newStage: Stage = {
+        stage_id: stageId.toString(),
+        stage_name: formData.name,
+        description: formData.description,
+        deadline: formData.deadline || undefined,
+        level: levelNumber.toString(),
+        files: filesData,
+      };
+
+      setStages([...stages, newStage]);
+      
+      // Reset form
+      setFormData({ name: '', description: '', deadline: '' });
+      setUploadedFiles([]);
+      setShowModal(false);
+
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  // Delete stage
+  const handleDeleteStage = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/projects/delete/${id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setStages(stages.filter(s => s.stage_id !== id));
+      }
+    } catch (err) {
+      alert(`Error deleting stage: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  return (
+    <div className="stage-management-container">
+      {/* Add Stage Button */}
+      <button onClick={() => setShowModal(true)} className="btn-add-stage">
+        + Add Stage
+      </button>
+
+      {/* Timeline Display */}
+      {stages.length === 0 ? (
+        <div className="empty-state">No stages created yet</div>
+      ) : (
+        <div className="timeline-list">
+          {stages.map((stage, index) => (
+            <div key={stage.stage_id} className="timeline-item">
+              <div className="timeline-marker">
+                <span>{index + 1}</span>
+              </div>
+              <div className="timeline-content">
+                <h4>{stage.stage_name}</h4>
+                <p>{stage.description}</p>
+                {stage.deadline && <p>Deadline: {new Date(stage.deadline).toLocaleDateString()}</p>}
+                {stage.files?.map(f => (
+                  <a key={f.file_id} href={f.file_url} target="_blank">
+                    📄 {f.file_name}
+                  </a>
+                ))}
+                <button onClick={() => handleDeleteStage(stage.stage_id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-panel">
+            <h2>Create New Stage</h2>
+            <input
+              type="text"
+              placeholder="Stage Name"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+            />
+            <textarea
+              placeholder="Description"
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+            />
+            <input
+              type="date"
+              value={formData.deadline}
+              onChange={(e) => setFormData({...formData, deadline: e.target.value})}
+            />
+            
+            {/* File Upload */}
+            <div className="drag-drop-zone" onDrop={handleDrop}>
+              <p>Drag and drop PDFs here or click to browse</p>
+              <input type="file" multiple onChange={(e) => handleFilesSelected(e.target.files)} />
+            </div>
+
+            <button onClick={handleAddStage}>Save Stage</button>
+            <button onClick={() => setShowModal(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+#### CoordinatorStageUpdates.tsx (Student View - Read Only)
+
+```typescript
+// Located: src/components/student/CoordinatorStageUpdates.tsx
+
+const StudentStageView: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
+  const [stages, setStages] = useState<Stage[]>([]);
+
+  useEffect(() => {
+    const fetchStages = async () => {
+      const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+      const data = await response.json();
+      if (data.success) setStages(data.data);
+    };
+    fetchStages();
+  }, [levelNumber]);
+
+  return (
+    <div className="stage-management-container">
+      <div className="timeline-list">
+        {stages.map((stage, index) => (
+          <div key={stage.stage_id} className="timeline-item">
+            <h4>{stage.stage_name}</h4>
+            <p>{stage.description}</p>
+            {stage.deadline && (
+              <span className="deadline-badge">
+                📅 {new Date(stage.deadline).toLocaleDateString()}
+              </span>
+            )}
+            
+            {/* Download Files */}
+            {stage.files?.length > 0 && (
+              <div className="files-section">
+                <p>Coordinator Attachments:</p>
+                {stage.files.map(f => (
+                  <button 
+                    key={f.file_id}
+                    onClick={() => handleDownload(f.file_url, f.file_name)}
+                    className="btn-download"
+                  >
+                    ⬇️ {f.file_name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+### Backend Implementation
+
+#### projectRoutes.js
+
+```javascript
+// Located: src/routes/projectRoutes.js
+
+const express = require('express');
+const router = express.Router();
+const {
+  createStage,
+  getStagesByLevel,
+  updateStage,
+  deleteStage,
+  uploadFile,
+} = require('../controllers/projectController');
+const { authMiddleware, authorizeRole } = require('../middleware/authMiddleware');
+
+// GET - Fetch all stages for a level (all users can view)
+router.get('/level/:levelNumber', getStagesByLevel);
+
+// POST - Create new stage (coordinator only)
+router.post('/create', authMiddleware, authorizeRole('coordinator'), createStage);
+
+// POST - Upload file to stage (coordinator only)
+router.post('/upload-file', authMiddleware, organizeRole('coordinator'), uploadFile);
+
+// PUT - Update stage (coordinator only)
+router.put('/:id', authMiddleware, authorizeRole('coordinator'), updateStage);
+
+// DELETE - Delete stage (coordinator only)
+router.delete('/delete/:id', authMiddleware, authorizeRole('coordinator'), deleteStage);
+
+module.exports = router;
+```
+
+#### projectController.js
+
+```javascript
+// Located: src/controllers/projectController.js
+
+const db = require('../config/database');
+const cloudinary = require('cloudinary').v2;
+
+/**
+ * Create a new project stage
+ * 
+ * Request body:
+ * {
+ *   level: number,
+ *   stage_name: string,
+ *   description: string,
+ *   deadline: string (date),
+ *   created_by: number (user ID),
+ *   user_role: string
+ * }
+ */
+const createStage = (req, res) => {
+  const { level, stage_name, description, deadline, created_by, user_role } = req.body;
+
+  // Validation
+  if (!level || !stage_name) {
+    return res.status(400).json({
+      error: 'Missing required fields: level, stage_name'
+    });
+  }
+
+  if (![1, 2, 3, 4].includes(level)) {
+    return res.status(400).json({ error: 'Invalid level' });
+  }
+
+  // Check user is coordinator
+  if (req.user.role !== 'coordinator') {
+    return res.status(403).json({
+      error: 'Only coordinators can create stages'
+    });
+  }
+
+  // Insert into database
+  db.query(
+    `INSERT INTO project_stages (level, stage_name, description, deadline, created_by, created_at)
+     VALUES (?, ?, ?, ?, ?, NOW())`,
+    [level, stage_name, description, deadline || null, created_by || req.user.id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      res.status(201).json({
+        success: true,
+        id: result.insertId,
+        message: 'Stage created successfully'
+      });
+    }
+  );
+};
+
+/**
+ * Get all stages for a specific level
+ * 
+ * Query params: ?levelNumber=1
+ */
+const getStagesByLevel = (req, res) => {
+  const { levelNumber } = req.params;
+
+  if (!levelNumber || ![1, 2, 3, 4].includes(Number(levelNumber))) {
+    return res.status(400).json({ error: 'Invalid level' });
+  }
+
+  // Get stages and their files
+  const query = `
+    SELECT 
+      ps.stage_id,
+      ps.level,
+      ps.stage_name,
+      ps.description,
+      ps.deadline,
+      ps.created_by,
+      ps.created_at,
+      
+      -- Files (LEFT JOIN so stages without files still appear)
+      sf.file_id,
+      sf.file_name,
+      sf.file_url,
+      sf.uploaded_by,
+      sf.uploaded_at
+    
+    FROM project_stages ps
+    LEFT JOIN stage_files sf ON ps.stage_id = sf.stage_id
+    
+    WHERE ps.level = ?
+    ORDER BY ps.created_at ASC, sf.uploaded_at DESC
+  `;
+
+  db.query(query, [levelNumber], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    // Transform results: group files by stage
+    const stagesMap = new Map();
+    
+    results.forEach(row => {
+      if (!stagesMap.has(row.stage_id)) {
+        stagesMap.set(row.stage_id, {
+          stage_id: row.stage_id,
+          level: row.level,
+          stage_name: row.stage_name,
+          description: row.description,
+          deadline: row.deadline,
+          created_by: row.created_by,
+          created_at: row.created_at,
+          files: []
+        });
+      }
+      
+      if (row.file_id) {
+        stagesMap.get(row.stage_id).files.push({
+          file_id: row.file_id,
+          file_name: row.file_name,
+          file_url: row.file_url,
+          uploaded_by: row.uploaded_by,
+          uploaded_at: row.uploaded_at
+        });
+      }
+    });
+
+    const stages = Array.from(stagesMap.values());
+    
+    res.json({
+      success: true,
+      data: stages
+    });
+  });
+};
+
+/**
+ * Upload file to stage (via Cloudinary)
+ * 
+ * FormData:
+ * - file: File object
+ * - stage_id: number
+ * - uploaded_by: number (user ID)
+ */
+const uploadFile = async (req, res) => {
+  try {
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    const { stage_id, uploaded_by } = req.body;
+
+    if (!stage_id) {
+      return res.status(400).json({ error: 'stage_id is required' });
+    }
+
+    const file = req.files.file;
+
+    // Upload to Cloudinary
+    const cloudinaryResult = await cloudinary.uploader.upload(file.tempFilePath, {
+      folder: `edusync/stages/${stage_id}`,
+      resource_type: 'auto'
+    });
+
+    // Store file reference in database
+    db.query(
+      `INSERT INTO stage_files (stage_id, file_name, file_url, uploaded_by, uploaded_at)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [stage_id, file.name, cloudinaryResult.secure_url, uploaded_by || req.user.id],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        res.status(201).json({
+          success: true,
+          file_id: result.insertId,
+          file_url: cloudinaryResult.secure_url,
+          message: 'File uploaded successfully'
+        });
+      }
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Delete stage and all associated files
+ */
+const deleteStage = (req, res) => {
+  const { id } = req.params;
+
+  // Get files to delete from Cloudinary
+  db.query(
+    'SELECT file_url FROM stage_files WHERE stage_id = ?',
+    [id],
+    async (err, files) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      try {
+        // Delete from Cloudinary
+        for (const file of files) {
+          // Extract public_id from URL and delete
+          const publicId = file.file_url.split('/').pop().split('.')[0];
+          await cloudinary.uploader.destroy(`edusync/stages/${id}/${publicId}`);
+        }
+
+        // Delete from database
+        db.query('DELETE FROM stage_files WHERE stage_id = ?', [id]);
+        db.query('DELETE FROM project_stages WHERE stage_id = ?', [id], (err) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          res.json({
+            success: true,
+            message: 'Stage deleted successfully'
+          });
+        });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    }
+  );
+};
+
+module.exports = {
+  createStage,
+  getStagesByLevel,
+  uploadFile,
+  deleteStage,
+};
+```
+
+#### Database Schema
+
+```sql
+-- Project Stages table
+CREATE TABLE project_stages (
+  stage_id INT PRIMARY KEY AUTO_INCREMENT,
+  level INT NOT NULL,                    -- 1, 2, 3, or 4
+  stage_name VARCHAR(255) NOT NULL,      -- e.g., "Proposal", "Interim"
+  description TEXT,
+  deadline DATE,
+  created_by INT NOT NULL,               -- Coordinator who created it
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP,
+  
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX (level),
+  INDEX (created_at)
+);
+
+-- Stage Files table (files uploaded to stages)
+CREATE TABLE stage_files (
+  file_id INT PRIMARY KEY AUTO_INCREMENT,
+  stage_id INT NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_url TEXT NOT NULL,                -- Cloudinary URL
+  uploaded_by INT,                       -- User who uploaded it
+  uploaded_at TIMESTAMP DEFAULT NOW(),
+  
+  FOREIGN KEY (stage_id) REFERENCES project_stages(stage_id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX (stage_id),
+  INDEX (uploaded_at)
+);
+```
+
+#### Key Implementation Details
+
+**File Upload Flow:**
+1. Coordinator selects files in the modal (drag-drop or click)
+2. When "Save Stage" is clicked:
+   - First, POST to `/api/projects/create` to create the stage (gets stage_id)
+   - Then, for each file, POST to `/api/projects/upload-file` with FormData
+   - Files are uploaded to Cloudinary, secure URL returned
+   - File references stored in `stage_files` table
+3. Students/supervisors download files directly from Cloudinary URLs
+
+**Fetching Stages:**
+- GET `/api/projects/level/{levelNumber}` uses LEFT JOIN to include stages even without files
+- Results grouped on backend to nest files within stages
+- All users (students, supervisors, coordinators) can view stages for their level
+
+**Deletion:**
+- DELETE `/api/projects/delete/{id}` deletes stage AND all associated files
+- Files removed from Cloudinary first, then database
+- Cascade delete ensures consistency
+
+---
+
+## Feature 4: Marking & Evaluation (Gradebook)
 
 ### What It Does
 
@@ -1163,6 +1788,10 @@ LEFT JOIN marks (actual grades)
 | POST | /api/marks/assign-evaluator | Assign supervisor to group+stage | Coordinator |
 | GET | /api/marks/gradebook | Get all marks with assignments | Coordinator |
 | GET | /api/marks/assignments | Get supervisor's assigned groups | Supervisor |
+| GET | /api/projects/level/:levelNumber | Get all stages for a level | All |
+| POST | /api/projects/create | Create new stage | Coordinator |
+| POST | /api/projects/upload-file | Upload file to stage | Coordinator |
+| DELETE | /api/projects/delete/:id | Delete stage (all files) | Coordinator |
 
 ### Database Tables (Coordinator Related)
 
@@ -1172,7 +1801,8 @@ LEFT JOIN marks (actual grades)
 | evaluator_assignments | Supervisor→Group assignments | id, group_id, supervisor_id, stage_id, assigned_at |
 | marks | Submitted grades | id, group_id, stage_id, marks_obtained, evaluator_id, feedback |
 | project_groups | Student project groups | id, group_name, level, supervisor_id |
-| project_stages | Project phases | stage_id, stage_name, deadline |
+| project_stages | Project phases/stages | stage_id, level, stage_name, description, deadline, created_by, created_at |
+| stage_files | Files attached to stages | file_id, stage_id, file_name, file_url, uploaded_by, uploaded_at |
 
 ### Frontend Components (Coordinator Related)
 
@@ -1180,9 +1810,12 @@ LEFT JOIN marks (actual grades)
 |-----------|------|---------|
 | AnnouncementsPage | src/pages/CoordinatorPages/AnnouncementsPage.tsx | Create/manage announcements |
 | CalendarPage | src/pages/CalendarPage.tsx | Schedule panels & freeze dates |
+| StageManagement | src/components/coordinator/StageManagement.tsx | Create/edit/delete stages with file uploads |
 | GradebookTable | src/components/coordinator/GradebookTable.tsx | View marks & track completion |
 | AssignedEvaluations | src/components/supervisor/AssignedEvaluations.tsx | Supervisor's personal list |
-| CoordinatorLevelPage | src/pages/CoordinatorPages/CoordinatorLevelPage.tsx | Tab interface (includes gradebook) |
+| CoordinatorStageUpdates | src/components/student/CoordinatorStageUpdates.tsx | Student view of stages (read-only) |
+| MentorStageManagement | src/components/mentor/MentorStageManagement.tsx | Mentor view of stages (read-only) |
+| CoordinatorLevelPage | src/pages/CoordinatorPages/CoordinatorLevelPage.tsx | Tab interface (stages, groups, marking) |
 
 ---
 
@@ -1203,6 +1836,17 @@ LEFT JOIN marks (actual grades)
   - [ ] Freeze a date
   - [ ] Panels persist after page refresh
   - [ ] Frozen dates persist after page refresh
+
+- [ ] **Project Stages**
+  - [ ] Create stage with name, description, deadline
+  - [ ] Upload files to stage (drag-drop and click)
+  - [ ] Verify files stored in Cloudinary
+  - [ ] View stage details (as student, mentor, supervisor)
+  - [ ] Download stage files (all users)
+  - [ ] Edit stage details
+  - [ ] Delete stage (deletes all associated files)
+  - [ ] Stages persist after page refresh
+  - [ ] Non-coordinators cannot create/edit/delete stages
 
 - [ ] **Gradebook**
   - [ ] All assignments appear in table
@@ -1225,6 +1869,35 @@ LEFT JOIN marks (actual grades)
 1. Check `authMiddleware` is validating token correctly
 2. Verify user record in database has `role = 'coordinator'`
 3. Check token is not expired
+
+### Issue: Files fail to upload to stage
+
+**Cause:** Cloudinary configuration missing or file size too large
+
+**Solution:**
+1. Verify Cloudinary API keys in `.env` file
+2. Check file size is under Cloudinary limit (100MB default)
+3. Check browser console for specific error message
+4. Verify FormData is being sent correctly (no Content-Type header)
+
+### Issue: Stage shows but files don't appear
+
+**Cause:** LEFT JOIN in query includes stages without files; files deleted from Cloudinary
+
+**Solution:**
+1. Check `stage_files` table has records for the stage_id
+2. Verify file_url is valid by visiting URL in browser
+3. Check Cloudinary dashboard to see if files exist there
+4. Re-upload files if they were deleted from Cloudinary
+
+### Issue: File download returns 404 or CORS error
+
+**Cause:** Cloudinary URL expired or CORS not configured
+
+**Solution:**
+1. Check Cloudinary secure_url is being stored (not old file_url)
+2. Verify Cloudinary CORS settings allow your domain
+3. Use `secure_url` when uploading to Cloudinary, not temporary URL
 
 ### Issue: Gradebook shows no data
 

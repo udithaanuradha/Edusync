@@ -9,6 +9,7 @@ const Announcements: React.FC = () => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [audience, setAudience] = useState('All');
+  const [priority, setPriority] = useState('normal');
   const [posting, setPosting] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -27,10 +28,12 @@ const Announcements: React.FC = () => {
       setPosting(true);
       setStatusText('');
 
+      // The shared announcement widget reads the same payload shape, so keep the coordinator fields aligned.
       const payload = {
         title: trimmedTitle,
         message: trimmedMessage,
         target_audience: audience,
+        priority,
         author_name: user?.name || 'Coordinator',
       };
 
@@ -60,6 +63,7 @@ const Announcements: React.FC = () => {
       setTitle('');
       setMessage('');
       setAudience('All');
+      setPriority('normal');
       setStatusText('Announcement posted successfully!');
       
       // Trigger widget refresh
@@ -110,6 +114,12 @@ const Announcements: React.FC = () => {
             <option value="Level2">Level 2 Students</option>
             <option value="Level3">Level 3 Students</option>
             <option value="Level4">Level 4 Students</option>
+          </select>
+
+          {/* Urgent announcements are highlighted in the shared card widget. */}
+          <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+            <option value="normal">Normal priority</option>
+            <option value="urgent">Urgent</option>
           </select>
 
           {statusText && <p className="announcement-status">{statusText}</p>}
