@@ -22,7 +22,7 @@ const AdminCalendarPage: React.FC = () => {
   const [backupType, setBackupType] = useState('Full System Backup');
   const [backupTime, setBackupTime] = useState('02:00');
 
-  // ✅ Edit States
+  //  Edit States
   const [editingBackup, setEditingBackup] = useState<any | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -70,7 +70,7 @@ const AdminCalendarPage: React.FC = () => {
     }
   };
 
-  // ✅ Open Edit Modal
+  // Open Edit Modal
   const handleEditClick = (backup: any) => {
     setEditingBackup({
       id: backup.id,
@@ -80,7 +80,7 @@ const AdminCalendarPage: React.FC = () => {
     });
   };
 
-  // ✅ Save Edit
+  //  Save Edit
   const handleSaveEdit = async () => {
     if (!editingBackup) return;
     try {
@@ -101,7 +101,7 @@ const AdminCalendarPage: React.FC = () => {
     }
   };
 
-  // ✅ Confirm Delete
+  //  Confirm Delete
   const handleDeleteClick = (id: number) => {
     setDeletingId(id);
     setShowDeleteModal(true);
@@ -173,7 +173,7 @@ const AdminCalendarPage: React.FC = () => {
           </div>
         )}
 
-        {/* ✅ Edit Modal */}
+        {/* Edit Modal */}
         {editingBackup && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '440px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
@@ -217,7 +217,7 @@ const AdminCalendarPage: React.FC = () => {
           </div>
         )}
 
-        {/* ✅ Delete Confirmation Modal */}
+        {/* Delete Confirmation Modal */}
         {showDeleteModal && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '400px', textAlign: 'center' }}>
@@ -283,7 +283,7 @@ const AdminCalendarPage: React.FC = () => {
               </div>
             </div>
 
-            {/* ✅ Backup Table with Edit & Delete */}
+            
             <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
               <h4 style={{ margin: '0 0 15px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Database size={18} color="#2563eb" /> Upcoming Backups

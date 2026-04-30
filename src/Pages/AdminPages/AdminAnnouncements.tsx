@@ -52,7 +52,7 @@ const AdminAnnouncements: React.FC = () => {
     const payload = {
       ...formData,
       author_name: user.name || 'Admin',
-      author_id: user.id || null  // ✅ send author_id
+      author_id: user.id || null  
     };
 
     try {
@@ -111,7 +111,7 @@ const AdminAnnouncements: React.FC = () => {
         <Header />
         <main className="content-container">
 
-          {/* ✅ Dashboard-style header */}
+          
           <div className="dashboard-header-section" style={{
             width: '100%', display: 'flex', flexDirection: 'column',
             alignItems: 'flex-start', textAlign: 'left', marginBottom: '32px'
@@ -176,7 +176,7 @@ const AdminAnnouncements: React.FC = () => {
                       <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '4px' }}>
                         {ann.target_audience}
                       </span>
-                      {/* ✅ "Your post" badge */}
+                  
                       {isMyAnnouncement(ann) && (
                         <span style={{ fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
                           Your Post
@@ -190,7 +190,7 @@ const AdminAnnouncements: React.FC = () => {
                     </small>
                   </div>
 
-                  {/* ✅ Delete only shown for own announcements */}
+                  {/* Delete only shown for own announcements */}
                   {isMyAnnouncement(ann) && (
                     <button
                       onClick={() => handleDelete(ann)}

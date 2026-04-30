@@ -29,7 +29,7 @@ import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnou
 import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/shared/CommunicationPage';
-import AdminCommunicationPage from './pages/AdminPages/AdminCommunicationPage'; // ✅ NEW
+import AdminCommunicationPage from './pages/AdminPages/AdminCommunicationPage'; 
 import CalendarPage from './pages/CalendarPage';
 import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
@@ -235,7 +235,7 @@ function App() {
         }
       />
 
-      {/* ✅ Communication Route — admin gets own page, others unchanged */}
+      
       <Route
         path="/dashboard/communication"
         element={

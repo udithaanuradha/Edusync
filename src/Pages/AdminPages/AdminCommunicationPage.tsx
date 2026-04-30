@@ -109,7 +109,7 @@ const AdminCommunicationPage: React.FC = () => {
         <Header />
         <main className="content-container" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', padding: '24px', gap: '24px' }}>
 
-          {/* ✅ Dashboard-style header */}
+          
           <div className="dashboard-header-section" style={{
             width: '100%',
             display: 'flex',
@@ -128,7 +128,7 @@ const AdminCommunicationPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Chat Window fills remaining space */}
+          
           <div style={{ flex: 1, minHeight: 0, borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
             <ChatWindow
               title="Communication"

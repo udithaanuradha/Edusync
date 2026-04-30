@@ -123,10 +123,10 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        {/* Added flex layout to main to ensure left alignment */}
+        
         <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           
-          {/* FIXED HEADER SECTION - Snaps title to left corner */}
+          
           <div className="dashboard-header-section" style={{ 
             width: '100%', 
             display: 'flex', 
