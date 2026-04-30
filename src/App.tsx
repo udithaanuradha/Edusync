@@ -34,6 +34,8 @@ import CalendarPage from './pages/CalendarPage';
 import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage'; // Added import
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
+import MentorSidebarWrapper from './components/mentor/MentorSidebarWrapper';
+import MentorLevel1Blocked from './pages/MentorPages/MentorLevel1Blocked';
 
 
 function App() {
@@ -130,6 +132,8 @@ function App() {
             <SupervisorLevelPage levelNumber={1} />
           ) : user?.role === "admin" ? (
             <AdminLevelPage levelNumber={1} />
+           ) : user?.role === "mentor" ? (
+            <MentorLevel1Blocked />
           ) : (
             <Navigate to="/login" />
           )
