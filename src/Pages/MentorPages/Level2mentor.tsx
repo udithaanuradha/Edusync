@@ -43,7 +43,7 @@ const Level2mentor = () => {
 
         <main className="content-container">
 
-          {/* ── Page title (RIGHT-ALIGNED) ───────────────────── */}
+          {/* ── Page title ───────────────────── */}
           <div className="mentor-page-header">
             <h1 className="mentor-page-title">Level {levelNumber} Projects</h1>
             <p className="mentor-page-subtitle">
@@ -51,7 +51,7 @@ const Level2mentor = () => {
             </p>
           </div>
 
-          {/* ── Tab Navigation (LEFT-ALIGNED) ────────────────── */}
+          {/* ── Tab Navigation  ────────────────── */}
           <div className="tab-container-mentor">
             <div className="tab-buttons-mentor">
 

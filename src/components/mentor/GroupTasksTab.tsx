@@ -2,33 +2,6 @@ import React, { useState } from 'react';
 import { MessageSquare, Send, ChevronDown, ChevronUp, X } from 'lucide-react';
 import './GroupTasksTab.css';
 
-/**
- * GroupTasksTab Component
- *
- * PURPOSE:
- *   Displays task progress for the mentor's assigned group.
- *   Shown when the mentor clicks "See Tasks" on the Assigned Group tab.
- *
- * SECTIONS:
- *   1. Overall Group Progress bar  — aggregate task counts + progress bar
- *   2. Per-Member Task Cards       — each member shown with 3 columns:
- *        Completed | Ongoing | Yet to Start
- *   3. Feedback Panel (per task)   — mentor clicks any task to expand
- *        an inline feedback textarea and submit feedback for that task.
- *
- * CURRENT STATE: UI-only. No backend connection. No mock data.
- *   Feedback is stored in local React state (feedbackMap) — memory only.
- *
- * FUTURE:
- *   — Task data:        GET  /api/mentor/group-tasks/:groupId
- *   — Submit feedback:  POST /api/mentor/task-feedback
- *       body: { task_id, member_id, feedback_text }
- *   — Load feedback:    GET  /api/mentor/task-feedback/:groupId
- *       (to hydrate feedbackMap on mount)
- *
- * DO NOT add backend calls until tasks table, group assignment logic,
- * and feedback table are built in the backend.
- */
 
 /* ──────────────────────────────────────────────────────────────
    Types

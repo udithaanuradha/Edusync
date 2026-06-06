@@ -2,24 +2,6 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import './AssignedGroupTab.css';
 
-/**
- * AssignedGroupTab Component
- *
- * PURPOSE: Displays the assigned group's project details for a mentor.
- *
- * CURRENT STATE: UI-only. No backend connection. No mock data.
- * Shows empty placeholder boxes for: Project Name, Leader, Members.
- *
- * "See Tasks" Button:
- *   Calls onNavigateToTasks() — passed from the parent Level page.
- *   This switches the parent's activeTab state to 'tasks'.
- *
- * FUTURE: When backend is ready, replace the placeholder divs
- * with real data fetched from /api/mentor/assigned-group/:mentorId
- *
- * DO NOT add backend calls here until the assigned_groups table
- * and mentor assignment logic is built in the backend.
- */
 interface AssignedGroupTabProps {
   /** Called when mentor clicks "See Tasks" — switches parent tab to 'tasks' */
   onNavigateToTasks: () => void;

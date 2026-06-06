@@ -18,7 +18,7 @@ const RecentProjects: React.FC = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        // Replace with your actual API endpoint
+        
         const response = await fetch('http://localhost:5000/api/mentor/projects');
         const data = await response.json();
         setProjects(data);
