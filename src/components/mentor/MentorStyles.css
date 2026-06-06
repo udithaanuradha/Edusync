@@ -1,16 +1,43 @@
-/* Level 1 link — visually disabled for mentors */
+/* ── Level 1 link — visually disabled for mentors ──────────────────────── */
 .mentor-sidebar-container a[href*="level-1"] {
-  pointer-events: auto !important;
-  opacity: 0.5;
+  pointer-events: auto !important; /* keep so our capture handler fires */
+  opacity: 0.45;
   filter: grayscale(1);
   cursor: not-allowed !important;
+  position: relative;
 }
 
+/* Prevent child elements from receiving pointer events so the click
+   bubbles cleanly to the wrapper's onClickCapture handler */
 .mentor-sidebar-container a[href*="level-1"] * {
   pointer-events: none;
 }
 
-/* ── Modal Overlay ── */
+/* Tooltip on hover */
+.mentor-sidebar-container a[href*="level-1"]::after {
+  content: 'Not available for mentors';
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 9999;
+}
+
+.mentor-sidebar-container a[href*="level-1"]:hover::after {
+  opacity: 1;
+}
+
+/* ── Modal Overlay ──────────────────────────────────────────────────────── */
 .mentor-modal-overlay {
   position: fixed;
   inset: 0;
@@ -28,7 +55,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Modal Box ── */
+/* ── Modal Box ──────────────────────────────────────────────────────────── */
 .mentor-modal-box {
   background: #ffffff;
   border-radius: 16px;

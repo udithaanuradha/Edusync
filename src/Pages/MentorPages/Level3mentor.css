@@ -1,0 +1,116 @@
+/* ================================================================
+   Level3mentor.css
+   
+   Shared layout CSS used by Level2mentor, Level3mentor, Level4mentor.
+   (All three import this same file)
+   
+   Key layout rules:
+   - Page title/subtitle → pushed to RIGHT side
+   - Tab buttons         → pushed to LEFT side
+   - Both sit below the shared Header component
+================================================================ */
+
+/* ── Content container spacing ───────────────────────────────── */
+.main-viewport .content-container {
+  padding-top: 24px;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+/* ── PAGE HEADER CONTAINER ───────────────────────────────────── 
+   Contains the Level X title and subtitle.
+   
+   REQUIREMENT: Must appear on the RIGHT side of the page,
+   positioned just below the shared Header component.
+   align-items: flex-end pushes everything to the right.
+*/
+.mentor-page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;    /* RIGHT-align the title and subtitle */
+  text-align: right;
+  margin-bottom: 24px;
+  width: 100%;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* "Level X Projects" main title */
+.mentor-page-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
+}
+
+/* Subtitle below the title */
+.mentor-page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── TAB CONTAINER ───────────────────────────────────────────── 
+   Wraps the Guidelines / Assigned Group tab buttons.
+   
+   REQUIREMENT: Tabs must be on the LEFT side of the page.
+   justify-content: flex-start keeps them left-aligned.
+*/
+.tab-container-mentor {
+  display: flex;
+  justify-content: flex-start;   /* LEFT-align the tab button group */
+  margin-bottom: 24px;
+}
+
+/* The inner group of tab buttons — pill-shaped container */
+.tab-buttons-mentor {
+  display: flex;
+  gap: 0;                        /* No gap — buttons touch each other */
+  background: #f1f5f9;           /* Light grey pill background */
+  padding: 5px;
+  border-radius: 10px;
+}
+
+/* ── Individual Tab Button ───────────────────────────────────── 
+   Default (inactive) state
+*/
+.tab-btn-mentor {
+  padding: 9px 22px;
+  border: none;
+  background: transparent;       /* Transparent when inactive */
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;                /* Grey text when inactive */
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* ── Active Tab Button ───────────────────────────────────────── 
+   REQUIREMENT: Active tab should match the blue color from the
+   coordinator page image (image_1.png — blue active tab).
+*/
+.tab-btn-mentor.active {
+  background: #2563eb;           /* Blue — matches coordinator page */
+  color: #ffffff;                /* White text when active */
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+/* Hover effect for inactive tabs */
+.tab-btn-mentor:not(.active):hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* ── Tab Content Area ────────────────────────────────────────── */
+.tab-content-viewport {
+  width: 100%;
+  position: relative;
+}
+
+/* Smooth transitions for layout elements */
+* {
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}

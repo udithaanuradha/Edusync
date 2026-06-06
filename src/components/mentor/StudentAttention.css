@@ -40,6 +40,8 @@
   gap: 12px;
 }
 
+/* ── Real student card ─────────────────────────────────────── */
+
 .student-item {
   display: flex;
   align-items: flex-start;
@@ -147,4 +149,58 @@
   height: 100%;
   background: linear-gradient(to right, #f87171, #fca5a5);
   border-radius: 999px;
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────────── */
+
+@keyframes shimmer {
+  0%   { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
+}
+
+.student-item-skeleton {
+  background: #fff7f7;
+  border: 1px solid #fecaca;
+  pointer-events: none;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #fecaca 25%, #fee2e2 50%, #fecaca 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-line {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #fecaca 25%, #fee2e2 50%, #fecaca 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease infinite;
+  margin-bottom: 8px;
+}
+
+.skeleton-name    { width: 60%; height: 12px; }
+.skeleton-project { width: 80%; height: 10px; }
+.skeleton-flag    { width: 40%; height: 10px; }
+.skeleton-bar     { width: 100%; height: 4px; margin-bottom: 0; border-radius: 999px; }
+
+/* ── Empty state ───────────────────────────────────────────── */
+
+.attention-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.attention-empty span {
+  font-size: 28px;
 }
