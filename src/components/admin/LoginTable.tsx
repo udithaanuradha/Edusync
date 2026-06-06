@@ -163,8 +163,8 @@ const LoginTable: React.FC = () => {
 
 const columnHeaderStyle: React.CSSProperties = {
   padding: '12px 24px',
-  backgroundColor: '#f0f7ff', // Soft Blue Background for the header row
-  color: '#2563eb',          // Vibrant Blue Text
+  backgroundColor: '#f0f7ff', 
+  color: '#2563eb',          
   fontWeight: '700',
   fontSize: '11px',
   textTransform: 'uppercase',

@@ -30,8 +30,9 @@ import MentorAnnouncementsPage from './pages/MentorPages/MentorAnnouncementsPage
 import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
 import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
 import CommunicationPage from './pages/shared/CommunicationPage';
+import AdminCommunicationPage from './pages/AdminPages/AdminCommunicationPage'; 
 import CalendarPage from './pages/CalendarPage';
-import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage'; // Added import
+import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
 import MentorSidebarWrapper from './components/mentor/MentorSidebarWrapper';
@@ -210,7 +211,7 @@ function App() {
         }
       />
 
-      {/* Modified Calendar Route */}
+      {/* Calendar Route */}
       <Route
         path="/dashboard/calendar"
         element={
@@ -224,7 +225,7 @@ function App() {
         }
       />
 
-      {/* Combined Announcement Route for All Roles */}
+      {/* Announcement Route */}
       <Route
         path="/dashboard/announcements"
         element={
@@ -236,6 +237,22 @@ function App() {
             <SupervisorAnnouncementsPage />
           ) : user?.role === "mentor" ? (
             <MentorAnnouncementsPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      
+      <Route
+        path="/dashboard/communication"
+        element={
+          user?.role === "admin" ? (
+            <AdminCommunicationPage />
+          ) : user?.role === "supervisor" ? (
+            <SupervisorCommunicationPage />
+          ) : user ? (
+            <CommunicationPage />
           ) : (
             <Navigate to="/login" />
           )

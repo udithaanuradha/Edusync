@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Added 'teal' to the ColorType
+
 type ColorType = 'blue' | 'green' | 'purple' | 'amber' | 'red';
 
 interface StatCardProps {
