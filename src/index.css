@@ -374,10 +374,11 @@ textarea {
 }
 
 .auth-card {
-  background-color: #dbece5; 
+  background-color: #dbece5;
   width: 100%;
+  max-width: 760px;        /* ← reduced from 850px */
   border-radius: 12px;
-  padding: 40px;
+  padding: 32px 36px;      /* ← slightly tighter padding */
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   position: relative;
   z-index: 10;
@@ -442,6 +443,41 @@ textarea {
   background-color: #000000;
 }
 
+/* Custom smooth fade parameters tracking inline registration views */
+.base-transition-animation {
+  animation: authViewSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.auth-grid-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+
+@media (max-width: 560px) {
+  .auth-grid-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+@keyframes authViewSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ==========================================================================
    4. PROTECTED ROLE DASHBOARDS (TEAM CODE)
    ========================================================================== */
@@ -483,3 +519,4 @@ textarea {
 @media (max-width: 600px) {
   .process-grid-container, .features-container { grid-template-columns: 1fr; }
 }
+
