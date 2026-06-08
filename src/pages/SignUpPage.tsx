@@ -15,7 +15,8 @@ const SignUpPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     universityId: '',
-    role: 'student'
+    role: 'student',
+    degreeProgram: ''
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -117,6 +118,12 @@ const SignUpPage: React.FC = () => {
       return;
     }
 
+    // Manually validate degree program since it's not in validateSignUpForm
+    if (['student', 'supervisor', 'coordinator'].includes(formData.role) && !formData.degreeProgram) {
+      setFieldErrors(prev => ({ ...prev, degreeProgram: 'Please select your Degree Program.' }));
+      return;
+    }
+
     setIsSubmitting(true);
 
     // PHASE 1: Send registration details and write to database first
@@ -133,7 +140,9 @@ const SignUpPage: React.FC = () => {
             password: formData.password,
             role: formData.role,
             university_id: formData.role === 'student' ? formData.universityId : null,
-            phone: formData.phone || null
+            phone: formData.phone || null,
+            degree_program: ['student', 'supervisor', 'coordinator'].includes(formData.role) 
+              ? formData.degreeProgram : null
           })
         });
         const data = await response.json();
@@ -350,6 +359,36 @@ const SignUpPage: React.FC = () => {
                 {fieldErrors.universityId && <p className="error-text" style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>{fieldErrors.universityId}</p>}
               </div>
 
+              {/* Degree Program — shown only for student, supervisor, coordinator */}
+              {/* Row 4: Password & Confirm Password always together */}
+              {/* Degree Program — full width row, shown only for student, supervisor, coordinator */}
+              {['student', 'supervisor', 'coordinator'].includes(formData.role) && (
+                <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
+                  <label>Degree Program *</label>
+                  <select
+                    name="degreeProgram"
+                    value={formData.degreeProgram}
+                    onChange={handleChange}
+                    className="auth-input"
+                    style={{ 
+                      paddingLeft: '16px', 
+                      appearance: 'auto',
+                      borderColor: fieldErrors.degreeProgram ? '#dc2626' : undefined 
+                    }}
+                  >
+                    <option value="">-- Select Degree Program --</option>
+                    <option value="AI">Artificial Intelligence (AI)</option>
+                    <option value="IT">Information Technology (IT)</option>
+                    <option value="ITM">IT Management (ITM)</option>
+                  </select>
+                  {fieldErrors.degreeProgram && (
+                    <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>
+                      {fieldErrors.degreeProgram}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Row 4: Password & Confirm Password */}
               <div className="auth-input-group">
                 <label>Password * <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 'normal' }}>(min 6 chars)</span></label>
@@ -378,8 +417,10 @@ const SignUpPage: React.FC = () => {
                 />
                 {fieldErrors.confirmPassword && <p className="error-text" style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>{fieldErrors.confirmPassword}</p>}
               </div>
+          
             </div>
           ) : (
+           
             /* VISUALLY CONFINED INLINE SECURITY TOKEN VIEW */
             <div style={{
               backgroundColor: '#f8fafc',
