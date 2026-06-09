@@ -47,7 +47,10 @@ const SignUpPage: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'role' && value !== 'student' && { universityId: '' })
+      // Reset universityId when switching away from student role
+      ...(name === 'role' && value !== 'student' && { universityId: '' }),
+      // Reset degreeProgram when role changes so wrong options don't carry over
+      ...(name === 'role' && { degreeProgram: '' })
     }));
 
     if (fieldErrors[name]) {
@@ -141,7 +144,7 @@ const SignUpPage: React.FC = () => {
             role: formData.role,
             university_id: formData.role === 'student' ? formData.universityId : null,
             phone: formData.phone || null,
-            degree_program: ['student', 'supervisor', 'coordinator'].includes(formData.role) 
+            academic_unit: ['student', 'supervisor', 'coordinator'].includes(formData.role) 
               ? formData.degreeProgram : null
           })
         });
@@ -362,9 +365,17 @@ const SignUpPage: React.FC = () => {
               {/* Degree Program — shown only for student, supervisor, coordinator */}
               {/* Row 4: Password & Confirm Password always together */}
               {/* Degree Program — full width row, shown only for student, supervisor, coordinator */}
+              {/* Degree Program / Department field — shown for student, supervisor, coordinator */}
               {['student', 'supervisor', 'coordinator'].includes(formData.role) && (
                 <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Degree Program *</label>
+
+                  {/* Label changes based on role:
+                      - Students see "Degree Program"
+                      - Supervisors and Coordinators see "Department" */}
+                  <label>
+                    {formData.role === 'student' ? 'Degree Program *' : 'Department *'}
+                  </label>
+
                   <select
                     name="degreeProgram"
                     value={formData.degreeProgram}
@@ -376,11 +387,32 @@ const SignUpPage: React.FC = () => {
                       borderColor: fieldErrors.degreeProgram ? '#dc2626' : undefined 
                     }}
                   >
-                    <option value="">-- Select Degree Program --</option>
-                    <option value="AI">Artificial Intelligence (AI)</option>
-                    <option value="IT">Information Technology (IT)</option>
-                    <option value="ITM">IT Management (ITM)</option>
+                    {/* Placeholder option changes based on role */}
+                    <option value="">
+                      {formData.role === 'student' 
+                        ? '-- Select Degree Program --' 
+                        : '-- Select Department --'}
+                    </option>
+
+                    {/* Students see their 3 degree programs */}
+                    {formData.role === 'student' && (
+                      <>
+                        <option value="AI">Artificial Intelligence (AI)</option>
+                        <option value="IT">Information Technology (IT)</option>
+                        <option value="ITM">IT Management (ITM)</option>
+                      </>
+                    )}
+
+                    {/* Supervisors and Coordinators see their 3 departments */}
+                    {(formData.role === 'supervisor' || formData.role === 'coordinator') && (
+                      <>
+                        <option value="IT">IT - Information Technology</option>
+                        <option value="IDS">IDS - Interdisciplinary Studies</option>
+                        <option value="CM">CM - Computational Mathematics</option>
+                      </>
+                    )}
                   </select>
+
                   {fieldErrors.degreeProgram && (
                     <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>
                       {fieldErrors.degreeProgram}
