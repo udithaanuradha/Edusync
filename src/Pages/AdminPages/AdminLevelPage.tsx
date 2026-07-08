@@ -86,7 +86,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   };
 
   const handleGenerateReport = () => {
-    // You can add your PDF generation or Export CSV logic here
     alert(`Generating marks report for Level ${levelNumber}...`);
   };
 
@@ -103,6 +102,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     borderRadius: '12px',
     padding: '20px 24px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    width: '100%'
   };
 
   const badgeStyle: React.CSSProperties = {
@@ -123,10 +123,20 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        <main className="content-container">
-          <div className="dashboard-header-section">
-            <h2 className="overview-title">Level {levelNumber} Management</h2>
-            <p className="overview-subtitle">Manage and view project stages, groups, and marks for Level {levelNumber}.</p>
+        <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div className="dashboard-header-section" style={{ 
+            width: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            justifyContent: 'flex-start',
+            textAlign: 'left',
+            marginBottom: '32px'
+          }}>
+            <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
+            <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
+              Manage and view project stages, groups, and marks for Level {levelNumber}.
+            </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
@@ -151,16 +161,16 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
+            <div style={{ textAlign: 'center', padding: '40px', width: '100%' }}>Loading...</div>
           ) : (
-            <>
+            <div style={{ width: '100%' }}>
               {activeTab === 'stages' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
                   {stages.length > 0 ? stages.map((stage, index) => (
                     <div key={stage.stage_id} style={cardStyle}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                         <div style={badgeStyle}>{index + 1}</div>
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, textAlign: 'left' }}>
                           <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>{stage.stage_name}</h3>
                           <div style={{ fontSize: '14px', marginBottom: '4px' }}>
                             <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
@@ -173,7 +183,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                           {stage.files && stage.files.length > 0 ? (
                             <div>
                               <p style={{ fontWeight: '500', fontSize: '14px', marginBottom: '8px' }}>Documents ({stage.files.length}):</p>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
                                 {stage.files.map((file) => (
                                   <a key={file.file_id} href={file.file_url} target="_blank" rel="noopener noreferrer" style={fileLinkStyle}>
                                     📄 {file.file_name}
@@ -196,7 +206,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
               {activeTab === 'groups' && (
                 <div style={cardStyle}>
-                  <h3 style={{ marginBottom: '20px' }}>Level {levelNumber} Registered Groups</h3>
+                  <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
@@ -209,8 +219,8 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       <tbody>
                         {groups.map((group) => (
                           <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: '12px', fontWeight: '600' }}>{group.groupName}</td>
-                            <td style={{ padding: '12px' }}>{group.supervisor}</td>
+                            <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
+                            <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
                             <td style={{ padding: '12px' }}>
                               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {group.members.map((m) => (
@@ -230,15 +240,14 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
               {activeTab === 'marks' && (
                 <div style={cardStyle}>
-                  {/* Header section with Button */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h3 style={{ margin: 0 }}>Marks Report Generation</h3>
                     <button 
                       onClick={handleGenerateReport}
                       style={{ 
                         padding: '10px 20px', 
-                        backgroundColor: '#fee2e2', // Light red background
-                        color: '#991b1b', // Dark red text
+                        backgroundColor: '#fee2e2', 
+                        color: '#991b1b', 
                         border: '1px solid #fecaca',
                         borderRadius: '8px', 
                         cursor: 'pointer', 
@@ -267,13 +276,14 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       <tbody>
                         {marks.length > 0 ? marks.map((m, i) => (
                           <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: '12px' }}>
+                            <td style={{ padding: '12px', textAlign: 'left' }}>
                               <div style={{ fontWeight: '600' }}>{m.student_name}</div>
                               <div style={{ fontSize: '11px', color: '#6b7280' }}>{m.university_id}</div>
                             </td>
-                            <td style={{ padding: '12px' }}>{m.group_name}</td>
-                            <td style={{ padding: '12px' }}>{m.stage_name}</td>
-                            <td style={{ padding: '12px' }}>
+                            <td style={{ padding: '12px', textAlign: 'left' }}>{m.group_name}</td>
+                            <td style={{ padding: '12px', textAlign: 'left' }}>{m.stage_name}</td>
+                            <td style={{ padding: '12px', textAlign: 'left' }}>
+
                               <span style={{ 
                                 backgroundColor: m.marks >= 40 ? '#dcfce7' : '#fee2e2', 
                                 color: m.marks >= 40 ? '#166534' : '#991b1b',
@@ -282,7 +292,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 {m.marks}%
                               </span>
                             </td>
-                            <td style={{ padding: '12px', fontSize: '13px', color: '#4b5563' }}>{m.feedback || 'No feedback'}</td>
+                            <td style={{ padding: '12px', fontSize: '13px', color: '#4b5563', textAlign: 'left' }}>{m.feedback || 'No feedback'}</td>
                           </tr>
                         )) : (
                           <tr>
@@ -296,7 +306,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
         </main>
       </div>

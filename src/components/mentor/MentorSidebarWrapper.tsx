@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../shared/Sidebar';
 import './MentorStyles.css';
 
@@ -15,30 +16,39 @@ const Level1BlockedModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
 
 const MentorSidebarWrapper = () => {
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const level1Link = target.closest('a[href*="level-1"]');
+  // Called by the sidebar's Level 1 link via a click interceptor on the wrapper
+  const handleSidebarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const level1Link = target.closest('a[href*="level-1"]');
 
-      if (level1Link) {
-        e.preventDefault();
-        e.stopImmediatePropagation(); // Stops ALL other listeners, including React Router
-        setShowModal(true);
-      }
-    };
+    if (level1Link) {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowModal(true);
+    }
+  };
 
-    // useCapture: true — fires before React Router's own listener
-    document.addEventListener('click', handleGlobalClick, true);
-    return () => document.removeEventListener('click', handleGlobalClick, true);
-  }, []);
+  const handleModalClose = () => {
+    setShowModal(false);
+    // If somehow the user ended up on level-1 (e.g. direct URL), redirect away
+    if (location.pathname.includes('level-1')) {
+      navigate('/dashboard/level-2', { replace: true });
+    }
+  };
 
   return (
     <>
-      <div className="mentor-sidebar-container">
+      {/* Capture phase on the wrapper div intercepts clicks before React Router */}
+      <div
+        className="mentor-sidebar-container"
+        onClickCapture={handleSidebarClick}
+      >
         <Sidebar />
       </div>
-      {showModal && <Level1BlockedModal onClose={() => setShowModal(false)} />}
+      {showModal && <Level1BlockedModal onClose={handleModalClose} />}
     </>
   );
 };
