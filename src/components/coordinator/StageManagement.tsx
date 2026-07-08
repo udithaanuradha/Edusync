@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Plus, X, Edit2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import './StageManagement.css';
 
 interface Stage {
@@ -8,6 +9,7 @@ interface Stage {
   description: string;
   deadline?: string;
   level?: string;
+  resource_links?: string;
   files?: Array<{
     file_id?: number;
     file_name: string;
@@ -28,6 +30,7 @@ interface StageManagementProps {
 }
 
 const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
+  const { user } = useAuth();
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +41,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
       try {
         setLoading(true);
         // Stage records are loaded first so uploads can attach to the real database id.
-        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}?coordinatorId=${user?.id}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch stages: ${response.statusText}`);
@@ -71,6 +74,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     name: '',
     description: '',
     deadline: '',
+    resource_link: '',
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<FormFile[]>([]);
@@ -83,6 +87,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     stage_name: '',
     description: '',
     deadline: '',
+    resource_link: '',
   });
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
@@ -100,8 +105,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     try {
       setUploadingFiles(true);
 
-      // Step 1: Create the stage in the backend first
-      // The backend returns the persistent id we need for file uploads.
+      // Step 1: Create the stage in the backend first.
       const createResponse = await fetch('http://localhost:5000/api/projects/create', {
         method: 'POST',
         headers: {
@@ -112,8 +116,9 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           stage_name: formData.name,
           description: formData.description,
           deadline: formData.deadline || null,
-          created_by: 1, // TODO: Replace with the logged-in coordinator id.
-          user_role: 'admin', // TODO: Replace with the logged-in coordinator role.
+          resource_link: formData.resource_link || null,
+          created_by: user?.id || 1,
+          user_role: user?.role || 'admin',
         }),
       });
 
@@ -126,54 +131,49 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
         throw new Error(createResult.message || 'Failed to create stage');
       }
 
-      // Get the real stage_id from the database
       const realStageId = createResult.id;
       console.log('✅ Stage created with ID:', realStageId);
 
-      // Step 2: Upload files with the real stage_id using FormData
+      // Step 2: Upload files, but do not fail the whole stage if an upload fails.
       const filesData: any[] = [];
-      if (uploadedFiles.length > 0) {
-        for (const fileObj of uploadedFiles) {
-          try {
-            console.log(`📤 Starting upload for: ${fileObj.file.name}`);
-            
-            // Use FormData to send the actual file binary
-            const fileFormData = new FormData();
-            fileFormData.append('file', fileObj.file);  // Actual file binary
-            fileFormData.append('stage_id', realStageId.toString());
-            fileFormData.append('uploaded_by', '1');
+      const uploadWarnings: string[] = [];
 
-            console.log(`📨 Sending to backend: http://localhost:5000/api/projects/upload-file`);
-            const uploadResponse = await fetch('http://localhost:5000/api/projects/upload-file', {
-              method: 'POST',
-              // Don't set Content-Type - browser will set it correctly for FormData
-              body: fileFormData,
-            });
+      for (const fileObj of uploadedFiles) {
+        try {
+          console.log(`📤 Starting upload for: ${fileObj.file.name}`);
 
-            console.log(`📥 Response status: ${uploadResponse.status}`);
-            
-            // Try to parse response
-            let uploadResult;
-            const responseText = await uploadResponse.text();
-            console.log(`📋 Response text: ${responseText}`);
-            
-            if (uploadResponse.ok && responseText) {
-              uploadResult = JSON.parse(responseText);
-            } else {
-              throw new Error(`Server returned ${uploadResponse.status}: ${responseText}`);
-            }
+          const fileFormData = new FormData();
+          fileFormData.append('file', fileObj.file);
+          fileFormData.append('stage_id', realStageId.toString());
+          fileFormData.append('uploaded_by', String(user?.id || 1));
 
-            if (uploadResult.success) {
-              filesData.push({
-                file_name: fileObj.file.name,
-                file_url: uploadResult.file_url, // Use the actual Cloudinary URL from response
-              });
-              console.log(`✅ File uploaded to Cloudinary: ${fileObj.file.name}`);
-            }
-          } catch (fileErr) {
-            console.error(`❌ Error uploading file ${fileObj.file.name}:`, fileErr);
-            alert(`Error uploading ${fileObj.file.name}: ${fileErr instanceof Error ? fileErr.message : String(fileErr)}`);
+          const uploadResponse = await fetch('http://localhost:5000/api/projects/upload-file', {
+            method: 'POST',
+            body: fileFormData,
+          });
+
+          const responseText = await uploadResponse.text();
+          console.log(`📥 Upload status: ${uploadResponse.status}`);
+          console.log(`📋 Upload response: ${responseText}`);
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Server returned ${uploadResponse.status}: ${responseText}`);
           }
+
+          const uploadResult = JSON.parse(responseText);
+          if (uploadResult.success) {
+            filesData.push({
+              file_name: fileObj.file.name,
+              file_url: uploadResult.file_url,
+            });
+            console.log(`✅ File uploaded: ${fileObj.file.name}`);
+          } else {
+            throw new Error(uploadResult.error || 'Upload failed');
+          }
+        } catch (fileErr) {
+          const message = fileErr instanceof Error ? fileErr.message : String(fileErr);
+          console.error(`❌ Error uploading file ${fileObj.file.name}:`, fileErr);
+          uploadWarnings.push(`${fileObj.file.name}: ${message}`);
         }
       }
 
@@ -183,17 +183,22 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
         stage_name: formData.name,
         description: formData.description,
         deadline: formData.deadline || undefined,
+        resource_links: formData.resource_link || undefined,
         level: levelNumber.toString(),
         files: filesData,
       };
 
       setStages([...stages, newStage]);
-      
+
       // Reset form and close modal
-      setFormData({ name: '', description: '', deadline: '' });
+      setFormData({ name: '', description: '', deadline: '', resource_link: '' });
       setUploadedFiles([]);
       setShowModal(false);
       setUploadingFiles(false);
+
+      if (uploadWarnings.length > 0) {
+        alert(`Stage created, but some files failed to upload:\n${uploadWarnings.join('\n')}`);
+      }
 
       console.log('✅ Stage created successfully:', newStage);
     } catch (err) {
@@ -241,6 +246,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
       stage_name: stage.stage_name,
       description: stage.description,
       deadline: stage.deadline || '',
+      resource_link: stage.resource_links || '',
     });
     setShowEditModal(true);
   };
@@ -257,11 +263,28 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     if (!editingStage || !editFormData.stage_name) return;
 
     try {
-      // TODO: Call backend to update the stage
-      // For now, just update locally
+      const response = await fetch(`http://localhost:5000/api/projects/update/${editingStage.stage_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          stage_name: editFormData.stage_name,
+          description: editFormData.description,
+          deadline: editFormData.deadline || null,
+          resource_link: editFormData.resource_link || null,
+          user_role: user?.role || 'coordinator',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update stage: ${response.statusText}`);
+      }
+
       const updatedStages = stages.map(s =>
         s.stage_id === editingStage.stage_id
-          ? { ...s, ...editFormData }
+          ? { ...s, ...editFormData, resource_links: editFormData.resource_link }
           : s
       );
       setStages(updatedStages);
@@ -269,6 +292,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
       setEditingStage(null);
     } catch (err) {
       console.error('Error updating stage:', err);
+      alert(`Error updating stage: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -315,7 +339,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ name: '', description: '', deadline: '' });
+    setFormData({ name: '', description: '', deadline: '', mentor_details_url: '' });
     setUploadedFiles([]);
   };
 
@@ -398,6 +422,20 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
                       <div className="info-item">
                         <span className="info-label">Level:</span>
                         <span className="info-value">Level {stage.level}</span>
+                      </div>
+                    )}
+                    {stage.resource_links && (
+                      <div className="info-item">
+                        <span className="info-label">Resource Link:</span>
+                        <a
+                          className="info-value"
+                          href={stage.resource_links}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#2563eb', textDecoration: 'none', wordBreak: 'break-word' }}
+                        >
+                          🔗 View attached resource
+                        </a>
                       </div>
                     )}
                     {stage.files && stage.files.length > 0 && (
@@ -519,6 +557,19 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
                 />
               </div>
 
+
+              <div className="form-group mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reference Material / Work Link (Optional)</label>
+                <input
+                  type="url"
+                  name="resource_link"
+                  placeholder="https://docs.google.com/..."
+                  className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
+                  value={formData.resource_link}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               <div className="form-group">
                 <label>Supporting Documents</label>
                 <div
@@ -636,6 +687,19 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
                   type="date"
                   name="deadline"
                   value={editFormData.deadline ? editFormData.deadline.split('T')[0] : ''}
+                  onChange={handleEditInputChange}
+                />
+              </div>
+
+
+              <div className="form-group mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reference Material / Work Link (Optional)</label>
+                <input
+                  type="url"
+                  name="resource_link"
+                  placeholder="https://docs.google.com/..."
+                  className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
+                  value={editFormData.resource_link}
                   onChange={handleEditInputChange}
                 />
               </div>

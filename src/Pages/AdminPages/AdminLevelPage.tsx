@@ -18,6 +18,7 @@ interface Stage {
   deadline: string;
   level: number;
   created_at: string;
+  mentor_details_url?: string;
   files?: StageFile[];
 }
 
@@ -123,6 +124,18 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     color: '#2563eb', textDecoration: 'none', fontSize: '14px', marginTop: '4px'
   };
 
+  const mentorLinkStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#ecfeff',
+    borderRadius: '8px',
+    color: '#0f766e',
+    textDecoration: 'none',
+    fontSize: '14px',
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -209,16 +222,46 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
                                 <span style={{ color: '#6b7280' }}>{stage.description || 'No description'}</span>
                               </div>
-                              <div style={{ fontSize: '14px', marginBottom: '12px' }}>
-                                <span style={{ color: '#374151', fontWeight: '500' }}>Deadline: </span>
-                                <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>{formatDate(stage.deadline)}</span>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
+                                <span style={{ fontWeight: '500', color: '#374151' }}>Deadline:</span>
+                                <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>
+                                  {formatDate(stage.deadline)}
+                                </span>
                               </div>
+
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
+                                <span style={{ fontWeight: '500', color: '#374151' }}>Created:</span>
+                                <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
+                              </div>
+
+                              {stage.mentor_details_url && (
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
+                                  <span style={{ fontWeight: '500', color: '#374151' }}>Mentor Sheet:</span>
+                                  <a
+                                    href={stage.mentor_details_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={mentorLinkStyle}
+                                  >
+                                    Open industry mentor details
+                                  </a>
+                                </div>
+                              )}
+
                               {stage.files && stage.files.length > 0 ? (
                                 <div>
-                                  <p style={{ fontWeight: '500', fontSize: '14px', marginBottom: '8px' }}>Documents ({stage.files.length}):</p>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                                  <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
+                                    Documents ({stage.files.length}):
+                                  </p>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     {stage.files.map((file) => (
-                                      <a key={file.file_id} href={file.file_url} target="_blank" rel="noopener noreferrer" style={fileLinkStyle}>
+                                      <a
+                                        key={file.file_id}
+                                        href={file.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={fileLinkStyle}
+                                      >
                                         📄 {file.file_name}
                                       </a>
                                     ))}
@@ -231,6 +274,40 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                             <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
                               View Only
                             </div>
+
+                      {stage.mentor_details_url && (
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
+                          <span style={{ fontWeight: '500', color: '#374151' }}>Mentor Sheet:</span>
+                          <a
+                            href={stage.mentor_details_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={mentorLinkStyle}
+                          >
+                            Open industry mentor details
+                          </a>
+                        </div>
+                      )}
+
+                      {/* File Rendering Section */}
+                      {stage.files && stage.files.length > 0 ? (
+                        <div>
+                          <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
+                            Documents ({stage.files.length}):
+                          </p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {stage.files.map((file) => (
+                              <a 
+                                key={file.file_id} 
+                                href={file.file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={fileLinkStyle}
+                              >
+                                📄 {file.file_name}
+                              </a>
+                            ))}
+>>>>>>> 1fd2210 (fix(coordinator): resolve file upload 500 error, add resource_links, and finalize UI layouts)
                           </div>
                         </div>
                       )) : <p>No stages found.</p>}
