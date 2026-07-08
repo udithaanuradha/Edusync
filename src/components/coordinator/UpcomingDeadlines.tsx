@@ -54,7 +54,7 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] })
                 <div className="deadline-info">
                   <h4 className="deadline-title">{deadline.title}</h4>
                   <p className="deadline-subtitle">
-                    {deadline.targetGroup || `Level ${deadline.academicLevel}`}
+                    {deadline.targetGroup ? deadline.targetGroup : deadline.academicLevel ? `Level ${deadline.academicLevel}` : 'General'}
                     {deadline.startTime ? ` • ${deadline.startTime}` : ''}
                   </p>
                 </div>

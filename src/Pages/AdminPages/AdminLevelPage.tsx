@@ -123,10 +123,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        
         <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          
-          
           <div className="dashboard-header-section" style={{ 
             width: '100%', 
             display: 'flex', 
@@ -138,7 +135,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
           }}>
             <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
             <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
-                Manage and view project stages, groups, and marks for Level {levelNumber}.
+              Manage and view project stages, groups, and marks for Level {levelNumber}.
             </p>
           </div>
 
@@ -286,6 +283,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                             <td style={{ padding: '12px', textAlign: 'left' }}>{m.group_name}</td>
                             <td style={{ padding: '12px', textAlign: 'left' }}>{m.stage_name}</td>
                             <td style={{ padding: '12px', textAlign: 'left' }}>
+
                               <span style={{ 
                                 backgroundColor: m.marks >= 40 ? '#dcfce7' : '#fee2e2', 
                                 color: m.marks >= 40 ? '#166534' : '#991b1b',

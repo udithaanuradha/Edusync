@@ -35,8 +35,9 @@
   background: #f1f5f9;
 }
 
+/*student inner page active tab*/
 .student-inner-tab.active {
-  background: #2563eb;
+  background: #2fe900;
   color: white;
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
 }
@@ -144,7 +145,7 @@
 }
 
 .manage-project-btn {
-  background: #2563eb;
+  background: #3648e6;
   color: white;
   border: none;
   border-radius: 8px;
