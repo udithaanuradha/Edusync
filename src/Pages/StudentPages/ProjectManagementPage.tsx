@@ -35,6 +35,11 @@ const ProjectManagementPage: React.FC = () => {
   const [milestoneFilter, setMilestoneFilter] = useState('All');
   const [selectedAssignee, setSelectedAssignee] = useState<string | number>('');
 
+
+/**
+   * REQUEST #1: GET Milestones for a specific group
+   * Triggered: Initial load & when switching to 'createTasks' tab
+   */
   const fetchMilestones = async (gId: number) => {
     if (!gId) {
       console.warn("⚠️ [Frontend] fetchMilestones called without Group ID");
@@ -243,6 +248,19 @@ const ProjectManagementPage: React.FC = () => {
     return summary;
   }, [visibleMyTasks]);
 
+
+
+
+
+
+
+
+
+
+/**
+   * REQUEST #5: POST Create a new task
+   * Triggered: Leader clicks "Save" in TaskCreation component
+   */
   const handleSaveTask = async (task: ProjectTask) => {
     try {
       const token = localStorage.getItem('token');
@@ -279,6 +297,14 @@ const ProjectManagementPage: React.FC = () => {
     }
   };
 
+
+
+
+  /**
+   * REQUEST #7: DELETE a task
+   * Triggered: Leader clicks Delete icon
+   */
+
   const handleDeleteTask = async (taskId: string) => {
     try {
       const token = localStorage.getItem('token');
@@ -292,6 +318,13 @@ const ProjectManagementPage: React.FC = () => {
     }
   };
 
+
+
+
+  /**
+   * REQUEST #6: PUT Update status (Start/Done)
+   * Triggered: User clicks ▶ Start or ✓ Done
+   */
   const handleUpdateTaskStatus = async (taskId: string, newStatus: 'TODO' | 'IN_PROGRESS' | 'COMPLETED') => {
     try {
       const token = localStorage.getItem('token');
@@ -313,6 +346,11 @@ const ProjectManagementPage: React.FC = () => {
       console.error("Error updating task status:", err);
     }
   };
+
+
+
+
+//login pages as member and leader to test the different views and functionalities. Ensure that the backend is running and accessible at http://localhost:5000, and that the API endpoints are correctly implemented to handle the requests made by this frontend component.
 
   const renderContent = () => {
     switch (activeTab) {
@@ -344,6 +382,9 @@ const ProjectManagementPage: React.FC = () => {
             )}
           </div>
         );
+
+
+    //create tasks as a leader and see what are in my tasks 
       case 'createTasks':
         return (
           <div className="student-inner-tab-panel">
@@ -373,6 +414,8 @@ const ProjectManagementPage: React.FC = () => {
                 </button>
               </div>
             ) : userRole === 'leader' ? (
+             
+             
               <TaskCreation
                 tasks={projectTasks}
                 onSaveTask={handleSaveTask}
@@ -389,8 +432,11 @@ const ProjectManagementPage: React.FC = () => {
             )}
           </div>
         );
-      case 'myTasks':
-        return (
+      
+      
+      // my task as a member and a leader 
+        case 'myTasks':
+          return (
           <div className="student-inner-tab-panel">
             <div className="student-inner-tab-heading">
               <h3>My Tasks</h3>
@@ -410,6 +456,9 @@ const ProjectManagementPage: React.FC = () => {
                 <p>Completed tasks</p>
               </div>
             </div>
+
+
+          
             {userRole === 'leader' && (
               <div className="member-filter-row">
                 <label htmlFor="assignee-filter-select">Show tasks for</label>
@@ -424,7 +473,9 @@ const ProjectManagementPage: React.FC = () => {
                 </select>
               </div>
             )}
-            <div className="my-tasks-table-card">
+
+    
+            <div className=" my-tasks-table-card">
               {visibleMyTasks.length === 0 ? (
                 <div className="empty-state-card">
                   <p>No assigned tasks yet. Once a leader creates tasks, they will appear here.</p>
@@ -507,6 +558,9 @@ const ProjectManagementPage: React.FC = () => {
                 {userRole === 'leader' ? '👑 Leader' : '👤 Member'}
               </div>
             </div>
+
+
+
 
             <div className="student-inner-pages">
               <div className="student-inner-tabs">

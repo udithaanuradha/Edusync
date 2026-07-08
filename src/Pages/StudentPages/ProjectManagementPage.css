@@ -31,9 +31,9 @@
 .student-inner-tab:hover {
   background: #f1f5f9;
 }
-
+/*active tab in inner page*/
 .student-inner-tab.active {
-  background: #2563eb;
+  background: #0445d0;
   color: white;
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
 }
@@ -91,13 +91,14 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  user-select: none;
+  
 }
-
+/*LEADER ROLE BADGE*/
 .role-badge-leader {
   background: #0f172a;
   color: #ffffff;
 }
+
 
 .role-badge-member {
   background: #eff6ff;
@@ -206,7 +207,7 @@
 }
 
 .primary-btn {
-  background: #2563eb;
+  background: #25eb32;
   color: white;
   padding: 14px 22px;
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
