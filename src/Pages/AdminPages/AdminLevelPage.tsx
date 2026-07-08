@@ -17,6 +17,7 @@ interface Stage {
   deadline: string;
   level: number;
   created_at: string;
+  mentor_details_url?: string;
   files?: StageFile[];
 }
 
@@ -100,6 +101,18 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     fontSize: '14px',
   };
 
+  const mentorLinkStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#ecfeff',
+    borderRadius: '8px',
+    color: '#0f766e',
+    textDecoration: 'none',
+    fontSize: '14px',
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -166,6 +179,20 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                         <span style={{ fontWeight: '500', color: '#374151' }}>Created:</span>
                         <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
                       </div>
+
+                      {stage.mentor_details_url && (
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
+                          <span style={{ fontWeight: '500', color: '#374151' }}>Mentor Sheet:</span>
+                          <a
+                            href={stage.mentor_details_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={mentorLinkStyle}
+                          >
+                            Open industry mentor details
+                          </a>
+                        </div>
+                      )}
 
                       {/* File Rendering Section */}
                       {stage.files && stage.files.length > 0 ? (

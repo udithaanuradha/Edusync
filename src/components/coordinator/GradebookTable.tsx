@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Edit2, Save, X, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Check, Clock3, Edit2, Save, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import './GradebookTable.css';
+
+type SubmissionStatus = 'all' | 'submitted' | 'pending' | 'late';
 
 interface GroupMark {
   group_id: number;
@@ -11,6 +14,9 @@ interface GroupMark {
   evaluator_name: string;
   submission_date: string | null;
   mark_type: string;
+  deadline?: string | null;
+  current_status?: string | null;
+  submitted_at?: string | null;
 }
 
 interface GradebookTableProps {
@@ -18,6 +24,7 @@ interface GradebookTableProps {
 }
 
 const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
+  const { user } = useAuth();
   const [marks, setMarks] = useState<GroupMark[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +32,71 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const [editValue, setEditValue] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [filterStage, setFilterStage] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<SubmissionStatus>('all');
   const [stages, setStages] = useState<Array<{ stage_id: number; stage_name: string }>>([]);
+
+  const normalizeStatus = (mark: GroupMark): Exclude<SubmissionStatus, 'all'> => {
+    const explicitStatus = String(mark.current_status ?? '').trim().toLowerCase();
+
+    if (explicitStatus === 'submitted' || explicitStatus === 'pending' || explicitStatus === 'late') {
+      return explicitStatus;
+    }
+
+    if (mark.submission_date || mark.submitted_at || mark.mark !== null) {
+      return 'submitted';
+    }
+
+    if (mark.deadline) {
+      const deadlineTime = new Date(mark.deadline).getTime();
+      if (!Number.isNaN(deadlineTime) && Date.now() > deadlineTime) {
+        return 'late';
+      }
+    }
+
+    return 'pending';
+  };
+
+  const normalizeMark = (item: Record<string, unknown>): GroupMark => ({
+    group_id: Number(item.group_id ?? item.groupId ?? 0),
+    group_name: String(item.group_name ?? item.groupName ?? 'Unnamed Group'),
+    stage_id: Number(item.stage_id ?? item.stageId ?? 0),
+    stage_name: String(item.stage_name ?? item.stageName ?? 'Untitled Stage'),
+    mark: item.mark === null || item.mark === undefined ? null : Number(item.mark),
+    evaluator_name: String(item.evaluator_name ?? item.evaluatorName ?? ''),
+    submission_date:
+      item.submission_date !== undefined && item.submission_date !== null
+        ? String(item.submission_date)
+        : item.submitted_at !== undefined && item.submitted_at !== null
+          ? String(item.submitted_at)
+          : item.submittedAt !== undefined && item.submittedAt !== null
+            ? String(item.submittedAt)
+            : null,
+    mark_type: String(item.mark_type ?? item.markType ?? 'evaluation'),
+    deadline:
+      item.deadline !== undefined && item.deadline !== null
+        ? String(item.deadline)
+        : item.stage_deadline !== undefined && item.stage_deadline !== null
+          ? String(item.stage_deadline)
+          : item.stageDeadline !== undefined && item.stageDeadline !== null
+            ? String(item.stageDeadline)
+            : null,
+    current_status:
+      item.current_status !== undefined && item.current_status !== null
+        ? String(item.current_status)
+        : item.currentStatus !== undefined && item.currentStatus !== null
+          ? String(item.currentStatus)
+          : item.submission_status !== undefined && item.submission_status !== null
+            ? String(item.submission_status)
+            : item.status !== undefined && item.status !== null
+              ? String(item.status)
+              : null,
+    submitted_at:
+      item.submitted_at !== undefined && item.submitted_at !== null
+        ? String(item.submitted_at)
+        : item.submittedAt !== undefined && item.submittedAt !== null
+          ? String(item.submittedAt)
+          : null,
+  });
 
   // Fetch marks from backend
   useEffect(() => {
@@ -34,7 +105,7 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         setLoading(true);
         // The coordinator view reads marks directly from the API so it always shows the latest evaluation data.
         const response = await fetch(
-          `http://localhost:5000/api/marks/level/${levelNumber}`,
+          `http://localhost:5000/api/marks/level/${levelNumber}?coordinatorId=${user?.id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -47,7 +118,8 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         }
 
         const data = await response.json();
-        const marksList = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
+        const rawMarks = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
+        const marksList = rawMarks.map((item: Record<string, unknown>) => normalizeMark(item));
         setMarks(marksList);
 
         // Extract unique stages
@@ -135,8 +207,41 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     setEditValue(null);
   };
 
+  const selectedStageMarks = useMemo(
+    () => (filterStage === 'all' ? marks : marks.filter((m) => m.stage_id === Number(filterStage))),
+    [filterStage, marks]
+  );
+
+  const submissionStats = useMemo(() => {
+    const totals = selectedStageMarks.reduce(
+      (acc, mark) => {
+        const status = normalizeStatus(mark);
+        acc.total += 1;
+        acc[status] += 1;
+        return acc;
+      },
+      { total: 0, submitted: 0, pending: 0, late: 0 }
+    );
+
+    const progress = totals.total > 0 ? Math.round((totals.submitted / totals.total) * 100) : 0;
+
+    return {
+      ...totals,
+      progress,
+    };
+  }, [selectedStageMarks]);
+
+  const statusTabs: Array<{ key: SubmissionStatus; label: string; count: number }> = [
+    { key: 'all', label: 'All', count: submissionStats.total },
+    { key: 'submitted', label: 'Submitted', count: submissionStats.submitted },
+    { key: 'pending', label: 'Pending', count: submissionStats.pending },
+    { key: 'late', label: 'Late', count: submissionStats.late },
+  ];
+
   const filteredMarks =
-    filterStage === 'all' ? marks : marks.filter((m) => m.stage_id === parseInt(filterStage));
+    filterStatus === 'all'
+      ? selectedStageMarks
+      : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
 
   // Group marks by stage for better display
   const groupedMarks: Record<number, GroupMark[]> = {};
@@ -203,8 +308,9 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     <div className="gradebook-container">
       <div className="gradebook-header">
         <div>
-          <h3>Marking & Evaluation</h3>
-          <p>View and manage group marks for Level {levelNumber} stages</p>
+          <p className="gradebook-kicker">Submission Tracking View</p>
+          <h3>Submissions</h3>
+          <p>Track submitted, pending, and late group work for Level {levelNumber} stages.</p>
         </div>
         <div className="gradebook-filters">
           <select value={filterStage} onChange={(e) => setFilterStage(e.target.value)} className="filter-select">
@@ -215,6 +321,43 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      <div className="submission-tracker-panel">
+        <div className="submission-tracker-summary">
+          <div>
+            <div className="submission-tracker-meta">
+              <span className="submission-tracker-count">
+                {submissionStats.submitted}/{submissionStats.total} Groups Submitted
+              </span>
+              <span className="submission-tracker-percent">{submissionStats.progress}% complete</span>
+            </div>
+            <div className="submission-progress-bar" aria-label="Submission progress">
+              <div
+                className="submission-progress-fill"
+                style={{ width: `${submissionStats.progress}%` }}
+              />
+            </div>
+          </div>
+          <p className="submission-tracker-hint">
+            Use the status tabs to isolate submitted, pending, or late groups instantly.
+          </p>
+        </div>
+
+        <div className="submission-status-tabs" role="tablist" aria-label="Submission status filters">
+          {statusTabs.map((tab) => (
+            <button
+              key={tab.key}
+              role="tab"
+              aria-selected={filterStatus === tab.key}
+              className={`submission-status-tab ${filterStatus === tab.key ? 'active' : ''}`}
+              onClick={() => setFilterStatus(tab.key)}
+            >
+              <span>{tab.label}</span>
+              <strong>{tab.count}</strong>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -259,12 +402,18 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
                               : '-'}
                           </td>
                           <td className="status-col">
-                            {mark.mark !== null ? (
+                            {normalizeStatus(mark) === 'submitted' ? (
                               <span className="status-badge submitted">
                                 <Check size={14} /> Submitted
                               </span>
+                            ) : normalizeStatus(mark) === 'late' ? (
+                              <span className="status-badge late">
+                                <AlertTriangle size={14} /> Late
+                              </span>
                             ) : (
-                              <span className="status-badge pending">Pending</span>
+                              <span className="status-badge pending">
+                                <Clock3 size={14} /> Pending
+                              </span>
                             )}
                           </td>
                         </tr>

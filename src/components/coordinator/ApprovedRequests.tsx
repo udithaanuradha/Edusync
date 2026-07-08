@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import './ApprovedRequests.css';
 import { ApprovedGroupRequest, ApprovedRequestMember } from './groupRequestTypes';
 
@@ -110,6 +111,7 @@ const isRealStudentSubmission = (request: ApprovedGroupRequest): boolean => {
 };
 
 const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCreateGroup }) => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<ApprovedGroupRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -132,13 +134,13 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
         `${API_BASE}/pending-requests`,
         `${API_BASE}/pending?level=${levelNumber}`,
         `${API_BASE}/pending-requests?level=${levelNumber}`,
-        `${API_BASE}/coordinator/requests?level=${levelNumber}`,
-        `${API_BASE}/coordinator/requests?status=pending&level=${levelNumber}`,
-        `${API_BASE}/coordinator/requests?status=approved&level=${levelNumber}`,
-        `${API_BASE}/coordinator/approved?level=${levelNumber}`,
-        `${API_BASE}/coordinator/pending?level=${levelNumber}`,
-        `${API_BASE}/coordinator/pending-requests?level=${levelNumber}`,
-        `${API_BASE}/coordinator/all?level=${levelNumber}`,
+        `${API_BASE}/coordinator/requests?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/requests?status=pending&level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/requests?status=approved&level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/approved?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/pending?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/pending-requests?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/all?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/approved?level=${levelNumber}`,
         `${API_BASE}/final-submissions?level=${levelNumber}`,
       ];
@@ -146,30 +148,30 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
       if (status === 'pending') {
         // prefer endpoints that explicitly request pending
         return [
-          `${API_BASE}/requests?status=pending&level=${levelNumber}`,
-          `${API_BASE}/pending?level=${levelNumber}`,
-          `${API_BASE}/pending-requests?level=${levelNumber}`,
-          `${API_BASE}/coordinator/requests?status=pending&level=${levelNumber}`,
-          `${API_BASE}/requests?level=${levelNumber}`,
+          `${API_BASE}/requests?status=pending&level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/pending?level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/pending-requests?level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/coordinator/requests?status=pending&level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/requests?level=${levelNumber}&coordinatorId=${user?.id}`,
           ...common,
         ];
       }
 
       if (status === 'all') {
         return [
-          `${API_BASE}/coordinator/requests?level=${levelNumber}`,
-          `${API_BASE}/requests?level=${levelNumber}`,
-          `${API_BASE}/coordinator/all?level=${levelNumber}`,
-          `${API_BASE}/all?level=${levelNumber}`,
+          `${API_BASE}/coordinator/requests?level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/requests?level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/coordinator/all?level=${levelNumber}&coordinatorId=${user?.id}`,
+          `${API_BASE}/all?level=${levelNumber}&coordinatorId=${user?.id}`,
           ...common,
         ];
       }
 
       // default: approved/final-submitted
       return [
-        `${API_BASE}/coordinator/approved?level=${levelNumber}`,
-        `${API_BASE}/coordinator/requests?status=approved&is_final_submitted=1&level=${levelNumber}`,
-        `${API_BASE}/requests?status=approved&is_final_submitted=1&level=${levelNumber}`,
+        `${API_BASE}/coordinator/approved?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/requests?status=approved&is_final_submitted=1&level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/requests?status=approved&is_final_submitted=1&level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/approved?level=${levelNumber}`,
         `${API_BASE}/final-submissions?level=${levelNumber}`,
         ...common,
@@ -184,7 +186,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
       let existingGroupNames = new Set<string>();
 
       try {
-        const groupsResponse = await fetch(`http://localhost:5000/api/groups/level/${levelNumber}`);
+        const groupsResponse = await fetch(`http://localhost:5000/api/groups/coordinator/${user?.id}/${levelNumber}`);
         if (groupsResponse.ok) {
           const groupsPayload = await groupsResponse.json();
           const groupList = Array.isArray(groupsPayload?.data)

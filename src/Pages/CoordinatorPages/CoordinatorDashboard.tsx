@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '../../components/shared/Sidebar'; 
 import Header from '../../components/shared/Header';
+import { useAuth } from '../../context/AuthContext';
 import StatCards from '../../components/coordinator/StatCards';
 import RecentProjects from '../../components/coordinator/RecentProjects';
 import './CoordinatorDashboard.css'; 
@@ -42,6 +43,7 @@ type DashboardSummary = {
 const API_BASE = 'http://localhost:5000/api';
 
 const CoordinatorDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,7 +57,7 @@ const CoordinatorDashboard: React.FC = () => {
 
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/dashboard/coordinator/summary`, {
+        const response = await fetch(`${API_BASE}/dashboard/coordinator/summary?coordinatorId=${user?.id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
 

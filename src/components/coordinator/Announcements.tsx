@@ -35,6 +35,7 @@ const Announcements: React.FC = () => {
         target_audience: audience,
         priority,
         author_name: user?.name || 'Coordinator',
+        coordinator_id: user?.id,
       };
 
       console.log('Posting announcement with payload:', payload);

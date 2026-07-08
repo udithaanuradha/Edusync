@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pencil, Search, Trash2, Users, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
 
@@ -118,6 +119,7 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
 };
 
 const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialRequest = null, onPrefillHandled }) => {
+  const { user } = useAuth();
   const [groups, setGroups] = useState<GroupView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -178,10 +180,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
     const endpoints = [
-      `http://localhost:5000/api/groups/level/${levelNumber}`,
-      `http://localhost:5000/api/groups?level=${levelNumber}`,
-      `http://localhost:5000/api/groups/all?level=${levelNumber}`,
-      `http://localhost:5000/api/groups/coordinator/level/${levelNumber}`,
+      `http://localhost:5000/api/groups/coordinator/${user?.id}/${levelNumber}`,
+      `http://localhost:5000/api/groups/level/${levelNumber}?coordinatorId=${user?.id}`,
+      `http://localhost:5000/api/groups?level=${levelNumber}&coordinatorId=${user?.id}`,
+      `http://localhost:5000/api/groups/all?level=${levelNumber}&coordinatorId=${user?.id}`,
     ];
 
     try {
@@ -611,6 +613,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           supervisorId: selectedSupervisor?.id ?? null,
           leaderId: leader.id,
           memberIds: members.map((m) => m.id),
+          createdBy: user?.id,
         };
 
         const endpoints = [
@@ -695,6 +698,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         supervisorId: selectedSupervisor?.id ?? null,
         leaderId: leader.id,
         memberIds: members.map((m) => m.id),
+        createdBy: user?.id,
       };
 
       const response = await fetch('http://localhost:5000/api/groups/create', {

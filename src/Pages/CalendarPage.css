@@ -335,13 +335,13 @@
   font-weight: 700;
   cursor: pointer;
   background: #fff;
-  color: #334155;
+  color: #139858;
 }
 
 .panel-action-btn.edit {
   border-color: #c7d2fe;
   background: #eef2ff;
-  color: #4338ca;
+  color: #358667;
 }
 
 .panel-action-btn.delete {
