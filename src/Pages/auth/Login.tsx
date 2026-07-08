@@ -36,7 +36,7 @@ const Login: React.FC = () => {
       login(data.user);
       
       if (data.user.role === 'admin') navigate('/admin');
-      else if (data.user.role === 'coordinator') navigate('/coordinator');
+      else if (data.user.role === 'coordinator'|| data.user.role === 'lecturer') navigate('/coordinator');
       else if (data.user.role === 'student') navigate('/student');
       else if (data.user.role === 'supervisor') navigate('/supervisor');
       else if (data.user.role === 'mentor') navigate('/mentor');

@@ -71,7 +71,7 @@ function App() {
       <Route
         path="/coordinator"
         element={
-          user?.role === "coordinator" ? (
+          user?.role === "coordinator" || user?.role === "lecturer" ?(
             <CoordinatorDashboard />
           ) : (
             <Navigate to="/login" />
@@ -107,7 +107,7 @@ function App() {
         element={
           user?.role === "student" ? (
             <StudentDashboard />
-          ) : user?.role === "coordinator" ? (
+          ) : (user?.role === "coordinator" || user?.role === "lecturer")? (
             <CoordinatorDashboard />
           ) : user?.role === "admin" ? (
             <AdminDashboard />
@@ -127,7 +127,7 @@ function App() {
         element={
           user?.role === "student" ? (
             <Level1Student />
-          ) : user?.role === "coordinator" ? (
+          ) : (user?.role === "coordinator"  || user?.role === "lecturer") ? (
             <Level1Page />
           ) : user?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={1} />
@@ -146,7 +146,7 @@ function App() {
         element={
           user?.role === "student" ? (
             <Level2Student />
-          ) : user?.role === "coordinator" ? (
+          ) : (user?.role === "coordinator" || user?.role === "lecturer") ? (
             <Level2Page />
           ) : user?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={2} />
@@ -165,7 +165,7 @@ function App() {
         element={
           user?.role === "student" ? (
             <Level3Student />
-          ) : user?.role === "coordinator" ? (
+          ) : (user?.role === "coordinator" || user?.role === "lecturer") ? (
             <Level3Page />
           ) : user?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={3} />
@@ -184,7 +184,7 @@ function App() {
         element={
           user?.role === "student" ? (
             <Level4Student />
-          ) : user?.role === "coordinator" ? (
+          ) : (user?.role === "coordinator" || user?.role === "lecturer")? (
             <Level4Page />
           ) : user?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={4} />
@@ -231,7 +231,7 @@ function App() {
         element={
           user?.role === "admin" ? (
             <AdminAnnouncements />
-          ) : user?.role === "coordinator" ? (
+          ) : (user?.role === "coordinator" || user?.role === "lecturer") ? (
             <AnnouncementsPage />
           ) : user?.role === "supervisor" ? (
             <SupervisorAnnouncementsPage />
