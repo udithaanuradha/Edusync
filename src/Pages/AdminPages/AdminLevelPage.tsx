@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
+import AssignCoordinatorPage from './AssignCoordinatorPage'; // අලුත් පිටුව Import කිරීම
 import './AdminDashboard.css';
 
 interface StageFile {
@@ -57,8 +58,12 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // වෙනම පිටුව පාලනය කරන State එක
+  const [isAssignView, setIsAssignView] = useState(false);
+
   useEffect(() => {
     fetchAllData();
+    setIsAssignView(false); // Level එක මාරු වෙද්දී ප්‍රධාන පිටුවට යාමට
   }, [levelNumber]);
 
   const fetchAllData = async () => {
@@ -124,186 +129,215 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       <div className="main-viewport">
         <Header />
         <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <div className="dashboard-header-section" style={{ 
-            width: '100%', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'flex-start', 
-            justifyContent: 'flex-start',
-            textAlign: 'left',
-            marginBottom: '32px'
-          }}>
-            <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
-            <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
-              Manage and view project stages, groups, and marks for Level {levelNumber}.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            <button onClick={() => setActiveTab('stages')}
-              style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
-                backgroundColor: activeTab === 'stages' ? '#2563eb' : '#f3f4f6',
-                color: activeTab === 'stages' ? 'white' : '#6b7280' }}>
-              Project Stages
-            </button>
-            <button onClick={() => setActiveTab('groups')}
-              style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
-                backgroundColor: activeTab === 'groups' ? '#2563eb' : '#f3f4f6',
-                color: activeTab === 'groups' ? 'white' : '#6b7280' }}>
-              Project Groups
-            </button>
-            <button onClick={() => setActiveTab('marks')}
-              style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
-                backgroundColor: activeTab === 'marks' ? '#2563eb' : '#f3f4f6',
-                color: activeTab === 'marks' ? 'white' : '#6b7280' }}>
-              Marks Reports
-            </button>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', width: '100%' }}>Loading...</div>
+          
+          {isAssignView ? (
+            /* ---- වෙනම පිටුව මෙතනට Render වේ ---- */
+            <AssignCoordinatorPage 
+              levelNumber={levelNumber}
+              onBack={() => setIsAssignView(false)}
+              onSuccess={() => {
+                setIsAssignView(false);
+                fetchAllData(); // ඩේටා අප්ඩේට් කිරීම
+              }}
+            />
           ) : (
+            /* ---- ප්‍රධාන පිටුවේ UI කොටස ---- */
             <div style={{ width: '100%' }}>
-              {activeTab === 'stages' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                  {stages.length > 0 ? stages.map((stage, index) => (
-                    <div key={stage.stage_id} style={cardStyle}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                        <div style={badgeStyle}>{index + 1}</div>
-                        <div style={{ flex: 1, textAlign: 'left' }}>
-                          <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>{stage.stage_name}</h3>
-                          <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-                            <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
-                            <span style={{ color: '#6b7280' }}>{stage.description || 'No description'}</span>
-                          </div>
-                          <div style={{ fontSize: '14px', marginBottom: '12px' }}>
-                            <span style={{ color: '#374151', fontWeight: '500' }}>Deadline: </span>
-                            <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>{formatDate(stage.deadline)}</span>
-                          </div>
-                          {stage.files && stage.files.length > 0 ? (
-                            <div>
-                              <p style={{ fontWeight: '500', fontSize: '14px', marginBottom: '8px' }}>Documents ({stage.files.length}):</p>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
-                                {stage.files.map((file) => (
-                                  <a key={file.file_id} href={file.file_url} target="_blank" rel="noopener noreferrer" style={fileLinkStyle}>
-                                    📄 {file.file_name}
-                                  </a>
-                                ))}
+              <div className="dashboard-header-section" style={{ 
+                width: '100%', 
+                display: 'flex', 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                textAlign: 'left',
+                marginBottom: '32px'
+              }}>
+                <div>
+                  <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
+                  <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
+                    Manage and view project stages, groups, and marks for Level {levelNumber}.
+                  </p>
+                </div>
+
+                {/* + Add Coordinators Button */}
+                <button 
+                  onClick={() => setIsAssignView(true)}
+                  style={{
+                    padding: '10px 20px', backgroundColor: '#2563eb', color: 'white',
+                    border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px'
+                  }}
+                >
+                  + Add Coordinators
+                </button>
+              </div>
+
+              {/* Tabs buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <button onClick={() => setActiveTab('stages')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'stages' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'stages' ? 'white' : '#6b7280' }}>
+                  Project Stages
+                </button>
+                <button onClick={() => setActiveTab('groups')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'groups' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'groups' ? 'white' : '#6b7280' }}>
+                  Project Groups
+                </button>
+                <button onClick={() => setActiveTab('marks')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'marks' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'marks' ? 'white' : '#6b7280' }}>
+                  Marks Reports
+                </button>
+              </div>
+
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '40px', width: '100%' }}>Loading...</div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  {activeTab === 'stages' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                      {stages.length > 0 ? stages.map((stage, index) => (
+                        <div key={stage.stage_id} style={cardStyle}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                            <div style={badgeStyle}>{index + 1}</div>
+                            <div style={{ flex: 1, textAlign: 'left' }}>
+                              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>{stage.stage_name}</h3>
+                              <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+                                <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
+                                <span style={{ color: '#6b7280' }}>{stage.description || 'No description'}</span>
                               </div>
+                              <div style={{ fontSize: '14px', marginBottom: '12px' }}>
+                                <span style={{ color: '#374151', fontWeight: '500' }}>Deadline: </span>
+                                <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>{formatDate(stage.deadline)}</span>
+                              </div>
+                              {stage.files && stage.files.length > 0 ? (
+                                <div>
+                                  <p style={{ fontWeight: '500', fontSize: '14px', marginBottom: '8px' }}>Documents ({stage.files.length}):</p>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                                    {stage.files.map((file) => (
+                                      <a key={file.file_id} href={file.file_url} target="_blank" rel="noopener noreferrer" style={fileLinkStyle}>
+                                        📄 {file.file_name}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <p style={{ color: '#9ca3af', fontSize: '14px' }}>No documents uploaded</p>
+                              )}
                             </div>
-                          ) : (
-                            <p style={{ color: '#9ca3af', fontSize: '14px' }}>No documents uploaded</p>
-                          )}
+                            <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
+                              View Only
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
-                          View Only
-                        </div>
+                      )) : <p>No stages found.</p>}
+                    </div>
+                  )}
+
+                  {activeTab === 'groups' && (
+                    <div style={cardStyle}>
+                      <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
+                              <th style={{ padding: '12px' }}>Group Name</th>
+                              <th style={{ padding: '12px' }}>Supervisor</th>
+                              <th style={{ padding: '12px' }}>Members</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {groups.map((group) => (
+                              <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
+                                <td style={{ padding: '12px' }}>
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    {group.members.map((m) => (
+                                      <span key={m.id} style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                                        {m.name} {m.is_leader ? '👑' : ''}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                  )) : <p>No stages found.</p>}
-                </div>
-              )}
+                  )}
 
-              {activeTab === 'groups' && (
-                <div style={cardStyle}>
-                  <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
-                          <th style={{ padding: '12px' }}>Group Name</th>
-                          <th style={{ padding: '12px' }}>Supervisor</th>
-                          <th style={{ padding: '12px' }}>Members</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groups.map((group) => (
-                          <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
-                            <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
-                            <td style={{ padding: '12px' }}>
-                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                {group.members.map((m) => (
-                                  <span key={m.id} style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
-                                    {m.name} {m.is_leader ? '👑' : ''}
+                  {activeTab === 'marks' && (
+                    <div style={cardStyle}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0 }}>Marks Report Generation</h3>
+                        <button 
+                          onClick={handleGenerateReport}
+                          style={{ 
+                            padding: '10px 20px', 
+                            backgroundColor: '#fee2e2', 
+                            color: '#991b1b', 
+                            border: '1px solid #fecaca',
+                            borderRadius: '8px', 
+                            cursor: 'pointer', 
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                        >
+                          Generate Marks Report
+                        </button>
+                      </div>
+
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
+                              <th style={{ padding: '12px' }}>Student</th>
+                              <th style={{ padding: '12px' }}>Group</th>
+                              <th style={{ padding: '12px' }}>Stage</th>
+                              <th style={{ padding: '12px' }}>Marks</th>
+                              <th style={{ padding: '12px' }}>Feedback</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {marks.length > 0 ? marks.map((m, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  <div style={{ fontWeight: '600' }}>{m.student_name}</div>
+                                  <div style={{ fontSize: '11px', color: '#6b7280' }}>{m.university_id}</div>
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{m.group_name}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{m.stage_name}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  <span style={{ 
+                                    backgroundColor: m.marks >= 40 ? '#dcfce7' : '#fee2e2', 
+                                    color: m.marks >= 40 ? '#166534' : '#991b1b',
+                                    padding: '4px 10px', borderRadius: '12px', fontWeight: '700'
+                                  }}>
+                                    {m.marks}%
                                   </span>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'marks' && (
-                <div style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ margin: 0 }}>Marks Report Generation</h3>
-                    <button 
-                      onClick={handleGenerateReport}
-                      style={{ 
-                        padding: '10px 20px', 
-                        backgroundColor: '#fee2e2', 
-                        color: '#991b1b', 
-                        border: '1px solid #fecaca',
-                        borderRadius: '8px', 
-                        cursor: 'pointer', 
-                        fontWeight: '600',
-                        fontSize: '14px',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                    >
-                      Generate Marks Report
-                    </button>
-                  </div>
-
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
-                          <th style={{ padding: '12px' }}>Student</th>
-                          <th style={{ padding: '12px' }}>Group</th>
-                          <th style={{ padding: '12px' }}>Stage</th>
-                          <th style={{ padding: '12px' }}>Marks</th>
-                          <th style={{ padding: '12px' }}>Feedback</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {marks.length > 0 ? marks.map((m, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: '12px', textAlign: 'left' }}>
-                              <div style={{ fontWeight: '600' }}>{m.student_name}</div>
-                              <div style={{ fontSize: '11px', color: '#6b7280' }}>{m.university_id}</div>
-                            </td>
-                            <td style={{ padding: '12px', textAlign: 'left' }}>{m.group_name}</td>
-                            <td style={{ padding: '12px', textAlign: 'left' }}>{m.stage_name}</td>
-                            <td style={{ padding: '12px', textAlign: 'left' }}>
-
-                              <span style={{ 
-                                backgroundColor: m.marks >= 40 ? '#dcfce7' : '#fee2e2', 
-                                color: m.marks >= 40 ? '#166534' : '#991b1b',
-                                padding: '4px 10px', borderRadius: '12px', fontWeight: '700'
-                              }}>
-                                {m.marks}%
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px', fontSize: '13px', color: '#4b5563', textAlign: 'left' }}>{m.feedback || 'No feedback'}</td>
-                          </tr>
-                        )) : (
-                          <tr>
-                            <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#9ca3af' }}>
-                              No marks found for this level.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                                </td>
+                                <td style={{ padding: '12px', fontSize: '13px', color: '#4b5563', textAlign: 'left' }}>{m.feedback || 'No feedback'}</td>
+                              </tr>
+                            )) : (
+                              <tr>
+                                <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#9ca3af' }}>
+                                  No marks found for this level.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
