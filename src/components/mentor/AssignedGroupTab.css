@@ -1,0 +1,194 @@
+/* ================================================================
+   AssignedGroupTab.css
+   
+   Styles for the Assigned Group tab in the Mentor pages.
+   UI-only — no data styles needed yet.
+   
+   Layout: Three columns (Project Name | Leader | Members)
+   Each column shows an empty styled box (no shimmer, no mock data)
+================================================================ */
+
+/* Fade-in when switching to this tab */
+.assigned-group-content {
+  animation: agFadeIn 0.35s ease;
+}
+
+@keyframes agFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ── Main white card ─────────────────────────────────────────── */
+.group-list-box {
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Title inside the card */
+.list-box-title {
+  margin: 0 0 22px 0;
+  font-size: 17px;
+  color: #1e293b;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+/* ── Table Header Row ────────────────────────────────────────── */
+.group-list-header {
+  display: flex;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 16px;
+}
+
+/* Column header label style */
+.header-item {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* ── Data Row ────────────────────────────────────────────────── */
+.group-list-row {
+  display: flex;
+  align-items: center;
+  padding: 18px 0 12px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+/* ── Column Width Definitions ────────────────────────────────── 
+   These control alignment across header and data rows.
+   Must match exactly between .group-list-header and .group-list-row
+*/
+.col-proj {
+  flex: 2;
+  min-width: 220px;
+  padding-right: 20px;
+}
+
+.col-lead {
+  flex: 1.5;
+  min-width: 160px;
+  padding-right: 20px;
+}
+
+.col-mem {
+  flex: 3;
+  min-width: 300px;
+}
+
+/* Generic data item wrapper */
+.data-item {
+  font-size: 14px;
+  color: #334155;
+}
+
+/* ── Empty Field Box ─────────────────────────────────────────── 
+   Used for Project Name and Leader columns.
+   Looks like an unfilled input field — no shimmer, no animation.
+   Just a clean empty bordered box.
+*/
+.empty-field-box {
+  height: 38px;
+  width: 85%;
+  border-radius: 8px;
+  border: 1.5px dashed #cbd5e1;   /* dashed border = "fill me" signal */
+  background-color: #f8fafc;
+}
+
+/* ── Member Tags Row ─────────────────────────────────────────── */
+.member-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ── Member Tag Box ──────────────────────────────────────────── 
+   Small empty boxes representing each member slot.
+   Dashed border = unfilled, same visual language as empty-field-box.
+*/
+.member-tag-box {
+  height: 30px;
+  width: 90px;
+  border-radius: 6px;
+  border: 1.5px dashed #cbd5e1;
+  background-color: #f8fafc;
+}
+
+/* ── Pending Notice ──────────────────────────────────────────── 
+   Subtle notice at bottom of the card.
+   Remove when real data is connected.
+*/
+.pending-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Pulsing orange dot */
+.pending-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  flex-shrink: 0;
+  animation: pendingPulse 2s infinite;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Notice text */
+.pending-text {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ── See Tasks Button Row ────────────────────────────────────── 
+   Placed below the pending notice, right-aligned.
+   Navigates mentor to the Tasks tab.
+*/
+.see-tasks-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.btn-see-tasks {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  letter-spacing: 0.1px;
+}
+
+.btn-see-tasks:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.btn-see-tasks:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}

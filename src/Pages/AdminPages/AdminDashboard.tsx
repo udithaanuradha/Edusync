@@ -3,6 +3,7 @@ import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCard from '../../components/admin/StatCard';
 import LoginTable from '../../components/admin/LoginTable'; 
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget'; 
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -53,14 +54,25 @@ const Dashboard: React.FC = () => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        <main className="content-container">
+        <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
 
-          <div className="dashboard-header-section">
-            <h2 className="overview-title">Admin Dashboard</h2>
-            <p className="overview-subtitle">System monitoring and user activity.</p>
+          {/* FIXED HEADER SECTION */}
+          <div className="dashboard-header-section" style={{ 
+            width: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            justifyContent: 'flex-start',
+            textAlign: 'left',
+            marginBottom: '32px'
+          }}>
+            <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Admin Dashboard</h2>
+            <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
+              System monitoring and user activity.
+            </p>
           </div>
 
-          <div className="stats-grid">
+          <div className="stats-grid" style={{ width: '100%' }}>
             <StatCard
               title="Total Users"
               value={loading ? '...' : stats.totalUsers}
@@ -84,11 +96,13 @@ const Dashboard: React.FC = () => {
             <StatCard
               title="Industry Mentors"
               value={loading ? '...' : stats.totalMentors}
-              color="red" // Changed from 'red' to 'teal' to match your StatCard logic
+              color="red" 
             />
           </div>
 
+          {/* Promotion Banner */}
           <div style={{
+            width: '100%',
             margin: '24px 0',
             padding: '24px',
             backgroundColor: '#fff7ed',
@@ -99,7 +113,7 @@ const Dashboard: React.FC = () => {
             alignItems: 'center',
             gap: '16px'
           }}>
-            <div>
+            <div style={{ textAlign: 'left' }}>
               <h3 style={{
                 margin: '0 0 4px 0',
                 color: '#9a3412',
@@ -135,8 +149,12 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* 2. REPLACED ActivityTable with LoginTable */}
-          <div className="overview-row">
+          {/* AnnouncementWidget */}
+          <div style={{ marginBottom: '24px', width: '100%' }}>
+            <AnnouncementWidget />
+          </div>
+
+          <div className="overview-row" style={{ width: '100%' }}>
             <LoginTable />
           </div>
 

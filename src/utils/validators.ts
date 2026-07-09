@@ -5,7 +5,7 @@
  */
 
 // Strict whitelist of valid user roles - must match backend exactly
-export const VALID_ROLES = ['student', 'supervisor', 'coordinator', 'admin', 'industry mentor'];
+export const VALID_ROLES = ['student', 'supervisor', 'coordinator', 'admin', 'industry mentor','lecturer' ];
 
 /**
  * Validates if a role string is in the allowed roles list

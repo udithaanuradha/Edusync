@@ -43,7 +43,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
       setLoadingGroups(true);
       try {
         const response = await fetch(
-          `http://localhost:5000/api/groups/level/${levelNumber}`,
+          `http://localhost:5000/api/groups/student-group/${user.id}/${levelNumber}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -137,7 +137,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                 supervisor, and track your request status.
               </p>
             </div>
-            <GroupRequest />
+            <GroupRequest levelNumber={levelNumber} />
           </div>
         );
 
@@ -184,14 +184,23 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                   ))}
                 </div>
               )}
-              <div className="manage-project-section">
-                <button
-                  className="manage-project-btn"
-                  onClick={() => navigate("/student/project-management")}
-                >
-                  Start Manage the Project
-                </button>
-              </div>
+              {groups.length > 0 && (
+                <div className="manage-project-section">
+                  <button
+                    className="manage-project-btn"
+                    onClick={() =>
+                      navigate("/student/project-management", {
+                        state: {
+                          level: levelNumber,
+                          groupId: groups[0].id,
+                        },
+                      })
+                    }
+                  >
+                    Start Manage the Project
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );

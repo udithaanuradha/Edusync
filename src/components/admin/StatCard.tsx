@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Added 'teal' to the ColorType
+
 type ColorType = 'blue' | 'green' | 'purple' | 'amber' | 'red';
 
 interface StatCardProps {
@@ -14,7 +14,7 @@ const colorStyles: Record<ColorType, React.CSSProperties> = {
   green: { backgroundColor: '#f0fdf4', color: '#16a34a' },
   purple: { backgroundColor: '#faf5ff', color: '#9333ea' },
   amber: { backgroundColor: '#fffbeb', color: '#d97706' },
-  red: { backgroundColor: '#f7e8ed', color: '#f62f0c' }, 
+  red: { backgroundColor: '#faf6f7', color: '#f62f0c' }, 
 };
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, color = 'blue' }) => {
