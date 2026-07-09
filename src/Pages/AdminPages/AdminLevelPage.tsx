@@ -19,6 +19,7 @@ interface Stage {
   level: number;
   created_at: string;
   mentor_details_url?: string;
+  resource_links?: string; // 💡 ඩේටාබේස් එකෙන් එන ලින්ක් එක සඳහා එකතු කලා
   files?: StageFile[];
 }
 
@@ -59,12 +60,11 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // වෙනම පිටුව පාලනය කරන State එක
   const [isAssignView, setIsAssignView] = useState(false);
 
   useEffect(() => {
     fetchAllData();
-    setIsAssignView(false); // Level එක මාරු වෙද්දී ප්‍රධාන පිටුවට යාමට
+    setIsAssignView(false); 
   }, [levelNumber]);
 
   const fetchAllData = async () => {
@@ -136,6 +136,18 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     fontSize: '14px',
   };
 
+  // 💡 Resource Link එක සඳහා ලස්සන ස්ටයිල් එකක් හැදුවා
+  const resourceLinkStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    color: '#2563eb',
+    textDecoration: 'none',
+    fontWeight: '500',
+    fontSize: '14px',
+    transition: 'text-decoration 0.2s'
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -144,17 +156,15 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
         <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           
           {isAssignView ? (
-            /* ---- වෙනම පිටුව මෙතනට Render වේ ---- */
             <AssignCoordinatorPage 
               levelNumber={levelNumber}
               onBack={() => setIsAssignView(false)}
               onSuccess={() => {
                 setIsAssignView(false);
-                fetchAllData(); // ඩේටා අප්ඩේට් කිරීම
+                fetchAllData(); 
               }}
             />
           ) : (
-            /* ---- ප්‍රධාන පිටුවේ UI කොටස ---- */
             <div style={{ width: '100%' }}>
               <div className="dashboard-header-section" style={{ 
                 width: '100%', 
@@ -229,14 +239,31 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 </span>
                               </div>
 
-                              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
                                 <span style={{ fontWeight: '500', color: '#374151' }}>Created:</span>
                                 <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
                               </div>
 
+                              {/* 💡 මෙන්න මේ හරියෙන් තමයි Resource Link එක පෙන්වන්නේ */}
+                              {stage.resource_links && (
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: '500', color: '#374151', minWidth: '100px' }}>Resource Link:</span>
+                                  <a
+                                    href={stage.resource_links}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={resourceLinkStyle}
+                                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                  >
+                                    🔗 View attached resource
+                                  </a>
+                                </div>
+                              )}
+
                               {stage.mentor_details_url && (
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
-                                  <span style={{ fontWeight: '500', color: '#374151' }}>Mentor Sheet:</span>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: '500', color: '#374151', minWidth: '100px' }}>Mentor Sheet:</span>
                                   <a
                                     href={stage.mentor_details_url}
                                     target="_blank"
@@ -249,7 +276,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                               )}
 
                               {stage.files && stage.files.length > 0 ? (
-                                <div>
+                                <div style={{ marginTop: '12px' }}>
                                   <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
                                     Documents ({stage.files.length}):
                                   </p>
@@ -268,7 +295,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                   </div>
                                 </div>
                               ) : (
-                                <p style={{ color: '#9ca3af', fontSize: '14px' }}>No documents uploaded</p>
+                                <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '12px' }}>No documents uploaded</p>
                               )}
                             </div>
                             <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
