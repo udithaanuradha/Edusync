@@ -136,18 +136,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     fontSize: '14px',
   };
 
-  const mentorLinkStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    backgroundColor: '#ecfeff',
-    borderRadius: '8px',
-    color: '#0f766e',
-    textDecoration: 'none',
-    fontSize: '14px',
-  };
-
   return (
     <div className="app-layout">
       <Sidebar />
