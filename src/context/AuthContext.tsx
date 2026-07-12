@@ -5,6 +5,7 @@ interface User {
   name: string;
   role: string;
   email: string;
+  designation?: string;
   level?: number;
 }
 
