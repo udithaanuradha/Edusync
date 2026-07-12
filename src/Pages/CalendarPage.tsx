@@ -152,7 +152,7 @@ const CalendarPage: React.FC = () => {
     return stored.role;
   }, []);
   const userRole = user?.role ?? storedUserRole;
-  const isCoordinator = userRole === "coordinator";
+  const isCoordinator = userRole === "coordinator" || userRole === "lecturer";
 
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("schedule");
