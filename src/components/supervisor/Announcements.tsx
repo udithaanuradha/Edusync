@@ -17,6 +17,7 @@ const Announcements: React.FC = () => {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [audience, setAudience] = useState(audienceOptions[0].value);
+  const [priority, setPriority] = useState("normal");
   const [posting, setPosting] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -39,6 +40,7 @@ const Announcements: React.FC = () => {
         title: trimmedTitle,
         message: trimmedMessage,
         target_audience: audience,
+        priority,
         author_name: user?.name || "Supervisor",
         author_role: "supervisor",
         supervisor_id: user?.id ?? null,
@@ -59,6 +61,7 @@ const Announcements: React.FC = () => {
       setTitle("");
       setMessage("");
       setAudience(audienceOptions[0].value);
+      setPriority("normal");
       setStatusText("Announcement posted successfully!");
 
       setRefreshTrigger((previous) => previous + 1);
@@ -104,6 +107,11 @@ const Announcements: React.FC = () => {
                 {option.label}
               </option>
             ))}
+          </select>
+
+          <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+            <option value="normal">Normal priority</option>
+            <option value="urgent">Urgent</option>
           </select>
 
           {statusText && (

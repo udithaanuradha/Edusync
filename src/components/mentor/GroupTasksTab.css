@@ -1,0 +1,542 @@
+/* ================================================================
+   GroupTasksTab.css
+
+   Styles for the Group Tasks tab — shown when mentor clicks
+   "See Tasks" from the Assigned Group tab.
+
+   Sections:
+   1. Fade-in animation
+   2. Overall Group Progress bar
+   3. Member task cards (Completed / Ongoing / Yet to Start)
+================================================================ */
+
+/* ── Fade-in ─────────────────────────────────────────────────── */
+.group-tasks-content {
+  animation: gtFadeIn 0.35s ease;
+}
+
+@keyframes gtFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ── Section Title ───────────────────────────────────────────── */
+.gt-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.2px;
+}
+
+/* ================================================================
+   OVERALL GROUP PROGRESS CARD
+================================================================ */
+.gt-overall-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.gt-overall-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.gt-overall-header h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.gt-overall-pct {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+/* The track + fill */
+.gt-progress-track {
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.gt-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 0.6s ease;
+}
+
+/* Three stat pills below the bar */
+.gt-stat-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gt-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gt-stat-pill.completed {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.gt-stat-pill.ongoing {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.gt-stat-pill.yet {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.gt-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gt-stat-dot.completed { background: #22c55e; }
+.gt-stat-dot.ongoing   { background: #f59e0b; }
+.gt-stat-dot.yet       { background: #cbd5e1; }
+
+/* ── Pending notice for overall (no data yet) ────────────────── */
+.gt-overall-pending {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 0 0;
+}
+
+.gt-pending-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+  animation: pendingPulse 2s infinite;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+.gt-pending-text {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ================================================================
+   MEMBER TASK CARDS SECTION
+================================================================ */
+.gt-members-section { margin-top: 8px; }
+
+/* Individual member card */
+.gt-member-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 22px 26px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* Card top: avatar + name + mini progress */
+.gt-member-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.gt-member-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gt-member-name-block { flex: 1; }
+
+.gt-member-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+}
+
+.gt-member-role {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Mini progress bar inside the member header */
+.gt-mini-progress-wrap { width: 120px; text-align: right; }
+
+.gt-mini-bar-track {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.gt-mini-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 0.5s ease;
+}
+
+.gt-mini-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* ── Three columns of tasks ──────────────────────────────────── */
+.gt-task-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+/* Column wrapper */
+.gt-task-col { display: flex; flex-direction: column; gap: 8px; }
+
+/* Column header label */
+.gt-col-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 0 0 6px 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: 2px;
+}
+
+.gt-col-label.completed { color: #15803d; border-color: #22c55e; }
+.gt-col-label.ongoing   { color: #b45309; border-color: #f59e0b; }
+.gt-col-label.yet       { color: #64748b; border-color: #cbd5e1; }
+
+/* Task item (empty placeholder) */
+.gt-task-item {
+  height: 36px;
+  border-radius: 7px;
+  border: 1.5px dashed #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+}
+
+/* Colour-coded left indicator on each task slot */
+.gt-task-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gt-task-indicator.completed { background: #22c55e; }
+.gt-task-indicator.ongoing   { background: #f59e0b; }
+.gt-task-indicator.yet       { background: #cbd5e1; }
+
+/* Empty placeholder bar inside task item */
+.gt-task-placeholder-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  flex: 1;
+}
+
+/* "No tasks" label when column is empty */
+.gt-no-tasks {
+  font-size: 11px;
+  color: #cbd5e1;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* Pending notice at the bottom of member card */
+.gt-member-pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.gt-member-pending-text {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ================================================================
+   MENTOR FEEDBACK — per-task inline feedback panel
+================================================================ */
+
+/* Section header row: title + hint */
+.gt-members-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.gt-members-section-header .gt-section-title {
+  margin-bottom: 0;
+}
+
+/* "Click any task to leave feedback" hint */
+.gt-feedback-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ── Real task item (has feedback button) ────────────────────── */
+.gt-task-item--real {
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  cursor: default;
+  min-height: 38px;
+  height: auto;
+}
+
+/* Task name text */
+.gt-task-name {
+  font-size: 12px;
+  color: #334155;
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* ── Feedback toggle button ──────────────────────────────────── */
+.gt-feedback-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.gt-feedback-toggle:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+/* When feedback has been submitted — green tint */
+.gt-feedback-toggle.has-feedback {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+/* ── Task item wrapper — expands when feedback is open ───────── */
+.gt-task-item-wrap {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.gt-task-item-wrap.expanded {
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+  border: 1px solid #bfdbfe;
+}
+
+.gt-task-item-wrap.expanded .gt-task-item--real {
+  border-bottom: 1px solid #e2e8f0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border: none;
+}
+
+/* ── Feedback panel (below task row) ─────────────────────────── */
+.gt-feedback-panel {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 14px 12px 12px 12px;
+  animation: feedbackSlide 0.2s ease;
+}
+
+@keyframes feedbackSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Previously submitted feedback block */
+.gt-feedback-submitted {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.gt-feedback-submitted-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.gt-feedback-submitted-text {
+  font-size: 12px;
+  color: #166534;
+  line-height: 1.5;
+  margin: 0;
+  padding-right: 56px; /* space for clear button */
+  white-space: pre-wrap;
+}
+
+/* Clear button — top-right of the submitted block */
+.gt-feedback-clear-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px solid #bbf7d0;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gt-feedback-clear-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── Textarea + Send row ─────────────────────────────────────── */
+.gt-feedback-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.gt-feedback-textarea {
+  flex: 1;
+  padding: 9px 11px;
+  font-size: 12px;
+  color: #1e293b;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 62px;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.gt-feedback-textarea::placeholder { color: #cbd5e1; }
+
+.gt-feedback-textarea:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
+}
+
+/* Send button */
+.gt-feedback-send-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 14px;
+  height: 62px;
+  min-width: 54px;
+  border: none;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: not-allowed;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.gt-feedback-send-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.gt-feedback-send-btn.active:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.gt-feedback-send-btn.active:active {
+  transform: translateY(0);
+}

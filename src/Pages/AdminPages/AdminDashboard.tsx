@@ -1,9 +1,9 @@
-// src/Pages/AdminPages/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCard from '../../components/admin/StatCard';
-import ActivityTable from '../../components/admin/ActivityTable';
+import LoginTable from '../../components/admin/LoginTable'; 
+import AnnouncementWidget from '../../components/shared/AnnouncementWidget'; 
 import './AdminDashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -11,7 +11,8 @@ const Dashboard: React.FC = () => {
     totalUsers: 0,
     totalStudents: 0,
     totalCoordinators: 0,
-    totalSupervisors: 0
+    totalSupervisors: 0,
+    totalMentors: 0 
   });
   const [loading, setLoading] = useState(true);
 
@@ -53,22 +54,32 @@ const Dashboard: React.FC = () => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        <main className="content-container">
+        <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
 
-          <div className="dashboard-header-section">
-            <h2 className="overview-title">Admin Dashboard</h2>
-            <p className="overview-subtitle">System monitoring and user activity.</p>
+          {/* FIXED HEADER SECTION */}
+          <div className="dashboard-header-section" style={{ 
+            width: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'flex-start', 
+            justifyContent: 'flex-start',
+            textAlign: 'left',
+            marginBottom: '32px'
+          }}>
+            <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Admin Dashboard</h2>
+            <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
+              System monitoring and user activity.
+            </p>
           </div>
 
-          {/* Stats Grid */}
-          <div className="stats-grid">
+          <div className="stats-grid" style={{ width: '100%' }}>
             <StatCard
               title="Total Users"
               value={loading ? '...' : stats.totalUsers}
               color="blue"
             />
             <StatCard
-              title="Total Students"
+              title="Students"
               value={loading ? '...' : stats.totalStudents}
               color="green"
             />
@@ -82,10 +93,16 @@ const Dashboard: React.FC = () => {
               value={loading ? '...' : stats.totalSupervisors}
               color="purple"
             />
+            <StatCard
+              title="Industry Mentors"
+              value={loading ? '...' : stats.totalMentors}
+              color="red" 
+            />
           </div>
 
-          {/* Batch Promotion Section */}
+          {/* Promotion Banner */}
           <div style={{
+            width: '100%',
             margin: '24px 0',
             padding: '24px',
             backgroundColor: '#fff7ed',
@@ -96,7 +113,7 @@ const Dashboard: React.FC = () => {
             alignItems: 'center',
             gap: '16px'
           }}>
-            <div>
+            <div style={{ textAlign: 'left' }}>
               <h3 style={{
                 margin: '0 0 4px 0',
                 color: '#9a3412',
@@ -110,8 +127,7 @@ const Dashboard: React.FC = () => {
                 color: '#c2410c',
                 fontSize: '14px'
               }}>
-                Promote all eligible students to the next academic level.
-                Level 4 students will not be affected.
+                Promote all eligible students to the next academic level
               </p>
             </div>
             <button
@@ -133,9 +149,13 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Recent Activity */}
-          <div className="overview-row">
-            <ActivityTable />
+          {/* AnnouncementWidget */}
+          <div style={{ marginBottom: '24px', width: '100%' }}>
+            <AnnouncementWidget />
+          </div>
+
+          <div className="overview-row" style={{ width: '100%' }}>
+            <LoginTable />
           </div>
 
         </main>

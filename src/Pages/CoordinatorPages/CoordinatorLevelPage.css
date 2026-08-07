@@ -1,41 +1,66 @@
+.coordinator-level-shell .content-container {
+  padding: 32px 40px;
+}
+
+.coordinator-level-shell .dashboard-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: 24px;
+}
+
+.coordinator-level-shell .dashboard-header-section {
+  margin-bottom: 0;
+}
+
 .level-tabs-wrap {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: stretch;
   gap: 8px;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  background: #f8fafc;
+  border-radius: 14px;
+  background: #ffffff;
   padding: 6px;
   margin-bottom: 16px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .level-tab-btn {
+  flex: 1 1 0;
   border: none;
   background: transparent;
   color: #475569;
-  padding: 10px 14px;
+  padding: 14px 16px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .level-tab-btn.active {
-  background: #1d4ed8;
+  background: #2563eb;
   color: #fff;
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.16);
 }
 
 .level-tab-panel {
   display: block;
+  width: 100%;
 }
 
 @media (max-width: 640px) {
+  .coordinator-level-shell .content-container {
+    padding: 20px;
+  }
+
   .level-tabs-wrap {
     width: 100%;
   }
 
   .level-tab-btn {
-    flex: 1;
+    flex: 1 1 100%;
     text-align: center;
-    padding: 10px 8px;
+    padding: 12px 8px;
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 
-type ColorType = 'blue' | 'green' | 'purple' | 'amber';
+
+type ColorType = 'blue' | 'green' | 'purple' | 'amber' | 'red';
 
 interface StatCardProps {
   title: string;
@@ -13,6 +14,7 @@ const colorStyles: Record<ColorType, React.CSSProperties> = {
   green: { backgroundColor: '#f0fdf4', color: '#16a34a' },
   purple: { backgroundColor: '#faf5ff', color: '#9333ea' },
   amber: { backgroundColor: '#fffbeb', color: '#d97706' },
+  red: { backgroundColor: '#faf6f7', color: '#f62f0c' }, 
 };
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, color = 'blue' }) => {
@@ -28,6 +30,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, color = 'blue' }) => 
       <h3 style={{ 
         color: '#374151', 
         fontSize: '14px',
+
         fontWeight: '500',
         margin: '0',
       }}>

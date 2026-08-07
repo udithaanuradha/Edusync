@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
+import AssignCoordinatorPage from './AssignCoordinatorPage'; // අලුත් පිටුව Import කිරීම
 import './AdminDashboard.css';
 
 interface StageFile {
@@ -17,7 +18,34 @@ interface Stage {
   deadline: string;
   level: number;
   created_at: string;
+  mentor_details_url?: string;
+  resource_links?: string; // 💡 ඩේටාබේස් එකෙන් එන ලින්ක් එක සඳහා එකතු කලා
   files?: StageFile[];
+}
+
+interface GroupMember {
+  id: number;
+  name: string;
+  university_id: string;
+  is_leader: number;
+}
+
+interface Group {
+  groupId: number;
+  groupName: string;
+  supervisor: string;
+  leader: string;
+  members: GroupMember[];
+  status: string;
+}
+
+interface MarkReport {
+  student_name: string;
+  university_id: string;
+  group_name: string;
+  stage_name: string;
+  marks: number;
+  feedback: string;
 }
 
 interface AdminLevelPageProps {
@@ -25,79 +53,99 @@ interface AdminLevelPageProps {
 }
 
 const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
+  const [activeTab, setActiveTab] = useState<'stages' | 'groups' | 'marks'>('stages');
   const [stages, setStages] = useState<Stage[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [marks, setMarks] = useState<MarkReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [isAssignView, setIsAssignView] = useState(false);
+
   useEffect(() => {
-    fetchStagesWithFiles();
+    fetchAllData();
+    setIsAssignView(false); 
   }, [levelNumber]);
 
-  const fetchStagesWithFiles = async () => {
+  const fetchAllData = async () => {
     try {
       setLoading(true);
       setError('');
       
-      // We only need this one call because the backend already joins the files table
-      const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
-      const data = await response.json();
+      const stageRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+      const stageData = await stageRes.json();
+      if (stageData.success) setStages(stageData.data);
 
-      if (data.success) {
-        // data.data already contains the stages with their nested files array
-        setStages(data.data);
-      } else {
-        setError('Failed to load stages');
-      }
+      const groupRes = await fetch(`http://localhost:5000/api/groups/level/${levelNumber}`);
+      const groupData = await groupRes.json();
+      if (Array.isArray(groupData)) setGroups(groupData);
+
+      const marksRes = await fetch(`http://localhost:5000/api/marks/level/${levelNumber}`);
+      const marksData = await marksRes.json();
+      if (marksData.success) setMarks(marksData.data);
+
     } catch (err) {
-      console.error("Fetch error:", err);
-      setError('Failed to connect to server');
+      setError('Connection to server failed');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGenerateReport = () => {
+    alert(`Generating marks report for Level ${levelNumber}...`);
+  };
+
   const formatDate = (date: string) => {
     if (!date) return 'No deadline set';
     return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      year: 'numeric', month: 'short', day: 'numeric',
     });
   };
 
-  // Styles
   const cardStyle: React.CSSProperties = {
     backgroundColor: '#ffffff',
     border: '1px solid #e5e7eb',
     borderRadius: '12px',
     padding: '20px 24px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    width: '100%'
   };
 
   const badgeStyle: React.CSSProperties = {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: '#2563eb',
-    color: 'white',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '700',
-    fontSize: '16px',
-    flexShrink: 0,
+    width: '40px', height: '40px', borderRadius: '50%',
+    backgroundColor: '#2563eb', color: 'white',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontWeight: '700', fontSize: '16px', flexShrink: 0,
   };
 
   const fileLinkStyle: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    padding: '8px 12px', backgroundColor: '#eff6ff', borderRadius: '8px',
+    color: '#2563eb', textDecoration: 'none', fontSize: '14px', marginTop: '4px'
+  };
+
+  const mentorLinkStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '8px',
     padding: '8px 12px',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#ecfeff',
     borderRadius: '8px',
-    color: '#2563eb',
+    color: '#0f766e',
     textDecoration: 'none',
     fontSize: '14px',
+  };
+
+  // 💡 Resource Link එක සඳහා ලස්සන ස්ටයිල් එකක් හැදුවා
+  const resourceLinkStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    color: '#2563eb',
+    textDecoration: 'none',
+    fontWeight: '500',
+    fontSize: '14px',
+    transition: 'text-decoration 0.2s'
   };
 
   return (
@@ -105,107 +153,263 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        <main className="content-container">
-          <div className="dashboard-header-section">
-            <h2 className="overview-title">Level {levelNumber} Project Stages</h2>
-            <p className="overview-subtitle">
-              Stages created by coordinator for Level {levelNumber} students.
-            </p>
-          </div>
-
-          {error && (
-            <div style={{ color: 'red', padding: '10px', marginBottom: '10px' }}>
-              {error}
-            </div>
-          )}
-
-          {loading ? (
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              Loading stages...
-            </div>
-          ) : stages.length === 0 ? (
-            <div style={{
-              padding: '40px',
-              textAlign: 'center',
-              backgroundColor: '#f9fafb',
-              borderRadius: '12px',
-              color: '#6b7280',
-            }}>
-              <p style={{ fontSize: '18px' }}>📋 No stages created yet</p>
-              <p>The coordinator has not created any stages for Level {levelNumber}.</p>
-            </div>
+        <main className="content-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          
+          {isAssignView ? (
+            <AssignCoordinatorPage 
+              levelNumber={levelNumber}
+              onBack={() => setIsAssignView(false)}
+              onSuccess={() => {
+                setIsAssignView(false);
+                fetchAllData(); 
+              }}
+            />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {stages.map((stage, index) => (
-                <div key={stage.stage_id} style={cardStyle}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                    <div style={badgeStyle}>
-                      {index + 1}
-                    </div>
+            <div style={{ width: '100%' }}>
+              <div className="dashboard-header-section" style={{ 
+                width: '100%', 
+                display: 'flex', 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                textAlign: 'left',
+                marginBottom: '32px'
+              }}>
+                <div>
+                  <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
+                  <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
+                    Manage and view project stages, groups, and marks for Level {levelNumber}.
+                  </p>
+                </div>
 
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600', color: '#111827' }}>
-                        {stage.stage_name}
-                      </h3>
+                {/* + Add Coordinators Button */}
+                <button 
+                  onClick={() => setIsAssignView(true)}
+                  style={{
+                    padding: '10px 20px', backgroundColor: '#2563eb', color: 'white',
+                    border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px'
+                  }}
+                >
+                  + Add Coordinators
+                </button>
+              </div>
 
-                      {stage.description && (
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
-                          <span style={{ fontWeight: '500', color: '#374151' }}>Description:</span>
-                          <span style={{ color: '#6b7280' }}>{stage.description}</span>
-                        </div>
-                      )}
+              {/* Tabs buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <button onClick={() => setActiveTab('stages')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'stages' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'stages' ? 'white' : '#6b7280' }}>
+                  Project Stages
+                </button>
+                <button onClick={() => setActiveTab('groups')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'groups' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'groups' ? 'white' : '#6b7280' }}>
+                  Project Groups
+                </button>
+                <button onClick={() => setActiveTab('marks')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'marks' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'marks' ? 'white' : '#6b7280' }}>
+                  Marks Reports
+                </button>
+              </div>
 
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
-                        <span style={{ fontWeight: '500', color: '#374151' }}>Deadline:</span>
-                        <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>
-                          {formatDate(stage.deadline)}
-                        </span>
-                      </div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '40px', width: '100%' }}>Loading...</div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  {activeTab === 'stages' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                      {stages.length > 0 ? stages.map((stage, index) => (
+                        <div key={stage.stage_id} style={cardStyle}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                            <div style={badgeStyle}>{index + 1}</div>
+                            <div style={{ flex: 1, textAlign: 'left' }}>
+                              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>{stage.stage_name}</h3>
+                              <div style={{ fontSize: '14px', marginBottom: '4px' }}>
+                                <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
+                                <span style={{ color: '#6b7280' }}>{stage.description || 'No description'}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
+                                <span style={{ fontWeight: '500', color: '#374151' }}>Deadline:</span>
+                                <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>
+                                  {formatDate(stage.deadline)}
+                                </span>
+                              </div>
 
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px' }}>
-                        <span style={{ fontWeight: '500', color: '#374151' }}>Created:</span>
-                        <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
-                      </div>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
+                                <span style={{ fontWeight: '500', color: '#374151' }}>Created:</span>
+                                <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
+                              </div>
 
-                      {/* File Rendering Section */}
-                      {stage.files && stage.files.length > 0 ? (
-                        <div>
-                          <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
-                            Documents ({stage.files.length}):
-                          </p>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {stage.files.map((file) => (
-                              <a 
-                                key={file.file_id} 
-                                href={file.file_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={fileLinkStyle}
-                              >
-                                📄 {file.file_name}
-                              </a>
-                            ))}
+                              {/* 💡 මෙන්න මේ හරියෙන් තමයි Resource Link එක පෙන්වන්නේ */}
+                              {stage.resource_links && (
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: '500', color: '#374151', minWidth: '100px' }}>Resource Link:</span>
+                                  <a
+                                    href={stage.resource_links}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={resourceLinkStyle}
+                                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                  >
+                                    🔗 View attached resource
+                                  </a>
+                                </div>
+                              )}
+
+                              {stage.mentor_details_url && (
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: '500', color: '#374151', minWidth: '100px' }}>Mentor Sheet:</span>
+                                  <a
+                                    href={stage.mentor_details_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={mentorLinkStyle}
+                                  >
+                                    Open industry mentor details
+                                  </a>
+                                </div>
+                              )}
+
+                              {stage.files && stage.files.length > 0 ? (
+                                <div style={{ marginTop: '12px' }}>
+                                  <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
+                                    Documents ({stage.files.length}):
+                                  </p>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {stage.files.map((file) => (
+                                      <a
+                                        key={file.file_id}
+                                        href={file.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={fileLinkStyle}
+                                      >
+                                        📄 {file.file_name}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '12px' }}>No documents uploaded</p>
+                              )}
+                            </div>
+                            <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
+                              View Only
+                            </div>
                           </div>
                         </div>
-                      ) : (
-                        <p style={{ color: '#9ca3af', fontSize: '14px' }}>No documents uploaded</p>
-                      )}
+                      )) : <p>No stages found.</p>}
                     </div>
+                  )}
 
-                    <div style={{
-                      backgroundColor: '#eff6ff',
-                      color: '#2563eb',
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      flexShrink: 0,
-                    }}>
-                      View Only
+                  {activeTab === 'groups' && (
+                    <div style={cardStyle}>
+                      <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
+                              <th style={{ padding: '12px' }}>Group Name</th>
+                              <th style={{ padding: '12px' }}>Supervisor</th>
+                              <th style={{ padding: '12px' }}>Members</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {groups.map((group) => (
+                              <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
+                                <td style={{ padding: '12px' }}>
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    {group.members.map((m) => (
+                                      <span key={m.id} style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                                        {m.name} {m.is_leader ? '👑' : ''}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {activeTab === 'marks' && (
+                    <div style={cardStyle}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0 }}>Marks Report Generation</h3>
+                        <button 
+                          onClick={handleGenerateReport}
+                          style={{ 
+                            padding: '10px 20px', 
+                            backgroundColor: '#fee2e2', 
+                            color: '#991b1b', 
+                            border: '1px solid #fecaca',
+                            borderRadius: '8px', 
+                            cursor: 'pointer', 
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                        >
+                          Generate Marks Report
+                        </button>
+                      </div>
+
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
+                              <th style={{ padding: '12px' }}>Student</th>
+                              <th style={{ padding: '12px' }}>Group</th>
+                              <th style={{ padding: '12px' }}>Stage</th>
+                              <th style={{ padding: '12px' }}>Marks</th>
+                              <th style={{ padding: '12px' }}>Feedback</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {marks.length > 0 ? marks.map((m, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  <div style={{ fontWeight: '600' }}>{m.student_name}</div>
+                                  <div style={{ fontSize: '11px', color: '#6b7280' }}>{m.university_id}</div>
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{m.group_name}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{m.stage_name}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  <span style={{ 
+                                    backgroundColor: m.marks >= 40 ? '#dcfce7' : '#fee2e2', 
+                                    color: m.marks >= 40 ? '#166534' : '#991b1b',
+                                    padding: '4px 10px', borderRadius: '12px', fontWeight: '700'
+                                  }}>
+                                    {m.marks}%
+                                  </span>
+                                </td>
+                                <td style={{ padding: '12px', fontSize: '13px', color: '#4b5563', textAlign: 'left' }}>{m.feedback || 'No feedback'}</td>
+                              </tr>
+                            )) : (
+                              <tr>
+                                <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#9ca3af' }}>
+                                  No marks found for this level.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </main>
