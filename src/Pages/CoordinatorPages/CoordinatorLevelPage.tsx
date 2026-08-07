@@ -11,6 +11,13 @@ import './CoordinatorLevelPage.css';
 
 type TabKey = 'stages' | 'requests' | 'groups' | 'marking';
 
+const LEVEL_TABS: Array<{ key: TabKey; label: string }> = [
+  { key: 'stages', label: 'Project Stages' },
+  { key: 'requests', label: 'Group Requests' },
+  { key: 'groups', label: 'Project Groups' },
+  { key: 'marking', label: 'Submissions' },
+];
+
 interface CoordinatorLevelPageProps {
   levelNumber: number;
 }
@@ -19,6 +26,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   const [activeTab, setActiveTab] = useState<TabKey>('stages');
   const [prefillRequest, setPrefillRequest] = useState<ApprovedGroupRequest | null>(null);
 
+  // Let coordinators jump from an approved submission directly into group creation.
   const handleCreateGroupFromRequest = (request: ApprovedGroupRequest) => {
     setPrefillRequest(request);
     setActiveTab('groups');
@@ -46,38 +54,17 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
             </div>
 
             <div className="level-tabs-wrap" role="tablist" aria-label={`Level ${levelNumber} management tabs`}>
-              <button
-                role="tab"
-                className={`level-tab-btn ${activeTab === 'stages' ? 'active' : ''}`}
-                aria-selected={activeTab === 'stages'}
-                onClick={() => setActiveTab('stages')}
-              >
-                Project Stages
-              </button>
-              <button
-                role="tab"
-                className={`level-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
-                aria-selected={activeTab === 'requests'}
-                onClick={() => setActiveTab('requests')}
-              >
-                Student Submissions
-              </button>
-              <button
-                role="tab"
-                className={`level-tab-btn ${activeTab === 'groups' ? 'active' : ''}`}
-                aria-selected={activeTab === 'groups'}
-                onClick={() => setActiveTab('groups')}
-              >
-                Project Groups
-              </button>
-              <button
-                role="tab"
-                className={`level-tab-btn ${activeTab === 'marking' ? 'active' : ''}`}
-                aria-selected={activeTab === 'marking'}
-                onClick={() => setActiveTab('marking')}
-              >
-                Marking & Evaluation
-              </button>
+              {LEVEL_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  role="tab"
+                  className={`level-tab-btn ${activeTab === tab.key ? 'active' : ''}`}
+                  aria-selected={activeTab === tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
             <section className="level-tab-panel">

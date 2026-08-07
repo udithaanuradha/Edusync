@@ -60,6 +60,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
         }
 
         const data = await response.json();
+        if (import.meta.env.DEV) console.log('[StudentLevelInnerPages] raw groups payload', data);
         const rawItems = Array.isArray(data)
           ? data
           : Array.isArray(data.groups)

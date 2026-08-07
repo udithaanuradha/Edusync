@@ -341,7 +341,7 @@ const CalendarPage: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/groups/level/${level}`,
+        `http://localhost:5000/api/groups/level/${level}?coordinatorId=${user?.id}`,
         { headers },
       );
       if (!response.ok) {

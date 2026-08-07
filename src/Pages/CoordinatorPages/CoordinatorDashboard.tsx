@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '../../components/shared/Sidebar'; 
 import Header from '../../components/shared/Header';
+import { useAuth } from '../../context/AuthContext';
 import StatCards from '../../components/coordinator/StatCards';
 import RecentProjects from '../../components/coordinator/RecentProjects';
 import './CoordinatorDashboard.css'; 
@@ -42,6 +43,7 @@ type DashboardSummary = {
 const API_BASE = 'http://localhost:5000/api';
 
 const CoordinatorDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,7 +57,7 @@ const CoordinatorDashboard: React.FC = () => {
 
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/dashboard/coordinator/summary`, {
+        const response = await fetch(`${API_BASE}/dashboard/coordinator/summary?coordinatorId=${user?.id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
 
@@ -111,6 +113,11 @@ const CoordinatorDashboard: React.FC = () => {
     </div>
   ) : null;
 
+  // Keep the demo-specific "Innovex" group out of the coordinator dashboard summary.
+  const filteredRecentProjects = (dashboardData?.recentProjects ?? []).filter(
+    (project) => project.groupName.trim().toLowerCase() !== 'innovex'
+  );
+
   return (
     <div className="app-layout" style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
@@ -137,7 +144,7 @@ const CoordinatorDashboard: React.FC = () => {
                 <StatCards stats={dashboardData?.stats ?? null} />
                 <div className="dashboard-grid">
                   <div className="main-content-column">
-                    <RecentProjects projects={dashboardData?.recentProjects ?? []} />
+                    <RecentProjects projects={filteredRecentProjects} />
                   </div>
 
                   <div className="side-content-column">

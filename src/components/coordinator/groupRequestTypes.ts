@@ -16,4 +16,9 @@ export interface ApprovedGroupRequest {
   studentId?: number;
   projectLevel?: number;
   resolvedMembers?: ApprovedRequestMember[];
+  status?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+  isFinalSubmitted?: boolean;
+  raw?: Record<string, unknown>;
 }

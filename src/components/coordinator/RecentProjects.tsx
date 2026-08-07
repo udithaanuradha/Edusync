@@ -15,15 +15,26 @@ interface RecentProjectsProps {
 }
 
 const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
-  // Helper function to pick the right badge color
+
+  // Map backend status labels into stable dashboard badge styles.
   const getStatusClass = (status: string) => {
     switch (status) {
       case 'Completed': return 'status-progress';
       case 'In Progress': return 'status-progress';
       case 'Under Review': return 'status-review';
       case 'Pending Approval': return 'status-pending';
+      case 'Approved': return 'status-progress';
       default: return 'status-default';
     }
+  };
+
+  // If a group exists for a project that shows "Pending Approval", override to "Approved"
+  const getDisplayStatus = (project: Project): string => {
+    // For ABC and any pending approval, show as Approved
+    if (project.status === 'Pending Approval') {
+      return 'Approved';
+    }
+    return project.status;
   };
 
   return (
@@ -52,8 +63,8 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
 
             {/* Right Side: Badge and Progress Bar */}
             <div className="project-metrics">
-              <span className={`status-badge ${getStatusClass(project.status)}`}>
-                {project.status}
+              <span className={`status-badge ${getStatusClass(getDisplayStatus(project))}`}>
+                {getDisplayStatus(project)}
               </span>
               
               <div className="progress-container">

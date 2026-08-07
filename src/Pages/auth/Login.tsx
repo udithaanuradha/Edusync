@@ -35,11 +35,25 @@ const Login: React.FC = () => {
       
       login(data.user);
       
-      if (data.user.role === 'admin') navigate('/admin');
-      else if (data.user.role === 'coordinator'|| data.user.role === 'lecturer') navigate('/coordinator');
-      else if (data.user.role === 'student') navigate('/student');
-      else if (data.user.role === 'supervisor') navigate('/supervisor');
-      else if (data.user.role === 'mentor') navigate('/mentor');
+      // Cast user to 'any' to dynamically handle the new backend designation field securely
+      const userObj = data.user as any;
+      
+      if (userObj.role === 'admin') {
+        navigate('/admin');
+      } else if (userObj.role === 'lecturer') {
+        if (userObj.designation === 'coordinator') {
+          navigate('/coordinator');
+        } else {
+          // Defaults to supervisor dashboard for newly registered lecturers
+          navigate('/supervisor');
+        }
+      } else if (userObj.role === 'student') {
+        navigate('/student');
+      } else if (userObj.role === 'supervisor') {
+        navigate('/supervisor');
+      } else if (userObj.role === 'mentor') {
+        navigate('/mentor');
+      }
 
     } catch (err: any) {
       setError(err.message);

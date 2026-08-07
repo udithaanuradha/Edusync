@@ -37,12 +37,13 @@ interface MenuItem {
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const { user } = useAuth();
+  const userObj = user as any; // Cast to bypass strict type check for designation field
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     academicLevel: false,
   });
 
   const announcementsPath =
-    user?.role === "supervisor"
+    userObj?.role === "lecturer" && userObj?.designation === "supervisor"
       ? "/supervisor/announcements"
       : "/dashboard/announcements";
 
