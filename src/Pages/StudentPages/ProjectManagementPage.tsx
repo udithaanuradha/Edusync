@@ -18,7 +18,7 @@ const tabItems = [
 const ProjectManagementPage: React.FC = () => {
   const location = useLocation();
   // Read level and groupId passed from StudentLevelInnerPages navigation
-  const navState = (location.state as { level?: number; groupId?: number | string } | null) || {};
+  const navState = (location.state as { level?: number; groupId?: number | string; groupLeader?: string } | null) || {};
 
   const [activeTab, setActiveTab] = useState<TabKey>('timeline');
   const [userRole, setUserRole] = useState<UserRole>('member');
@@ -159,8 +159,12 @@ const ProjectManagementPage: React.FC = () => {
           if (membersData.success && membersData.data) {
             setGroupMembers(membersData.data);
             const me = membersData.data.find((m: any) => String(m.id) === String(user.id));
+            const navLeaderName = String(navState.groupLeader || '').trim().toLowerCase();
+            const currentUserName = String(user.name || '').trim().toLowerCase();
+            const isLeaderFromNavigation = Boolean(navLeaderName) && navLeaderName === currentUserName;
+            const isLeaderFromMembership = Number(me?.is_leader) === 1;
 
-            setUserRole(me && me.is_leader ? 'leader' : 'member');
+            setUserRole(isLeaderFromNavigation || isLeaderFromMembership ? 'leader' : 'member');
             if (membersData.data.length > 0) {
               setSelectedAssignee(membersData.data[0].id);
             }
