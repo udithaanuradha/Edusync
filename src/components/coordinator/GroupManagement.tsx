@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
+import MemberProfileModal from '../shared/MemberProfileModal';
 
 type GroupApiRecord = Record<string, unknown>;
 
@@ -29,6 +30,7 @@ interface GroupMember {
 interface GroupView {
   id: number | string;
   name: string;
+  department?: string;
   supervisor: string;
   memberCount: number;
   members: GroupMember[];
@@ -115,7 +117,9 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
     (raw.memberCount as number | undefined) ??
     members.length;
 
-  return { id, name, supervisor, memberCount, members, leaderName };
+  const department = (raw.department as string | undefined) ?? undefined;
+
+  return { id, name, department, supervisor, memberCount, members, leaderName };
 };
 
 const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialRequest = null, onPrefillHandled }) => {
@@ -138,6 +142,8 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [studentSearchLoading, setStudentSearchLoading] = useState(false);
   const [editingGroup, setEditingGroup] = useState<GroupView | null>(null);
   const [saving, setSaving] = useState(false);
+  const [department, setDepartment] = useState<string>('');
+  const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
 
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
@@ -249,6 +255,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setSearchIndex('');
     setMembers([]);
     setEditingGroup(null);
+    setDepartment('');
   };
 
   const openEditModal = async (group: GroupView) => {
@@ -261,6 +268,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setLeaderId('');
     setSearchIndex('');
     setMembers([]);
+    setDepartment(group.department || '');
     setIsModalOpen(true);
 
     const resolvedMembers: Student[] = [];
@@ -419,6 +427,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setIsModalOpen(true);
     setGroupName(request.groupName || '');
     setSearchIndex('');
+    setDepartment(request.department || '');
 
     const supervisorName = request.supervisorName?.trim() || '';
     setSupervisorQuery(supervisorName);
@@ -589,6 +598,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           leaderId: leader.id,
           memberIds: members.map((m) => m.id),
           createdBy: user?.id,
+          department: department || undefined,
         };
 
         const endpoints = [
@@ -674,6 +684,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         leaderId: leader.id,
         memberIds: members.map((m) => m.id),
         createdBy: user?.id,
+        department: department || undefined,
       };
 
       const response = await fetch('http://localhost:5000/api/groups/create', {
@@ -732,12 +743,24 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                 </div>
                 <p className="group-meta">Leader: {group.leaderName}</p>
                 <p className="group-meta">Supervisor: {group.supervisor}</p>
+                <p className="group-meta">Department: {group.department || 'Not set'}</p>
                 {group.members.length > 0 && (
                   <ul className="group-members-preview">
                     {group.members.map((member) => (
-                      <li key={`${group.id}-${member.id ?? member.name}`}>
-                        <Users size={14} />
-                        <span>{member.name}</span>
+                      <li key={`${group.id}-${member.id ?? member.name}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Users size={14} />
+                          <span>{member.name}</span>
+                        </span>
+                        {typeof member.id === 'number' && (
+                          <button
+                            type="button"
+                            onClick={() => setViewingProfileId(member.id as number)}
+                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            View Profile
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -841,6 +864,20 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               </label>
 
               <label>
+                Department
+                <select
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', width: '100%' }}
+                >
+                  <option value="">-- Not set --</option>
+                  <option value="AI">AI - Artificial Intelligence</option>
+                  <option value="IT">IT - Information Technology</option>
+                  <option value="ITM">ITM - IT Management</option>
+                </select>
+              </label>
+
+              <label>
                 Team Leader
                 <select
                   value={leaderId}
@@ -928,6 +965,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
             </div>
           </div>
         </div>
+      )}
+
+      {viewingProfileId !== null && (
+        <MemberProfileModal memberId={viewingProfileId} onClose={() => setViewingProfileId(null)} />
       )}
     </div>
   );
