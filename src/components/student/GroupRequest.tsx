@@ -13,6 +13,8 @@ interface Student {
 
 const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
   const [supervisors, setSupervisors] = useState<{ id: number, name: string }[]>([]);
+  const [supervisorsLoading, setSupervisorsLoading] = useState(true);
+  const [supervisorsError, setSupervisorsError] = useState('');
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [requestStatus, setRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
   const [rejectReason, setRejectReason] = useState('');
@@ -24,8 +26,10 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
     groupName: '',
     groupLeader: '',
     message: '',
-    primarySupervisor: '',
   });
+
+  // Multiple supervisors can now be targeted by a single request.
+  const [selectedSupervisorIds, setSelectedSupervisorIds] = useState<number[]>([]);
 
   // State for dynamic member selection
   const [selectedMembers, setSelectedMembers] = useState<Student[]>([]);
@@ -34,34 +38,50 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
   // 1. Fetch supervisors and students on load
   useEffect(() => {
     const token = localStorage.getItem('token');
-    
-    // Fetch Supervisors
+    const userString = localStorage.getItem('user');
+    const user = userString ? JSON.parse(userString) : null;
+
+    // Fetch Supervisors — resolves supervisorsLoading in every case
+    // (success, empty, or failure) so the UI never gets stuck on
+    // "Loading supervisors..." forever.
+    setSupervisorsLoading(true);
+    setSupervisorsError('');
     fetch('http://localhost:5000/api/groups/supervisors', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          throw new Error(`Server returned ${res.status} while loading supervisors.`);
+        }
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data)) setSupervisors(data);
         else if (data?.results) setSupervisors(data.results);
+        else setSupervisors([]);
       })
-      .catch(err => console.error("Error fetching supervisors", err));
+      .catch(err => {
+        console.error("Error fetching supervisors", err);
+        setSupervisorsError('Could not load supervisors. Please refresh and try again.');
+        setSupervisors([]);
+      })
+      .finally(() => setSupervisorsLoading(false));
 
-    // Fetch Students for this level
-    fetch(`http://localhost:5000/api/users/level/${levelNumber}`, {
+    // Fetch Students for this level, scoped server-side to the same
+    // department as the requesting student (?studentId=).
+    fetch(`http://localhost:5000/api/users/level/${levelNumber}?studentId=${user?.id ?? ''}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const userString = localStorage.getItem('user');
-          const user = userString ? JSON.parse(userString) : null;
           // Filter out the current user (leader) from the potential members list
           const filtered = data.filter((s: Student) => String(s.id) !== String(user?.id));
           setAllStudents(filtered);
         }
       })
       .catch(err => console.error("Error fetching students", err));
-      
+
     checkExistingRequest();
   }, [levelNumber]);
 
@@ -96,8 +116,19 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
           groupName: latest.group_name || '',
           groupLeader: latest.members_list?.match(/Leader:\s*([^,\n]+)/i)?.[1]?.trim() || '',
           message: latest.request_message?.split('. ')?.[1] || '',
-          primarySupervisor: String(latest.supervisor_id || ''),
         });
+
+        // If already approved, the approving supervisor is known; otherwise
+        // restore whichever supervisors are still pending on this request.
+        if (latest.supervisor_id) {
+          setSelectedSupervisorIds([Number(latest.supervisor_id)]);
+        } else if (Array.isArray(latest.supervisor_responses)) {
+          setSelectedSupervisorIds(
+            latest.supervisor_responses
+              .filter((s: any) => s.status === 'pending')
+              .map((s: any) => Number(s.supervisor_id))
+          );
+        }
 
         // Optional: If you want to parse members_list back into selectedMembers objects, you'd need more data
         // For now, we just keep it as is since they can't edit approved/pending requests anyway.
@@ -129,9 +160,15 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
     setSelectedMembers(selectedMembers.filter(m => m.id !== id));
   };
 
+  const toggleSupervisor = (id: number) => {
+    setSelectedSupervisorIds(prev =>
+      prev.includes(id) ? prev.filter(sId => sId !== id) : [...prev, id]
+    );
+  };
+
   const handleRequestSupervisor = async () => {
-    if (!formData.primarySupervisor || !formData.groupName) {
-      alert("Please fill in the Group Name and select a Supervisor.");
+    if (selectedSupervisorIds.length === 0 || !formData.groupName) {
+      alert("Please fill in the Group Name and select at least one Supervisor.");
       return;
     }
 
@@ -158,7 +195,8 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
           group_name: formData.groupName,
           members_list: `Leader: ${formData.groupLeader}, Members: ${memberDetails}`,
           request_message: `Project: ${formData.projectName}. ${formData.message}`,
-          supervisor_id: formData.primarySupervisor,
+          supervisor_ids: selectedSupervisorIds,
+          member_ids: selectedMembers.map(s => s.id),
           student_id: user.id,
           project_level: levelNumber
         })
@@ -290,19 +328,48 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
           </div>
 
           <div className="input-group">
-            <label htmlFor="primarySupervisor">Primary Supervisor</label>
-            <select 
-              id="primarySupervisor"
-              name="primarySupervisor"
-              value={formData.primarySupervisor}
-              onChange={handleInputChange}
-              disabled={requestStatus !== 'none' && requestStatus !== 'rejected'}
-            >
-              <option value="">Select a Supervisor</option>
-              {supervisors.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+            <div className="supervisor-select-header">
+              <label style={{ marginBottom: 0 }}>Supervisors (select one or more)</label>
+              <span className={`supervisor-count-badge ${selectedSupervisorIds.length > 0 ? 'has-selection' : ''}`}>
+                {selectedSupervisorIds.length} supervisor{selectedSupervisorIds.length === 1 ? '' : 's'} selected
+              </span>
+            </div>
+
+            <div className="supervisor-list">
+              {supervisorsLoading && (
+                <p className="supervisor-list-status">Loading supervisors...</p>
+              )}
+              {!supervisorsLoading && supervisorsError && (
+                <p className="supervisor-list-status error">{supervisorsError}</p>
+              )}
+              {!supervisorsLoading && !supervisorsError && supervisors.length === 0 && (
+                <p className="supervisor-list-status">No supervisors found.</p>
+              )}
+              {!supervisorsLoading && supervisors.map(s => {
+                const isSelected = selectedSupervisorIds.includes(s.id);
+                const isLocked = requestStatus !== 'none' && requestStatus !== 'rejected';
+                return (
+                  <label
+                    key={s.id}
+                    className={`supervisor-row ${isSelected ? 'selected' : ''} ${isLocked ? 'disabled-row' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSupervisor(s.id)}
+                      disabled={isLocked}
+                    />
+                    <span className="supervisor-row-name">{s.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {selectedSupervisorIds.length > 0 && (
+              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                The request is approved as soon as one supervisor accepts.
+              </p>
+            )}
           </div>
           <div className="input-group">
             <label>Message (Optional)</label>

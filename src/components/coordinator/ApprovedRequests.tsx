@@ -61,6 +61,7 @@ const normalizeRequest = (item: ApiRecord): ApprovedGroupRequest => {
     groupLeader: String(item.group_leader ?? item.groupLeader ?? 'Not provided'),
     membersList: enrichMembersList(item, resolvedMembers),
     supervisorName: String(item.supervisor_name ?? item.supervisorName ?? 'Not assigned'),
+    department: String(item.department ?? '') || undefined,
     studentId:
       Number(item.student_id ?? item.studentId ?? item.requester_id ?? item.requested_by ?? 0) || undefined,
     projectLevel: Number(item.project_level ?? item.projectLevel ?? 0) || undefined,
