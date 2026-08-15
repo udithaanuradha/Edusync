@@ -4,7 +4,8 @@ import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import ProjectTimeline from './ProjectTimeline';
 import TaskCreation, { ProjectTask } from './TaskCreation';
-import './ProjectManagementPage.css'; 
+import MemberProfileModal from '../../components/shared/MemberProfileModal';
+import './ProjectManagementPage.css';
 
 type TabKey = 'timeline' | 'createTasks' | 'myTasks';
 type UserRole = 'leader' | 'member';
@@ -18,7 +19,7 @@ const tabItems = [
 const ProjectManagementPage: React.FC = () => {
   const location = useLocation();
   // Read level and groupId passed from StudentLevelInnerPages navigation
-  const navState = (location.state as { level?: number; groupId?: number | string } | null) || {};
+  const navState = (location.state as { level?: number; groupId?: number | string; groupLeader?: string } | null) || {};
 
   const [activeTab, setActiveTab] = useState<TabKey>('timeline');
   const [userRole, setUserRole] = useState<UserRole>('member');
@@ -34,6 +35,7 @@ const ProjectManagementPage: React.FC = () => {
   
   const [milestoneFilter, setMilestoneFilter] = useState('All');
   const [selectedAssignee, setSelectedAssignee] = useState<string | number>('');
+  const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
 
 
 /**
@@ -159,8 +161,12 @@ const ProjectManagementPage: React.FC = () => {
           if (membersData.success && membersData.data) {
             setGroupMembers(membersData.data);
             const me = membersData.data.find((m: any) => String(m.id) === String(user.id));
+            const navLeaderName = String(navState.groupLeader || '').trim().toLowerCase();
+            const currentUserName = String(user.name || '').trim().toLowerCase();
+            const isLeaderFromNavigation = Boolean(navLeaderName) && navLeaderName === currentUserName;
+            const isLeaderFromMembership = Number(me?.is_leader) === 1;
 
-            setUserRole(me && me.is_leader ? 'leader' : 'member');
+            setUserRole(isLeaderFromNavigation || isLeaderFromMembership ? 'leader' : 'member');
             if (membersData.data.length > 0) {
               setSelectedAssignee(membersData.data[0].id);
             }
@@ -559,8 +565,29 @@ const ProjectManagementPage: React.FC = () => {
               </div>
             </div>
 
-
-
+            {groupMembers && groupMembers.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '4px 0 16px 0' }}>
+                {groupMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '6px 10px', backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0', borderRadius: '20px', fontSize: '13px',
+                    }}
+                  >
+                    <span>{member.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setViewingProfileId(Number(member.id))}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '12px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="student-inner-pages">
               <div className="student-inner-tabs">
@@ -582,6 +609,10 @@ const ProjectManagementPage: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {viewingProfileId !== null && (
+        <MemberProfileModal memberId={viewingProfileId} onClose={() => setViewingProfileId(null)} />
+      )}
     </div>
   );
 };
