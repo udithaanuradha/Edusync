@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CoordinatorStageUpdates from "./CoordinatorStageUpdates";
 import GroupRequest from "./GroupRequest";
+import StudentSubmissions from "./StudentSubmissions";
 import "./StudentLevelInnerPages.css";
 
 const tabItems = [
   { key: "projectStates", label: "Project States" },
   { key: "groupFormation", label: "Group Formation" },
   { key: "groups", label: "Groups" },
+  { key: "submissions", label: "Submissions" },
 ] as const;
 
 type TabKey = (typeof tabItems)[number]["key"];
@@ -188,14 +190,24 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                 <div className="manage-project-section">
                   <button
                     className="manage-project-btn"
-                    onClick={() =>
+                    onClick={() => {
+                      const userString = localStorage.getItem("user");
+                      const user = userString ? JSON.parse(userString) : null;
+                      const currentUserName = String(user?.name || "").trim().toLowerCase();
+                      const targetGroup =
+                        groups.find(
+                          (group) =>
+                            String(group.groupLeader || "").trim().toLowerCase() === currentUserName,
+                        ) || groups[0];
+
                       navigate("/student/project-management", {
                         state: {
                           level: levelNumber,
-                          groupId: groups[0].id,
+                          groupId: targetGroup.id,
+                          groupLeader: targetGroup.groupLeader,
                         },
-                      })
-                    }
+                      });
+                    }}
                   >
                     Start Manage the Project
                   </button>
@@ -204,6 +216,9 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
             </div>
           </div>
         );
+
+      case "submissions":
+        return <StudentSubmissions levelNumber={levelNumber} />;
 
       default:
         return null;

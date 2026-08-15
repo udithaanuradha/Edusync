@@ -3,6 +3,7 @@ import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import AssignCoordinatorPage from './AssignCoordinatorPage'; // අලුත් පිටුව Import කිරීම
 import './AdminDashboard.css';
+import { MentorImportPanel } from '../../components/mentor/MentorImportPanel';
 
 interface StageFile {
   file_id: number;
@@ -34,6 +35,7 @@ interface Group {
   groupId: number;
   groupName: string;
   supervisor: string;
+  mentorName?: string;
   leader: string;
   members: GroupMember[];
   status: string;
@@ -76,9 +78,29 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       const stageData = await stageRes.json();
       if (stageData.success) setStages(stageData.data);
 
+      
       const groupRes = await fetch(`http://localhost:5000/api/groups/level/${levelNumber}`);
       const groupData = await groupRes.json();
       if (Array.isArray(groupData)) setGroups(groupData);
+
+      // Fetch mentors list to map mentor names to their assigned groups
+      const mentorRes = await fetch(`http://localhost:5000/api/users?role=mentor`);
+      const mentorData = await mentorRes.json();
+
+      if (Array.isArray(groupData)) {
+       const enrichedGroups = groupData.map((group: any) => {
+         const assignedMentor = Array.isArray(mentorData) 
+           ? mentorData.find((m: any) => Number(m.id) === Number(group.mentor_id || group.mentorId))
+           : null;
+
+        return {
+          ...group,
+          mentorName: assignedMentor ? assignedMentor.name : (group.mentorName || null)
+        };
+       });
+
+       setGroups(enrichedGroups);
+       }
 
       const marksRes = await fetch(`http://localhost:5000/api/marks/level/${levelNumber}`);
       const marksData = await marksRes.json();
@@ -308,6 +330,10 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                   )}
 
                   {activeTab === 'groups' && (
+                    <div>
+                     {/* 1.  puts the onboarding box right above your groups card */}        
+                     <MentorImportPanel levelNumber={levelNumber} />
+                     
                     <div style={cardStyle}>
                       <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
                       <div style={{ overflowX: 'auto' }}>
@@ -316,6 +342,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                             <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
                               <th style={{ padding: '12px' }}>Group Name</th>
                               <th style={{ padding: '12px' }}>Supervisor</th>
+                              <th style={{ padding: '12px' }}>Assigned Mentor</th>
                               <th style={{ padding: '12px' }}>Members</th>
                             </tr>
                           </thead>
@@ -324,6 +351,15 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                               <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
                                 <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
                                 <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
+                                {/* 💡 Display Mentor Status */}
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  {group.mentorName ? (
+                                    <span style={{ color: '#059669', fontWeight: '600' }}>👤 {group.mentorName}</span>
+                                   ) : (
+                                    <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Unassigned</span>
+                                   )}
+                                  </td>
+
                                 <td style={{ padding: '12px' }}>
                                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                     {group.members.map((m) => (
@@ -339,6 +375,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                         </table>
                       </div>
                     </div>
+                  </div>  
                   )}
 
                   {activeTab === 'marks' && (

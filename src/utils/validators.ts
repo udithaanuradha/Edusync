@@ -7,6 +7,30 @@
 // Strict whitelist of valid user roles - must match backend exactly
 export const VALID_ROLES = ['student', 'supervisor', 'coordinator', 'admin', 'industry mentor','lecturer' ];
 
+// Strict whitelist of valid student departments - must match backend exactly.
+// This is the same 3-option "Degree Program" already collected on this form
+// for students (see the role === 'student' <select> below) — group-formation
+// department scoping reuses it rather than a second, separate field. Note
+// this is NOT the same list a lecturer picks from (IT/IDS/CM) even though
+// both are labeled "Department" in the UI and stored in the same backend
+// column — this whitelist applies only to the student role.
+export const VALID_DEPARTMENTS = ['AI', 'IT', 'ITM'];
+
+/**
+ * Validates a student department/degree-program code against the whitelist.
+ */
+export function validateDepartment(department: string): string {
+  if (!department || typeof department !== 'string') {
+    return 'Department is required for students';
+  }
+
+  if (!VALID_DEPARTMENTS.includes(department.toUpperCase().trim())) {
+    return `Invalid department. Allowed departments are: ${VALID_DEPARTMENTS.join(', ')}`;
+  }
+
+  return '';
+}
+
 /**
  * Validates if a role string is in the allowed roles list
  */
@@ -114,6 +138,7 @@ export interface SignUpValidationResult {
     confirmPassword?: string;
     role?: string;
     universityId?: string;
+    degreeProgram?: string;
   };
 }
 
@@ -125,6 +150,7 @@ export function validateSignUpForm(formData: {
   confirmPassword: string;
   role: string;
   universityId?: string;
+  degreeProgram?: string;
 }): SignUpValidationResult {
   const fieldErrors: SignUpValidationResult['fieldErrors'] = {};
 
@@ -157,6 +183,12 @@ export function validateSignUpForm(formData: {
   if (formData.role === 'student') {
     const uniIdError = validateUniversityId(formData.universityId || '');
     if (uniIdError) fieldErrors.universityId = uniIdError;
+  }
+
+  // Validate department (Degree Program) for students
+  if (formData.role === 'student') {
+    const departmentError = validateDepartment(formData.degreeProgram || '');
+    if (departmentError) fieldErrors.degreeProgram = departmentError;
   }
 
   return {
@@ -192,6 +224,8 @@ export function validateField(
         : `Invalid role. Allowed roles are: ${VALID_ROLES.join(', ')}`;
     case 'universityId':
       return validateUniversityId(value);
+    case 'degreeProgram':
+      return validateDepartment(value);
     default:
       return '';
   }

@@ -13,6 +13,7 @@ export interface ApprovedGroupRequest {
   groupLeader: string;
   membersList: string;
   supervisorName: string;
+  department?: string;
   studentId?: number;
   projectLevel?: number;
   resolvedMembers?: ApprovedRequestMember[];

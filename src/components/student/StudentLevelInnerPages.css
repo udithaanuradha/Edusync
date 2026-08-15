@@ -160,6 +160,237 @@
   background: #1d4ed8;
 }
 
+.student-submission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.student-submission-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.student-submission-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.student-submission-card-header h4 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.student-submission-card-header p {
+  margin: 0;
+  color: #475569;
+}
+
+.student-submission-badge {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.student-submission-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.student-submission-badge.soon {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.student-submission-badge.late {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.student-submission-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.student-submission-main-panel,
+.student-submission-side-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.student-submission-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: #475569;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.student-submission-upload-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.student-upload-picker {
+  width: 100%;
+}
+
+.student-upload-label {
+  display: inline-block;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.student-upload-input-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.student-upload-input-shell input {
+  width: 100%;
+}
+
+.student-upload-hint {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.manage-project-btn {
+  background: linear-gradient(135deg, #3648e6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+}
+
+.manage-project-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+}
+
+.manage-project-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.student-submission-side-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.student-submission-side-header h5 {
+  margin: 0;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.student-submission-side-header span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.student-submission-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-submission-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.student-submission-file-name {
+  margin: 0 0 4px 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.student-submission-file-meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.student-submission-file-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.student-submission-file-actions a,
+.student-submission-file-actions button {
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.student-submission-file-actions button {
+  color: #dc2626;
+}
+
+.student-submission-alert {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.student-submission-alert.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.student-submission-alert.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.student-submission-history.empty {
+  color: #64748b;
+  font-size: 14px;
+}
+
 @media (max-width: 850px) {
   .student-inner-pages {
     padding: 18px;
@@ -168,5 +399,19 @@
   .student-inner-tab {
     flex: 1 1 100%;
     text-align: center;
+  }
+
+  .student-submission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-submission-card-header,
+  .student-submission-file-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-submission-file-actions {
+    width: 100%;
   }
 }

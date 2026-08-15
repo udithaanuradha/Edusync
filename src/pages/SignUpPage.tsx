@@ -144,22 +144,25 @@ const SignUpPage: React.FC = () => {
     if (!isOtpSent) {
       try {
         // 🔗 Points directly to your main backend signup pipeline in index.js
+        const safeAcademicUnit = (formData.role === 'student'
+          ? formData.degreeProgram
+          : formData.role === 'lecturer'
+          ? formData.department
+          : null
+        )?.trim() || null;
+
         const response = await fetch('http://localhost:5000/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // Send the user profile inputs to be saved in the database
           body: JSON.stringify({
-            name: `${formData.firstName} ${formData.lastName}`, // Combines names to match backend 'name'
+            firstName: formData.firstName,
+            lastName: formData.lastName,
             email: formData.email,
             password: formData.password,
-            role:  formData.role,
+            role: formData.role,
             university_id: formData.role === 'student' ? formData.universityId : null,
             phone: formData.phone || null,
-            academic_unit: formData.role === 'student' 
-              ? formData.degreeProgram 
-              : formData.role === 'lecturer' 
-              ? formData.department 
-              : null
+            academic_unit: safeAcademicUnit && safeAcademicUnit.length > 50 ? safeAcademicUnit.slice(0, 50) : safeAcademicUnit
           })
         });
         const data = await response.json();
@@ -403,17 +406,17 @@ const SignUpPage: React.FC = () => {
 
                     {formData.role === 'student' && (
                       <>
-                        <option value="AI">Artificial Intelligence (AI)</option>
-                        <option value="IT">Information Technology (IT)</option>
-                        <option value="ITM">IT Management (ITM)</option>
+                        <option value="AI">Artificial Intelligence</option>
+                        <option value="IT">Information Technology</option>
+                        <option value="ITM">IT Management</option>
                       </>
                     )}
 
                     {formData.role === 'lecturer' && (
                       <>
-                        <option value="IT">IT - Information Technology</option>
-                        <option value="IDS">IDS - Interdisciplinary Studies</option>
-                        <option value="CM">CM - Computational Mathematics</option>
+                        <option value="IT">IT</option>
+                        <option value="IDS">IDS</option>
+                        <option value="CM">CM</option>
                       </>
                     )}
                   </select>
