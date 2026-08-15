@@ -144,23 +144,30 @@ const SignUpPage: React.FC = () => {
     if (!isOtpSent) {
       try {
         // 🔗 Points directly to your main backend signup pipeline in index.js
+        const signupPayload = {
+          // Backend expects firstName/lastName individually (it joins them
+          // into `name` itself before the INSERT) — sending a pre-joined
+          // `name` here left firstName/lastName undefined server-side and
+          // failed validation on every signup.
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          role:  formData.role,
+          university_id: formData.role === 'student' ? formData.universityId : null,
+          phone: formData.phone || null,
+          academic_unit: formData.role === 'student'
+            ? formData.degreeProgram
+            : formData.role === 'lecturer'
+            ? formData.department
+            : null
+        };
+
         const response = await fetch('http://localhost:5000/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           // Send the user profile inputs to be saved in the database
-          body: JSON.stringify({
-            name: `${formData.firstName} ${formData.lastName}`, // Combines names to match backend 'name'
-            email: formData.email,
-            password: formData.password,
-            role:  formData.role,
-            university_id: formData.role === 'student' ? formData.universityId : null,
-            phone: formData.phone || null,
-            academic_unit: formData.role === 'student' 
-              ? formData.degreeProgram 
-              : formData.role === 'lecturer' 
-              ? formData.department 
-              : null
-          })
+          body: JSON.stringify(signupPayload)
         });
         const data = await response.json();
 
