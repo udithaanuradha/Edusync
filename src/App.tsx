@@ -36,7 +36,8 @@ import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
 import MentorSidebarWrapper from './components/mentor/MentorSidebarWrapper';
-import MentorLevel1Blocked from './pages/MentorPages/MentorLevel1Blocked';
+import MentorLevel1Blocked from './Pages/MentorPages/MentorLevel1Blocked';
+import MentorSetupForm from './Pages/auth/MentorSetupForm';
 
 function App() {
   const { user } = useAuth();
@@ -48,6 +49,9 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUpPage />} />
+
+      <Route path="/mentor-setup/:token" element={<MentorSetupForm />} />
+
 
       {/* Protected Dashboard Routes */}
       <Route
