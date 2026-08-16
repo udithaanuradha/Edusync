@@ -1,3 +1,11 @@
+/* ==========================================================================
+   1. MAIN SIDEBAR CONTAINER
+   ========================================================================== */
+
+/**
+ * Standard vertical sidebar styling.
+ * Uses a dark linear gradient for a modern, professional appearance.
+ */
 .supervisor-sidebar {
   width: 228px;
   background: linear-gradient(180deg, #151c2f 0%, #11182a 100%);
@@ -9,6 +17,11 @@
   gap: 18px;
 }
 
+/**
+ * COMPACT VARIANT
+ * Used when the sidebar is nested within another container or stack.
+ * Removes the fixed width and right border, switching to a top border.
+ */
 .supervisor-sidebar.compact {
   width: 100%;
   background: #1a202c;
@@ -17,6 +30,10 @@
   padding: 8px 0 14px;
   gap: 8px;
 }
+
+/* ==========================================================================
+   2. BRANDING / LOGO SECTION
+   ========================================================================== */
 
 .supervisor-brand {
   height: 56px;
@@ -46,16 +63,22 @@
   color: #f5f8ff;
 }
 
+/* ==========================================================================
+   3. NAVIGATION MENU & ITEMS
+   ========================================================================== */
+
 .supervisor-nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* Tighter spacing for the navigation list in compact mode */
 .supervisor-sidebar.compact .supervisor-nav {
   gap: 4px;
 }
 
+/* Base style for individual navigation links */
 .supervisor-nav-item {
   text-decoration: none;
   color: #bcc7de;
@@ -69,6 +92,7 @@
   transition: 0.2s ease;
 }
 
+/* Visual overrides for nav items when in compact mode */
 .supervisor-sidebar.compact .supervisor-nav-item {
   margin: 0;
   border-radius: 0;
@@ -76,6 +100,7 @@
   color: #a0aec0;
 }
 
+/* Interactive states: Hover and Active */
 .supervisor-nav-item:hover {
   background: rgba(111, 137, 255, 0.2);
   color: #f4f7ff;
@@ -86,11 +111,20 @@
   color: #ffffff;
 }
 
+/* Special active indicator (left border) for compact mode */
 .supervisor-sidebar.compact .supervisor-nav-item.active {
   background: rgba(102, 126, 234, 0.2);
   border-left: 4px solid #667eea;
 }
 
+/* ==========================================================================
+   4. RESPONSIVE DESIGN (Icons-Only Mode)
+   ========================================================================== */
+
+/**
+ * For screens 900px or smaller:
+ * The sidebar narrows and text labels are hidden, leaving only icons.
+ */
 @media (max-width: 900px) {
   .supervisor-sidebar {
     width: 80px;
@@ -100,15 +134,13 @@
     width: 100%;
   }
 
+  /* Hide text elements to save space */
   .brand-text,
   .supervisor-nav-item span {
     display: none;
   }
 
-  .supervisor-sidebar.compact .supervisor-nav-item span {
-    display: none;
-  }
-
+  /* Center-align icons for a cleaner look in narrowed state */
   .supervisor-nav-item {
     justify-content: center;
   }
@@ -116,6 +148,6 @@
   .supervisor-sidebar.compact .supervisor-nav-item {
     justify-content: center;
     padding: 12px 0;
-    border-left: none;
+    border-left: none; /* Remove side border as it looks cluttered on tiny screens */
   }
 }

@@ -1,38 +1,38 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 
-import LandingPage from './pages/LandingPage';
-import Login from './pages/auth/Login';
-import SignUpPage from './pages/SignUpPage';
-import AdminDashboard from './pages/AdminPages/AdminDashboard';
-import StudentDashboard from './pages/StudentPages/StudentDashboard';
-import CoordinatorDashboard from './pages/CoordinatorPages/CoordinatorDashboard';
-import SupervisorDashboard from './pages/SupervisorPages/SupervisorDashboard';
-import MentorDashboard from './pages/MentorPages/MentorDashboard';
-import Level1Page from './pages/CoordinatorPages/Level1Page';
-import Level2Page from './pages/CoordinatorPages/Level2Page';
-import Level3Page from './pages/CoordinatorPages/Level3Page';
-import Level4Page from './pages/CoordinatorPages/Level4Page';
-import Level1Student from './pages/StudentPages/Level1Student';
-import Level2Student from './pages/StudentPages/Level2Student';
-import Level3Student from './pages/StudentPages/Level3Student';
-import Level4Student from './pages/StudentPages/Level4Student';
-import SupervisorLevelPage from './pages/SupervisorPages/SupervisorLevelPage';
-import AdminLevelPage from './pages/AdminPages/AdminLevelPage';
-import Level2mentor from './pages/MentorPages/Level2mentor';
-import Level4mentor from './pages/MentorPages/Level4mentor';
-import GroupRequest from './components/student/GroupRequest';
-import ProjectManagementPage from './pages/StudentPages/ProjectManagementPage';
-import SupervisorApprovalPage from './pages/SupervisorPages/SupervisorApprovalPage';
-import AnnouncementsPage from './pages/CoordinatorPages/AnnouncementsPage';
-import SupervisorAnnouncementsPage from './pages/SupervisorPages/SupervisorAnnouncementsPage';
-import AdminAnnouncements from './pages/AdminPages/AdminAnnouncements';
-import SupervisorCommunicationPage from './pages/SupervisorPages/SupervisorCommunicationPage';
-import CommunicationPage from './pages/shared/CommunicationPage';
-import CalendarPage from './pages/CalendarPage';
-import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage'; // Added import
-import ProfileSettingsPage from './pages/ProfileSettingsPage';
-import Level3mentor from './Pages/MentorPages/Level3mentor';
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/auth/Login";
+import SignUpPage from "./pages/SignUpPage";
+import AdminDashboard from "./pages/AdminPages/AdminDashboard";
+import StudentDashboard from "./pages/StudentPages/StudentDashboard";
+import CoordinatorDashboard from "./pages/CoordinatorPages/CoordinatorDashboard";
+import SupervisorDashboard from "./pages/SupervisorPages/SupervisorDashboard";
+import MentorDashboard from "./pages/MentorPages/MentorDashboard";
+import Level1Page from "./pages/CoordinatorPages/Level1Page";
+import Level2Page from "./pages/CoordinatorPages/Level2Page";
+import Level3Page from "./pages/CoordinatorPages/Level3Page";
+import Level4Page from "./pages/CoordinatorPages/Level4Page";
+import Level1Student from "./pages/StudentPages/Level1Student";
+import Level2Student from "./pages/StudentPages/Level2Student";
+import Level3Student from "./pages/StudentPages/Level3Student";
+import Level4Student from "./pages/StudentPages/Level4Student";
+import SupervisorLevelPage from "./pages/SupervisorPages/SupervisorLevelPage";
+import AdminLevelPage from "./pages/AdminPages/AdminLevelPage";
+import Level2mentor from "./pages/MentorPages/Level2mentor";
+import Level4mentor from "./pages/MentorPages/Level4mentor";
+import GroupRequest from "./components/student/GroupRequest";
+import ProjectManagementPage from "./pages/StudentPages/ProjectManagementPage";
+import SupervisorApprovalPage from "./pages/SupervisorPages/SupervisorApprovalPage";
+import AnnouncementsPage from "./pages/CoordinatorPages/AnnouncementsPage";
+import SupervisorAnnouncementsPage from "./pages/SupervisorPages/SupervisorAnnouncementsPage";
+import AdminAnnouncements from "./pages/AdminPages/AdminAnnouncements";
+import SupervisorCommunicationPage from "./pages/SupervisorPages/SupervisorCommunicationPage";
+import CommunicationPage from "./pages/shared/CommunicationPage";
+import CalendarPage from "./pages/CalendarPage";
+import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage"; // Added import
+import ProfileSettingsPage from "./pages/ProfileSettingsPage";
+import Level3mentor from "./Pages/MentorPages/Level3mentor";
 
 function App() {
   const { user } = useAuth();
@@ -255,7 +255,10 @@ function App() {
           )
         }
       />
-
+      <Route
+        path="/supervisor/announcements"
+        element={<SupervisorAnnouncementsPage />}
+      />
       <Route
         path="/dashboard/communication"
         element={user ? <CommunicationPage /> : <Navigate to="/login" />}

@@ -1,5 +1,10 @@
-/* Supervisor Specific Button Override */
+/* ============================================================
+   TRIGGER BUTTON OVERRIDE
+   Specific styling for the "Freeze Lecture Times" button 
+   to distinguish it from standard calendar buttons.
+   ============================================================ */
 .supervisor-freeze-btn {
+  /* Warm Amber/Gold gradient to signify a "Warning" or "Locked" state */
   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
   color: #d97706 !important;
   border: 1px solid rgba(245, 158, 11, 0.2) !important;
@@ -8,14 +13,22 @@
 
 .supervisor-freeze-btn:hover {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
-  transform: translateY(-1px);
+  transform: translateY(-1px); /* Subtle hover lift */
 }
 
+/* ============================================================
+   DRAWER CONTENT LAYOUT
+   Structural styles for the side-panel container.
+   ============================================================ */
 .sup-schedule-drawer {
   display: flex;
   flex-direction: column;
 }
 
+/** 
+ * Main scrollable area for the 7-day list. 
+ * flex: 1 ensures it occupies all available space between header and footer.
+ */
 .weekly-schedule-container {
   flex: 1;
   overflow-y: auto;
@@ -27,7 +40,9 @@
   padding-right: 4px;
 }
 
-/* Custom Scrollbar for the week list */
+/* CUSTOM SCROLLBAR (Webkit) 
+   Keeps the scrollbar subtle and integrated with the UI theme.
+*/
 .weekly-schedule-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -39,6 +54,10 @@
   border-radius: 4px;
 }
 
+/* ============================================================
+   DAY BLOCKS & CARDS
+   Styling for each individual day (Monday, Tuesday, etc.)
+   ============================================================ */
 .day-schedule-block {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -59,6 +78,7 @@
   font-size: 14px;
 }
 
+/** Button used to add a new time range to a specific day */
 .add-slot-btn {
   background: #e0e7ff;
   color: #4338ca;
@@ -78,6 +98,7 @@
   background: #c7d2fe;
 }
 
+/** Visual placeholder when no time slots are defined for a day */
 .no-slots-msg {
   font-size: 12px;
   color: #94a3b8;
@@ -85,6 +106,10 @@
   padding-bottom: 4px;
 }
 
+/* ============================================================
+   TIME SLOT ROWS
+   Individual time range inputs and their action buttons.
+   ============================================================ */
 .slots-list {
   display: flex;
   flex-direction: column;
@@ -101,6 +126,7 @@
   border: 1px solid #e2e8f0;
 }
 
+/** Native time picker input styling */
 .time-input {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -121,13 +147,15 @@
   font-weight: 500;
 }
 
+/* Row Action Buttons (Delete / Inline Add) */
 .slot-action-buttons {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
+  margin-left: auto; /* Push buttons to the far right */
 }
 
+/** Destructive button to remove a specific slot */
 .remove-slot-btn {
   background: #fef2f2;
   color: #ef4444;
@@ -140,12 +168,14 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s;
+  font-size: 10px;
 }
 
 .remove-slot-btn:hover {
   background: #fee2e2;
 }
 
+/** Quick-add button appearing at the end of an existing row */
 .inline-add-btn {
   background: #eef2ff;
   color: #4338ca;
@@ -158,16 +188,21 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s;
+  font-size: 10px;
 }
 
 .inline-add-btn:hover {
   background: #e0e7ff;
 }
 
+/* ============================================================
+   DRAWER ACTIONS
+   Bottom sticky/margin footer for Save/Cancel buttons.
+   ============================================================ */
 .sup-drawer-actions {
   border-top: 1px solid #e2e8f0;
   padding-top: 16px;
-  margin-top: auto;
+  margin-top: auto; /* Pins the footer to the bottom of the drawer */
 }
 
 .flex-btn {

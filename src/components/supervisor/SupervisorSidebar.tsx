@@ -39,16 +39,6 @@ const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({
           <CalendarDays size={18} />
           <span>Schedule Meeting</span>
         </NavLink>
-
-        <NavLink
-          to="/supervisor/communication"
-          className={({ isActive }) =>
-            `supervisor-nav-item ${isActive ? "active" : ""}`
-          }
-        >
-          <MessageSquare size={18} />
-          <span>Communication</span>
-        </NavLink>
       </nav>
     </aside>
   );

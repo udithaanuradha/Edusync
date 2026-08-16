@@ -1,3 +1,7 @@
+/**
+ * SCHEDULER TRIGGER BUTTON
+ * Styles for the main button that opens the task scheduler drawer.
+ */
 .task-scheduler-btn {
   background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
   color: #4338ca !important;
@@ -9,13 +13,21 @@
   background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%) !important;
 }
 
-/* Wide Drawer for Timeline */
+/**
+ * TIMELINE DRAWER
+ * A side-sliding panel that expands to nearly full screen on mobile 
+ * and a fixed wide width on desktop.
+ */
 .timeline-drawer {
   width: min(900px, 100vw) !important;
   display: flex;
   flex-direction: column;
 }
 
+/**
+ * HEADER CONTROLS
+ * Navigation and title area within the drawer.
+ */
 .timeline-header-controls {
   display: flex;
   justify-content: space-between;
@@ -31,7 +43,10 @@
   gap: 16px;
 }
 
-/* Fixed Navigation Buttons */
+/**
+ * NAVIGATION BUTTONS
+ * Styles for the Prev, Next, and Today pagination controls.
+ */
 .timeline-nav-btn {
   background: #ffffff;
   border: 1px solid #cbd5e1;
@@ -64,7 +79,10 @@
   color: #64748b;
 }
 
-/* Timeline Grid */
+/**
+ * TIMELINE GRID SYSTEM
+ * Main scrollable area containing the time axis and day rows.
+ */
 .timeline-container {
   flex: 1;
   overflow-y: auto;
@@ -72,9 +90,13 @@
   background: #ffffff;
 }
 
+/**
+ * TIME AXIS (X-AXIS)
+ * Horizontal bar showing hours. Offset matches the day-label width.
+ */
 .timeline-axis {
   display: flex;
-  margin-left: 100px;
+  margin-left: 100px; /* Aligns with day-track start */
   border-bottom: 1px solid #cbd5e1;
   padding-bottom: 8px;
   margin-bottom: 16px;
@@ -88,6 +110,10 @@
   transform: translateX(-50%);
 }
 
+/**
+ * TIMELINE ROW
+ * Container for a single day, including the label and the interactive track.
+ */
 .timeline-row {
   display: flex;
   align-items: stretch;
@@ -115,21 +141,30 @@
   color: #94a3b8;
 }
 
+/**
+ * DAY TRACK
+ * The background grid area where tasks are plotted.
+ * Uses a linear-gradient to create vertical grid lines for 2-hour segments.
+ */
 .day-track {
   flex: 1;
-  position: relative;
+  position: relative; /* Anchor for absolute positioned task blocks */
   background: #f8fafc;
   border-radius: 0 8px 8px 0;
   cursor: crosshair;
   background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px);
-  background-size: 12.5% 100%; /* 8 segments for 16 hours = 2hr blocks */
+  background-size: 12.5% 100%; /* Calculated for a 16-hour visible span */
 }
 
 .day-track:hover {
   background-color: #f1f5f9;
 }
 
-/* Timeline Blocks */
+/**
+ * TASK BLOCKS
+ * Individual entries representing scheduled time. 
+ * Positioned absolutely based on start/end time percentages calculated in React.
+ */
 .time-block {
   position: absolute;
   top: 8px;
@@ -148,7 +183,7 @@
 
 .time-block:hover {
   transform: scale(1.02);
-  z-index: 10;
+  z-index: 10; /* Ensures the active block overlaps grid neighbors */
 }
 
 .time-block strong {
@@ -160,12 +195,15 @@
 .time-block span {
   opacity: 0.8;
   font-size: 10px;
-  /* Prevent long text from stretching the colored blocks */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/**
+ * CATEGORY COLOR CODING
+ * Unique background/border styles for various task classifications.
+ */
 .block-lecture {
   background: #64748b;
   border: 1px solid #475569;
@@ -182,26 +220,27 @@
   background: #10b981;
   border: 1px solid #059669;
 }
-
-/* NEW: Expanded Category Colors */
 .block-interim {
   background: #f59e0b;
   border: 1px solid #d97706;
-} /* Amber */
+}
 .block-evaluation {
   background: #ef4444;
   border: 1px solid #dc2626;
-} /* Red */
+}
 .block-code {
   background: #06b6d4;
   border: 1px solid #0891b2;
-} /* Cyan */
+}
 .block-final {
   background: #ec4899;
   border: 1px solid #db2777;
-} /* Pink */
+}
 
-/* Mini Form Modal */
+/**
+ * TASK FORM MODAL
+ * A centered mini-form for editing or creating task details.
+ */
 .task-form-overlay {
   position: absolute;
   top: 0;
@@ -223,7 +262,10 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-/* Fixed Delete Button */
+/**
+ * DELETE ACTION BUTTON
+ * Specific styling for the destructive "Delete Task" action.
+ */
 .task-delete-btn {
   background: #fef2f2;
   color: #dc2626;
