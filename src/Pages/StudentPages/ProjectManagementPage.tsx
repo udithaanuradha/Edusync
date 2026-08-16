@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import ProjectTimeline from './ProjectTimeline';
-import TaskCreation, { ProjectTask } from './TaskCreation';
+import TaskCreation, { ProjectTask, TaskStatus } from './TaskCreation';
+import TaskKanbanBoard, { TaskCardError } from './TaskKanbanBoard';
 import MemberProfileModal from '../../components/shared/MemberProfileModal';
 import './ProjectManagementPage.css';
 
@@ -36,6 +37,16 @@ const ProjectManagementPage: React.FC = () => {
   const [milestoneFilter, setMilestoneFilter] = useState('All');
   const [selectedAssignee, setSelectedAssignee] = useState<string | number>('');
   const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
+
+  // ── UI-only state for the "My Tasks" Kanban board ──────────────────────
+  // Tracks in-flight drag/click status changes so the board can move a card
+  // immediately and roll it back if the underlying request fails, without
+  // touching handleUpdateTaskStatus itself.
+  const [optimisticStatus, setOptimisticStatus] = useState<Record<string, TaskStatus>>({});
+  const [pendingTaskIds, setPendingTaskIds] = useState<Record<string, boolean>>({});
+  const [taskErrors, setTaskErrors] = useState<Record<string, TaskCardError>>({});
+  const projectTasksRef = useRef<ProjectTask[]>(projectTasks);
+  const taskErrorTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
 
 /**
@@ -224,6 +235,20 @@ const ProjectManagementPage: React.FC = () => {
     }
   }, [activeTab, groupId]);
 
+  // Keep a live ref of projectTasks so the Kanban board's optimistic-update
+  // wrapper can read the freshest server-confirmed status after awaiting
+  // handleUpdateTaskStatus, without that value going stale in a closure.
+  useEffect(() => {
+    projectTasksRef.current = projectTasks;
+  }, [projectTasks]);
+
+  // Clear any pending "show error for a few seconds" timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(taskErrorTimers.current).forEach(clearTimeout);
+    };
+  }, []);
+
 
   const filteredTasks = useMemo(() => {
     let tasks = projectTasks;
@@ -358,6 +383,73 @@ const ProjectManagementPage: React.FC = () => {
 
 //login pages as member and leader to test the different views and functionalities. Ensure that the backend is running and accessible at http://localhost:5000, and that the API endpoints are correctly implemented to handle the requests made by this frontend component.
 
+  // Waits for one full render/commit cycle so a state update made inside an
+  // awaited async call (e.g. handleUpdateTaskStatus's setProjectTasks) has
+  // definitely been flushed before we read it back via projectTasksRef.
+  const waitForNextPaint = () =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+
+  /**
+   * Kanban board wrapper — both drag-and-drop and the card's Start/Done
+   * buttons call this. It moves the card optimistically, then calls the
+   * EXISTING handleUpdateTaskStatus (unmodified, same call the old table's
+   * buttons always used) and reconciles against the real result: on success
+   * the optimistic override is simply dropped (real data already matches),
+   * on failure the card reverts to its previous column and shows a visible,
+   * dismissable error instead of failing silently.
+   */
+  const handleBoardStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    const current = projectTasksRef.current.find((t) => t.id === taskId);
+    if (!current || current.status === newStatus || pendingTaskIds[taskId]) return;
+
+    if (taskErrorTimers.current[taskId]) {
+      clearTimeout(taskErrorTimers.current[taskId]);
+      delete taskErrorTimers.current[taskId];
+    }
+    setTaskErrors((prev) => {
+      if (!(taskId in prev)) return prev;
+      const next = { ...prev };
+      delete next[taskId];
+      return next;
+    });
+
+    setOptimisticStatus((prev) => ({ ...prev, [taskId]: newStatus }));
+    setPendingTaskIds((prev) => ({ ...prev, [taskId]: true }));
+
+    await handleUpdateTaskStatus(taskId, newStatus);
+    await waitForNextPaint();
+
+    const confirmed = projectTasksRef.current.find((t) => t.id === taskId);
+
+    setPendingTaskIds((prev) => {
+      const next = { ...prev };
+      delete next[taskId];
+      return next;
+    });
+    setOptimisticStatus((prev) => {
+      const next = { ...prev };
+      delete next[taskId];
+      return next;
+    });
+
+    if (!confirmed || confirmed.status !== newStatus) {
+      setTaskErrors((prev) => ({
+        ...prev,
+        [taskId]: { message: "Couldn't update status. Please try again.", targetStatus: newStatus },
+      }));
+      taskErrorTimers.current[taskId] = setTimeout(() => {
+        setTaskErrors((prev) => {
+          const next = { ...prev };
+          delete next[taskId];
+          return next;
+        });
+        delete taskErrorTimers.current[taskId];
+      }, 5000);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'timeline':
@@ -448,23 +540,6 @@ const ProjectManagementPage: React.FC = () => {
               <h3>My Tasks</h3>
               <p>Track assigned work and quickly review available, ongoing, and completed items.</p>
             </div>
-            <div className="my-tasks-summary">
-              <div className="status-card available-card">
-                <span className="status-count">{taskSummary.TODO}</span>
-                <p>To Do tasks</p>
-              </div>
-              <div className="status-card ongoing-card">
-                <span className="status-count">{taskSummary.IN_PROGRESS}</span>
-                <p>In Progress tasks</p>
-              </div>
-              <div className="status-card finished-card">
-                <span className="status-count">{taskSummary.COMPLETED}</span>
-                <p>Completed tasks</p>
-              </div>
-            </div>
-
-
-          
             {userRole === 'leader' && (
               <div className="member-filter-row">
                 <label htmlFor="assignee-filter-select">Show tasks for</label>
@@ -481,60 +556,20 @@ const ProjectManagementPage: React.FC = () => {
             )}
 
     
-            <div className=" my-tasks-table-card">
+            <div className="my-tasks-table-card">
               {visibleMyTasks.length === 0 ? (
                 <div className="empty-state-card">
                   <p>No assigned tasks yet. Once a leader creates tasks, they will appear here.</p>
                 </div>
               ) : (
-                <table className="task-table">
-                  <thead>
-                    <tr>
-                      <th>Milestone</th>
-                      <th>Task</th>
-                      <th>Description</th>
-                      <th>Assigned To</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleMyTasks.map((task) => (
-                      <tr key={task.id}>
-                        <td>{task.milestone}</td>
-                        <td className="task-title-cell">{task.title}</td>
-                        <td className="task-desc-cell">{task.description}</td>
-                        <td>{task.assignedTo}</td>
-                        <td>
-                          <span className={`status-pill ${task.status.toLowerCase()}`}>
-                            {task.status === 'TODO' ? 'Pending' : task.status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
-                          </span>
-                        </td>
-                        <td className="task-action-btns">
-                          {task.status === 'TODO' && (
-                            <button
-                              className="task-start-btn"
-                              onClick={() => handleUpdateTaskStatus(task.id, 'IN_PROGRESS')}
-                            >
-                              ▶ Start
-                            </button>
-                          )}
-                          {task.status === 'IN_PROGRESS' && (
-                            <button
-                              className="task-end-btn"
-                              onClick={() => handleUpdateTaskStatus(task.id, 'COMPLETED')}
-                            >
-                              ✓ Done
-                            </button>
-                          )}
-                          {task.status === 'COMPLETED' && (
-                            <span className="task-done-badge">✓ Completed</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TaskKanbanBoard
+                  tasks={visibleMyTasks}
+                  userRole={userRole}
+                  optimisticStatus={optimisticStatus}
+                  pendingTaskIds={pendingTaskIds}
+                  taskErrors={taskErrors}
+                  onStatusChange={handleBoardStatusChange}
+                />
               )}
             </div>
           </div>
