@@ -41,6 +41,18 @@ const SignUpPage: React.FC = () => {
     { value: 'industry mentor', label: 'Industry Mentor' }
   ];
 
+  const getAcademicUnit = () => {
+    if (formData.role === 'student') {
+      return formData.degreeProgram?.trim() || null;
+    }
+
+    if (formData.role === 'lecturer') {
+      return formData.department?.trim() || null;
+    }
+
+    return null;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
@@ -143,27 +155,22 @@ const SignUpPage: React.FC = () => {
     // PHASE 1: Send registration details and write to database first
     if (!isOtpSent) {
       try {
-        // 🔗 Points directly to your main backend signup pipeline in index.js
-        const safeAcademicUnit = (formData.role === 'student'
-          ? formData.degreeProgram
-          : formData.role === 'lecturer'
-          ? formData.department
-          : null
-        )?.trim() || null;
+        const safeAcademicUnit = getAcademicUnit();
+        const payload = {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+          role: formData.role,
+          university_id: formData.role === 'student' ? (formData.universityId?.trim() || null) : null,
+          phone: formData.phone?.trim() || null,
+          academic_unit: safeAcademicUnit && safeAcademicUnit.length > 50 ? safeAcademicUnit.slice(0, 50) : safeAcademicUnit
+        };
 
         const response = await fetch('http://localhost:5000/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            password: formData.password,
-            role: formData.role,
-            university_id: formData.role === 'student' ? formData.universityId : null,
-            phone: formData.phone || null,
-            academic_unit: safeAcademicUnit && safeAcademicUnit.length > 50 ? safeAcademicUnit.slice(0, 50) : safeAcademicUnit
-          })
+          body: JSON.stringify(payload)
         });
         const data = await response.json();
 
