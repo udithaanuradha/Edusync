@@ -156,7 +156,7 @@ const SignUpPage: React.FC = () => {
     if (!isOtpSent) {
       try {
         const safeAcademicUnit = getAcademicUnit();
-        const payload = {
+        const signupPayload = {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -170,7 +170,7 @@ const SignUpPage: React.FC = () => {
         const response = await fetch('http://localhost:5000/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(signupPayload)
         });
         const data = await response.json();
 
