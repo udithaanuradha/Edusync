@@ -92,15 +92,7 @@ function App() {
       <Route
         path="/supervisor"
         element={
-<<<<<<< HEAD
-          userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
-            <SupervisorDashboard />
-          ) : (
-            <Navigate to="/login" />
-          )
-=======
           isSupervisorUser(userObj) ? <SupervisorDashboard /> : <Navigate to="/login" />
->>>>>>> 0befbe4c7e21dfe8da9079838a8284ec8c2ff04b
         }
       />
 

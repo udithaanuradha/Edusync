@@ -340,7 +340,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ name: '', description: '', deadline: '', mentor_details_url: '' });
+    setFormData({ name: '', description: '', deadline: '', resource_link: '' });
     setUploadedFiles([]);
   };
 
