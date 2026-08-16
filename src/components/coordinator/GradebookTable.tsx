@@ -103,22 +103,24 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     const fetchMarks = async () => {
       try {
         setLoading(true);
-        // The coordinator view reads marks directly from the API so it always shows the latest evaluation data.
-        const response = await fetch(
-          `http://localhost:5000/api/marks/level/${levelNumber}?coordinatorId=${user?.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          }
-        );
+
+        const response = await fetch(`http://localhost:5000/api/submissions/level/${levelNumber}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch marks: ${response.statusText}`);
+          throw new Error(response.statusText || 'Failed to fetch submissions');
         }
 
         const data = await response.json();
-        const rawMarks = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
+        const rawMarks = data?.success && Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
+
         const marksList = rawMarks.map((item: Record<string, unknown>) => normalizeMark(item));
         setMarks(marksList);
 
