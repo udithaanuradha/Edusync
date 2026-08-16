@@ -8,16 +8,14 @@ import { AlertTriangle, Clock3, Megaphone } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./AnnouncementWidget.css";
 
-/**
- * TypeScript definitions for the Announcement data structure
- */
 type AnnouncementItem = {
   id: number;
   title: string;
   message: string;
   target_audience: string;
   author_name: string;
-  author_id?: number | string;
+  author_role?: string;
+  supervisor_id?: number | string;
   created_at: string;
   priority?: string;
   priority_level?: string;
@@ -29,22 +27,15 @@ const API_BASE = "http://localhost:5000/api/announcements";
 interface AnnouncementWidgetProps {
   title?: string;
   maxItems?: number;
-  refreshDep?: number; // Dependency to trigger re-fetch from parent
+  refreshDep?: number;
   showEditDeleteButtons?: boolean;
-  scope?: "all" | "own" | "others"; // Filter logic for which items to show
-  useRoleQuery?: boolean; // Whether to filter by user role (Student/Supervisor)
+  scope?: "all" | "own" | "others";
+  useRoleQuery?: boolean;
   showOnlyMyAnnouncements?: boolean;
   showOnlyAllAudience?: boolean;
 }
 
-/**
- * AnnouncementWidget - Displays a list of announcements with optional
- * CRUD (Edit/Delete) capabilities and flexible filtering.
- */
-const AnnouncementWidget = forwardRef<
-  { refresh: () => void },
-  AnnouncementWidgetProps
->(
+const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidgetProps>(
   (
     {
       title = "Announcements",
@@ -56,63 +47,62 @@ const AnnouncementWidget = forwardRef<
       showOnlyMyAnnouncements = false,
       showOnlyAllAudience = false,
     },
-    ref,
+    ref
   ) => {
-    // --- State & Context ---
     const { user } = useAuth();
     const [items, setItems] = useState<AnnouncementItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
-    // States for inline editing mode
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editTitle, setEditTitle] = useState("");
     const [editMessage, setEditMessage] = useState("");
     const [expandedAnnouncementId, setExpandedAnnouncementId] = useState<number | null>(null);
 
-    // --- Helper Logic ---
-
-    // Formats role for API compatibility (e.g., "supervisor" -> "Supervisor")
     const roleLabel = user?.role
       ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
       : "";
 
     const normalize = (value?: string) => value?.trim().toLowerCase() ?? "";
 
-    /**
-     * Determines if the current logged-in user is the author of an announcement
-     * Checks by ID first, then falls back to Name matching.
-     */
     const isOwnedByCurrentSupervisor = (item: AnnouncementItem) => {
-      const currentId = String(user?.id ?? "").trim();
-      const itemAuthorId = String(item.author_id ?? "").trim();
+      if (user?.role !== "supervisor") {
+        return false;
+      }
 
-      if (currentId && itemAuthorId && currentId === itemAuthorId) return true;
+      const currentSupervisorId = String(user?.id ?? "").trim();
+      const itemSupervisorId = String(item.supervisor_id ?? "").trim();
+      if (
+        currentSupervisorId &&
+        itemSupervisorId &&
+        currentSupervisorId === itemSupervisorId
+      ) {
+        return true;
+      }
 
       const currentName = normalize(user?.name);
       const authorName = normalize(item.author_name);
-      return Boolean(currentName && authorName && currentName === authorName);
+      const authorRole = normalize(item.author_role);
+
+      return (
+        authorRole === "supervisor" &&
+        Boolean(currentName && authorName && currentName === authorName)
+      );
     };
 
-    /**
-     * Filters the fetched list based on the 'scope' prop
-     */
     const applyScopeFilter = (items: AnnouncementItem[]) => {
-      if (scope === "own")
+      if (scope === "own") {
         return items.filter((item) => isOwnedByCurrentSupervisor(item));
-      if (scope === "others")
+      }
+
+      if (scope === "others") {
         return items.filter((item) => !isOwnedByCurrentSupervisor(item));
+      }
+
       return items;
     };
 
-    // --- API Interactions ---
-
-    /**
-     * Main data fetching function
-     * Constructs query parameters based on props (role, level, specific author)
-     */
     const loadAnnouncements = async () => {
-      if (!user?.name && !user?.id) {
+      if (useRoleQuery && !roleLabel && !user?.name) {
         setItems([]);
         setLoading(false);
         return;
@@ -121,79 +111,129 @@ const AnnouncementWidget = forwardRef<
       try {
         setLoading(true);
         setError("");
+
         let url = API_BASE;
 
-        // Build URL parameters dynamically
-        if (showOnlyMyAnnouncements) {
-          const params = new URLSearchParams();
-          if (user?.id) params.append("author_id", String(user.id));
-          if (user?.name) params.append("author", user.name);
-          url += `?${params.toString()}`;
+        if (showOnlyMyAnnouncements && user?.name) {
+          url += `?author=${encodeURIComponent(user.name)}`;
         } else if (showOnlyAllAudience) {
-          url += "?all_audience=true";
+          url += '?all_audience=true';
         } else if (useRoleQuery) {
-          const params = new URLSearchParams();
-          if (roleLabel) params.append("role", roleLabel);
-          if (user?.level) params.append("level", String(user.level));
-          if (user?.id) {
-            params.append("supervisor_id", String(user.id));
-            params.append("exclude_author_id", String(user.id));
-          }
-          url += `?${params.toString()}`;
+          // Pass role, level, and user name for smart filtering based on Rule of Relevance
+          const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : "";
+          const nameParam = user?.name ? `&name=${encodeURIComponent(user.name)}` : "";
+          const supervisorParam =
+            user?.role === "supervisor" && user?.id
+              ? `&supervisor_id=${encodeURIComponent(String(user.id))}`
+              : "";
+          // Exclude current user's own posts from dashboard view
+          const excludeAuthorParam =
+            user?.id ? `&exclude_author_id=${encodeURIComponent(String(user.id))}` : "";
+          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}${supervisorParam}${excludeAuthorParam}`;
         }
 
+        console.log("Fetching announcements from:", url);
+        console.log("User details:", {
+          roleLabel,
+          level: user?.level,
+          name: user?.name,
+          showOnlyMyAnnouncements,
+          showOnlyAllAudience,
+        });
+
         const response = await fetch(url);
-        if (!response.ok)
-          throw new Error(`Failed to load: ${response.statusText}`);
+
+        console.log(
+          "Fetch response status:",
+          response.status,
+          response.statusText,
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to load announcements: ${response.status} ${response.statusText}`,
+          );
+        }
 
         const data = await response.json();
-        // Handle different possible JSON response structures
-        let list = Array.isArray(data)
-          ? data
-          : data?.announcements || data?.data || [];
+        console.log("Raw API response:", data);
+
+        // Handle both array and object responses
+        let list = [];
+        if (Array.isArray(data)) {
+          list = data;
+        } else if (data?.announcements && Array.isArray(data.announcements)) {
+          list = data.announcements;
+        } else if (data?.data && Array.isArray(data.data)) {
+          list = data.data;
+        }
+
+        console.log("Parsed announcements list:", list);
 
         const filteredList = applyScopeFilter(list);
         setItems(filteredList.slice(0, maxItems));
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load announcements.",
-        );
+        const message =
+          err instanceof Error ? err.message : "Failed to load announcements.";
+        console.error("Load announcements error:", err);
+        setError(message);
         setItems([]);
       } finally {
         setLoading(false);
       }
     };
 
-    /**
-     * Exposes the refresh function to parent components via ref
-     */
-    useImperativeHandle(ref, () => ({ refresh: loadAnnouncements }));
+    useImperativeHandle(ref, () => ({
+      refresh: loadAnnouncements,
+    }));
 
-    /**
-     * Handles Deletion of an announcement
-     */
     const deleteAnnouncement = async (id: number) => {
-      if (!window.confirm("Are you sure you want to delete this announcement?"))
+      if (
+        !window.confirm("Are you sure you want to delete this announcement?")
+      ) {
         return;
+      }
+
       try {
-        const response = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
-        if (!response.ok) throw new Error("Delete failed");
-        loadAnnouncements();
+        const response = await fetch(`${API_BASE}/${id}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to delete announcement: ${response.statusText}`,
+          );
+        }
+
+        console.log("Announcement deleted successfully");
+        loadAnnouncements(); // Refresh the list
       } catch (err) {
-        alert(
-          `Error: ${err instanceof Error ? err.message : "Failed to delete."}`,
-        );
+        const message =
+          err instanceof Error ? err.message : "Failed to delete announcement.";
+        console.error("Delete announcement error:", err);
+        alert(`Error: ${message}`);
       }
     };
 
-    /**
-     * Handles Updating an announcement (PUT request)
-     */
+    const startEdit = (item: AnnouncementItem) => {
+      setEditingId(item.id);
+      setEditTitle(item.title);
+      setEditMessage(item.message);
+    };
+
+    const cancelEdit = () => {
+      setEditingId(null);
+      setEditTitle("");
+      setEditMessage("");
+    };
+
     const updateAnnouncement = async (id: number) => {
       if (!editTitle.trim() || !editMessage.trim()) {
         alert("Title and message cannot be empty");
         return;
       }
+
       try {
         const response = await fetch(`${API_BASE}/${id}`, {
           method: "PUT",
@@ -203,31 +243,43 @@ const AnnouncementWidget = forwardRef<
             message: editMessage.trim(),
           }),
         });
-        if (!response.ok) throw new Error("Update failed");
-        setEditingId(null); // Exit edit mode
-        loadAnnouncements();
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to update announcement: ${response.statusText}`,
+          );
+        }
+
+        console.log("Announcement updated successfully");
+        setEditingId(null);
+        loadAnnouncements(); // Refresh the list
       } catch (err) {
-        alert(
-          `Error: ${err instanceof Error ? err.message : "Failed to update."}`,
-        );
+        const message =
+          err instanceof Error ? err.message : "Failed to update announcement.";
+        console.error("Update announcement error:", err);
+        alert(`Error: ${message}`);
       }
     };
 
-    // --- Lifecycle ---
-
-    // Re-fetch data whenever user context changes or external refresh dependency updates
     useEffect(() => {
       loadAnnouncements();
-    }, [user?.id, user?.name, refreshDep]);
+    }, [
+      roleLabel,
+      user?.level,
+      user?.name,
+      maxItems,
+      refreshDep,
+      scope,
+      useRoleQuery,
+      user?.id,
+      showOnlyMyAnnouncements,
+      showOnlyAllAudience,
+    ]);
 
-    /**
-     * Helper to format ISO strings to readable local time
-     */
     const formatTime = (value: string) => {
       const date = new Date(value);
-      return Number.isNaN(date.getTime())
-        ? "Unknown time"
-        : date.toLocaleString();
+      if (Number.isNaN(date.getTime())) return "Unknown time";
+      return date.toLocaleString();
     };
 
     const formatCompactDate = (value: string) => {
@@ -302,7 +354,6 @@ const AnnouncementWidget = forwardRef<
 
     return (
       <div className="announcement-widget-card">
-        {/* Header Section */}
         <div className="announcement-widget-header">
           <div className="announcement-widget-title-wrap">
             <Megaphone size={18} />
@@ -317,7 +368,6 @@ const AnnouncementWidget = forwardRef<
           </button>
         </div>
 
-        {/* Loading/Error States */}
         {loading && (
           <p className="announcement-widget-muted">Loading announcements...</p>
         )}
@@ -330,7 +380,6 @@ const AnnouncementWidget = forwardRef<
           </p>
         )}
 
-        {/* Content List */}
         {!loading && !error && items.length > 0 && (
           <ul className="announcement-widget-list">
             {items.map((item) => (
@@ -339,17 +388,18 @@ const AnnouncementWidget = forwardRef<
                 className={`announcement-widget-item ${getPriority(item) === "urgent" ? "is-urgent" : ""}`}
               >
                 {editingId === item.id ? (
-                  /* Inline Edit Form Mode */
                   <div className="announcement-edit-form">
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Title"
                       className="edit-input"
                     />
                     <textarea
                       value={editMessage}
                       onChange={(e) => setEditMessage(e.target.value)}
+                      placeholder="Message"
                       className="edit-textarea"
                       rows={3}
                     />
@@ -360,16 +410,12 @@ const AnnouncementWidget = forwardRef<
                       >
                         Save
                       </button>
-                      <button
-                        className="edit-cancel-btn"
-                        onClick={() => setEditingId(null)}
-                      >
+                      <button className="edit-cancel-btn" onClick={cancelEdit}>
                         Cancel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  /* Standard Display Mode */
                   <>
                     <div className="announcement-top-row">
                       <div className="announcement-title-block">
@@ -398,18 +444,18 @@ const AnnouncementWidget = forwardRef<
                       {showEditDeleteButtons && (
                         <div className="announcement-icon-buttons">
                           <button
-                            onClick={() => {
-                              setEditingId(item.id);
-                              setEditTitle(item.title);
-                              setEditMessage(item.message);
-                            }}
-                            className="announcement-icon-btn"
+                            className="announcement-icon-btn announcement-edit-icon-btn"
+                            onClick={() => startEdit(item)}
+                            title="Edit announcement"
+                            aria-label="Edit announcement"
                           >
                             ✎
                           </button>
                           <button
+                            className="announcement-icon-btn announcement-delete-icon-btn"
                             onClick={() => deleteAnnouncement(item.id)}
-                            className="announcement-icon-btn"
+                            title="Delete announcement"
+                            aria-label="Delete announcement"
                           >
                             🗑️
                           </button>
@@ -443,4 +489,5 @@ const AnnouncementWidget = forwardRef<
 );
 
 AnnouncementWidget.displayName = "AnnouncementWidget";
+
 export default AnnouncementWidget;

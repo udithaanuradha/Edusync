@@ -9,43 +9,6 @@
   display: flex;
   flex: 1;
   overflow: hidden;
-} /* ==========================================================================
-   COMMUNICATION PAGE LAYOUT
-   ========================================================================== */
-
-/**
- * 1. Root Container
- * Sets the page to fill the full height of the browser window.
- * Uses flex-direction: column to stack elements (like a header and body) vertically.
- */
-.supervisor-communication-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f8fafc;
-}
-
-/**
- * 2. Main Layout Wrapper
- * 'flex: 1' allows this section to grow and fill all remaining vertical space.
- * 'overflow: hidden' is crucial here; it prevents the main page from showing 
- * a scrollbar, allowing internal components (like a chat list) to scroll instead.
- */
-.supervisor-communication-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-/**
- * 3. Primary Content Area
- * This typically holds the main interaction area (e.g., the active chat window).
- * 'flex: 1' ensures it expands to fill the horizontal space next to a sidebar.
- */
-.supervisor-communication-content {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
 }
 
 .supervisor-communication-content {

@@ -11,16 +11,11 @@ import { useAuth } from "../../context/AuthContext";
 import "./supervisorPartInCalendar.css";
 import "./SupervisorTaskScheduler.css";
 
-/**
- * TYPE DEFINITIONS
- */
+// Types
 type TimeSlot = { start: string; end: string };
 type WeeklySchedule = Record<string, TimeSlot[]>;
 
-/**
- * Defines the classification for schedule entries.
- * Used for styling and backend categorization.
- */
+// NEW: Expanded categories
 type CategoryType =
   | "Meeting"
   | "Faculty Work"
@@ -30,7 +25,6 @@ type CategoryType =
   | "Code Review"
   | "Final Evaluation";
 
-/** Structure for individual one-off schedule tasks */
 type Task = {
   id?: number;
   task_date: string;
@@ -40,89 +34,60 @@ type Task = {
   description: string;
 };
 
-// API Endpoints
 const API_TASKS = "http://localhost:5000/api/supervisor-tasks";
 const API_RECURRING = "http://localhost:5000/api/supervisorpartincalender";
 
-/**
- * DATE UTILITIES
- * Logic for managing week boundaries and formatting strings for input/API compatibility.
- */
-
-/**
- * Logic: Calculates the Monday of the week for any given date.
- * Purpose: Standardizes the calendar view so it always begins on Monday[cite: 4].
- */
+// Date Helpers
 const getMonday = (d: Date) => {
   const date = new Date(d);
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(date.setDate(diff));
 };
-
-/** Logic: Shifts a date by a set number of days using milliseconds (86.4m per day)[cite: 4]. */
 const addDays = (d: Date, days: number) =>
   new Date(d.getTime() + days * 86400000);
-
-/** Logic: Formats Date objects to YYYY-MM-DD for standard HTML5 date inputs and SQL compatibility[cite: 4]. */
 const formatDateStr = (d: Date) => {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${month}-${day}`;
 };
 
-/**
- * TIMELINE RENDERING LOGIC
- * Calculations to map 24-hour time strings to horizontal percentages.
- */
-
-/** Logic: Parses HH:mm strings into total integer minutes from 00:00[cite: 4]. */
+// Timeline Math (08:00 to 24:00 = 16 hours = 960 minutes)
 const timeToMinutes = (timeStr: string) => {
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
 };
-
-/**
- * Logic: Computes CSS 'left' (position) and 'width' (duration) percentages.
- * Window: 08:00 (480 mins) to 24:00 (1440 mins), total 960 minutes[cite: 4].
- */
 const calculateStyle = (start: string, end: string) => {
-  const startMins = Math.max(timeToMinutes(start), 480); // Clamp start at 08:00
+  const startMins = Math.max(timeToMinutes(start), 480); // Clamp to 08:00
   let endMins = timeToMinutes(end);
 
-  /** Logic: Handles edge case where end time wraps or is logged before start time[cite: 4]. */
+  // Fix AM/PM mistakes (e.g. putting 12:00 AM instead of 12:00 PM)
   if (endMins <= startMins) {
     endMins += 720;
   }
 
-  endMins = Math.min(endMins, 1440); // Clamp end at Midnight
+  endMins = Math.min(endMins, 1440); // Clamp to 24:00
 
   const left = ((startMins - 480) / 960) * 100;
+  // Ensure width never breaks CSS by clamping it to a minimum of 2%
   const width = Math.max(((endMins - startMins) / 960) * 100, 2);
 
   return { left: `${left}%`, width: `${width}%` };
 };
 
-/**
- * MAIN COMPONENT: SupervisorTaskScheduler
- * Handles fetching, managing, and displaying a supervisor's weekly timeline[cite: 4].
- */
 const SupervisorTaskScheduler: React.FC = () => {
   const { user } = useAuth();
   const supervisorId = user?.id;
 
-  // VISIBILITY STATES: Controls drawer and modal form visibility[cite: 4].
   const [isOpen, setIsOpen] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-
-  // DATA STATES: Stores current week reference, recurring lecture slots, and dynamic tasks[cite: 4].
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     getMonday(new Date()),
   );
   const [recurring, setRecurring] = useState<WeeklySchedule>({});
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // FORM STATE: Local buffer for task creation/editing[cite: 4].
+  // Form State
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState<Task>({
     task_date: "",
@@ -132,11 +97,7 @@ const SupervisorTaskScheduler: React.FC = () => {
     description: "",
   });
 
-  /**
-   * Function: loadWeekData
-   * Logic: Synchronizes frontend state with backend data for the currently visible 7-day range.
-   * Details: Fetches one-off tasks and recurring weekly slots simultaneously[cite: 1, 4].
-   */
+  // Fetch Data
   const loadWeekData = async () => {
     if (!supervisorId) return;
     const startDate = formatDateStr(currentWeekStart);
@@ -147,21 +108,20 @@ const SupervisorTaskScheduler: React.FC = () => {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       };
 
-      // API Call: Fetch dynamic tasks within the specific date boundaries[cite: 4].
+      // Fetch Tasks
       const taskRes = await fetch(
         `${API_TASKS}/${supervisorId}?startDate=${startDate}&endDate=${endDate}`,
         { headers },
       );
       if (taskRes.ok) setTasks(await taskRes.json());
 
-      // API Call: Fetch static recurring "Lecture Freezes" for this supervisor[cite: 1, 4].
+      // Fetch Recurring Lectures
       const recRes = await fetch(
         `${API_RECURRING}/${supervisorId}?t=${Date.now()}`,
         { headers },
       );
       if (recRes.ok) {
         const result = await recRes.json();
-        // Logic: Support both camelCase and snake_case API responses[cite: 1, 2].
         setRecurring(
           result.data?.weeklySchedule ?? result.data?.weekly_schedule ?? {},
         );
@@ -171,16 +131,11 @@ const SupervisorTaskScheduler: React.FC = () => {
     }
   };
 
-  // Trigger: Re-fetches data whenever the drawer opens or the user navigates between weeks[cite: 4].
   useEffect(() => {
     if (isOpen) loadWeekData();
   }, [isOpen, currentWeekStart]);
 
-  /**
-   * Memo: weekDays
-   * Logic: Generates day labels and date strings for the 7 columns in the UI grid.
-   * Purpose: Prevents unnecessary recalculations during standard state renders[cite: 4].
-   */
+  // Generate the 7 days for the UI
   const weekDays = useMemo(() => {
     const daysName = [
       "Monday",
@@ -204,13 +159,7 @@ const SupervisorTaskScheduler: React.FC = () => {
     });
   }, [currentWeekStart]);
 
-  /**
-   * CRUD EVENT HANDLERS for Tasks
-   * Logic: Manages creation, updating, and deletion of tasks with appropriate API calls[cite: 4].
-   * Details: Uses form state to buffer user input before sending to backend.
-   */
-
-  /** Function: handleTrackClick - Initializes the form with the date of the clicked row[cite: 4]. */
+  // Form Handlers
   const handleTrackClick = (dateStr: string) => {
     setEditingTask(null);
     setFormData({
@@ -223,12 +172,11 @@ const SupervisorTaskScheduler: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  /** Function: handleEditTask - Populates form with existing task details for modification[cite: 4]. */
   const handleEditTask = (e: React.MouseEvent, task: Task) => {
-    e.stopPropagation(); // Logic: Prevents track click event from overlapping
+    e.stopPropagation();
     setEditingTask(task);
 
-    // Logic: Force format date to match HTML date input requirements[cite: 4].
+    // Safely format the date for the input field to prevent timezone bugs
     const d = new Date(task.task_date);
     const safeDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -236,7 +184,6 @@ const SupervisorTaskScheduler: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  /** Function: saveTask - Logic: Switches between POST and PUT based on task existence[cite: 4]. */
   const saveTask = async () => {
     try {
       const headers = {
@@ -255,14 +202,13 @@ const SupervisorTaskScheduler: React.FC = () => {
       });
       if (res.ok) {
         setIsFormOpen(false);
-        loadWeekData(); // Refresh UI[cite: 4].
+        loadWeekData();
       }
     } catch (error) {
       console.error("Save error", error);
     }
   };
 
-  /** Function: deleteTask - Removes the task from the database after confirmation[cite: 4]. */
   const deleteTask = async () => {
     if (!editingTask?.id) return;
     if (!window.confirm("Are you sure you want to delete this task?")) return;
@@ -276,7 +222,7 @@ const SupervisorTaskScheduler: React.FC = () => {
       );
       if (res.ok) {
         setIsFormOpen(false);
-        loadWeekData(); // Refresh UI[cite: 4].
+        loadWeekData();
       }
     } catch (error) {
       console.error("Delete error", error);
@@ -285,7 +231,6 @@ const SupervisorTaskScheduler: React.FC = () => {
 
   return (
     <>
-      {/* UI TRIGGER BUTTON: Opens the full-page timeline drawer[cite: 4]. */}
       <button
         type="button"
         className="freeze-date-btn task-scheduler-btn"
@@ -294,14 +239,12 @@ const SupervisorTaskScheduler: React.FC = () => {
         <Calendar size={16} /> Schedule & Free Times
       </button>
 
-      {/* TIMELINE OVERLAY & DRAWER */}
       {isOpen && (
         <div className="drawer-overlay" onClick={() => setIsOpen(false)}>
           <aside
             className="schedule-drawer timeline-drawer"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header: Displays title and close button[cite: 4]. */}
             <div className="drawer-header">
               <div>
                 <p className="drawer-kicker">Supervisor Tools</p>
@@ -315,7 +258,6 @@ const SupervisorTaskScheduler: React.FC = () => {
               </button>
             </div>
 
-            {/* Controls: Logic for week navigation and "This Week" reset[cite: 4]. */}
             <div className="timeline-header-controls">
               <div className="week-display">
                 <div
@@ -332,6 +274,7 @@ const SupervisorTaskScheduler: React.FC = () => {
                       year: "numeric",
                     })}
                   </h3>
+                  {/* Instruction Badge */}
                   <span
                     style={{
                       fontSize: "12px",
@@ -351,6 +294,7 @@ const SupervisorTaskScheduler: React.FC = () => {
               </div>
 
               <div className="week-nav">
+                {/* Fixed Navigation Buttons with flexible width */}
                 <button
                   className="timeline-nav-btn"
                   onClick={() =>
@@ -378,9 +322,7 @@ const SupervisorTaskScheduler: React.FC = () => {
               </div>
             </div>
 
-            {/* MAIN TIMELINE GRID: Renders the time markers and daily rows[cite: 4]. */}
             <div className="timeline-container">
-              {/* Horizontal X-Axis: Time markers from 8 AM to Midnight[cite: 4]. */}
               <div className="timeline-axis">
                 {[8, 10, 12, 14, 16, 18, 20, 22, 24].map((h) => (
                   <div
@@ -399,9 +341,8 @@ const SupervisorTaskScheduler: React.FC = () => {
                 ))}
               </div>
 
-              {/* Day Rows: Logic filters tasks and recurring slots specific to each day[cite: 4]. */}
               {weekDays.map((day) => {
-                /** Logic: Filter tasks matching the current row's date[cite: 4]. */
+                // Safely parse database dates to Local Time
                 const dayTasks = tasks.filter((t) => {
                   const d = new Date(t.task_date);
                   const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -410,7 +351,6 @@ const SupervisorTaskScheduler: React.FC = () => {
                   );
                 });
 
-                /** Logic: Match recurring slots by the literal day name (e.g., 'Monday')[cite: 4]. */
                 const dayRecurring = recurring[day.dayName] || [];
 
                 return (
@@ -419,12 +359,11 @@ const SupervisorTaskScheduler: React.FC = () => {
                       <strong>{day.dayName.substring(0, 3)}</strong>
                       <span>{day.display}</span>
                     </div>
-                    {/* Track: Clickable area for adding new tasks[cite: 4]. */}
                     <div
                       className="day-track"
                       onClick={() => handleTrackClick(day.dateStr)}
                     >
-                      {/* Recurring Blocks: Rendered as static "Lecture (Frozen)" items[cite: 4]. */}
+                      {/* Recurring Lecture Blocks */}
                       {dayRecurring.map((slot, idx) => (
                         <div
                           key={`rec-${idx}`}
@@ -438,7 +377,7 @@ const SupervisorTaskScheduler: React.FC = () => {
                         </div>
                       ))}
 
-                      {/* Task Blocks: Interactive items color-coded by category[cite: 4]. */}
+                      {/* Specific Task Blocks */}
                       {dayTasks.map((task) => (
                         <div
                           key={`task-${task.id}`}
@@ -460,7 +399,7 @@ const SupervisorTaskScheduler: React.FC = () => {
             </div>
           </aside>
 
-          {/* TASK MANAGEMENT FORM: Logic for capturing task details[cite: 4]. */}
+          {/* New/Edit Task Modal */}
           {isFormOpen && (
             <div
               className="task-form-overlay"
@@ -471,7 +410,6 @@ const SupervisorTaskScheduler: React.FC = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3>{editingTask ? "Edit Schedule" : "Add to Schedule"}</h3>
-
                 <label className="drawer-field">
                   <span>Date</span>
                   <input
@@ -534,8 +472,8 @@ const SupervisorTaskScheduler: React.FC = () => {
                     placeholder="E.g., Sync with Dr. Smith"
                   />
                 </label>
-
                 <div className="drawer-actions">
+                  {/* Fixed Delete Button */}
                   {editingTask && (
                     <button
                       type="button"

@@ -1,55 +1,30 @@
-/* ============================================================
-   EXTERNAL IMPORTS
-   Inherits base stage management layout from the coordinator module.
-   ============================================================ */
-@import "../coordinator/StageManagement.css";
+@import '../coordinator/StageManagement.css';
 
-/**
- * SCOPED VIEW CONTAINER: .supervisor-instructions-view
- * This stylesheet is isolated to the supervisor's instruction view.
- * All selectors are nested to prevent styles from leaking into other modules.
- */
+/*
+  Dedicated stylesheet for supervisor instructions view.
+  Keep selector scope under .supervisor-instructions-view so changes stay isolated.
+*/
 
 .supervisor-instructions-view {
-  /* --- THEME VARIABLES --- */
-  --civ-accent: #2563eb; /* Primary Brand/Link Color */
-  --civ-surface: #ffffff; /* Background color for cards/items */
-  --civ-text: #0f172a; /* High-contrast heading text */
-  --civ-muted: #64748b; /* Low-contrast label/secondary text */
+  --civ-accent: #2563eb;
+  --civ-surface: #ffffff;
+  --civ-text: #0f172a;
+  --civ-muted: #64748b;
 }
 
-/**
- * TIMELINE COMPONENTS
- * Styles for individual instruction nodes and their nested elements.
- */
-
-/* Container for a specific step or milestone in the instructions */
 .supervisor-instructions-view .timeline-item {
   background: var(--civ-surface);
 }
 
-/* Bold header text identifying the current stage */
 .supervisor-instructions-view .stage-name {
   color: var(--civ-text);
 }
 
-/* Secondary labels providing context (e.g., "Deadline", "Status") */
 .supervisor-instructions-view .info-label {
   color: var(--civ-muted);
 }
 
-/**
- * INTERACTIVE ELEMENTS
- * Styling for hyperlinks and document values.
- */
 .supervisor-instructions-view .info-value a,
 .supervisor-instructions-view a {
   color: var(--civ-accent);
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-
-.supervisor-instructions-view a:hover {
-  text-decoration: underline;
-  opacity: 0.8;
 }

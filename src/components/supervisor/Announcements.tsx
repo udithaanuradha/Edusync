@@ -4,11 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import AnnouncementWidget from "../shared/AnnouncementWidget";
 import "../coordinator/Announcements.css";
 
-/**
- * LOGIC: Configuration Data
- * Defines the available targeting options for announcements.
- * Maps human-readable labels to technical values used for filtering in the DB.
- */
 const audienceOptions = [
   { value: "Assigned Students", label: "All students assigned to me" },
   { value: "Level 1 Assigned Students", label: "Level 1 assigned students" },
@@ -18,14 +13,6 @@ const audienceOptions = [
 ];
 
 const Announcements: React.FC = () => {
-  /**
-   * LOGIC: State & Context Management
-   * - user: Retrieves authenticated user details (ID, name).
-   * - Form States: Tracks input values (title, message, audience).
-   * - UI States: Manages loading status (posting) and feedback (statusText).
-   * - Component Sync: refreshTrigger and widgetRef allow the form to trigger
-   *   an update in the sibling AnnouncementWidget after a successful post.
-   */
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -36,15 +23,6 @@ const Announcements: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const widgetRef = useRef<{ refresh: () => void }>(null);
 
-  /**
-   * FUNCTION: handlePostAnnouncement
-   * LOGIC:
-   * 1. Validation: Ensures title and message aren't empty after trimming whitespace.
-   * 2. Payload Construction: Builds an object with author metadata and target audience.
-   * 3. API Communication: Sends a POST request to the backend.
-   * 4. Error Handling: Catches network or server errors and displays them to the user.
-   * 5. State Reset: Clears the form and triggers a refresh of the list upon success.
-   */
   const handlePostAnnouncement = async () => {
     const trimmedTitle = title.trim();
     const trimmedMessage = message.trim();
@@ -65,7 +43,6 @@ const Announcements: React.FC = () => {
         priority,
         author_name: user?.name || "Supervisor",
         author_role: "supervisor",
-        author_id: user?.id ?? null,
         supervisor_id: user?.id ?? null,
       };
 
@@ -81,14 +58,12 @@ const Announcements: React.FC = () => {
         throw new Error(result?.error || `API Error: ${response.statusText}`);
       }
 
-      // Logic: Post-success cleanup
       setTitle("");
       setMessage("");
       setAudience(audienceOptions[0].value);
       setPriority("normal");
       setStatusText("Announcement posted successfully!");
 
-      // Logic: Notify the Widget component to re-fetch data
       setRefreshTrigger((previous) => previous + 1);
       widgetRef.current?.refresh?.();
     } catch (err) {
@@ -100,13 +75,6 @@ const Announcements: React.FC = () => {
     }
   };
 
-  /**
-   * RENDER LOGIC:
-   * - Form Card: Captures user input via controlled components (input, textarea, select).
-   * - Conditional Styling: statusText color changes based on "Error:" prefix.
-   * - Shared Component: Renders AnnouncementWidget with specific props to
-   *   show only the current supervisor's history.
-   */
   return (
     <div className="announcements-shell">
       <div className="announcements-card">
@@ -148,7 +116,7 @@ const Announcements: React.FC = () => {
 
           {statusText && (
             <p
-              className={`announcement-status ${statusText.startsWith("Error:") ? "error" : "success"}`}
+              className={`announcement-status ${statusText.startsWith("Error:") ? "error" : ""}`}
             >
               {statusText}
             </p>
@@ -165,7 +133,6 @@ const Announcements: React.FC = () => {
         </div>
       </div>
 
-      {/* Logic: Historical list restricted to 'own' scope */}
       <AnnouncementWidget
         ref={widgetRef}
         title="Supervisor's Recent Announcements"
@@ -173,8 +140,7 @@ const Announcements: React.FC = () => {
         refreshDep={refreshTrigger}
         showEditDeleteButtons={true}
         scope="own"
-        showOnlyMyAnnouncements={true}
-        useRoleQuery={false}
+        useRoleQuery={true}
       />
     </div>
   );

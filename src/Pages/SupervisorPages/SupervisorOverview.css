@@ -1,795 +1,809 @@
-/* ==========================================================================
-   1. GLOBAL WRAPPERS & MAIN LAYOUT
-   ========================================================================== */
-
-/* Main container styling for the dashboard pages */
 .supervisor-overview,
 .overview {
-  padding: 24px;
-  background: #f8f9fa;
-  min-height: 100vh;
+	padding: 24px;
+	background: #f8f9fa;
+	min-height: 100vh;
 }
 
-/* Primary grid container splitting the dashboard into left and right sections */
-.dashboard-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-/* ==========================================================================
-   2. DASHBOARD HEADER & PROFILE
-   ========================================================================== */
-
-/* Top header layout */
 .dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
 }
 
 .dashboard-header h1 {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0;
-  color: #1a202c;
+	font-size: 32px;
+	font-weight: 700;
+	margin: 0;
+	color: #1a202c;
 }
 
-/* Highlighted text within the header (e.g., specific user role or title) */
 .dashboard-header h1 span {
-  border: 3px solid #0ea5e9;
-  padding: 8px 16px;
-  display: inline-block;
-  border-radius: 4px;
+	border: 3px solid #0ea5e9;
+	padding: 8px 16px;
+	display: inline-block;
+	border-radius: 4px;
 }
 
 .welcome-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #4a5568;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-size: 14px;
+	color: #4a5568;
 }
 
 .profile-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  cursor: pointer;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	background: #e2e8f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	cursor: pointer;
 }
 
-/* ==========================================================================
-   3. LEFT SECTION WIDGETS (Notifications, Quick Cards, Events)
-   ========================================================================== */
+.dashboard-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 24px;
+}
 
 .left-section {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
 }
 
 .left-top-row {
-  position: relative;
+	position: relative;
 }
 
-/* Floating quick action cards positioned to the top right of the left section */
 .quick-cards {
-  position: absolute;
-  right: 12px;
-  top: 0;
-  transform: translateY(0);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  z-index: 12;
+	position: absolute;
+	right: 12px;
+	top: 0;
+	transform: translateY(0);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	z-index: 12;
 }
 
-/* Individual quick card sizing and layout */
 .quick-cards .meeting-card.small,
 .quick-cards .upcoming-event-card.small,
 .quick-cards .messages-card.small {
-  width: 184px;
-  min-height: 146px;
-  padding: 12px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 8px;
+	width: 184px;
+	min-height: 146px;
+	padding: 12px;
+	border-radius: 10px;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+	background: #fff;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 8px;
 }
 
-/* --- Messages Widget --- */
 .messages-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1a202c;
-  margin-bottom: 6px;
+	font-size: 13px;
+	font-weight: 700;
+	color: #1a202c;
+	margin-bottom: 6px;
 }
 
 .messages-count {
-  font-size: 12px;
-  color: #4a5568;
-  margin-bottom: 8px;
+	font-size: 12px;
+	color: #4a5568;
+	margin-bottom: 8px;
 }
 
 .messages-preview {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 12px;
-  color: #718096;
-  max-height: 120px;
-  overflow: auto;
-  scrollbar-color: #ffffff #ffffff;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	font-size: 12px;
+	color: #718096;
+	max-height: 120px;
+	overflow: auto;
+	scrollbar-color: #ffffff #ffffff;
 }
 
-/* Custom Scrollbar for message previews */
 .messages-preview::-webkit-scrollbar {
-  width: 10px;
+	width: 10px;
 }
+
 .messages-preview::-webkit-scrollbar-track {
-  background: #ffffff;
+	background: #ffffff;
 }
+
 .messages-preview::-webkit-scrollbar-thumb {
-  background: #ffffff;
-  border-radius: 8px;
+	background: #ffffff;
+	border-radius: 8px;
 }
 
 .messages-preview li {
-  margin-bottom: 6px;
+	margin-bottom: 6px;
 }
 
 .quick-cards .meeting-table {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
-/* --- Notifications Widget --- */
 .notifications-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  padding-right: 220px; /* Leaves space for overlapping absolute elements */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	background: white;
+	border-radius: 12px;
+	padding: 24px;
+	padding-right: 220px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .notifications-card h2 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: #1a202c;
+	font-size: 20px;
+	font-weight: 600;
+	margin: 0 0 16px 0;
+	color: #1a202c;
 }
 
-/* Notification category tabs */
 .notification-tabs {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 12px;
+	display: flex;
+	gap: 12px;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+	border-bottom: 1px solid #e2e8f0;
+	padding-bottom: 12px;
 }
 
 .tab {
-  background: none;
-  border: none;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: #718096;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -13px; /* Overlaps border to highlight active tab */
+	background: none;
+	border: none;
+	padding: 8px 12px;
+	font-size: 13px;
+	color: #718096;
+	cursor: pointer;
+	font-weight: 500;
+	transition: all 0.2s;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -13px;
 }
 
 .tab:hover {
-  color: #4a5568;
+	color: #4a5568;
 }
 
 .tab.active {
-  color: #1a202c;
-  border-bottom-color: #667eea;
+	color: #1a202c;
+	border-bottom-color: #667eea;
 }
 
-/* Individual Notification Items */
 .notification-items {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 24px;
 }
 
 .notification-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #e2e8f0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 0;
+	border-bottom: 1px solid #e2e8f0;
 }
 
 .notification-row:last-child {
-  border-bottom: none;
+	border-bottom: none;
 }
 
 .notif-title {
-  font-size: 14px;
-  color: #2d3748;
-  font-weight: 500;
+	font-size: 14px;
+	color: #2d3748;
+	font-weight: 500;
 }
 
 .count {
-  color: #a0aec0;
-  font-size: 12px;
+	color: #a0aec0;
+	font-size: 12px;
 }
 
-/* --- Left Section Cards (Announcements, Meetings, Events) --- */
-.announcement-card,
-.message-card,
-.meeting-card,
-.upcoming-event-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-top: 16px;
-  transition: all 0.2s;
-}
-
-.meeting-card:hover,
-.upcoming-event-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.announcement-card h3,
-.message-header h3,
-.upcoming-event-card h3,
-.upcoming-event-card h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  color: #1a202c;
-}
-
-.upcoming-event-card h3,
-.upcoming-event-card h4 {
-  text-transform: capitalize;
-}
-
-/* Layout for Meeting Data */
-.meeting-table {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 32px 16px;
-  background: #f7fafc;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.meeting-card .meeting-table {
-  margin: 0;
-}
-
-.meeting-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #4a5568;
-  margin-bottom: 12px;
-}
-
-.meeting-number {
-  font-size: 48px;
-  font-weight: 700;
-  color: #1a202c;
-}
-
-.meeting-text {
-  font-size: 20px;
-  font-weight: 600;
-  color: #2d3748;
-  line-height: 1.3;
-}
-
-.upcoming-count {
-  font-size: 24px;
-  font-weight: 700;
-  color: #667eea;
-}
-
-/* Message Headers & Actions */
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.message-header h3 {
-  margin: 0;
-}
-.message-count {
-  font-size: 12px;
-  color: #718096;
-}
-.message-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* ==========================================================================
-   4. RIGHT SECTION WIDGETS (Groups, Progress Tracking)
-   ========================================================================== */
-
-.right-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.groups-header {
-  background: white;
-  border-radius: 12px;
-  padding: 16px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.groups-header h2 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-  color: #1a202c;
-}
-
-/* Group Filtering Tabs */
-.group-tabs {
-  display: flex;
-  gap: 8px;
-  background: white;
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex-wrap: wrap;
-}
-
-.group-tab {
-  background: #e2e8f0;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #4a5568;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.group-tab:hover {
-  background: #cbd5e0;
-}
-.group-tab.active {
-  background: #3f4048;
-  color: white;
-}
-
-/* Group Cards Grid Layout */
-.groups-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.group-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.group-card h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: #1a202c;
-  text-transform: capitalize;
-}
-
-/* Circular SVG Progress Bar styling */
-.progress-circle {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 16px;
-}
-
-.progress-circle svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg); /* Starts progress from the top */
-}
-
-.progress-bg {
-  fill: none;
-  stroke: #e2e8f0;
-  stroke-width: 4;
-}
-
-.progress-fill {
-  fill: none;
-  stroke: #22c55e;
-  stroke-width: 4;
-  stroke-linecap: round;
-  transition: stroke-dasharray 0.3s ease;
-}
-
-/* Text centered inside the progress circle */
-.progress-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.percentage {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a202c;
-}
-
-.status {
-  font-size: 11px;
-  color: #718096;
-}
-
-/* Group Navigation Links */
-.group-navigation {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 12px;
-}
-
-.view-all-btn {
-  background: none;
-  border: none;
-  color: #667eea;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.view-all-btn:hover {
-  color: #764ba2;
-}
-
-/* Group Progress Details List */
-.group-progress {
-  background: white;
-  border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.group-progress:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.group-progress h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #1a202c;
-}
-
-.progress-section-label {
-  font-size: 12px;
-  color: #a0aec0;
-  text-align: right;
-  margin-bottom: 12px;
-}
-
-.progress-details {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.overall {
-  font-size: 13px;
-  color: #4a5568;
-}
-
-.overall strong {
-  color: #22c55e;
-  font-weight: 600;
-}
-
-/* Individual Student Progress Rows */
-.student-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 13px;
-}
-
-.supervisor-overview .student-item {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px 14px;
-}
-
-.supervisor-overview .student-item:hover {
-  background: #ffffff;
-  border-color: #d1d9e6;
-}
-
-.student-item:last-of-type {
-  border-bottom: none;
-}
-.student-item span:first-child {
-  color: #2d3748;
-  font-weight: 500;
-}
-.student-item .status {
-  color: #718096;
-  flex: 1;
-  text-align: center;
-}
-.student-item .progress {
-  color: #667eea;
-  font-weight: 600;
-  min-width: 50px;
-  text-align: right;
-}
-
-/* Reports Section */
-.report-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.report-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.report-card h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #1a202c;
-}
-
-.report-subtitle {
-  font-size: 12px;
-  color: #718096;
-  margin: 0 0 16px 0;
-}
-
-/* ==========================================================================
-   5. BUTTON STYLES (Shared across components)
-   ========================================================================== */
-
-/* Shared base properties for various dashboard buttons */
-.read-btn,
-.create-btn,
-.msg-btn,
-.view-full-detail-btn,
-.view-progress-btn,
-.report-btn {
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: white;
-}
-
-/* Specific Button Colors & Actions */
 .read-btn {
-  background: #0ea5e9;
-  padding: 8px 14px;
-  font-size: 12px;
+	background: #0ea5e9;
+	color: white;
+	border: none;
+	padding: 8px 14px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
 }
+
 .read-btn:hover {
-  background: #0284c7;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+	background: #0284c7;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+}
+
+.announcement-card {
+	background: white;
+	border-radius: 12px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	margin-top: 16px;
+}
+
+.announcement-card h3 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0 0 12px 0;
+	color: #1a202c;
 }
 
 .create-btn {
-  background: #48bb78;
-  padding: 10px 18px;
-  font-size: 13px;
+	background: #48bb78;
+	color: white;
+	border: none;
+	padding: 10px 18px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
 }
+
 .create-btn:hover {
-  background: #38a169;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(72, 187, 120, 0.3);
+	background: #38a169;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(72, 187, 120, 0.3);
+}
+
+.message-card {
+	background: white;
+	border-radius: 12px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	margin-top: 16px;
+}
+
+.message-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.message-header h3 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0;
+	color: #1a202c;
+}
+
+.message-count {
+	font-size: 12px;
+	color: #718096;
+}
+
+.message-actions {
+	display: flex;
+	gap: 8px;
 }
 
 .msg-btn {
-  background: #f97316;
-  padding: 8px 14px;
-  font-size: 12px;
+	background: #f97316;
+	color: white;
+	border: none;
+	padding: 8px 14px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
 }
+
 .msg-btn:hover {
-  background: #ea580c;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+	background: #ea580c;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+}
+
+.meeting-table {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 20px;
+	padding: 32px 16px;
+	background: #f7fafc;
+	border-radius: 8px;
+	text-align: center;
+}
+
+.meeting-card {
+	background: white;
+	border-radius: 12px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s;
+}
+
+.meeting-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.meeting-label {
+	font-size: 13px;
+	font-weight: 500;
+	color: #4a5568;
+	margin-bottom: 12px;
+}
+
+.meeting-card .meeting-table {
+	background: #f7fafc;
+	margin: 0;
+	padding: 32px 16px;
+	border-radius: 8px;
+}
+
+.upcoming-event-card {
+	background: white;
+	border-radius: 12px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s;
+}
+
+.upcoming-event-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.upcoming-event-card h3,
+.upcoming-event-card h4 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0 0 12px 0;
+	color: #1a202c;
+	text-transform: capitalize;
+}
+
+.upcoming-count {
+	font-size: 24px;
+	font-weight: 700;
+	color: #667eea;
+}
+
+.meeting-number {
+	font-size: 48px;
+	font-weight: 700;
+	color: #1a202c;
+}
+
+.meeting-text {
+	font-size: 20px;
+	font-weight: 600;
+	color: #2d3748;
+	line-height: 1.3;
+}
+
+.right-section {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.groups-header {
+	background: white;
+	border-radius: 12px;
+	padding: 16px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.groups-header h2 {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0;
+	color: #1a202c;
+}
+
+.group-tabs {
+	display: flex;
+	gap: 8px;
+	background: white;
+	border-radius: 12px;
+	padding: 12px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	flex-wrap: wrap;
+}
+
+.group-tab {
+	background: #e2e8f0;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #4a5568;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.group-tab:hover {
+	background: #cbd5e0;
+}
+
+.group-tab.active {
+	background: #667eea;
+	color: white;
+}
+
+.groups-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+}
+
+.group-card {
+	background: white;
+	border-radius: 12px;
+	padding: 20px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	text-align: center;
+}
+
+.group-card h4 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0 0 16px 0;
+	color: #1a202c;
+	text-transform: capitalize;
+}
+
+.progress-circle {
+	position: relative;
+	width: 120px;
+	height: 120px;
+	margin: 0 auto 16px;
+}
+
+.progress-circle svg {
+	width: 100%;
+	height: 100%;
+	transform: rotate(-90deg);
+}
+
+.progress-bg {
+	fill: none;
+	stroke: #e2e8f0;
+	stroke-width: 4;
+}
+
+.progress-fill {
+	fill: none;
+	stroke: #22c55e;
+	stroke-width: 4;
+	stroke-linecap: round;
+	transition: stroke-dasharray 0.3s ease;
+}
+
+.progress-text {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+.percentage {
+	font-size: 24px;
+	font-weight: 700;
+	color: #1a202c;
+}
+
+.status {
+	font-size: 11px;
+	color: #718096;
+}
+
+.view-all-btn {
+	background: none;
+	border: none;
+	color: #667eea;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: color 0.2s;
+}
+
+.view-all-btn:hover {
+	color: #764ba2;
+}
+
+.group-navigation {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+	margin-top: 12px;
 }
 
 .view-full-detail-btn {
-  background: #667eea;
-  padding: 10px 16px;
-  font-size: 12px;
-  width: 100%;
-  margin-top: 12px;
+	background: #667eea;
+	color: white;
+	border: none;
+	padding: 10px 16px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+	width: 100%;
+	margin-top: 12px;
 }
+
 .view-full-detail-btn:hover {
-  background: #764ba2;
-  transform: translateY(-2px);
+	background: #764ba2;
+	transform: translateY(-2px);
+}
+
+.group-progress {
+	background: white;
+	border-radius: 12px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.group-progress:hover {
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+.group-progress h3 {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 8px 0;
+	color: #1a202c;
+}
+
+.progress-section-label {
+	font-size: 12px;
+	color: #a0aec0;
+	text-align: right;
+	margin-bottom: 12px;
+}
+
+.progress-details {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.overall {
+	font-size: 13px;
+	color: #4a5568;
+}
+
+.overall strong {
+	color: #22c55e;
+	font-weight: 600;
+}
+
+.student-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 0;
+	border-bottom: 1px solid #e2e8f0;
+	font-size: 13px;
+}
+
+.supervisor-overview .student-item {
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	padding: 10px 14px;
+}
+
+.supervisor-overview .student-item:hover {
+	background: #ffffff;
+	border-color: #d1d9e6;
+}
+
+.student-item:last-of-type {
+	border-bottom: none;
+}
+
+.student-item span:first-child {
+	color: #2d3748;
+	font-weight: 500;
+}
+
+.student-item .status {
+	color: #718096;
+	flex: 1;
+	text-align: center;
+}
+
+.student-item .progress {
+	color: #667eea;
+	font-weight: 600;
+	min-width: 50px;
+	text-align: right;
 }
 
 .view-progress-btn {
-  background: #667eea;
-  padding: 10px 16px;
-  font-size: 12px;
-  width: 100%;
-  margin-top: 12px;
+	background: #667eea;
+	color: white;
+	border: none;
+	padding: 10px 16px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	width: 100%;
+	margin-top: 12px;
+	transition: all 0.2s;
 }
+
 .view-progress-btn:hover {
-  background: #5568d3;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+	background: #5568d3;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.report-card {
+	background: white;
+	border-radius: 12px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.report-card:hover {
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+.report-card h3 {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 8px 0;
+	color: #1a202c;
+}
+
+.report-subtitle {
+	font-size: 12px;
+	color: #718096;
+	margin: 0 0 16px 0;
 }
 
 .report-btn {
-  background: #8b5cf6;
-  padding: 12px 20px;
-  font-size: 13px;
-  width: 100%;
+	background: #8b5cf6;
+	color: white;
+	border: none;
+	padding: 12px 20px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	width: 100%;
+	transition: all 0.2s;
 }
+
 .report-btn:hover {
-  background: #7c3aed;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+	background: #7c3aed;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
 
-/* ==========================================================================
-   6. RESPONSIVE DESIGN (Media Queries)
-   ========================================================================== */
-
-/* Large Tablets / Small Laptops (Max Width: 1200px) */
 @media (max-width: 1200px) {
-  /* Stack layout to single column */
-  .dashboard-container {
-    grid-template-columns: 1fr;
-  }
+	.dashboard-container {
+		grid-template-columns: 1fr;
+	}
 
-  /* Move absolute quick cards to normal flow */
-  .quick-cards {
-    position: static;
-    transform: none;
-    right: auto;
-    margin: 12px 0 0 0;
-    flex-direction: row;
-    gap: 12px;
-  }
+	.quick-cards {
+		position: static;
+		transform: none;
+		right: auto;
+		margin: 12px 0 0 0;
+		flex-direction: row;
+		gap: 12px;
+	}
 
-  .quick-cards .meeting-card.small,
-  .quick-cards .upcoming-event-card.small,
-  .quick-cards .messages-card.small {
-    width: 160px;
-    min-height: 140px;
-  }
+	.quick-cards .meeting-card.small,
+	.quick-cards .upcoming-event-card.small,
+	.quick-cards .messages-card.small {
+		width: 160px;
+		min-height: 140px;
+	}
 
-  /* Reset padding previously used to avoid overlap */
-  .notifications-card {
-    padding-right: 24px;
-  }
+	.notifications-card {
+		padding-right: 24px;
+	}
 
-  /* Expand group grid to 3 columns since it now spans full width */
-  .groups-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+	.groups-grid {
+		grid-template-columns: repeat(3, 1fr);
+	}
 }
 
-/* Tablets / Large Phones (Max Width: 768px) */
 @media (max-width: 768px) {
-  .supervisor-overview,
-  .overview {
-    padding: 16px;
-  }
+	.supervisor-overview,
+	.overview {
+		padding: 16px;
+	}
 
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
+	.dashboard-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+	}
 
-  .notification-tabs {
-    gap: 8px;
-  }
-  .tab {
-    font-size: 12px;
-    padding: 6px 10px;
-    margin-bottom: 0;
-  }
+	.notification-tabs {
+		gap: 8px;
+	}
 
-  /* Revert group grid back to 2 columns on smaller screens */
-  .groups-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+	.tab {
+		font-size: 12px;
+		padding: 6px 10px;
+		margin-bottom: 0;
+	}
 
-  .meeting-table {
-    gap: 16px;
-  }
-  .meeting-number {
-    font-size: 36px;
-  }
-  .meeting-text {
-    font-size: 16px;
-  }
+	.groups-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.meeting-table {
+		gap: 16px;
+	}
+
+	.meeting-number {
+		font-size: 36px;
+	}
+
+	.meeting-text {
+		font-size: 16px;
+	}
 }
 
-/* Mobile Phones (Max Width: 480px) */
 @media (max-width: 480px) {
-  .dashboard-header h1 {
-    font-size: 24px;
-  }
-  .dashboard-header h1 span {
-    padding: 6px 10px;
-  }
+	.dashboard-header h1 {
+		font-size: 24px;
+	}
 
-  /* Stack tabs vertically */
-  .notification-tabs {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .tab {
-    width: 100%;
-  }
+	.dashboard-header h1 span {
+		padding: 6px 10px;
+	}
 
-  /* Stack groups into a single column */
-  .groups-grid {
-    grid-template-columns: 1fr;
-  }
+	.notification-tabs {
+		flex-direction: column;
+		gap: 8px;
+	}
 
-  /* Allow buttons to wrap naturally */
-  .message-actions {
-    flex-wrap: wrap;
-  }
-  .msg-btn {
-    flex: 1;
-    min-width: 80px;
-  }
+	.tab {
+		width: 100%;
+	}
+
+	.groups-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.message-actions {
+		flex-wrap: wrap;
+	}
+
+	.msg-btn {
+		flex: 1;
+		min-width: 80px;
+	}
 }

@@ -4,9 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import NewConversationModal from "./NewConversationModal";
 import "./ChatWindow.css";
 
-/**
- * TYPE DEFINITIONS
- */
 type Message = {
   id: number;
   sender_id: number;
@@ -32,7 +29,6 @@ type Recipient = {
 
 interface ChatWindowProps {
   title?: string;
-  // logic: function passed from parent to fetch list of active chat partners[cite: 4]
   getAvailableRecipients: (callback: (recipients: Recipient[]) => void) => void;
 }
 
@@ -53,30 +49,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [sending, setSending] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // logic: reference to the end of the message list for auto-scrolling[cite: 4]
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  /**
-   * function: scrollToBottom
-   * logic: smoothly scrolls the message container to the most recent message[cite: 4]
-   */
+  // Scroll to bottom when messages change
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  /**
-   * trigger: scroll on message update
-   * logic: ensures the user sees the new message immediately[cite: 4]
-   */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  /**
-   * trigger: load active conversations
-   * logic: populates the sidebar and auto-selects the first chat if available[cite: 4]
-   */
+  // Load available recipients
   useEffect(() => {
     const loadRecipients = async () => {
       try {
@@ -97,11 +81,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     loadRecipients();
   }, [getAvailableRecipients, selectedRecipient]);
 
-  /**
-   * function: fetchMessages
-   * logic: retrieves conversation history between current user and selected recipient[cite: 4]
-   * utilizes URLSearchParams for clean query string construction[cite: 4]
-   */
+  // Extracted message loading logic into a reusable function
   const fetchMessages = useCallback(
     async (isManualRefresh = false) => {
       if (!selectedRecipient || !user) return;
@@ -137,22 +117,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     [selectedRecipient, user],
   );
 
-  /**
-   * trigger: load messages on recipient change
-   * logic: automatically refreshes the chat thread when the user clicks a different person[cite: 4]
-   */
+  // Load messages automatically when recipient changes
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
 
-  /**
-   * function: handleSendMessage
-   * logic: validates input, sends POST request, and updates UI state[cite: 4, 5]
-   * also triggers a sidebar refresh to update the "last message" preview[cite: 4]
-   */
+  // Send message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    // guard logic: prevent empty messages or double sending[cite: 4]
     if (!newMessage.trim() || !selectedRecipient || !user || sending) return;
 
     try {
@@ -173,11 +145,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       if (response.ok) {
         const newMsg = await response.json();
-        // logic: optimistic update of the local message list[cite: 4]
         setMessages([...messages, newMsg]);
         setNewMessage("");
 
-        // logic: update sidebar to reflect the latest message sent[cite: 4]
+        // Refresh recipients to update last message
         getAvailableRecipients((updatedRecipients) => {
           setRecipients(updatedRecipients);
         });
@@ -189,11 +160,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  /**
-   * function: handleSelectUserFromModal
-   * logic: processes user selection from the "New Conversation" modal[cite: 4]
-   * checks for existing entries to avoid list duplication[cite: 4]
-   */
   const handleSelectUserFromModal = (selectedUser: Recipient) => {
     const newRecipient: Recipient = {
       id: selectedUser.id,
@@ -204,10 +170,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const existingRecipient = recipients.find((r) => r.id === newRecipient.id);
 
     if (existingRecipient) {
-      // logic: just switch to the chat if it already exists[cite: 4]
       setSelectedRecipient(existingRecipient);
     } else {
-      // logic: add a temporary entry to the list until a message is sent[cite: 4]
       setRecipients([...recipients, newRecipient]);
       setSelectedRecipient(newRecipient);
     }
@@ -215,9 +179,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setIsModalOpen(false);
   };
 
-  /**
-   * logic: initial full-screen loading state[cite: 4]
-   */
   if (loading && recipients.length === 0) {
     return (
       <div className="chat-window">
@@ -236,7 +197,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       <div className="chat-container">
-        {/* Recipients Panel: Sidebar for selecting conversations[cite: 4] */}
+        {/* Recipients List */}
         <div className="recipients-panel">
           <div className="recipients-header">
             <h3>Conversations</h3>
@@ -265,14 +226,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <div className="recipient-info">
                     <div className="recipient-name">{recipient.name}</div>
                     <div className="recipient-role">{recipient.role}</div>
-                    {/* logic: truncate long message previews in sidebar[cite: 4] */}
                     {recipient.last_message && (
                       <div className="recipient-last-message">
                         {recipient.last_message.substring(0, 40)}...
                       </div>
                     )}
                   </div>
-                  {/* logic: badge to show unread notification count[cite: 4] */}
                   {recipient.unread_count && recipient.unread_count > 0 && (
                     <div className="unread-badge">{recipient.unread_count}</div>
                   )}
@@ -282,7 +241,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </div>
 
-        {/* Messages Panel: Main chat thread display[cite: 4] */}
+        {/* Messages Panel */}
         <div className="messages-panel">
           {selectedRecipient ? (
             <>
@@ -294,7 +253,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <h3>{selectedRecipient.name}</h3>
                   <p>{selectedRecipient.role}</p>
                 </div>
-                {/* Manual refresh button for the specific thread[cite: 4] */}
+                {/* Refresh Button */}
                 <button
                   className="refresh-messages-btn"
                   onClick={() => fetchMessages(true)}
@@ -315,7 +274,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   </div>
                 ) : (
                   messages.map((msg) => (
-                    /* logic: CSS class toggle to differentiate sent/received messages[cite: 4] */
                     <div
                       key={msg.id}
                       className={`message ${msg.sender_id === user?.id ? "sent" : "received"}`}
@@ -332,11 +290,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     </div>
                   ))
                 )}
-                {/* ref: element used as a target for auto-scrolling[cite: 4] */}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input Form[cite: 4] */}
               <form className="message-input-form" onSubmit={handleSendMessage}>
                 <input
                   type="text"
@@ -360,7 +316,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </form>
             </>
           ) : (
-            /* logic: placeholder view when no conversation is active[cite: 4] */
             <div className="no-recipient-selected">
               <p>Select a conversation to start messaging</p>
             </div>
@@ -368,7 +323,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       </div>
 
-      {/* Logic: Overlay modal for finding new users to chat with[cite: 4] */}
       <NewConversationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

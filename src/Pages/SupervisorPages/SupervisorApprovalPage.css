@@ -1,20 +1,9 @@
-/* ==========================================================================
-   1. MAIN PAGE LAYOUT
-   ========================================================================== */
-
-/**
- * Primary container for the approval page content.
- * Uses a vertical flex stack to organize the header and the request grid.
- */
 .supervisor-approval-page {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-/** 
- * Header section containing the page title and the refresh action.
- */
 .approval-page-head {
   display: flex;
   align-items: center;
@@ -27,11 +16,6 @@
   color: #0f172a;
 }
 
-/* ==========================================================================
-   2. INTERACTIVE BUTTONS (General)
-   ========================================================================== */
-
-/* The refresh button located in the page header */
 .approval-refresh-btn {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -46,7 +30,50 @@
   background: #f1f5f9;
 }
 
-/* Standardized button styles used for Approve, Reject, and Ghost actions */
+.approval-request-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.approval-request-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.approval-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.approval-card-head h3 {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.approval-level-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 .approval-btn {
   border: none;
   border-radius: 8px;
@@ -59,6 +86,7 @@
   background: #16a34a;
   color: #ffffff;
 }
+
 .approval-btn.approve:hover {
   background: #15803d;
 }
@@ -67,6 +95,7 @@
   background: #dc2626;
   color: #ffffff;
 }
+
 .approval-btn.reject:hover {
   background: #b91c1c;
 }
@@ -81,69 +110,18 @@
   cursor: not-allowed;
 }
 
-/* ==========================================================================
-   3. APPROVAL REQUEST GRID & CARDS
-   ========================================================================== */
-
-/**
- * Grid layout for project requests. 
- * Displays two columns on desktop, shrinking to one on mobile via media queries.
- */
-.approval-request-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+.approval-muted {
+  color: #64748b;
 }
 
-/* Individual request item card */
-.approval-request-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.approval-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px;
 }
 
-/* Card Header: Project title and level badge */
-.approval-card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.approval-card-head h3 {
-  color: #0f172a;
-  font-size: 1.1rem;
-}
-
-/* Rounded pill indicating the academic level */
-.approval-level-badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #e0f2fe;
-  color: #075985;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-/* Container for the Approve/Reject buttons at the bottom of the card */
-.approval-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-/* ==========================================================================
-   4. MODAL & OVERLAYS
-   ========================================================================== */
-
-/**
- * Fullscreen semi-transparent backdrop for the rejection modal.
- */
 .approval-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -154,7 +132,6 @@
   z-index: 70;
 }
 
-/* The actual modal dialog box */
 .approval-modal {
   width: min(540px, 92vw);
   background: #ffffff;
@@ -163,6 +140,14 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.approval-modal h3 {
+  color: #0f172a;
+}
+
+.approval-modal p {
+  color: #475569;
 }
 
 .approval-modal textarea {
@@ -180,28 +165,7 @@
   gap: 10px;
 }
 
-/* ==========================================================================
-   5. STATUS & ALERTS
-   ========================================================================== */
-
-.approval-muted {
-  color: #64748b;
-}
-
-.approval-error {
-  color: #b91c1c;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-/* ==========================================================================
-   6. RESPONSIVE DESIGN
-   ========================================================================== */
-
 @media (max-width: 1024px) {
-  /* Stack cards into a single column on tablets and mobile devices */
   .approval-request-grid {
     grid-template-columns: 1fr;
   }

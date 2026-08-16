@@ -1,25 +1,35 @@
-/* ==========================================================================
-   1. PAGE WRAPPER
-   ========================================================================== */
-
-/**
- * Main layout for the announcements page.
- * Uses flexbox to stack the header, info note, and content blocks vertically.
- */
 .supervisor-announcements-page {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-/* ==========================================================================
-   2. PAGE HEADER SECTION
-   ========================================================================== */
+.supervisor-announcements-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-/**
- * Top header area containing the page title and subtitle.
- * Includes a bottom border to separate the introduction from the content.
- */
+.supervisor-announcements-block-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.supervisor-announcements-block-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.supervisor-announcements-block-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .dashboard-header-section {
   margin-bottom: 4px;
   padding-bottom: 20px;
@@ -41,14 +51,6 @@
   font-weight: 500;
 }
 
-/* ==========================================================================
-   3. INFORMATION NOTE / ALERT BOX
-   ========================================================================== */
-
-/**
- * A prominent, high-contrast instruction box.
- * Uses a dark linear gradient and shadow to differentiate it from data blocks.
- */
 .supervisor-announcements-note {
   border: 1px solid #dbeafe;
   border-radius: 14px;
@@ -62,41 +64,4 @@
 
 .supervisor-announcements-note strong {
   color: #fff;
-}
-
-/* ==========================================================================
-   4. CONTENT BLOCKS & SECTION HEADERS
-   ========================================================================== */
-
-/**
- * Wrapper for a specific category of announcements.
- */
-.supervisor-announcements-block {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/**
- * Internal header within an announcement block.
- * Organizes the section title and its specific sub-instruction.
- */
-.supervisor-announcements-block-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.supervisor-announcements-block-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.supervisor-announcements-block-header p {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
 }

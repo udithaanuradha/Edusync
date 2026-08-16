@@ -3,9 +3,6 @@ import { X, Plus } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./NewConversationModal.css";
 
-/**
- * TYPE DEFINITIONS
- */
 type Role =
   | "supervisor"
   | "student"
@@ -24,7 +21,7 @@ type User = {
 interface NewConversationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectUser: (user: User) => void; // Callback to return selected user to the ChatWindow[cite: 4]
+  onSelectUser: (user: User) => void;
 }
 
 const AVAILABLE_ROLES: Role[] = [
@@ -36,10 +33,6 @@ const AVAILABLE_ROLES: Role[] = [
   "mentor",
 ];
 
-/**
- * NewConversationModal
- * Features a two-step selection process: Role -> Individual User[cite: 4].
- */
 const NewConversationModal: React.FC<NewConversationModalProps> = ({
   isOpen,
   onClose,
@@ -47,20 +40,15 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 }) => {
   const { user: currentUser } = useAuth();
 
-  // --- State Management ---
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Tracks elevated permissions for student users[cite: 4]
+  // NEW: State to track if the current user is a leader
   const [isCurrentUserLeader, setIsCurrentUserLeader] = useState(false);
 
-  /**
-   * Effect: Leadership Verification
-   * Logic: When the modal opens, if the user is a student, check the leader list
-   * to determine if they have permission to message coordinators[cite: 4].
-   */
+  // NEW: Check if the logged-in student is a group leader when the modal opens
   useEffect(() => {
     if (isOpen && currentUser?.role === "student") {
       const checkLeadershipStatus = async () => {
@@ -70,7 +58,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           );
           if (response.ok) {
             const leaders = await response.json();
-            // Boolean check: is the current user ID in the leader array?[cite: 4]
+            // If the current user's ID is in the leaders list, set to true!
             const isLeader = leaders.some(
               (leader: User) => leader.id === currentUser.id,
             );
@@ -85,10 +73,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
     }
   }, [isOpen, currentUser]);
 
-  /**
-   * Effect: User Fetching
-   * Logic: Triggers whenever a specific role is selected to populate the user list[cite: 4].
-   */
+  // Fetch users by role
   useEffect(() => {
     if (!selectedRole) return;
 
@@ -97,8 +82,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
         setLoading(true);
         setError("");
 
-        // Logic: Redirect group_leader requests to a specific leaders endpoint,
-        // otherwise use the standard role query[cite: 4].
+        // Route group_leader requests to the special messages backend endpoint
         const endpoint =
           selectedRole === "group_leader"
             ? `http://localhost:5000/api/messages/leaders`
@@ -108,7 +92,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 
         if (response.ok) {
           const data = await response.json();
-          // Normalization Logic: Handles different API structures (direct array vs {data: []})[cite: 4]
           const usersByRole = Array.isArray(data)
             ? data
             : Array.isArray(data?.data)
@@ -121,6 +104,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
         }
       } catch (error) {
         console.error("Error fetching users:", error);
+        setUsers([]);
         setError("Could not connect to server");
       } finally {
         setLoading(false);
@@ -132,18 +116,16 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 
   if (!isOpen) return null;
 
-  /**
-   * Permission Filtering Logic
-   * Logic: Determines which roles appear in the grid based on authentication rules[cite: 4].
-   */
+  // Filter roles based on who is currently logged in
   const displayRoles = AVAILABLE_ROLES.filter((role) => {
-    // 1. Restriction: Students are prohibited from seeing or messaging Admins[cite: 4].
+    // 1. Prevent students from messaging admins
     if (currentUser?.role === "student" && role === "admin") return false;
 
-    // 2. Restriction: Coordinators can only message Leaders, not general Students[cite: 4].
+    // 2. Coordinators should only message Group Leaders, not regular Students
     if (currentUser?.role === "coordinator" && role === "student") return false;
 
-    // 3. Restriction: Students cannot see Coordinators unless they have Leader status[cite: 4].
+    // 3. Regular Students cannot message Coordinators (only leaders can)
+    // We now use our new isCurrentUserLeader state instead of the AuthContext
     if (
       currentUser?.role === "student" &&
       !isCurrentUserLeader &&
@@ -156,9 +138,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      {/* Logic: stopPropagation prevents the modal from closing when clicking inside the content[cite: 4] */}
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {/* Header Section */}
         <div className="modal-header">
           <h2>Start New Conversation</h2>
           <button className="close-btn" onClick={onClose}>
@@ -168,7 +148,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 
         <div className="modal-body">
           {!selectedRole ? (
-            /* STEP 1: Role Selection Grid[cite: 4] */
             <div className="role-selection">
               <p className="selection-title">
                 Select a role to start conversation:
@@ -198,12 +177,11 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
               </div>
             </div>
           ) : (
-            /* STEP 2: Individual User Selection[cite: 4] */
             <div className="user-selection">
               <button
                 className="back-button"
                 onClick={() => {
-                  setSelectedRole(null); // Logic: Reset state to return to Step 1[cite: 4]
+                  setSelectedRole(null);
                   setUsers([]);
                 }}
               >
@@ -228,7 +206,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                     <div
                       key={user.id}
                       className="user-item"
-                      onClick={() => onSelectUser(user)} // Logic: Passes choice back to parent component[cite: 4]
+                      onClick={() => onSelectUser(user)}
                     >
                       <div className="user-avatar">
                         {user.name.charAt(0).toUpperCase()}

@@ -1,87 +1,47 @@
-/* ==========================================================================
-   1. MAIN LAYOUT SHELL
-   ========================================================================== */
-
-/**
- * The root container for the supervisor dashboard.
- * Uses CSS Grid to create a fixed sidebar column and a flexible content area.
- */
 .supervisor-shell {
-  background: #eef2f7;
-  display: grid;
-  /* Sidebar is fixed at 280px, main area takes remaining space */
-  grid-template-columns: 280px minmax(0, 1fr);
-  width: 100%;
-  max-width: 100%;
+	background: #eef2f7;
+	display: grid;
+	grid-template-columns: 280px minmax(0, 1fr);
+	width: 100%;
+	max-width: 100%;
 }
 
-/* ==========================================================================
-   2. SIDEBAR STACK (Navigation)
-   ========================================================================== */
-
-/**
- * Container for the vertical navigation stack.
- * Ensures the sidebars stay within the viewport height and are scrollable.
- */
 .supervisor-side-stack {
-  background: #1a202c;
-  display: flex;
-  flex-direction: column;
-  max-height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+	background: #1a202c;
+	display: flex;
+	flex-direction: column;
+	max-height: 100vh;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
-/** 
- * Resets standard sidebar positioning inside the stack 
- * to allow them to flow naturally within the flex container.
- */
 .supervisor-side-stack .sidebar {
-  position: static;
-  width: 100%;
-  height: auto;
-  border-right: none;
+	position: static;
+	width: 100%;
+	height: auto;
+	border-right: none;
 }
 
-/* ==========================================================================
-   3. MAIN VIEWPORT & CONTENT AREA
-   ========================================================================== */
-
-/** 
- * Main wrapper for the header and dynamic content. 
- * 'min-width: 0' prevents grid items from breaking layout on small screens.
- */
 .supervisor-shell .main-viewport {
-  min-width: 0;
+	min-width: 0;
 }
 
-/**
- * The primary area where page-specific data is rendered.
- * Handles internal padding and provides a horizontal scroll safety net.
- */
 .supervisor-content-container {
-  background: #eef2f7;
-  overflow-x: auto;
-  padding: 24px;
+	background: #eef2f7;
+	overflow-x: auto;
+	padding: 24px;
 }
 
-/* ==========================================================================
-   4. RESPONSIVE ADJUSTMENTS (Breakpoints)
-   ========================================================================== */
-
-/* Adjustments for tablets and smaller screens (900px and below) */
 @media (max-width: 900px) {
-  .supervisor-shell {
-    /* Collapses sidebar width for more content real estate */
-    grid-template-columns: 80px minmax(0, 1fr);
-  }
+	.supervisor-shell {
+		grid-template-columns: 80px minmax(0, 1fr);
+	}
 
-  .supervisor-content-container {
-    padding: 16px;
-  }
+	.supervisor-content-container {
+		padding: 16px;
+	}
 
-  /* Ensures the sidebar takes full width of the narrowed grid column */
-  .supervisor-side-stack .sidebar.collapsed {
-    width: 100%;
-  }
+	.supervisor-side-stack .sidebar.collapsed {
+		width: 100%;
+	}
 }

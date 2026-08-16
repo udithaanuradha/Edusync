@@ -3,15 +3,9 @@ import { Clock, Plus, Trash2, X, Save } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./supervisorPartInCalendar.css";
 
-/**
- * TYPE DEFINITIONS
- */
 type TimeSlot = { start: string; end: string };
 type WeeklySchedule = Record<string, TimeSlot[]>;
 
-/**
- * CONFIGURATION & CONSTANTS
- */
 const DAYS_OF_WEEK = [
   "Monday",
   "Tuesday",
@@ -24,33 +18,15 @@ const DAYS_OF_WEEK = [
 const WEEKLY_SCHEDULE_API =
   "http://localhost:5000/api/supervisorpartincalender";
 
-/**
- * HELPER FUNCTIONS
- */
-
-/**
- * Logic: Generates a unique key for local storage caching based on supervisor ID[cite: 4].
- * This ensures that if multiple users use the same machine, they don't see each other's cached data[cite: 4].
- */
 const getLectureStorageKey = (supervisorId: number | string) =>
   `edusync.supervisor.lectureTimes.${supervisorId}`;
 
-/**
- * Logic: Returns a fresh schedule object with empty arrays for each day of the week[cite: 4].
- * It uses the reduce method to build an object where keys are the days from DAYS_OF_WEEK[cite: 4].
- */
 const createEmptySchedule = (): WeeklySchedule =>
   DAYS_OF_WEEK.reduce((accumulator, day) => {
     accumulator[day] = [];
     return accumulator;
   }, {} as WeeklySchedule);
 
-/**
- * Logic: Data Normalization.
- * This is a "Sanity Check" that validates raw data from the API or LocalStorage[cite: 4].
- * It ensures the UI always receives a valid WeeklySchedule structure and provides
- * default times (08:00 - 10:00) if data is corrupt or missing[cite: 4].
- */
 const normalizeWeeklySchedule = (value: unknown): WeeklySchedule => {
   if (!value || typeof value !== "object") return createEmptySchedule();
 
@@ -64,7 +40,6 @@ const normalizeWeeklySchedule = (value: unknown): WeeklySchedule => {
         if (!slot || typeof slot !== "object") return null;
 
         const slotRecord = slot as Record<string, unknown>;
-        // Default to 08:00 - 10:00 if time data is missing/corrupt[cite: 4]
         const start =
           typeof slotRecord.start === "string" ? slotRecord.start : "08:00";
         const end =
@@ -78,10 +53,6 @@ const normalizeWeeklySchedule = (value: unknown): WeeklySchedule => {
   }, createEmptySchedule());
 };
 
-/**
- * COMPONENT: SupervisorPartInCalendar
- * Handles the management of recurring weekly "frozen" slots (e.g., Lectures)[cite: 4].
- */
 const SupervisorPartInCalendar: React.FC = () => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -91,18 +62,11 @@ const SupervisorPartInCalendar: React.FC = () => {
     ? getLectureStorageKey(supervisorId)
     : null;
 
-  // Logic: Initialize local state with an empty schedule to prevent undefined errors[cite: 4]
   const [schedule, setSchedule] = useState<WeeklySchedule>(() =>
     createEmptySchedule(),
   );
 
-  /**
-   * Function: useEffect (Data Loading Strategy)
-   * Logic: Implements an "Optimistic UI" approach when the drawer opens[cite: 4].
-   * 1. Checks LocalStorage for an instant (cached) UI population[cite: 4].
-   * 2. Fetches from the database to get the latest "Source of Truth"[cite: 4].
-   * 3. Syncs the LocalStorage with fresh data once the API call finishes[cite: 4].
-   */
+  // Load schedule when the drawer opens or supervisor changes
   useEffect(() => {
     if (!supervisorId) {
       setSchedule(createEmptySchedule());
@@ -111,7 +75,7 @@ const SupervisorPartInCalendar: React.FC = () => {
 
     const loadSavedSchedule = async () => {
       try {
-        // STEP 1: Load cached version for zero-latency feel[cite: 4]
+        // 1. Instantly load from local storage for a fast UI feel
         if (lectureStorageKey) {
           const stored = localStorage.getItem(lectureStorageKey);
           if (stored) {
@@ -119,7 +83,7 @@ const SupervisorPartInCalendar: React.FC = () => {
           }
         }
 
-        // STEP 2: Fetch fresh data from DB[cite: 4]
+        // 2. Fetch fresh from DB (Bypassing browser cache!)
         const token = localStorage.getItem("token");
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -128,15 +92,13 @@ const SupervisorPartInCalendar: React.FC = () => {
           `${WEEKLY_SCHEDULE_API}/${supervisorId}?t=${Date.now()}`,
           {
             headers,
-            cache: "no-store", // Logic: Bypass browser cache to get latest from server[cite: 4]
+            cache: "no-store", // CRITICAL: Forces the browser to get fresh data
           },
         );
 
         if (!response.ok) return;
 
         const result = await response.json();
-
-        // Logic: Handle varying payload structures from the server[cite: 1, 4]
         const savedSchedule =
           result.data?.weeklySchedule ??
           result.data?.weekly_schedule ??
@@ -146,7 +108,6 @@ const SupervisorPartInCalendar: React.FC = () => {
           const normalizedSchedule = normalizeWeeklySchedule(savedSchedule);
           setSchedule(normalizedSchedule);
 
-          // STEP 3: Update local cache with truth from server[cite: 4]
           if (lectureStorageKey) {
             localStorage.setItem(
               lectureStorageKey,
@@ -159,20 +120,11 @@ const SupervisorPartInCalendar: React.FC = () => {
       }
     };
 
-    // Logic: Only triggers the load if the settings drawer is open[cite: 4]
     if (isOpen) {
       void loadSavedSchedule();
     }
   }, [lectureStorageKey, supervisorId, isOpen]);
 
-  /**
-   * EVENT HANDLERS: LOCAL STATE MANAGEMENT
-   */
-
-  /**
-   * Function: handleAddSlot
-   * Logic: Appends a new default time slot (08:00 - 10:00) to a specific day's array[cite: 4].
-   */
   const handleAddSlot = (day: string) => {
     setSchedule((prev) => ({
       ...prev,
@@ -180,10 +132,6 @@ const SupervisorPartInCalendar: React.FC = () => {
     }));
   };
 
-  /**
-   * Function: handleRemoveSlot
-   * Logic: Filters the specific day's array to remove the slot at the given index[cite: 4].
-   */
   const handleRemoveSlot = (day: string, index: number) => {
     setSchedule((prev) => ({
       ...prev,
@@ -191,10 +139,6 @@ const SupervisorPartInCalendar: React.FC = () => {
     }));
   };
 
-  /**
-   * Function: handleTimeChange
-   * Logic: Updates either the 'start' or 'end' value of a specific slot within the schedule state[cite: 4].
-   */
   const handleTimeChange = (
     day: string,
     index: number,
@@ -209,11 +153,6 @@ const SupervisorPartInCalendar: React.FC = () => {
     }));
   };
 
-  /**
-   * Function: handleSave
-   * Logic: Persists the local React state to the remote database and updates local cache[cite: 4].
-   * It uses a PUT request to update the supervisor's weekly record[cite: 1, 4].
-   */
   const handleSave = async () => {
     if (!supervisorId) {
       alert("Please log in again to save.");
@@ -237,7 +176,7 @@ const SupervisorPartInCalendar: React.FC = () => {
 
       if (!response.ok) throw new Error("Failed to save schedule to database");
 
-      // Logic: Sync local cache immediately after successful server update[cite: 4]
+      // Update local storage so the next immediate open is accurate
       if (lectureStorageKey) {
         localStorage.setItem(lectureStorageKey, JSON.stringify(schedule));
       }
@@ -254,7 +193,6 @@ const SupervisorPartInCalendar: React.FC = () => {
 
   return (
     <>
-      {/* TRIGGER: Opens the recurring freeze settings drawer[cite: 4] */}
       <button
         type="button"
         className="freeze-date-btn ghost-btn supervisor-freeze-btn"
@@ -264,7 +202,6 @@ const SupervisorPartInCalendar: React.FC = () => {
         Freeze Lecture Times
       </button>
 
-      {/* DRAWER COMPONENT[cite: 4] */}
       {isOpen && (
         <div className="drawer-overlay" onClick={() => setIsOpen(false)}>
           <aside
@@ -284,7 +221,6 @@ const SupervisorPartInCalendar: React.FC = () => {
               </button>
             </div>
 
-            {/* Instruction Card[cite: 4] */}
             <div className="drawer-summary-card freeze-card">
               <span className="drawer-summary-label">Lecture Times</span>
               <strong>Weekly Recurring</strong>
@@ -294,7 +230,6 @@ const SupervisorPartInCalendar: React.FC = () => {
               </span>
             </div>
 
-            {/* MAIN SCHEDULE INTERFACE: Day-by-day slot management[cite: 4] */}
             <div className="weekly-schedule-container">
               {DAYS_OF_WEEK.map((day) => (
                 <div key={day} className="day-schedule-block">
@@ -309,14 +244,12 @@ const SupervisorPartInCalendar: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* EMPTY STATE HANDLING: Logic to display message when no slots exist for a day[cite: 4] */}
                   {schedule[day].length === 0 ? (
                     <div className="no-slots-msg">No slots frozen</div>
                   ) : (
                     <div className="slots-list">
                       {schedule[day].map((slot, index) => (
                         <div key={index} className="time-slot-row">
-                          {/* START TIME INPUT[cite: 4] */}
                           <input
                             type="time"
                             className="time-input"
@@ -331,7 +264,6 @@ const SupervisorPartInCalendar: React.FC = () => {
                             }
                           />
                           <span className="time-separator">to</span>
-                          {/* END TIME INPUT[cite: 4] */}
                           <input
                             type="time"
                             className="time-input"
@@ -347,24 +279,20 @@ const SupervisorPartInCalendar: React.FC = () => {
                           />
 
                           <div className="slot-action-buttons">
-                            {/* DELETE ACTION[cite: 4] */}
                             <button
                               type="button"
                               className="remove-slot-btn"
                               onClick={() => handleRemoveSlot(day, index)}
                             >
-                              Delete
                               <Trash2 size={14} />
                             </button>
 
-                            {/* QUICK ADD LOGIC: Shows only on the last item for UX convenience[cite: 4] */}
                             {index === schedule[day].length - 1 && (
                               <button
                                 type="button"
                                 className="inline-add-btn"
                                 onClick={() => handleAddSlot(day)}
                               >
-                                add
                                 <Plus size={16} />
                               </button>
                             )}
@@ -377,7 +305,6 @@ const SupervisorPartInCalendar: React.FC = () => {
               ))}
             </div>
 
-            {/* DRAWER FOOTER: Save and Cancel actions[cite: 4] */}
             <div className="drawer-actions sup-drawer-actions">
               <button
                 type="button"
