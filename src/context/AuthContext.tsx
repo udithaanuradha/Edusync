@@ -6,8 +6,29 @@ interface User {
   role: string;
   email: string;
   designation?: string;
+  effectiveRole?: string;
   level?: number;
 }
+
+const normalizeUserData = (userData: User): User => {
+  const role = String(userData?.role || '').trim().toLowerCase();
+  const designation = String(userData?.designation || '').trim().toLowerCase();
+  const effectiveRole = String(userData?.effectiveRole || '').trim().toLowerCase();
+
+  const resolvedDesignation = designation || (role === 'lecturer' ? effectiveRole : '');
+  const resolvedEffectiveRole =
+    effectiveRole ||
+    (role === 'lecturer' && resolvedDesignation ? resolvedDesignation : '') ||
+    (role === 'coordinator' ? 'coordinator' : '') ||
+    role;
+
+  return {
+    ...userData,
+    role: role === 'coordinator' ? 'lecturer' : role,
+    designation: resolvedDesignation || undefined,
+    effectiveRole: resolvedEffectiveRole || undefined,
+  };
+};
 
 interface AuthContextType {
   user: User | null;
@@ -26,8 +47,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    const normalizedUser = normalizeUserData(userData);
+    setUser(normalizedUser);
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
   };
 
   const switchRole = (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => {

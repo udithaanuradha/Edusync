@@ -42,6 +42,7 @@ import MentorSetupForm from './Pages/auth/MentorSetupForm';
 function App() {
   const { user } = useAuth();
   const userObj = user as any; // Cast to bypass strict type check for designation field
+  const effectiveRole = String(userObj?.effectiveRole || userObj?.designation || userObj?.role || '').toLowerCase();
 
   return (
     <Routes>
@@ -71,7 +72,7 @@ function App() {
       <Route
         path="/coordinator"
         element={
-          userObj?.role === "lecturer" && userObj?.designation === "coordinator" ? (
+          userObj?.role === "lecturer" && effectiveRole === "coordinator" ? (
             <CoordinatorDashboard />
           ) : (
             <Navigate to="/login" />
@@ -82,7 +83,7 @@ function App() {
       <Route
         path="/supervisor"
         element={
-          userObj?.role === "lecturer" && userObj?.designation === "supervisor" ? (
+          userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
             <SupervisorDashboard />
           ) : (
             <Navigate to="/login" />
@@ -108,7 +109,7 @@ function App() {
           ) : userObj?.role === "mentor" ? (
             <MentorDashboard />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? <CoordinatorDashboard /> : <SupervisorDashboard />
+            effectiveRole === "coordinator" ? <CoordinatorDashboard /> : <SupervisorDashboard />
           ) : userObj?.role === "supervisor" ? (
             <SupervisorDashboard />
           ) : (
@@ -124,7 +125,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level1Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? <Level1Page /> : <SupervisorLevelPage levelNumber={1} />
+            effectiveRole === "coordinator" ? <Level1Page /> : <SupervisorLevelPage levelNumber={1} />
           ) : userObj?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={1} />
           ) : userObj?.role === "admin" ? (
@@ -143,7 +144,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level2Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? <Level2Page /> : <SupervisorLevelPage levelNumber={2} />
+            effectiveRole === "coordinator" ? <Level2Page /> : <SupervisorLevelPage levelNumber={2} />
           ) : userObj?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={2} />
           ) : userObj?.role === "admin" ? (
@@ -162,7 +163,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level3Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? <Level3Page /> : <SupervisorLevelPage levelNumber={3} />
+            effectiveRole === "coordinator" ? <Level3Page /> : <SupervisorLevelPage levelNumber={3} />
           ) : userObj?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={3} />
           ) : userObj?.role === "admin" ? (
@@ -181,7 +182,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level4Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? <Level4Page /> : <SupervisorLevelPage levelNumber={4} />
+            effectiveRole === "coordinator" ? <Level4Page /> : <SupervisorLevelPage levelNumber={4} />
           ) : userObj?.role === "supervisor" ? (
             <SupervisorLevelPage levelNumber={4} />
           ) : userObj?.role === "admin" ? (
@@ -224,7 +225,7 @@ function App() {
           userObj?.role === "admin" ? (
             <AdminAnnouncements />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? <AnnouncementsPage /> : <SupervisorAnnouncementsPage />
+            effectiveRole === "coordinator" ? <AnnouncementsPage /> : <SupervisorAnnouncementsPage />
           ) : userObj?.role === "supervisor" ? (
             <SupervisorAnnouncementsPage />
           ) : userObj?.role === "mentor" ? (
@@ -241,7 +242,7 @@ function App() {
         element={
           userObj?.role === "admin" ? (
             <AdminCommunicationPage />
-          ) :userObj?.role === "lecturer" && userObj?.designation === "supervisor" ? (
+          ) :userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
             <SupervisorCommunicationPage />
           ) : userObj ? (
             <CommunicationPage />
@@ -254,7 +255,7 @@ function App() {
       <Route
         path="/supervisor/approval"
         element={
-          userObj?.role === "lecturer" && userObj?.designation === "supervisor" ? (
+          userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
             <SupervisorApprovalPage />
           ) : (
             <Navigate to="/login" />
@@ -265,7 +266,7 @@ function App() {
       <Route
         path="/supervisor/communication"
         element={
-          userObj?.role === "lecturer" && userObj?.designation === "supervisor" ? (
+          userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
             <SupervisorCommunicationPage />
           ) : (
             <Navigate to="/login" />

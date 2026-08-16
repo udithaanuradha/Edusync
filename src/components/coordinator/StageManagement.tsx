@@ -31,6 +31,7 @@ interface StageManagementProps {
 
 const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
   const { user } = useAuth();
+  const effectiveRole = (user as any)?.effectiveRole || (user as any)?.designation || user?.role || 'coordinator';
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +119,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           deadline: formData.deadline || null,
           resource_link: formData.resource_link || null,
           created_by: user?.id || 1,
-          user_role: user?.role || 'admin',
+          user_role: effectiveRole,
         }),
       });
 
@@ -274,7 +275,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           description: editFormData.description,
           deadline: editFormData.deadline || null,
           resource_link: editFormData.resource_link || null,
-          user_role: user?.role || 'coordinator',
+          user_role: effectiveRole,
         }),
       });
 
