@@ -35,9 +35,18 @@ import CalendarPage from './pages/CalendarPage';
 import AdminCalendarPage from './pages/AdminPages/AdminCalendarPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
-import MentorSidebarWrapper from './components/mentor/MentorSidebarWrapper';
 import MentorLevel1Blocked from './Pages/MentorPages/MentorLevel1Blocked';
 import MentorSetupForm from './Pages/auth/MentorSetupForm';
+
+// A supervisor account can be shaped either as a plain `role: 'supervisor'`
+// user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
+// with no designation set yet also land on the supervisor dashboard — this
+// mirrors the exact fallback Login.tsx already uses to pick the post-login
+// redirect target, so the route guard here doesn't reject a user Login.tsx
+// just sent to this path.
+const isSupervisorUser = (u: any) =>
+  u?.role === 'supervisor' ||
+  (u?.role === 'lecturer' && (u?.designation === 'supervisor' || !u?.designation));
 
 function App() {
   const { user } = useAuth();
@@ -83,11 +92,15 @@ function App() {
       <Route
         path="/supervisor"
         element={
+<<<<<<< HEAD
           userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
             <SupervisorDashboard />
           ) : (
             <Navigate to="/login" />
           )
+=======
+          isSupervisorUser(userObj) ? <SupervisorDashboard /> : <Navigate to="/login" />
+>>>>>>> 0befbe4c7e21dfe8da9079838a8284ec8c2ff04b
         }
       />
 
