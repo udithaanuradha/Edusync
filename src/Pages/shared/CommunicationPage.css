@@ -1,15 +1,7 @@
-.communication-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.communication-layout > div:first-of-type {
-  display: flex;
-  height: 100vh;
-  background-color: #f5f5f5;
-}
+/* ==========================================================================
+   Base Communication Layout
+   Description: Standard full-height layout with a header and main content area.
+   ========================================================================== */
 
 .communication-layout {
   display: flex;
@@ -18,41 +10,43 @@
   background-color: #f5f5f5;
 }
 
+/* Header section remains fixed at the top */
 .communication-layout > header {
   flex-shrink: 0;
 }
 
+/* Main body area below the header */
 .communication-layout > div {
+  display: flex;
   flex: 1;
-  flex: 1;
-  overflow: hidden;
   flex-direction: row;
-  overflow: hidden;
+  overflow: hidden; /* Prevents outer layout from scrolling */
 }
 
+/* Primary content container */
 .communication-content {
   flex: 1;
   overflow: hidden;
 }
 
-/* Supervisor variant styles */
+/* ==========================================================================
+   Supervisor Variant Styles
+   Description: Specific layout adjustments for the Supervisor view.
+   ========================================================================== */
+
+.supervisor-communication-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* Sidebar/Navigation within the supervisor view */
 .communication-main > nav {
   flex-shrink: 0;
 }
 
-.supervisor-communication-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-
-/* Supervisor variant styles */
-.supervisor-communication-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #f5f5f5;
-}
-
+/* Horizontal layout for the supervisor workspace */
 .supervisor-communication-layout {
   display: flex;
   flex-direction: row;
@@ -60,20 +54,7 @@
   overflow: hidden;
 }
 
-.supervisor-communication-content {
-  flex: 1;
-  overflow: hidden;
-}
-  background-color: #f5f5f5;
-}
-
-.supervisor-communication-layout {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  overflow: hidden;
-}
-
+/* Inner content area for supervisor tasks */
 .supervisor-communication-content {
   flex: 1;
   overflow: hidden;

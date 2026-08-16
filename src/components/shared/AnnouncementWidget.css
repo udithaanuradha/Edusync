@@ -1,3 +1,12 @@
+/* ==========================================================================
+   1. MAIN WIDGET CONTAINER
+   ========================================================================== */
+
+/**
+ * The main outer card. 
+ * Uses 'gap' to separate the header from the content list and 'box-shadow' 
+ * for a subtle elevation effect against the background.
+ */
 .announcement-widget-card {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -6,8 +15,14 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -2px rgba(0, 0, 0, 0.03);
 }
+
+/* ==========================================================================
+   2. WIDGET HEADER
+   ========================================================================== */
 
 .announcement-widget-header {
   display: flex;
@@ -32,11 +47,7 @@
   letter-spacing: -0.3px;
 }
 
-.announcement-widget-title-wrap svg {
-  color: #2563eb;
-  flex-shrink: 0;
-}
-
+/* Refresh button with smooth transition for hover states */
 .announcement-widget-refresh {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -55,23 +66,9 @@
   color: #334155;
 }
 
-.announcement-widget-muted {
-  margin: 16px 0;
-  color: #64748b;
-  font-size: 14px;
-  text-align: center;
-  padding: 20px;
-}
-
-.announcement-widget-error {
-  margin: 16px 0;
-  color: #dc2626;
-  font-size: 14px;
-  background-color: #fee2e2;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border-left: 4px solid #dc2626;
-}
+/* ==========================================================================
+   3. ANNOUNCEMENT ITEMS (The List)
+   ========================================================================== */
 
 .announcement-widget-list {
   list-style: none;
@@ -82,6 +79,11 @@
   gap: 12px;
 }
 
+/**
+ * Individual announcement block.
+ * Switches from a light gray background to white on hover to provide 
+ * visual feedback to the user.
+ */
 .announcement-widget-item {
   border: 1px solid #e5e7eb;
   border-radius: 16px;
@@ -150,7 +152,6 @@
   color: #1e293b;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: -0.2px;
   flex: 1;
   word-break: break-word;
 }
@@ -301,7 +302,7 @@
   color: #475569;
   font-size: 14px;
   line-height: 1.6;
-  white-space: pre-wrap;
+  white-space: pre-wrap; /* Maintains line breaks from user input */
   word-break: break-word;
   max-width: 750px;
 }
@@ -326,54 +327,40 @@
   line-height: 1.4;
 }
 
-.announcement-actions {
+/* ==========================================================================
+   5. EDIT & DELETE UI (Management Mode)
+   ========================================================================== */
+
+/* Container for inline action buttons (Update/Delete) */
+.announcement-icon-buttons {
   display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.announcement-edit-btn,
-.announcement-delete-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+.announcement-icon-btn {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  min-width: 32px;
+  min-height: 32px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.announcement-edit-btn {
-  background-color: #3b82f6;
-  color: #fff;
+.announcement-edit-icon-btn:hover {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
-.announcement-edit-btn:hover {
-  background-color: #2563eb;
-  box-shadow: 0 4px 6px -1px rgb(37 99 235 / 0.3);
+.announcement-delete-icon-btn:hover {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
-.announcement-edit-btn:active {
-  transform: scale(0.98);
-}
-
-.announcement-delete-btn {
-  background-color: #ef4444;
-  color: #fff;
-}
-
-.announcement-delete-btn:hover {
-  background-color: #dc2626;
-  box-shadow: 0 4px 6px -1px rgb(220 38 38 / 0.3);
-}
-
-.announcement-delete-btn:active {
-  transform: scale(0.98);
-}
-
+/* Inline Edit Form - used when a user clicks 'Edit' */
 .announcement-edit-form {
   display: flex;
   flex-direction: column;
@@ -388,11 +375,8 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 10px 12px;
-  font-family: inherit;
   font-size: 14px;
-  color: #1e293b;
   background: #fff;
-  transition: all 0.2s ease;
 }
 
 .edit-input:focus,
@@ -402,54 +386,19 @@
   box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
 }
 
-.edit-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
+/* ==========================================================================
+   6. STATUS ALERTS
+   ========================================================================== */
 
-.edit-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.edit-save-btn,
-.edit-cancel-btn {
-  flex: 1;
-  padding: 10px 12px;
-  border: none;
+/* Error message styling with a high-visibility left border */
+.announcement-widget-error {
+  margin: 16px 0;
+  color: #dc2626;
+  font-size: 14px;
+  background-color: #fee2e2;
+  padding: 12px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.edit-save-btn {
-  background-color: #10b981;
-  color: #fff;
-}
-
-.edit-save-btn:hover {
-  background-color: #059669;
-  box-shadow: 0 4px 6px -1px rgb(5 150 105 / 0.3);
-}
-
-.edit-save-btn:active {
-  transform: scale(0.98);
-}
-
-.edit-cancel-btn {
-  background-color: #6b7280;
-  color: #fff;
-}
-
-.edit-cancel-btn:hover {
-  background-color: #4b5563;
-  box-shadow: 0 4px 6px -1px rgb(75 85 99 / 0.3);
-}
-
-.edit-cancel-btn:active {
-  transform: scale(0.98);
+  border-left: 4px solid #dc2626;
 }
 
 @media (max-width: 640px) {

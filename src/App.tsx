@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 
 import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
@@ -277,7 +277,10 @@ function App() {
           )
         }
       />
-
+      <Route
+        path="/supervisor/announcements"
+        element={<SupervisorAnnouncementsPage />}
+      />
       <Route
         path="/profile-settings"
         element={userObj ? <ProfileSettingsPage /> : <Navigate to="/login" />}
