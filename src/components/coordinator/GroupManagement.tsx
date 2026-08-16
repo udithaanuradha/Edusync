@@ -44,6 +44,7 @@ interface GroupManagementProps {
 }
 
 const STUDENT_INDEX_REGEX = /\b\d{6}[A-Za-z]\b/g;
+const GROUP_STATE_CHANGED_EVENT = 'coordinator-group-state-changed';
 
 const normalizeIndex = (value?: string | null) => value?.trim().toUpperCase() ?? '';
 
@@ -550,6 +551,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       }
 
       await loadGroups();
+      window.dispatchEvent(new CustomEvent(GROUP_STATE_CHANGED_EVENT));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete group.';
       alert(message);
@@ -708,6 +710,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       setIsModalOpen(false);
       resetForm();
       await loadGroups();
+      window.dispatchEvent(new CustomEvent(GROUP_STATE_CHANGED_EVENT));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create group.';
       alert(message);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import heroBg from '../../assets/background.png';
 import uomLogo from '../../assets/uom_logo.png';
 
@@ -18,10 +18,9 @@ const MentorSetupForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting || success) return; // Guard against double clicks
+    if (isSubmitting || success) return;
     setError('');
 
-    // Password Regulations checks
     if (password.length < 6) {
       return setError('Password must be at least 6 characters long.');
     }
@@ -30,6 +29,7 @@ const MentorSetupForm: React.FC = () => {
     }
 
     try {
+      setIsSubmitting(true);
       const response = await fetch('http://localhost:5000/api/admin/mentors/finalize-setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,17 +41,18 @@ const MentorSetupForm: React.FC = () => {
 
       setSuccess(true);
       setTimeout(() => {
-        navigate('/login', { replace: true }); // Redirect to standard login page
-      }, 1200);
+        navigate('/login', { replace: true });
+      }, 1000);
 
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      {/* Left side: Hero Graphic */}
       <div style={{ flex: 1.2, backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '40px', left: '40px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <img src={uomLogo} alt="UOM Logo" style={{ width: '50px', height: 'auto' }} />
@@ -59,7 +60,6 @@ const MentorSetupForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Right side: Preferences Form */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 80px', backgroundColor: '#ffffff' }}>
         <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0' }}>Mentor Setup</h2>
         <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 32px 0' }}>Configure your preferences to access the platform.</p>
@@ -107,7 +107,9 @@ const MentorSetupForm: React.FC = () => {
             />
           </div>
 
-          <button type="submit" className="btn-auth" style={{ cursor: 'pointer' }}>Create Profile & Log In</button>
+          <button type="submit" className="btn-auth" disabled={isSubmitting} style={{ cursor: 'pointer' }}>
+            {isSubmitting ? 'Setting Up...' : 'CREATE PROFILE & LOG IN'}
+          </button>
         </form>
       </div>
     </div>
