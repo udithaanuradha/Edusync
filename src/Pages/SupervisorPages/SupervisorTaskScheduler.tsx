@@ -256,7 +256,7 @@ const SupervisorTaskScheduler: React.FC = () => {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-            body: JSON.stringify({ status: 'approved' })
+            body: JSON.stringify({ status: 'approved', message: formData.description })
           });
           setStudentRequests(studentRequests.filter(r => r.id !== selectedRequestId));
           alert("Time scheduled and message sent to student group successfully!");
@@ -278,7 +278,7 @@ const SupervisorTaskScheduler: React.FC = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({ status: 'rejected' })
+          body: JSON.stringify({ status: 'rejected', message: formData.description })
         });
         if (res.ok) {
           setStudentRequests(studentRequests.filter(r => r.id !== selectedRequestId));
@@ -574,7 +574,7 @@ const SupervisorTaskScheduler: React.FC = () => {
                                 ...formData,
                                 task_date: req.preferred_date ? req.preferred_date.split('T')[0] : '',
                                 start_time: req.preferred_time ? req.preferred_time.substring(0, 5) : '',
-                                end_time: req.preferred_time ? req.preferred_time.substring(0, 5) : '',
+                                end_time: req.end_time ? req.end_time.substring(0, 5) : '',
                                 description: "", // Leave empty for supervisor reply
                               });
                             }}
@@ -591,7 +591,7 @@ const SupervisorTaskScheduler: React.FC = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                               <strong style={{ fontSize: '0.95rem', color: '#111827' }}>{req.group_name}</strong>
                               <span style={{ fontSize: '0.75rem', color: '#6b7280', background: '#e5e7eb', padding: '2px 6px', borderRadius: '4px' }}>
-                                {req.preferred_date ? req.preferred_date.split('T')[0] : ''} {req.preferred_time ? req.preferred_time.substring(0, 5) : ''}
+                                {req.preferred_date ? req.preferred_date.split('T')[0] : ''} {req.preferred_time ? req.preferred_time.substring(0, 5) : ''} to {req.end_time ? req.end_time.substring(0, 5) : ''}
                               </span>
                             </div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 500, color: '#374151', marginBottom: '4px' }}>{req.topic}</div>

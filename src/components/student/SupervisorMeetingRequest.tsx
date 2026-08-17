@@ -15,18 +15,37 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
   const [topic, setTopic] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
   const [preferredTime, setPreferredTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [reason, setReason] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [requestsHistory, setRequestsHistory] = useState<any[]>([]);
+
+  const fetchHistory = async () => {
+    if (!user || !user.id) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/meeting-requests/student/${user.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      if (res.ok) {
+        setRequestsHistory(await res.json());
+      }
+    } catch (err) {
+      console.error("Failed to load history", err);
+    }
+  };
 
   useEffect(() => {
-    if (isOpen && supervisors.length === 0) {
-      fetch('http://localhost:5000/api/groups/supervisors')
-        .then(res => res.json())
-        .then(data => setSupervisors(data))
-        .catch(err => console.error("Failed to load supervisors:", err));
+    if (isOpen) {
+      if (supervisors.length === 0) {
+        fetch('http://localhost:5000/api/groups/supervisors')
+          .then(res => res.json())
+          .then(data => setSupervisors(data))
+          .catch(err => console.error("Failed to load supervisors:", err));
+      }
+      fetchHistory();
     }
-  }, [isOpen, supervisors.length]);
+  }, [isOpen, supervisors.length, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +70,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
           topic,
           preferred_date: preferredDate,
           preferred_time: preferredTime,
+          end_time: endTime,
           reason,
         }),
       });
@@ -63,13 +83,14 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       setTopic('');
       setPreferredDate('');
       setPreferredTime('');
+      setEndTime('');
       setReason('');
       setGroupName('');
       setSupervisorId('');
       
       setTimeout(() => {
         setStatus('idle');
-        setIsOpen(false);
+        fetchHistory(); // Refresh history
       }, 3000);
     } catch (error) {
       console.error(error);
@@ -128,6 +149,59 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                 </div>
               )}
 
+              {requestsHistory.length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
+                    Your Request History
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {requestsHistory.map(req => (
+                      <div key={req.id} style={{ 
+                        padding: '1rem', 
+                        borderRadius: '8px', 
+                        border: `1px solid ${req.status === 'approved' ? '#a7f3d0' : req.status === 'rejected' ? '#fecaca' : '#e5e7eb'}`,
+                        background: req.status === 'approved' ? '#f0fdf4' : req.status === 'rejected' ? '#fef2f2' : '#ffffff' 
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                          <strong style={{ fontSize: '0.95rem', color: '#111827' }}>{req.topic}</strong>
+                          <span style={{ 
+                            fontSize: '0.75rem', 
+                            padding: '2px 8px', 
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            textTransform: 'capitalize',
+                            backgroundColor: req.status === 'approved' ? '#10b981' : req.status === 'rejected' ? '#ef4444' : '#f59e0b',
+                            color: '#fff'
+                          }}>
+                            {req.status}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                          Requested for: {req.preferred_date ? req.preferred_date.split('T')[0] : ''} at {req.preferred_time ? req.preferred_time.substring(0, 5) : ''} to {req.end_time ? req.end_time.substring(0, 5) : ''}
+                        </div>
+                        {req.supervisor_message && (
+                          <div style={{ 
+                            fontSize: '0.85rem', 
+                            color: '#374151', 
+                            background: 'rgba(255,255,255,0.6)', 
+                            padding: '0.5rem', 
+                            borderRadius: '4px',
+                            borderLeft: `3px solid ${req.status === 'approved' ? '#10b981' : '#ef4444'}`,
+                            marginTop: '0.5rem'
+                          }}>
+                            <strong>Supervisor Message:</strong><br/>
+                            {req.supervisor_message}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <h4 style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
+                New Meeting Request
+              </h4>
               <form className="drawer-form" onSubmit={handleSubmit}>
                 <div className="drawer-inline-grid">
                   <label className="drawer-field">
@@ -166,23 +240,33 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                   />
                 </label>
 
+                <label className="drawer-field">
+                  <span>Preferred Date</span>
+                  <input
+                    type="date"
+                    required
+                    value={preferredDate}
+                    onChange={(e) => setPreferredDate(e.target.value)}
+                  />
+                </label>
+
                 <div className="drawer-inline-grid">
                   <label className="drawer-field">
-                    <span>Preferred Date</span>
-                    <input
-                      type="date"
-                      required
-                      value={preferredDate}
-                      onChange={(e) => setPreferredDate(e.target.value)}
-                    />
-                  </label>
-                  <label className="drawer-field">
-                    <span>Preferred Time</span>
+                    <span>Start Time</span>
                     <input
                       type="time"
                       required
                       value={preferredTime}
                       onChange={(e) => setPreferredTime(e.target.value)}
+                    />
+                  </label>
+                  <label className="drawer-field">
+                    <span>End Time</span>
+                    <input
+                      type="time"
+                      required
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
                     />
                   </label>
                 </div>
