@@ -16,6 +16,7 @@ type AnnouncementItem = {
   author_name: string;
   author_role?: string;
   supervisor_id?: number | string;
+  author_id?: number | string;
   created_at: string;
   priority?: string;
   priority_level?: string;
@@ -65,28 +66,22 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
     const normalize = (value?: string) => value?.trim().toLowerCase() ?? "";
 
     const isOwnedByCurrentSupervisor = (item: AnnouncementItem) => {
-      if (user?.role !== "supervisor") {
-        return false;
-      }
-
-      const currentSupervisorId = String(user?.id ?? "").trim();
-      const itemSupervisorId = String(item.supervisor_id ?? "").trim();
+      // First try matching by ID
+      const currentUserId = String(user?.id ?? "").trim();
+      const itemAuthorId = String(item.author_id ?? item.supervisor_id ?? "").trim();
       if (
-        currentSupervisorId &&
-        itemSupervisorId &&
-        currentSupervisorId === itemSupervisorId
+        currentUserId &&
+        itemAuthorId &&
+        currentUserId === itemAuthorId
       ) {
         return true;
       }
 
+      // Fallback to name matching
       const currentName = normalize(user?.name);
       const authorName = normalize(item.author_name);
-      const authorRole = normalize(item.author_role);
 
-      return (
-        authorRole === "supervisor" &&
-        Boolean(currentName && authorName && currentName === authorName)
-      );
+      return Boolean(currentName && authorName && currentName === authorName);
     };
 
     const applyScopeFilter = (items: AnnouncementItem[]) => {

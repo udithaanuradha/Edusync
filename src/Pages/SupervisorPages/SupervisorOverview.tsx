@@ -61,11 +61,61 @@ const groupProgress: { name: string; students: GroupStudent[]; workDone: boolean
   }
 ];
 
+type GroupItem = {
+  groupId: number;
+  groupName: string;
+  level: number;
+  supervisorId: number;
+  supervisorName: string;
+  leader: string;
+  memberCount: number;
+  members: string;
+};
+
 const SupervisorOverview: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState<NotificationTab>('overall');
   const [messages] = React.useState(10);
   const [currentGroupIndex, setCurrentGroupIndex] = React.useState(0);
+  const [allGroups, setAllGroups] = React.useState<GroupItem[]>([]);
+  const [activeLevel, setActiveLevel] = React.useState<number>(1);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        setLoading(true);
+        const raw = localStorage.getItem("user");
+        let idStr = "";
+        if (raw) {
+          const storedUser = JSON.parse(raw);
+          idStr = String(storedUser.id ?? storedUser.user_id ?? "");
+        }
+        if (!idStr) return;
+
+        const response = await fetch(`http://localhost:5000/api/groupdetailstosupervisordashboard/supervisor/${idStr}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAllGroups(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch groups", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGroups();
+  }, []);
+
+  // Filter groups by the currently active level
+  const groupsInLevel = allGroups.filter((g) => g.level === activeLevel);
+  const activeGroup = groupsInLevel[currentGroupIndex] || null;
+
+  // Handle Level Tab Clicks
+  const handleLevelClick = (level: number) => {
+    setActiveLevel(level);
+    setCurrentGroupIndex(0); // Reset index when changing level
+  };
 
   return (
     <section className="supervisor-overview">
@@ -158,20 +208,29 @@ const SupervisorOverview: React.FC = () => {
 
         <div className="right-section">
           <div className="groups-header">
-            <h2>total groups 10...</h2>
+            <h2>total groups {allGroups.length}...</h2>
           </div>
 
           <div className="group-tabs">
-            <button className="group-tab active" type="button">level1</button>
-            <button className="group-tab" type="button">level2(3group)</button>
-            <button className="group-tab" type="button">level3</button>
-            <button className="group-tab" type="button">level4</button>
+            {[1, 2, 3, 4].map((level) => {
+              const levelGroupsCount = allGroups.filter(g => g.level === level).length;
+              return (
+                <button 
+                  key={level}
+                  className={`group-tab ${activeLevel === level ? 'active' : ''}`} 
+                  onClick={() => handleLevelClick(level)}
+                  type="button"
+                >
+                  level{level}{levelGroupsCount > 0 ? `(${levelGroupsCount}group)` : ''}
+                </button>
+              );
+            })}
           </div>
 
           <div className="groups-grid">
-            {[projectGroups[currentGroupIndex]].map((group) => (
-              <div key={group.id} className="group-card">
-                <h4>{group.name}</h4>
+            {activeGroup ? (
+              <div key={activeGroup.groupId} className="group-card">
+                <h4>{activeGroup.groupName}</h4>
                 <div className="progress-circle">
                   <svg viewBox="0 0 120 120">
                     <circle cx="60" cy="60" r="50" className="progress-bg" />
@@ -181,27 +240,29 @@ const SupervisorOverview: React.FC = () => {
                       r="50"
                       className="progress-fill"
                       style={{
-                        strokeDasharray: `${3.14 * 100 * (group.progress / 100)} 314`
+                        strokeDasharray: `${3.14 * 100 * (0 / 100)} 314`
                       }}
                     />
                   </svg>
                   <div className="progress-text">
-                    <span className="percentage">{group.progress}%</span>
-                    <span className="status">{group.status}</span>
+                    <span className="percentage">0%</span>
+                    <span className="status">Active</span>
                   </div>
                 </div>
                 <div className="group-navigation">
                   <button
                     className="view-all-btn"
-                    onClick={() => setCurrentGroupIndex((currentGroupIndex - 1 + projectGroups.length) % projectGroups.length)}
+                    onClick={() => setCurrentGroupIndex((currentGroupIndex - 1 + groupsInLevel.length) % groupsInLevel.length)}
                     type="button"
+                    disabled={groupsInLevel.length <= 1}
                   >
                     previous
                   </button>
                   <button
                     className="view-all-btn"
-                    onClick={() => setCurrentGroupIndex((currentGroupIndex + 1) % projectGroups.length)}
+                    onClick={() => setCurrentGroupIndex((currentGroupIndex + 1) % groupsInLevel.length)}
                     type="button"
+                    disabled={groupsInLevel.length <= 1}
                   >
                     next
                   </button>
@@ -210,32 +271,41 @@ const SupervisorOverview: React.FC = () => {
                   view full detail
                 </button>
               </div>
-            ))}
+            ) : (
+              <div className="group-card">
+                <h4>No Groups Found</h4>
+                <p style={{ marginTop: '1rem', color: '#666' }}>No groups are assigned for Level {activeLevel}.</p>
+              </div>
+            )}
           </div>
 
-          <div className="group-progress" onClick={() => navigate('/supervisor/approval')} role="button" tabIndex={0}>
-            <h3>progress of {projectGroups[currentGroupIndex].name.replace('group ', '').toLowerCase()}</h3>
-            <div className="progress-section-label">work done</div>
-            <div className="progress-details">
-              <span className="overall">
-                overal <strong>+{projectGroups[currentGroupIndex].progress}%</strong>
-              </span>
-              {groupProgress[0].students.map((student, idx) => (
-                <div key={idx} className="student-item">
-                  <span>{student.name}</span>
-                  <span className="status">{student.status}</span>
-                  <span className="progress">{student.progress}</span>
+          {activeGroup && (
+            <>
+              <div className="group-progress" onClick={() => navigate('/supervisor/approval')} role="button" tabIndex={0}>
+                <h3>progress of {activeGroup.groupName}</h3>
+                <div className="progress-section-label">work done</div>
+                <div className="progress-details">
+                  <span className="overall">
+                    overal <strong>+0%</strong>
+                  </span>
+                  {activeGroup.members.split(', ').map((studentName, idx) => (
+                    <div key={idx} className="student-item">
+                      <span>{studentName}</span>
+                      <span className="status">active</span>
+                      <span className="progress">0%</span>
+                    </div>
+                  ))}
+                  <button className="view-progress-btn" type="button">view all progress</button>
                 </div>
-              ))}
-              <button className="view-progress-btn" type="button">view all progress</button>
-            </div>
-          </div>
+              </div>
 
-          <div className="report-card" onClick={() => navigate('/supervisor/approval')} role="button" tabIndex={0}>
-            <h3>report {projectGroups[currentGroupIndex].name.replace('group ', '').toLowerCase()}</h3>
-            <p className="report-subtitle">+33% overall project</p>
-            <button className="report-btn" type="button">see report</button>
-          </div>
+              <div className="report-card" onClick={() => navigate('/supervisor/approval')} role="button" tabIndex={0}>
+                <h3>report {activeGroup.groupName}</h3>
+                <p className="report-subtitle">+0% overall project</p>
+                <button className="report-btn" type="button">see report</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>
