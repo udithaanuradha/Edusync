@@ -12,6 +12,20 @@ interface ApprovedRequestsProps {
 }
 
 const API_BASE = 'http://localhost:5000/api/groups';
+const GROUP_STATE_CHANGED_EVENT = 'coordinator-group-state-changed';
+
+const asTruthyBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return false;
+    if (['true', '1', 'yes', 'y', 'created', 'active'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'n', 'null', 'undefined'].includes(normalized)) return false;
+    return Boolean(value);
+  }
+  return Boolean(value);
+};
 
 // Requests may arrive wrapped in different array keys depending on the backend route.
 const toArray = (payload: unknown): ApiRecord[] => {
@@ -52,6 +66,12 @@ const normalizeRequest = (item: ApiRecord): ApprovedGroupRequest => {
         .filter((member): member is ApprovedRequestMember => member !== null)
     : undefined;
 
+  const isGroupCreated =
+    asTruthyBoolean(item.is_group_created) ||
+    asTruthyBoolean(item.isGroupCreated) ||
+    asTruthyBoolean(item.created_group_id) ||
+    asTruthyBoolean(item.createdGroupId);
+
   return {
     id: Number(item.request_id ?? item.requestId ?? item.id ?? 0),
     projectName: String(
@@ -70,6 +90,7 @@ const normalizeRequest = (item: ApiRecord): ApprovedGroupRequest => {
     rejectionReason: String(item.rejection_reason ?? item.rejectionReason ?? item.reject_reason ?? '') || undefined,
     createdAt: String(item.created_at ?? item.createdAt ?? '') || undefined,
     isFinalSubmitted: Boolean(item.is_final_submitted ?? item.is_final_sub ?? item.isFinalSubmitted ?? false),
+    isGroupCreated: isGroupCreated,
     raw: item as Record<string, unknown>,
   };
 };
@@ -114,6 +135,7 @@ const isRealStudentSubmission = (request: ApprovedGroupRequest): boolean => {
 const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCreateGroup }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<ApprovedGroupRequest[]>([]);
+  const [existingGroupNames, setExistingGroupNames] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [rawPayloadForDev, setRawPayloadForDev] = useState<ApiRecord | ApiRecord[] | null>(null);
@@ -184,7 +206,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
     if (token) authHeaders.Authorization = `Bearer ${token}`;
 
     try {
-      let existingGroupNames = new Set<string>();
+      let nextExistingGroupNames = new Set<string>();
 
       try {
         const groupsResponse = await fetch(`http://localhost:5000/api/groups/coordinator/${user?.id}/${levelNumber}`);
@@ -196,7 +218,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
               ? groupsPayload.groups
               : [];
 
-          existingGroupNames = new Set(
+          nextExistingGroupNames = new Set(
             (groupList as ApiRecord[])
               .map((group) => String(group.group_name ?? group.groupName ?? group.name ?? '').trim().toLowerCase())
               .filter((name) => !!name)
@@ -205,6 +227,8 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
       } catch {
         // Continue without filtering if groups endpoint is not available.
       }
+
+      setExistingGroupNames(nextExistingGroupNames);
 
       const endpoints = endpointsForStatus(statusView);
 
@@ -228,14 +252,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
         const normalized = mapped.filter((request) => request.id > 0 && isRealStudentSubmission(request));
         if (import.meta.env.DEV) console.log('[ApprovedRequests] normalized requests', normalized);
 
-        const filtered =
-          statusView === 'pending'
-            ? normalized
-            : normalized.filter(
-                (request) => !existingGroupNames.has(request.groupName.trim().toLowerCase())
-              );
-
-        setRequests(filtered);
+        setRequests(normalized);
         // store raw payload for optional UI dump in DEV
         if (import.meta.env.DEV) setRawPayloadForDev(payload as ApiRecord | ApiRecord[]);
         setLoading(false);
@@ -253,6 +270,17 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
   useEffect(() => {
     loadApprovedRequests();
   }, [levelNumber, statusView]);
+
+  useEffect(() => {
+    const handleGroupStateChanged = () => {
+      void loadApprovedRequests();
+    };
+
+    window.addEventListener(GROUP_STATE_CHANGED_EVENT, handleGroupStateChanged);
+    return () => {
+      window.removeEventListener(GROUP_STATE_CHANGED_EVENT, handleGroupStateChanged);
+    };
+  }, [levelNumber, statusView, user?.id]);
 
   return (
     <div className="approved-requests-wrap">
@@ -285,47 +313,62 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
       )}
 
       <div className="approved-grid">
-        {requests.map((request) => (
-          <article className="approved-card" key={request.id}>
-            <div className="approved-badge-row">
-              <span className="approved-status-badge">
-                <CheckCircle2 size={14} /> Supervisor Approved
-              </span>
-            </div>
+        {requests.map((request) => {
+          const alreadyCreated =
+            Boolean(request.isGroupCreated) ||
+            asTruthyBoolean(request.raw?.is_group_created) ||
+            asTruthyBoolean(request.raw?.created_group_id) ||
+            asTruthyBoolean(request.raw?.createdGroupId) ||
+            existingGroupNames.has(request.groupName.trim().toLowerCase());
 
-            <h4>Group: {request.groupName}</h4>
-            <div className="approved-meta-row">
-              <span className="approved-meta">ID: {request.id}</span>
-              {request.projectLevel !== undefined && (
-                <span className="approved-meta">Level: {request.projectLevel}</span>
-              )}
-              {request.studentId !== undefined && (
-                <span className="approved-meta">Student ID: {request.studentId}</span>
-              )}
-              {request.status && <span className="approved-meta">Status: {request.status}</span>}
-              {request.createdAt && <span className="approved-meta">Submitted: {request.createdAt}</span>}
-            </div>
+          return (
+            <article className="approved-card" key={request.id}>
+              <div className="approved-badge-row">
+                <span className="approved-status-badge">
+                  <CheckCircle2 size={14} /> Supervisor Approved
+                </span>
+              </div>
 
-            <p><strong>Project Name:</strong> {request.projectName}</p>
-            <p><strong>Supervisor:</strong> {request.supervisorName}</p>
-            <p><strong>Group Leader:</strong> {request.groupLeader}</p>
+              <h4>Group: {request.groupName}</h4>
+              <div className="approved-meta-row">
+                <span className="approved-meta">ID: {request.id}</span>
+                {request.projectLevel !== undefined && (
+                  <span className="approved-meta">Level: {request.projectLevel}</span>
+                )}
+                {request.studentId !== undefined && (
+                  <span className="approved-meta">Student ID: {request.studentId}</span>
+                )}
+                {request.status && <span className="approved-meta">Status: {request.status}</span>}
+                {request.createdAt && <span className="approved-meta">Submitted: {request.createdAt}</span>}
+              </div>
 
-            <div className="approved-members-box">
-              <p className="approved-members-title">Submitted Members List:</p>
-              <p className="approved-members-content">{request.membersList || 'No members submitted.'}</p>
-            </div>
+              <p><strong>Project Name:</strong> {request.projectName}</p>
+              <p><strong>Supervisor:</strong> {request.supervisorName}</p>
+              <p><strong>Group Leader:</strong> {request.groupLeader}</p>
 
-            <div className="approved-action-row">
-              {request.rejectionReason && (
-                <div className="approved-rejection">Rejection: {request.rejectionReason}</div>
-              )}
+              <div className="approved-members-box">
+                <p className="approved-members-title">Submitted Members List:</p>
+                <p className="approved-members-content">{request.membersList || 'No members submitted.'}</p>
+              </div>
 
-              <button type="button" className="approved-create-btn" onClick={() => onCreateGroup(request)}>
-                Create Group
-              </button>
-            </div>
-          </article>
-        ))}
+              <div className="approved-action-row">
+                {request.rejectionReason && (
+                  <div className="approved-rejection">Rejection: {request.rejectionReason}</div>
+                )}
+
+                {alreadyCreated ? (
+                  <button type="button" className="approved-create-btn approved-create-btn--disabled" disabled>
+                    Already Created
+                  </button>
+                ) : (
+                  <button type="button" className="approved-create-btn" onClick={() => onCreateGroup(request)}>
+                    Create Group
+                  </button>
+                )}
+              </div>
+            </article>
+          );
+        })}
       </div>
       {/* DEV-only raw payload removed per request */}
     </div>

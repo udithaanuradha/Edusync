@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './GroupRequest.css';
 
 interface GroupRequestProps {
-  levelNumber: number;
+  levelNumber?: number;
 }
 
 interface Student {
@@ -11,7 +11,7 @@ interface Student {
   university_id: string;
 }
 
-const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber }) => {
+const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 1 }) => {
   const [supervisors, setSupervisors] = useState<{ id: number, name: string }[]>([]);
   const [supervisorsLoading, setSupervisorsLoading] = useState(true);
   const [supervisorsError, setSupervisorsError] = useState('');
