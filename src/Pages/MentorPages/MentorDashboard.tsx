@@ -1,5 +1,4 @@
- import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCards from '../../components/mentor/StatCard'; // FIXED: Plural import
@@ -39,18 +38,7 @@ const MentorOverview: React.FC = () => {
       <div className="main-viewport">
         <Header />
         <main className="content-container">
-          <Routes>
-            {/* This renders at /mentor */}
-            <Route index element={<MentorDashboard />} />
-
-            {/* Placeholder routes for Sidebar links */}
-            <Route path="calendar" element={<div>Calendar Content</div>} />
-            <Route path="communication" element={<div>Communication Content</div>} />
-            <Route path="announcements" element={<div>Announcements Content</div>} />
-            <Route path="project-groups" element={<div>Groups Content</div>} />
-            <Route path="guidelines" element={<div>Guidelines Content</div>} />
-            <Route path="project-delays" element={<div>Delays Content</div>} />
-          </Routes>
+          <MentorDashboard />
         </main>
       </div>
     </div>
