@@ -11,7 +11,7 @@ import {
   ChevronRight,
   ChevronDown,
   LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./Sidebar.css";
 
@@ -42,10 +42,14 @@ const Sidebar = () => {
     academicLevel: false,
   });
 
-  const announcementsPath =
-    userObj?.role === "lecturer" && userObj?.designation === "supervisor"
-      ? "/supervisor/announcements"
-      : "/dashboard/announcements";
+  const isSupervisorUser =
+    userObj?.role === "supervisor" ||
+    (userObj?.role === "lecturer" &&
+      (userObj?.designation === "supervisor" || !userObj?.designation));
+
+  const announcementsPath = isSupervisorUser
+    ? "/supervisor/announcements"
+    : "/dashboard/announcements";
 
   const toggleMenu = (menuKey?: string) => {
     if (!collapsed && menuKey) {
