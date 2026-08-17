@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "./supervisorPartInCalendar.css";
 import "./SupervisorTaskScheduler.css";
@@ -23,7 +24,8 @@ type CategoryType =
   | "Interim"
   | "Evaluation"
   | "Code Review"
-  | "Final Evaluation";
+  | "Final Evaluation"
+  | "Group Meeting/Request Approve";
 
 type Task = {
   id?: number;
@@ -77,6 +79,7 @@ const calculateStyle = (start: string, end: string) => {
 
 const SupervisorTaskScheduler: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const supervisorId = user?.id;
 
   const [isOpen, setIsOpen] = useState(false);
@@ -96,6 +99,10 @@ const SupervisorTaskScheduler: React.FC = () => {
     category: "Meeting",
     description: "",
   });
+
+  // Student Requests from Backend
+  const [studentRequests, setStudentRequests] = useState<any[]>([]);
+  const [selectedRequestId, setSelectedRequestId] = useState<number | "">("");
 
   // Fetch Data
   const loadWeekData = async () => {
@@ -126,14 +133,37 @@ const SupervisorTaskScheduler: React.FC = () => {
           result.data?.weeklySchedule ?? result.data?.weekly_schedule ?? {},
         );
       }
-    } catch (error) {
-      console.error("Error loading schedule data", error);
+
+      // Fetch Student Meeting Requests
+      const reqRes = await fetch(
+        `http://localhost:5000/api/meeting-requests/supervisor/${supervisorId}`,
+        { headers }
+      );
+      if (reqRes.ok) {
+        const requests = await reqRes.json();
+        setStudentRequests(requests);
+      } else {
+        console.error("Failed to fetch requests", reqRes.status);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    if (isOpen) loadWeekData();
-  }, [isOpen, currentWeekStart]);
+    loadWeekData();
+  }, [currentWeekStart, supervisorId]);
+
+  // Check if we arrived here with an intent to open meeting requests
+  useEffect(() => {
+    if (location.state?.openMeetingRequests) {
+      setIsOpen(true);
+      setIsFormOpen(true);
+      setFormData(prev => ({ ...prev, category: "Group Meeting/Request Approve" }));
+      // Clear the state so it doesn't re-trigger on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // Generate the 7 days for the UI
   const weekDays = useMemo(() => {
@@ -169,6 +199,7 @@ const SupervisorTaskScheduler: React.FC = () => {
       category: "Meeting",
       description: "",
     });
+    setSelectedRequestId("");
     setIsFormOpen(true);
   };
 
@@ -181,6 +212,7 @@ const SupervisorTaskScheduler: React.FC = () => {
     const safeDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
     setFormData({ ...task, task_date: safeDateStr });
+    setSelectedRequestId("");
     setIsFormOpen(true);
   };
 
@@ -195,17 +227,67 @@ const SupervisorTaskScheduler: React.FC = () => {
         : `${API_TASKS}/${supervisorId}`;
       const method = editingTask?.id ? "PUT" : "POST";
 
+      let payload = formData;
+      let reqDetails = null;
+      
+      if (formData.category === "Group Meeting/Request Approve" && selectedRequestId !== "") {
+        const req = studentRequests.find(r => r.id === selectedRequestId);
+        if (req) {
+          reqDetails = req;
+          payload = {
+            ...formData,
+            category: "Meeting",
+            description: `Meeting with ${req.group_name}${formData.description ? ' - ' + formData.description : ''}`
+          };
+        }
+      }
+
       const res = await fetch(url, {
         method,
         headers,
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        if (reqDetails) {
+          // Update status in backend
+          await fetch(`http://localhost:5000/api/meeting-requests/${selectedRequestId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({ status: 'approved' })
+          });
+          setStudentRequests(studentRequests.filter(r => r.id !== selectedRequestId));
+          alert("Time scheduled and message sent to student group successfully!");
+        }
         setIsFormOpen(false);
         loadWeekData();
       }
     } catch (error) {
       console.error("Save error", error);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (selectedRequestId !== "") {
+      try {
+        const res = await fetch(`http://localhost:5000/api/meeting-requests/${selectedRequestId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ status: 'rejected' })
+        });
+        if (res.ok) {
+          setStudentRequests(studentRequests.filter(r => r.id !== selectedRequestId));
+          alert("Student group request rejected and message sent.");
+          setIsFormOpen(false);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -460,16 +542,85 @@ const SupervisorTaskScheduler: React.FC = () => {
                     <option>Evaluation</option>
                     <option>Code Review</option>
                     <option>Final Evaluation</option>
+                    <option>Group Meeting/Request Approve</option>
                   </select>
                 </label>
+                
+                {formData.category === "Group Meeting/Request Approve" && (
+                  <label className="drawer-field" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontWeight: 600, color: '#374151' }}>Pending Student Requests</span>
+                    <div style={{ 
+                      maxHeight: '220px', 
+                      overflowY: 'auto', 
+                      border: '1px solid #d1d5db', 
+                      borderRadius: '8px', 
+                      padding: '8px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: '8px',
+                      background: '#f9fafb'
+                    }}>
+                      {studentRequests.length === 0 ? (
+                        <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280', fontSize: '0.9rem' }}>
+                          No pending requests at the moment.
+                        </div>
+                      ) : (
+                        studentRequests.map((req) => (
+                          <div
+                            key={req.id}
+                            onClick={() => {
+                              setSelectedRequestId(req.id);
+                              setFormData({
+                                ...formData,
+                                task_date: req.preferred_date ? req.preferred_date.split('T')[0] : '',
+                                start_time: req.preferred_time ? req.preferred_time.substring(0, 5) : '',
+                                end_time: req.preferred_time ? req.preferred_time.substring(0, 5) : '',
+                                description: "", // Leave empty for supervisor reply
+                              });
+                            }}
+                            style={{
+                              padding: '12px',
+                              border: `1px solid ${selectedRequestId === req.id ? '#3b82f6' : '#e5e7eb'}`,
+                              backgroundColor: selectedRequestId === req.id ? '#eff6ff' : '#ffffff',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              boxShadow: selectedRequestId === req.id ? '0 2px 8px rgba(59, 130, 246, 0.15)' : 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <strong style={{ fontSize: '0.95rem', color: '#111827' }}>{req.group_name}</strong>
+                              <span style={{ fontSize: '0.75rem', color: '#6b7280', background: '#e5e7eb', padding: '2px 6px', borderRadius: '4px' }}>
+                                {req.preferred_date ? req.preferred_date.split('T')[0] : ''} {req.preferred_time ? req.preferred_time.substring(0, 5) : ''}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 500, color: '#374151', marginBottom: '4px' }}>{req.topic}</div>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#4b5563', fontStyle: 'italic', background: '#f3f4f6', padding: '6px', borderRadius: '4px', borderLeft: '3px solid #9ca3af' }}>
+                              "{req.reason}"
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </label>
+                )}
+
                 <label className="drawer-field">
-                  <span>Description / Purpose</span>
+                  <span>
+                    {formData.category === "Group Meeting/Request Approve"
+                      ? "Message to Student Group"
+                      : "Description / Purpose"}
+                  </span>
                   <textarea
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    placeholder="E.g., Sync with Dr. Smith"
+                    placeholder={
+                      formData.category === "Group Meeting/Request Approve"
+                        ? "Type your approval/rejection message to the students here..."
+                        : "E.g., Sync with Dr. Smith"
+                    }
                   />
                 </label>
                 <div className="drawer-actions">
@@ -492,17 +643,56 @@ const SupervisorTaskScheduler: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="button"
-                    className="drawer-primary-btn"
-                    onClick={saveTask}
-                  >
-                    <Save
-                      size={16}
-                      style={{ marginRight: "6px", verticalAlign: "middle" }}
-                    />{" "}
-                    Save
-                  </button>
+                  {formData.category === "Group Meeting/Request Approve" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="task-delete-btn"
+                        onClick={handleRejectRequest}
+                        disabled={selectedRequestId === ""}
+                        style={{ 
+                          background: selectedRequestId === "" ? '#f3f4f6' : '#fef2f2', 
+                          color: selectedRequestId === "" ? '#9ca3af' : '#ef4444', 
+                          border: `1px solid ${selectedRequestId === "" ? '#d1d5db' : '#fca5a5'}`, 
+                          padding: '8px 16px', 
+                          borderRadius: '8px', 
+                          fontWeight: 600,
+                          cursor: selectedRequestId === "" ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Reject
+                      </button>
+                      <button
+                        type="button"
+                        className="drawer-primary-btn"
+                        onClick={saveTask}
+                        disabled={selectedRequestId === ""}
+                        style={{ 
+                          background: selectedRequestId === "" ? '#9ca3af' : '#10b981', 
+                          boxShadow: selectedRequestId === "" ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)',
+                          cursor: selectedRequestId === "" ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        <Save
+                          size={16}
+                          style={{ marginRight: "6px", verticalAlign: "middle" }}
+                        />{" "}
+                        Approve & Send Message
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="drawer-primary-btn"
+                      onClick={saveTask}
+                    >
+                      <Save
+                        size={16}
+                        style={{ marginRight: "6px", verticalAlign: "middle" }}
+                      />{" "}
+                      Save
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

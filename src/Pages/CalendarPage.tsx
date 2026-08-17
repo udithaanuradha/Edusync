@@ -11,6 +11,7 @@ import "./CalendarPage.css";
 // Importing both Supervisor components
 import SupervisorPartInCalendar from "./SupervisorPages/supervisorPartInCalendar";
 import SupervisorTaskScheduler from "./SupervisorPages/SupervisorTaskScheduler";
+import SupervisorMeetingRequest from "../components/student/SupervisorMeetingRequest";
 
 type SupervisorOption = {
   id: number;
@@ -166,6 +167,7 @@ const CalendarPage: React.FC = () => {
     userRole === "supervisor" ||
     (userRole === "lecturer" &&
       (userDesignation === "supervisor" || !userDesignation));
+  const isStudent = userRole === "student";
 
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("schedule");
@@ -665,7 +667,7 @@ const CalendarPage: React.FC = () => {
                 </p>
               </div>
 
-              {(isCoordinator || isSupervisor) && (
+              {(isCoordinator || isSupervisor || isStudent) && (
                 <div className="calendar-action-row">
                   {isCoordinator && (
                     <>
@@ -695,6 +697,10 @@ const CalendarPage: React.FC = () => {
                       <SupervisorTaskScheduler />
                       <SupervisorPartInCalendar />
                     </>
+                  )}
+
+                  {isStudent && (
+                    <SupervisorMeetingRequest levelNumber={selectedLevel ? Number(selectedLevel) : 1} />
                   )}
                 </div>
               )}

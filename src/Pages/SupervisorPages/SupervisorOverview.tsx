@@ -80,6 +80,7 @@ const SupervisorOverview: React.FC = () => {
   const [allGroups, setAllGroups] = React.useState<GroupItem[]>([]);
   const [activeLevel, setActiveLevel] = React.useState<number>(1);
   const [loading, setLoading] = React.useState(false);
+  const [pendingMeetingsCount, setPendingMeetingsCount] = React.useState(0);
 
   React.useEffect(() => {
     const fetchGroups = async () => {
@@ -97,6 +98,17 @@ const SupervisorOverview: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setAllGroups(data);
+        }
+
+        // Fetch pending meeting requests count
+        const meetingRes = await fetch(`http://localhost:5000/api/meeting-requests/supervisor/${idStr}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        if (meetingRes.ok) {
+          const meetingData = await meetingRes.json();
+          setPendingMeetingsCount(meetingData.length || 0);
         }
       } catch (error) {
         console.error("Failed to fetch groups", error);
@@ -176,11 +188,11 @@ const SupervisorOverview: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="meeting-card small" onClick={() => navigate('/supervisor/schedule-meeting')} role="button" tabIndex={0}>
-                <div className="meeting-label">meeting time table</div>
+              <div className="meeting-card small" onClick={() => navigate('/dashboard/calendar', { state: { openMeetingRequests: true } })} role="button" tabIndex={0}>
+                <div className="meeting-label">incoming meeting requests</div>
                 <div className="meeting-table">
-                  <div className="meeting-number">2</div>
-                  <div className="meeting-text">meetings<br />today</div>
+                  <div className="meeting-number">{pendingMeetingsCount}</div>
+                  <div className="meeting-text">requests<br />pending</div>
                 </div>
               </div>
 
