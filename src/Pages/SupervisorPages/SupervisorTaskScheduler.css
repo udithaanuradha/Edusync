@@ -122,7 +122,8 @@
   border-radius: 0 8px 8px 0;
   cursor: crosshair;
   background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px);
-  background-size: 12.5% 100%; /* 8 segments for 16 hours = 2hr blocks */
+  background-size: 12.5% 100%;
+  /* 8 segments for 16 hours = 2hr blocks */
 }
 
 .day-track:hover {
@@ -170,14 +171,17 @@
   background: #64748b;
   border: 1px solid #475569;
 }
+
 .block-meeting {
   background: #3b82f6;
   border: 1px solid #2563eb;
 }
+
 .block-faculty {
   background: #8b5cf6;
   border: 1px solid #7c3aed;
 }
+
 .block-personal {
   background: #10b981;
   border: 1px solid #059669;
@@ -187,19 +191,27 @@
 .block-interim {
   background: #f59e0b;
   border: 1px solid #d97706;
-} /* Amber */
+}
+
+/* Amber */
 .block-evaluation {
   background: #ef4444;
   border: 1px solid #dc2626;
-} /* Red */
+}
+
+/* Red */
 .block-code {
   background: #06b6d4;
   border: 1px solid #0891b2;
-} /* Cyan */
+}
+
+/* Cyan */
 .block-final {
   background: #ec4899;
   border: 1px solid #db2777;
-} /* Pink */
+}
+
+/* Pink */
 
 /* Mini Form Modal */
 .task-form-overlay {
@@ -241,4 +253,24 @@
 
 .task-delete-btn:hover {
   background: #fee2e2;
+}
+
+.timeline-open-page-btn {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.timeline-open-page-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
 }

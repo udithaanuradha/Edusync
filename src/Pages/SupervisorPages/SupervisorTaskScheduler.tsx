@@ -229,7 +229,7 @@ const SupervisorTaskScheduler: React.FC = () => {
 
       let payload = formData;
       let reqDetails = null;
-      
+
       if (formData.category === "Group Meeting/Request Approve" && selectedRequestId !== "") {
         const req = studentRequests.find(r => r.id === selectedRequestId);
         if (req) {
@@ -545,18 +545,18 @@ const SupervisorTaskScheduler: React.FC = () => {
                     <option>Group Meeting/Request Approve</option>
                   </select>
                 </label>
-                
+
                 {formData.category === "Group Meeting/Request Approve" && (
                   <label className="drawer-field" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <span style={{ fontWeight: 600, color: '#374151' }}>Pending Student Requests</span>
-                    <div style={{ 
-                      maxHeight: '220px', 
-                      overflowY: 'auto', 
-                      border: '1px solid #d1d5db', 
-                      borderRadius: '8px', 
-                      padding: '8px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
+                    <div style={{
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: '8px',
                       background: '#f9fafb'
                     }}>
@@ -650,12 +650,12 @@ const SupervisorTaskScheduler: React.FC = () => {
                         className="task-delete-btn"
                         onClick={handleRejectRequest}
                         disabled={selectedRequestId === ""}
-                        style={{ 
-                          background: selectedRequestId === "" ? '#f3f4f6' : '#fef2f2', 
-                          color: selectedRequestId === "" ? '#9ca3af' : '#ef4444', 
-                          border: `1px solid ${selectedRequestId === "" ? '#d1d5db' : '#fca5a5'}`, 
-                          padding: '8px 16px', 
-                          borderRadius: '8px', 
+                        style={{
+                          background: selectedRequestId === "" ? '#f3f4f6' : '#fef2f2',
+                          color: selectedRequestId === "" ? '#9ca3af' : '#ef4444',
+                          border: `1px solid ${selectedRequestId === "" ? '#d1d5db' : '#fca5a5'}`,
+                          padding: '8px 16px',
+                          borderRadius: '8px',
                           fontWeight: 600,
                           cursor: selectedRequestId === "" ? 'not-allowed' : 'pointer'
                         }}
@@ -667,8 +667,8 @@ const SupervisorTaskScheduler: React.FC = () => {
                         className="drawer-primary-btn"
                         onClick={saveTask}
                         disabled={selectedRequestId === ""}
-                        style={{ 
-                          background: selectedRequestId === "" ? '#9ca3af' : '#10b981', 
+                        style={{
+                          background: selectedRequestId === "" ? '#9ca3af' : '#10b981',
                           boxShadow: selectedRequestId === "" ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)',
                           cursor: selectedRequestId === "" ? 'not-allowed' : 'pointer'
                         }}

@@ -279,6 +279,7 @@
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -370,14 +371,19 @@
 .typing-dots span:nth-child(1) {
   animation-delay: -0.32s;
 }
+
 .typing-dots span:nth-child(2) {
   animation-delay: -0.16s;
 }
 
 @keyframes typingBounce {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
+
   40% {
     transform: scale(1);
   }
@@ -411,43 +417,28 @@
 }
 
 .send-btn-v2 {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background: #2563eb;
+  color: white;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   flex-shrink: 0;
-  outline: none;
 }
 
-.send-btn-v2.active {
-  background: #2563eb;
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
-  cursor: pointer;
-}
-
-.send-btn-v2.active:hover {
+.send-btn-v2:hover:not(:disabled) {
   background: #1d4ed8;
-  transform: scale(1.06);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.45);
+  transform: scale(1.05);
 }
 
-.send-btn-v2.active:active {
-  transform: scale(0.96);
-}
-
-.send-btn-v2.inactive,
 .send-btn-v2:disabled {
-  background: #e2e8f0;
-  color: #94a3b8;
+  background: #cbd5e1;
   cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
 }
 
 .chat-empty-state-v2 {

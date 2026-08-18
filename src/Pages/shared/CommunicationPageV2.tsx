@@ -1,42 +1,16 @@
 import React from "react";
 import Header from "../../components/shared/Header";
 import Sidebar from "../../components/shared/Sidebar";
-import SupervisorSidebar from "../../components/supervisor/SupervisorSidebar";
 import ChatWindowV2 from "../../components/shared/ChatWindowV2";
-import "./CommunicationPage.css";
+import "./CommunicationPageV2.css";
 
-type CommunicationPageV2Props = {
-  variant?: "shared" | "supervisor";
-};
-
-const CommunicationPageV2: React.FC<CommunicationPageV2Props> = ({
-  variant = "shared",
-}) => {
+const CommunicationPageV2: React.FC = () => {
   return (
-    <div
-      className={
-        variant === "supervisor"
-          ? "supervisor-communication-page"
-          : "communication-layout"
-      }
-    >
+    <div className="v2-comm-page-container">
       <Header />
-      <div
-        className={
-          variant === "supervisor"
-            ? "supervisor-communication-layout"
-            : "communication-main"
-        }
-      >
+      <div className="v2-comm-page-main">
         <Sidebar />
-        {variant === "supervisor" && <SupervisorSidebar />}
-        <main
-          className={
-            variant === "supervisor"
-              ? "supervisor-communication-content"
-              : "communication-content"
-          }
-        >
+        <main className="v2-comm-page-content">
           <ChatWindowV2 title="Real-Time Messages (V2)" />
         </main>
       </div>

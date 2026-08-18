@@ -252,12 +252,12 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Real-Time Messages
             return prev.map((c) =>
               c.partner_id === partnerId
                 ? {
-                    ...c,
-                    last_message_id: savedMsg!.id,
-                    last_message_text: savedMsg!.message_text,
-                    last_message_time: savedMsg!.created_at,
-                    last_sender_id: user.id,
-                  }
+                  ...c,
+                  last_message_id: savedMsg!.id,
+                  last_message_text: savedMsg!.message_text,
+                  last_message_time: savedMsg!.created_at,
+                  last_sender_id: user.id,
+                }
                 : c
             );
           } else {
@@ -368,9 +368,9 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Real-Time Messages
                         <span className="partner-time-v2">
                           {conv.last_message_time
                             ? new Date(conv.last_message_time).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
                             : ""}
                         </span>
                       </div>
@@ -466,28 +466,16 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Real-Time Messages
                   placeholder="Type a message..."
                   value={inputText}
                   onChange={handleInputChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage(e);
-                    }
-                  }}
                   className="chat-input-v2"
                   disabled={isSending}
-                  autoFocus
                 />
                 <button
                   type="submit"
                   disabled={isSending || !inputText.trim()}
-                  className={`send-btn-v2 ${inputText.trim() ? "active" : "inactive"}`}
+                  className="send-btn-v2"
                   title="Send message"
-                  aria-label="Send message"
                 >
-                  {isSending ? (
-                    <Loader size={18} className="spinner" />
-                  ) : (
-                    <Send size={18} strokeWidth={2.2} />
-                  )}
+                  {isSending ? <Loader size={18} className="spinner" /> : <Send size={18} />}
                 </button>
               </form>
             </>

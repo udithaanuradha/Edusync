@@ -30,14 +30,14 @@ import MentorAnnouncementsPage from "./pages/MentorPages/MentorAnnouncementsPage
 import AdminAnnouncements from "./pages/AdminPages/AdminAnnouncements";
 import SupervisorCommunicationPage from "./pages/SupervisorPages/SupervisorCommunicationPage";
 import CommunicationPage from "./pages/shared/CommunicationPage";
-import CommunicationPageV2 from "./Pages/shared/CommunicationPageV2";
+import CommunicationPageV2 from "./pages/shared/CommunicationPageV2";
 import AdminCommunicationPage from "./pages/AdminPages/AdminCommunicationPage";
 import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
-import Level3mentor from "./Pages/MentorPages/Level3mentor";
-import MentorLevel1Blocked from "./Pages/MentorPages/MentorLevel1Blocked";
-import MentorSetupForm from "./Pages/auth/MentorSetupForm";
+import Level3mentor from "./pages/MentorPages/Level3mentor";
+import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
+import MentorSetupForm from "./pages/auth/MentorSetupForm";
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -90,7 +90,7 @@ function App() {
         path="/coordinator"
         element={
           userObj?.role === "lecturer" &&
-          userObj?.designation === "coordinator" ? (
+            userObj?.designation === "coordinator" ? (
             <CoordinatorDashboard />
           ) : (
             <Navigate to="/login" />
@@ -237,7 +237,10 @@ function App() {
         }
       />
 
-      <Route path="/group-request" element={<GroupRequest />} />
+      <Route
+        path="/group-request"
+        element={<GroupRequest levelNumber={userObj?.level || 2} />}
+      />
 
       <Route
         path="/student/project-management"
@@ -316,35 +319,19 @@ function App() {
 
       <Route
         path="/dashboard/communication-v2"
-        element={
-          userObj ? (
-            <CommunicationPageV2
-              variant={isSupervisorUser(userObj) ? "supervisor" : "shared"}
-            />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
+        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
       />
 
       <Route
         path="/communication-v2"
-        element={
-          userObj ? (
-            <CommunicationPageV2
-              variant={isSupervisorUser(userObj) ? "supervisor" : "shared"}
-            />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
+        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
       />
 
       <Route
         path="/supervisor/approval"
         element={
           userObj?.role === "lecturer" &&
-          userObj?.designation === "supervisor" ? (
+            userObj?.designation === "supervisor" ? (
             <SupervisorApprovalPage />
           ) : (
             <Navigate to="/login" />
@@ -356,7 +343,7 @@ function App() {
         path="/supervisor/communication"
         element={
           userObj?.role === "lecturer" &&
-          userObj?.designation === "supervisor" ? (
+            userObj?.designation === "supervisor" ? (
             <SupervisorCommunicationPage />
           ) : (
             <Navigate to="/login" />

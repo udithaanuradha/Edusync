@@ -738,6 +738,7 @@
 }
 
 @media (max-width: 768px) {
+
 	.supervisor-overview,
 	.overview {
 		padding: 16px;

@@ -240,9 +240,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             name: String(item.group_name ?? item.groupName ?? "Unnamed Group"),
             leader: String(
               item.group_leader ??
-                item.leader_name ??
-                item.leader ??
-                "Not specified",
+              item.leader_name ??
+              item.leader ??
+              "Not specified",
             ),
             members: String(
               item.members ?? item.members_list ?? "Not available"
@@ -250,16 +250,16 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             memberCount: Number(item.memberCount ?? item.member_count ?? 0),
             supervisorId: String(
               item.supervisor_id ??
-                item.supervisorId ??
-                item.assigned_supervisor_id ??
-                "",
+              item.supervisorId ??
+              item.assigned_supervisor_id ??
+              "",
             ),
             supervisorName: String(
               item.supervisor_name ??
-                item.supervisorName ??
-                item.supervisor ??
-                item.assigned_supervisor_name ??
-                "",
+              item.supervisorName ??
+              item.supervisor ??
+              item.assigned_supervisor_name ??
+              "",
             ),
             level:
               item.project_level !== undefined && item.project_level !== null
@@ -352,15 +352,15 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               status: String(item.status ?? item.request_status ?? "pending"),
               supervisorId: String(
                 item.supervisor_id ??
-                  item.supervisorId ??
-                  item.assigned_supervisor_id ??
-                  "",
+                item.supervisorId ??
+                item.assigned_supervisor_id ??
+                "",
               ),
               supervisorName: String(
                 item.supervisor_name ??
-                  item.supervisorName ??
-                  item.assigned_supervisor_name ??
-                  "",
+                item.supervisorName ??
+                item.assigned_supervisor_name ??
+                "",
               ),
             }),
           )
@@ -418,9 +418,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               (file.uploaded_by_role || "").toLowerCase() === "coordinator",
           )
             ? (stage.files || []).filter(
-                (file) =>
-                  (file.uploaded_by_role || "").toLowerCase() === "coordinator",
-              )
+              (file) =>
+                (file.uploaded_by_role || "").toLowerCase() === "coordinator",
+            )
             : stage.files || [];
 
           return (

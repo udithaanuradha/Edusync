@@ -227,9 +227,9 @@ const SupervisorOverview: React.FC = () => {
             {[1, 2, 3, 4].map((level) => {
               const levelGroupsCount = allGroups.filter(g => g.level === level).length;
               return (
-                <button 
+                <button
                   key={level}
-                  className={`group-tab ${activeLevel === level ? 'active' : ''}`} 
+                  className={`group-tab ${activeLevel === level ? 'active' : ''}`}
                   onClick={() => handleLevelClick(level)}
                   type="button"
                 >
