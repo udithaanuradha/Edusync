@@ -63,13 +63,40 @@ const toDateValue = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const parseDateValue = (value: string) => new Date(`${value}T00:00:00`);
+const parseDateValue = (value: string) => {
+  if (!value) {
+    return new Date(NaN);
+  }
 
-const formatShortDate = (value: string) =>
-  parseDateValue(value).toLocaleDateString("en-US", {
+  const trimmed = String(value).trim();
+
+  if (!trimmed) {
+    return new Date(NaN);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return new Date(`${trimmed}T00:00:00`);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+    return new Date(trimmed);
+  }
+
+  return new Date(trimmed);
+};
+
+const formatShortDate = (value: string) => {
+  const parsed = parseDateValue(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
+  return parsed.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
+};
 
 const formatLongDate = (value: string) =>
   parseDateValue(value).toLocaleDateString("en-US", {
@@ -81,6 +108,7 @@ const formatLongDate = (value: string) =>
 
 const PANEL_STORAGE_KEY = "edusync.calendar.panels";
 const FROZEN_STORAGE_KEY = "edusync.calendar.frozenDates";
+const CALENDAR_API_BASE = "http://localhost:5000/api/calendar";
 
 const loadStoredJson = <T,>(storageKey: string, fallback: T): T => {
   if (typeof window === "undefined") {
@@ -138,6 +166,30 @@ const normalizeFrozenDates = (value: unknown): FrozenDateRecord[] => {
     .filter((item): item is FrozenDateRecord => item !== null);
 };
 
+const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => ({
+  id: String(row.id ?? row.panel_id ?? `panel-${Date.now()}-${Math.random()}`),
+  title: String(row.evaluation_type ?? row.title ?? "Evaluation Panel"),
+  level: Number(row.academic_level ?? row.level ?? 1),
+  groupId: String(
+    row.target_group_id ?? row.group_id ?? row.target_group ?? row.groupName ?? "",
+  ),
+  groupName: String(row.target_group ?? row.group_name ?? row.groupName ?? "Group"),
+  date: String(row.panel_date ?? row.date ?? toDateValue(new Date())),
+  time: String(row.start_time ?? row.time ?? "10:00"),
+  duration: String(row.duration ?? "60 min"),
+  evaluators: Array.isArray(row.evaluators)
+    ? row.evaluators
+        .map((item) => String(item ?? ""))
+        .filter(Boolean)
+    : typeof row.evaluators === "string"
+      ? JSON.parse(row.evaluators || "[]")
+      : [],
+  location: String(row.location ?? "To be announced"),
+  meetingLink: String(row.meeting_link ?? row.meetingLink ?? ""),
+  notes: String(row.notes ?? ""),
+  kind: String(row.kind ?? "Coordinator scheduled panel"),
+});
+
 const makeMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
@@ -145,14 +197,19 @@ const CalendarPage: React.FC = () => {
   const { user } = useAuth();
   const storedUserRole = useMemo(() => {
     const stored = loadStoredJson<Record<string, unknown> | null>("user", null);
-    if (!stored || typeof stored.role !== "string") {
-      return null;
-    }
+    const effectiveRole =
+      typeof stored?.effectiveRole === "string"
+        ? stored.effectiveRole.toLowerCase()
+        : null;
+    const directRole =
+      typeof stored?.role === "string" ? stored.role.toLowerCase() : null;
 
-    return stored.role;
+    return effectiveRole ?? directRole ?? null;
   }, []);
-  const userRole = user?.role ?? storedUserRole;
-  const isCoordinator = userRole === "coordinator" || (userRole === "lecturer" && user?.designation === "coordinator");
+  const userRole = user?.effectiveRole ?? user?.role ?? storedUserRole;
+  const isCoordinator =
+    userRole === "coordinator" ||
+    (userRole === "lecturer" && user?.designation === "coordinator");
 
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("schedule");
@@ -410,8 +467,70 @@ const CalendarPage: React.FC = () => {
     }
   };
 
+  const loadPanelsFromServer = async () => {
+    try {
+      const response = await fetch(`${CALENDAR_API_BASE}/panels`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Calendar panels endpoint returned ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const rows = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      setScheduledPanels(
+        rows.map((row) => normalizePanelFromApi(row as Record<string, unknown>)),
+      );
+    } catch {
+      const fallback = loadStoredJson<ScheduledPanel[]>(PANEL_STORAGE_KEY, []);
+      setScheduledPanels(fallback);
+    }
+  };
+
+  const loadFrozenDatesFromServer = async () => {
+    try {
+      const response = await fetch(`${CALENDAR_API_BASE}/frozen-dates`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Frozen dates endpoint returned ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const rows = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      setFrozenDates(
+        normalizeFrozenDates(
+          rows.map((row) => ({
+            date: String(row.frozen_date ?? row.date ?? ""),
+            reason: String(row.reason ?? ""),
+          })),
+        ),
+      );
+    } catch {
+      setFrozenDates(normalizeFrozenDates(loadStoredJson(FROZEN_STORAGE_KEY, [])));
+    }
+  };
+
   useEffect(() => {
     fetchSupervisors();
+    void loadPanelsFromServer();
+    void loadFrozenDatesFromServer();
   }, []);
 
   useEffect(() => {
@@ -506,7 +625,7 @@ const CalendarPage: React.FC = () => {
     return { cells: dayCells, markerMap: mapped };
   }, [frozenDates, scheduledPanels, viewDate]);
 
-  const handleScheduleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleScheduleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const selectedGroup = groups.find(
@@ -547,6 +666,36 @@ const CalendarPage: React.FC = () => {
       kind: "Coordinator scheduled panel",
     };
 
+    try {
+      const response = await fetch(`${CALENDAR_API_BASE}/panels`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify({
+          evaluationType: nextPanel.title,
+          academicLevel: nextPanel.level,
+          targetGroup: nextPanel.groupName,
+          evaluators: nextPanel.evaluators,
+          panelDate: nextPanel.date,
+          startTime: nextPanel.time,
+          duration: nextPanel.duration,
+          location: nextPanel.location,
+          meetingLink: nextPanel.meetingLink,
+          notes: nextPanel.notes,
+          kind: nextPanel.kind,
+          created_by: user?.id ?? JSON.parse(localStorage.getItem("user") || "{}").id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to store panel in database (${response.status})`);
+      }
+    } catch (error) {
+      console.error("Panel save to backend failed, keeping local fallback:", error);
+    }
+
     setScheduledPanels((current) =>
       editingPanelId
         ? current.map((panel) =>
@@ -563,7 +712,7 @@ const CalendarPage: React.FC = () => {
     setNotes("");
   };
 
-  const deletePanel = (panelId: string) => {
+  const deletePanel = async (panelId: string) => {
     if (!isCoordinator) {
       return;
     }
@@ -572,6 +721,21 @@ const CalendarPage: React.FC = () => {
     const confirmed = window.confirm(`Delete ${panel?.title ?? "this panel"}?`);
     if (!confirmed) {
       return;
+    }
+
+    try {
+      const response = await fetch(`${CALENDAR_API_BASE}/panels/${encodeURIComponent(panelId)}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete panel (${response.status})`);
+      }
+    } catch (error) {
+      console.error("Backend panel delete failed, removing local copy only:", error);
     }
 
     setScheduledPanels((current) =>
@@ -583,7 +747,7 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const handleFreezeSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFreezeSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!freezeDate) {
@@ -592,6 +756,29 @@ const CalendarPage: React.FC = () => {
     }
 
     const trimmedReason = freezeReason.trim();
+
+    try {
+      const response = await fetch(`${CALENDAR_API_BASE}/freeze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify({
+          frozen_date: freezeDate,
+          reason: trimmedReason,
+          type: "calendar_freeze",
+          created_by: user?.id ?? JSON.parse(localStorage.getItem("user") || "{}").id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to store frozen date (${response.status})`);
+      }
+    } catch (error) {
+      console.error("Freeze save to backend failed, keeping local fallback:", error);
+    }
+
     setFrozenDates((current) =>
       current.some((item) => item.date === freezeDate)
         ? current.map((item) =>
