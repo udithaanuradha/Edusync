@@ -80,6 +80,11 @@ const Sidebar = () => {
       icon: MessageSquare,
       label: "Communication",
     },
+    {
+      path: "/dashboard/communication-v2",
+      icon: MessageSquare,
+      label: "Communication (V2)",
+    },
     { path: announcementsPath, icon: ClipboardList, label: "Announcements" },
     {
       path: "/dashboard/project-delays",

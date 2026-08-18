@@ -49,6 +49,16 @@ const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({
           <MessageSquare size={18} />
           <span>Communication</span>
         </NavLink>
+
+        <NavLink
+          to="/dashboard/communication-v2"
+          className={({ isActive }) =>
+            `supervisor-nav-item ${isActive ? "active" : ""}`
+          }
+        >
+          <MessageSquare size={18} />
+          <span>Communication (V2)</span>
+        </NavLink>
       </nav>
     </aside>
   );

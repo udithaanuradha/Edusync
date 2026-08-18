@@ -30,6 +30,7 @@ import MentorAnnouncementsPage from "./pages/MentorPages/MentorAnnouncementsPage
 import AdminAnnouncements from "./pages/AdminPages/AdminAnnouncements";
 import SupervisorCommunicationPage from "./pages/SupervisorPages/SupervisorCommunicationPage";
 import CommunicationPage from "./pages/shared/CommunicationPage";
+import CommunicationPageV2 from "./Pages/shared/CommunicationPageV2";
 import AdminCommunicationPage from "./pages/AdminPages/AdminCommunicationPage";
 import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
@@ -307,6 +308,32 @@ function App() {
             <SupervisorCommunicationPage />
           ) : userObj ? (
             <CommunicationPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/dashboard/communication-v2"
+        element={
+          userObj ? (
+            <CommunicationPageV2
+              variant={isSupervisorUser(userObj) ? "supervisor" : "shared"}
+            />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/communication-v2"
+        element={
+          userObj ? (
+            <CommunicationPageV2
+              variant={isSupervisorUser(userObj) ? "supervisor" : "shared"}
+            />
           ) : (
             <Navigate to="/login" />
           )
