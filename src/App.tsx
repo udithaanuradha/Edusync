@@ -37,6 +37,7 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
 import MentorLevel1Blocked from './Pages/MentorPages/MentorLevel1Blocked';
 import MentorSetupForm from './Pages/auth/MentorSetupForm';
+import SupervisorEvaluationPanel from './Pages/SupervisorPages/SupervisorEvaluationPanel';
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -273,6 +274,17 @@ function App() {
         element={
           userObj?.role === "lecturer" && effectiveRole === "supervisor" ? (
             <SupervisorCommunicationPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/supervisor/evaluation-panel"
+        element={
+          isSupervisorUser(userObj) || userObj?.role === "admin" || userObj?.role === "lecturer" ? (
+            <SupervisorEvaluationPanel />
           ) : (
             <Navigate to="/login" />
           )
