@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/shared/Sidebar";
 import Header from "../../components/shared/Header";
 import SupervisorSidebar from "../../components/supervisor/SupervisorSidebar";
@@ -6,7 +7,7 @@ import "./SupervisorDashboard.css";
 import "./SupervisorLevelPage.css";
 
 interface SupervisorLevelPageProps {
-  levelNumber: number;
+  levelNumber?: number; // 🎯 App.tsx එකෙන් pass නොකළද error නොඑන සේ optional (?) කරන ලදී
 }
 
 type StageFile = {
@@ -154,8 +155,14 @@ const belongsToViewer = (
 };
 
 const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
-  levelNumber,
+  levelNumber: propsLevelNumber,
 }) => {
+  const navigate = useNavigate();
+  
+  // 🎯 URL Parameter (:levelNumber) හෝ Props හරහා එන level එක Dynamic ලෙස ගනී
+  const { levelNumber: urlLevelNumber } = useParams<{ levelNumber: string }>();
+  const levelNumber = propsLevelNumber ?? Number(urlLevelNumber) ?? 1;
+
   const viewer = useMemo(() => getViewerIdentity(), []);
   const [activeTab, setActiveTab] = useState<TabKey>("stages");
 
@@ -163,13 +170,48 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
 
+  // 🎯 Real DB Result මත පමණක් button එක පෙන්නීමට default = false කර ඇත
+  const [isEvaluatorAssigned, setIsEvaluatorAssigned] = useState<boolean>(false);
+
   const [loadingStages, setLoadingStages] = useState(true);
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [actionBusyId, setActionBusyId] = useState<number | null>(null);
 
   const [stagesError, setStagesError] = useState("");
   const [groupsError, setGroupsError] = useState("");
   const [submissionsError, setSubmissionsError] = useState("");
+
+  // 🎯 REAL Backend Evaluator Check Logic
+  const checkEvaluatorAssignment = async () => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      const userObj = userRaw ? JSON.parse(userRaw) : null;
+      const joinedName = [userObj?.first_name, userObj?.last_name].filter(Boolean).join(" ");
+      const currentUserName = userObj?.name || userObj?.full_name || joinedName || viewer.name || "";
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:5000/api/evaluation-panels/check-evaluator?level=${levelNumber}&evaluatorName=${encodeURIComponent(currentUserName)}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const resData = await response.json();
+        setIsEvaluatorAssigned(resData.isEvaluator === true);
+      } else {
+        setIsEvaluatorAssigned(false);
+      }
+    } catch (err) {
+      console.error("Failed to verify evaluator assignment:", err);
+      setIsEvaluatorAssigned(false);
+    }
+  };
 
   const loadStages = async () => {
     setLoadingStages(true);
@@ -389,11 +431,11 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
       setLoadingSubmissions(false);
     }
   };
-
   useEffect(() => {
     loadStages();
     loadGroups();
     loadSubmissions();
+    checkEvaluatorAssignment();
   }, [levelNumber]);
 
   const renderStages = () => {
@@ -521,6 +563,90 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
     );
   };
 
+  const handleApproveRequest = async (requestId: number) => {
+    if (!viewer.idStr) {
+      setSubmissionsError("Supervisor identity not found. Please login again.");
+      return;
+    }
+
+    try {
+      setActionBusyId(requestId);
+      const response = await fetch(`${GROUPS_API_BASE}/approve`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          supervisor_id: viewer.idStr,
+          approved_by: viewer.idStr,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to approve request.");
+      }
+
+      setSubmissions((prev) => prev.filter((item) => item.requestId !== requestId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to approve request.";
+      setSubmissionsError(message);
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: number) => {
+    if (!viewer.idStr) {
+      setSubmissionsError("Supervisor identity not found. Please login again.");
+      return;
+    }
+
+    const reason = window.prompt("Please enter a rejection reason:", "Request does not meet the required criteria.");
+    if (reason === null) {
+      return;
+    }
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      setSubmissionsError("Rejection reason is required.");
+      return;
+    }
+
+    try {
+      setActionBusyId(requestId);
+      const response = await fetch(`${GROUPS_API_BASE}/reject`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          supervisor_id: viewer.idStr,
+          rejected_by: viewer.idStr,
+          rejection_reason: trimmedReason,
+          reason: trimmedReason,
+          reject_reason: trimmedReason,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to reject request.");
+      }
+
+      setSubmissions((prev) => prev.filter((item) => item.requestId !== requestId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reject request.";
+      setSubmissionsError(message);
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
   const renderSubmissions = () => {
     if (loadingSubmissions)
       return (
@@ -561,6 +687,41 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 <strong>Message:</strong> {item.studentMessage}
               </p>
             )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => handleApproveRequest(item.requestId)}
+                disabled={actionBusyId === item.requestId}
+                style={{
+                  background: "#2563eb",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  cursor: actionBusyId === item.requestId ? "not-allowed" : "pointer",
+                  opacity: actionBusyId === item.requestId ? 0.7 : 1,
+                }}
+              >
+                {actionBusyId === item.requestId ? "Processing..." : "Accept"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRejectRequest(item.requestId)}
+                disabled={actionBusyId === item.requestId}
+                style={{
+                  background: "#ef4444",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  cursor: actionBusyId === item.requestId ? "not-allowed" : "pointer",
+                  opacity: actionBusyId === item.requestId ? 0.7 : 1,
+                }}
+              >
+                Reject
+              </button>
+            </div>
           </article>
         ))}
       </div>
@@ -579,12 +740,21 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
 
         <main className="content-container supervisor-content-container">
           <div className="supervisor-level-page">
-            <div className="supervisor-level-header">
-              <h2>Level {levelNumber} Management</h2>
-              <p>
-                Manage level-specific stages, supervisor-assigned groups, and
-                approval submissions.
-              </p>
+            <div
+              className="supervisor-level-header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <h2>Level {levelNumber} Management</h2>
+                <p>
+                  Manage level-specific stages, supervisor-assigned groups, and
+                  approval submissions.
+                </p>
+              </div>
             </div>
 
             <div
@@ -595,7 +765,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`supervisor-level-tab ${activeTab === "stages" ? "active" : ""}`}
+                className={`supervisor-level-tab ${
+                  activeTab === "stages" ? "active" : ""
+                }`}
                 aria-selected={activeTab === "stages"}
                 onClick={() => setActiveTab("stages")}
               >
@@ -604,7 +776,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`supervisor-level-tab ${activeTab === "groups" ? "active" : ""}`}
+                className={`supervisor-level-tab ${
+                  activeTab === "groups" ? "active" : ""
+                }`}
                 aria-selected={activeTab === "groups"}
                 onClick={() => setActiveTab("groups")}
               >
@@ -613,7 +787,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`supervisor-level-tab ${activeTab === "submissions" ? "active" : ""}`}
+                className={`supervisor-level-tab ${
+                  activeTab === "submissions" ? "active" : ""
+                }`}
                 aria-selected={activeTab === "submissions"}
                 onClick={() => setActiveTab("submissions")}
               >

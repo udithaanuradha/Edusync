@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import { Building2, Crown, Pencil, Plus, ShieldCheck, Trash2, Users, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
@@ -44,6 +44,7 @@ interface GroupManagementProps {
 }
 
 const STUDENT_INDEX_REGEX = /\b\d{6}[A-Za-z]\b/g;
+const GROUP_STATE_CHANGED_EVENT = 'coordinator-group-state-changed';
 
 const normalizeIndex = (value?: string | null) => value?.trim().toUpperCase() ?? '';
 
@@ -550,6 +551,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       }
 
       await loadGroups();
+      window.dispatchEvent(new CustomEvent(GROUP_STATE_CHANGED_EVENT));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete group.';
       alert(message);
@@ -708,6 +710,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       setIsModalOpen(false);
       resetForm();
       await loadGroups();
+      window.dispatchEvent(new CustomEvent(GROUP_STATE_CHANGED_EVENT));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create group.';
       alert(message);
@@ -741,22 +744,35 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                   <h3>{group.name}</h3>
                   <span className="group-meta-pill">{group.memberCount} members</span>
                 </div>
-                <p className="group-meta">Leader: {group.leaderName}</p>
-                <p className="group-meta">Supervisor: {group.supervisor}</p>
-                <p className="group-meta">Department: {group.department || 'Not set'}</p>
+
+                <div className="group-meta-list">
+                  <div className="group-meta-row">
+                    <span className="group-meta-icon"><Crown size={13} /></span>
+                    <span>{group.leaderName}</span>
+                  </div>
+                  <div className="group-meta-row">
+                    <span className="group-meta-icon"><ShieldCheck size={13} /></span>
+                    <span>{group.supervisor}</span>
+                  </div>
+                  <div className="group-meta-row">
+                    <span className="group-meta-icon"><Building2 size={13} /></span>
+                    <span>{group.department || 'Not set'}</span>
+                  </div>
+                </div>
+
                 {group.members.length > 0 && (
                   <ul className="group-members-preview">
                     {group.members.map((member) => (
-                      <li key={`${group.id}-${member.id ?? member.name}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Users size={14} />
+                      <li key={`${group.id}-${member.id ?? member.name}`} className="group-member-row">
+                        <span className="group-member-name-wrap">
+                          <Users size={12} />
                           <span>{member.name}</span>
                         </span>
                         {typeof member.id === 'number' && (
                           <button
                             type="button"
+                            className="group-profile-btn"
                             onClick={() => setViewingProfileId(member.id as number)}
-                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
                           >
                             View Profile
                           </button>
@@ -767,11 +783,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                 )}
                 <div className="group-card-actions">
                   <button type="button" className="group-edit-btn" onClick={() => void openEditModal(group)}>
-                    <Pencil size={14} />
+                    <Pencil size={13} />
                     Edit
                   </button>
                   <button type="button" className="group-delete-btn" onClick={() => void handleDeleteGroup(group)}>
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                     Delete
                   </button>
                 </div>
