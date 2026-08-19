@@ -262,6 +262,7 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
 
     return {
       ...totals,
+      submitted: totals.total,
       progress,
     };
   }, [selectedStageMarks]);

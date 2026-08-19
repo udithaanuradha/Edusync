@@ -61,26 +61,24 @@ const formatDateStr = (d: Date) => {
 const normalizeFrozenDates = (value: unknown): FrozenDateItem[] => {
   if (!Array.isArray(value)) return [];
 
-  return value
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
 
-      const record = item as Record<string, unknown>;
-      const dateValue =
-        typeof record.frozen_date === "string"
-          ? record.frozen_date
-          : typeof record.date === "string"
-            ? record.date
-            : "";
+    const record = item as Record<string, unknown>;
+    const dateValue =
+      typeof record.frozen_date === "string"
+        ? record.frozen_date
+        : typeof record.date === "string"
+          ? record.date
+          : "";
 
-      if (!dateValue) return null;
+    if (!dateValue) return [];
 
-      return {
-        date: dateValue.slice(0, 10),
-        reason: typeof record.reason === "string" ? record.reason : undefined,
-      };
-    })
-    .filter((item): item is FrozenDateItem => item !== null);
+    return [{
+      date: dateValue.slice(0, 10),
+      reason: typeof record.reason === "string" ? record.reason : undefined,
+    }];
+  });
 };
 
 // Timeline Math (08:00 to 24:00 = 16 hours = 960 minutes)

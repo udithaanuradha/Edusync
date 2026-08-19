@@ -480,14 +480,14 @@ const CalendarPage: React.FC = () => {
       }
 
       const payload = await response.json();
-      const rows = Array.isArray(payload)
-        ? payload
+      const rows: Record<string, unknown>[] = Array.isArray(payload)
+        ? payload as Record<string, unknown>[]
         : Array.isArray(payload?.data)
-          ? payload.data
+          ? (payload.data as Record<string, unknown>[])
           : [];
 
       setScheduledPanels(
-        rows.map((row) => normalizePanelFromApi(row as Record<string, unknown>)),
+        rows.map((row: Record<string, unknown>) => normalizePanelFromApi(row)),
       );
     } catch {
       const fallback = loadStoredJson<ScheduledPanel[]>(PANEL_STORAGE_KEY, []);
@@ -508,15 +508,15 @@ const CalendarPage: React.FC = () => {
       }
 
       const payload = await response.json();
-      const rows = Array.isArray(payload)
-        ? payload
+      const rows: Record<string, unknown>[] = Array.isArray(payload)
+        ? payload as Record<string, unknown>[]
         : Array.isArray(payload?.data)
-          ? payload.data
+          ? (payload.data as Record<string, unknown>[])
           : [];
 
       setFrozenDates(
         normalizeFrozenDates(
-          rows.map((row) => ({
+          rows.map((row: Record<string, unknown>) => ({
             date: String(row.frozen_date ?? row.date ?? ""),
             reason: String(row.reason ?? ""),
           })),
