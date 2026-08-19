@@ -176,6 +176,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   const [loadingStages, setLoadingStages] = useState(true);
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [actionBusyId, setActionBusyId] = useState<number | null>(null);
 
   const [stagesError, setStagesError] = useState("");
   const [groupsError, setGroupsError] = useState("");
@@ -553,6 +554,90 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
     );
   };
 
+  const handleApproveRequest = async (requestId: number) => {
+    if (!viewer.idStr) {
+      setSubmissionsError("Supervisor identity not found. Please login again.");
+      return;
+    }
+
+    try {
+      setActionBusyId(requestId);
+      const response = await fetch(`${GROUPS_API_BASE}/approve`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          supervisor_id: viewer.idStr,
+          approved_by: viewer.idStr,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to approve request.");
+      }
+
+      setSubmissions((prev) => prev.filter((item) => item.requestId !== requestId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to approve request.";
+      setSubmissionsError(message);
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: number) => {
+    if (!viewer.idStr) {
+      setSubmissionsError("Supervisor identity not found. Please login again.");
+      return;
+    }
+
+    const reason = window.prompt("Please enter a rejection reason:", "Request does not meet the required criteria.");
+    if (reason === null) {
+      return;
+    }
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      setSubmissionsError("Rejection reason is required.");
+      return;
+    }
+
+    try {
+      setActionBusyId(requestId);
+      const response = await fetch(`${GROUPS_API_BASE}/reject`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          supervisor_id: viewer.idStr,
+          rejected_by: viewer.idStr,
+          rejection_reason: trimmedReason,
+          reason: trimmedReason,
+          reject_reason: trimmedReason,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to reject request.");
+      }
+
+      setSubmissions((prev) => prev.filter((item) => item.requestId !== requestId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reject request.";
+      setSubmissionsError(message);
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
   const renderSubmissions = () => {
     if (loadingSubmissions)
       return (
@@ -593,6 +678,41 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 <strong>Message:</strong> {item.studentMessage}
               </p>
             )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => handleApproveRequest(item.requestId)}
+                disabled={actionBusyId === item.requestId}
+                style={{
+                  background: "#2563eb",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  cursor: actionBusyId === item.requestId ? "not-allowed" : "pointer",
+                  opacity: actionBusyId === item.requestId ? 0.7 : 1,
+                }}
+              >
+                {actionBusyId === item.requestId ? "Processing..." : "Accept"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRejectRequest(item.requestId)}
+                disabled={actionBusyId === item.requestId}
+                style={{
+                  background: "#ef4444",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  cursor: actionBusyId === item.requestId ? "not-allowed" : "pointer",
+                  opacity: actionBusyId === item.requestId ? 0.7 : 1,
+                }}
+              >
+                Reject
+              </button>
+            </div>
           </article>
         ))}
       </div>

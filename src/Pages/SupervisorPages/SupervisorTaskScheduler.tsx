@@ -34,8 +34,14 @@ type Task = {
   description: string;
 };
 
+type FrozenDateItem = {
+  date: string;
+  reason?: string;
+};
+
 const API_TASKS = "http://localhost:5000/api/supervisor-tasks";
 const API_RECURRING = "http://localhost:5000/api/supervisorpartincalender";
+const API_FROZEN_DATES = "http://localhost:5000/api/calendar/frozen-dates";
 
 // Date Helpers
 const getMonday = (d: Date) => {
@@ -50,6 +56,31 @@ const formatDateStr = (d: Date) => {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${month}-${day}`;
+};
+
+const normalizeFrozenDates = (value: unknown): FrozenDateItem[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const record = item as Record<string, unknown>;
+      const dateValue =
+        typeof record.frozen_date === "string"
+          ? record.frozen_date
+          : typeof record.date === "string"
+            ? record.date
+            : "";
+
+      if (!dateValue) return null;
+
+      return {
+        date: dateValue.slice(0, 10),
+        reason: typeof record.reason === "string" ? record.reason : undefined,
+      };
+    })
+    .filter((item): item is FrozenDateItem => item !== null);
 };
 
 // Timeline Math (08:00 to 24:00 = 16 hours = 960 minutes)
@@ -85,6 +116,7 @@ const SupervisorTaskScheduler: React.FC = () => {
   );
   const [recurring, setRecurring] = useState<WeeklySchedule>({});
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [frozenDates, setFrozenDates] = useState<FrozenDateItem[]>([]);
 
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -126,6 +158,15 @@ const SupervisorTaskScheduler: React.FC = () => {
           result.data?.weeklySchedule ?? result.data?.weekly_schedule ?? {},
         );
       }
+
+      // Fetch coordinator frozen dates from the shared calendar DB
+      const frozenRes = await fetch(`${API_FROZEN_DATES}?t=${Date.now()}`, {
+        headers,
+      });
+      if (frozenRes.ok) {
+        const frozenResult = await frozenRes.json();
+        setFrozenDates(normalizeFrozenDates(frozenResult));
+      }
     } catch (error) {
       console.error("Error loading schedule data", error);
     }
@@ -161,6 +202,12 @@ const SupervisorTaskScheduler: React.FC = () => {
 
   // Form Handlers
   const handleTrackClick = (dateStr: string) => {
+    const isFrozen = frozenDates.some((item) => item.date === dateStr);
+    if (isFrozen) {
+      alert("This date is frozen by the coordinator and cannot be scheduled.");
+      return;
+    }
+
     setEditingTask(null);
     setFormData({
       task_date: dateStr,
@@ -352,16 +399,38 @@ const SupervisorTaskScheduler: React.FC = () => {
                 });
 
                 const dayRecurring = recurring[day.dayName] || [];
+                const isFrozenDay = frozenDates.some((item) => item.date === day.dateStr);
 
                 return (
                   <div key={day.dateStr} className="timeline-row">
                     <div className="day-label">
                       <strong>{day.dayName.substring(0, 3)}</strong>
                       <span>{day.display}</span>
+                      {isFrozenDay && (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            marginTop: "4px",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            color: "#991b1b",
+                            background: "#fee2e2",
+                            borderRadius: "999px",
+                            padding: "2px 6px",
+                          }}
+                        >
+                          Frozen
+                        </span>
+                      )}
                     </div>
                     <div
                       className="day-track"
                       onClick={() => handleTrackClick(day.dateStr)}
+                      style={
+                        isFrozenDay
+                          ? { background: "rgba(254, 226, 226, 0.55)", border: "1px solid #fecaca" }
+                          : undefined
+                      }
                     >
                       {/* Recurring Lecture Blocks */}
                       {dayRecurring.map((slot, idx) => (
