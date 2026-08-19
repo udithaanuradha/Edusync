@@ -146,17 +146,15 @@ const MentorAnnouncementsPage: React.FC = () => {
       if (currentMentorId) headers['x-user-id'] = String(currentMentorId);
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      // Construct target audience
+      // Automatically construct target audience for the mentor's assigned group/level
       let audiencePayload = '';
       let targetGrpId: number | null = null;
 
-      if (targetAudienceOption === 'group' && selectedGroupId && meta?.assignedGroups) {
-        const matched = meta.assignedGroups.find((g) => String(g.id) === String(selectedGroupId));
-        if (matched) {
-          audiencePayload = `Level ${matched.level} Assigned Students (${matched.groupName})`;
-          targetGrpId = matched.id;
-        }
-      } else if (targetAudienceOption === 'level' && meta?.assignedLevels?.length) {
+      if (meta?.assignedGroups && meta.assignedGroups.length > 0) {
+        const grp = meta.assignedGroups[0];
+        audiencePayload = `Level ${grp.level} Assigned Students (${grp.groupName})`;
+        targetGrpId = grp.id;
+      } else if (meta?.assignedLevels && meta.assignedLevels.length > 0) {
         audiencePayload = `Level ${meta.assignedLevels[0]} Assigned Students`;
       } else {
         audiencePayload = 'Assigned Students';
@@ -457,43 +455,19 @@ const MentorAnnouncementsPage: React.FC = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>Target Audience *</label>
-                      {meta?.assignedGroups && meta.assignedGroups.length > 0 ? (
-                        <div className="target-selection-wrap">
-                          <select
-                            value={targetAudienceOption === 'group' ? selectedGroupId : 'all_level'}
-                            onChange={(e) => {
-                              if (e.target.value === 'all_level') {
-                                setTargetAudienceOption('level');
-                              } else {
-                                setTargetAudienceOption('group');
-                                setSelectedGroupId(e.target.value);
-                              }
-                            }}
-                            className="form-select"
-                          >
-                            {meta.assignedGroups.map((g) => (
-                              <option key={g.id} value={String(g.id)}>
-                                👥 {g.groupName} (Level {g.level} Assigned Students)
-                              </option>
-                            ))}
-                            {meta.assignedLevels.length > 0 && (
-                              <option value="all_level">
-                                🌐 All My Assigned Level {meta.assignedLevels.join(', ')} Students
-                              </option>
-                            )}
-                          </select>
-                        </div>
-                      ) : (
-                        <input
-                          type="text"
-                          value="Assigned Students"
-                          readOnly
-                          className="form-readonly-input"
-                        />
-                      )}
+                      <label>Target Audience</label>
+                      <div className="form-auto-target-box">
+                        <Users size={16} className="auto-target-icon" />
+                        <span className="auto-target-text">
+                          {meta?.assignedGroups && meta.assignedGroups.length > 0
+                            ? `👥 ${meta.assignedGroups[0].groupName} (Level ${meta.assignedGroups[0].level} Assigned Students)`
+                            : meta?.assignedLevels && meta.assignedLevels.length > 0
+                            ? `Level ${meta.assignedLevels[0]} Assigned Students`
+                            : 'Assigned Project Group Students'}
+                        </span>
+                      </div>
                       <span className="form-helper-text">
-                        This notice will be visible in the announcement widget of your assigned students.
+                        This notice will automatically be delivered to the student dashboard and announcement widget of your assigned project group.
                       </span>
                     </div>
 
