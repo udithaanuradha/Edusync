@@ -1,0 +1,396 @@
+/* ── Mentor Student Submissions Styles ── */
+.mss-container {
+  padding: 32px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.mss-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  gap: 16px;
+  color: #64748b;
+}
+
+.mss-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: mss-spin 0.8s linear infinite;
+}
+
+@keyframes mss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Top Header Card ── */
+.mss-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px 32px;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  gap: 24px;
+}
+
+.mss-header-badge {
+  display: inline-block;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mss-header-left h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.mss-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  max-width: 650px;
+  line-height: 1.5;
+}
+
+.mss-header-stats {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.mss-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 16px;
+}
+
+.mss-stat-pill.late {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.mss-stat-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.mss-stat-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.mss-stat-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* ── Error Banner ── */
+.mss-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+/* ── Submissions Cards Grid ── */
+.mss-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 20px;
+}
+
+.mss-submission-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mss-submission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.mss-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mss-stage-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mss-stage-chip {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.mss-status-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.mss-status-chip.ontime {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.mss-status-chip.late {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.mss-group-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Student Row ── */
+.mss-student-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mss-avatar-circle {
+  width: 40px;
+  height: 40px;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mss-student-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mss-student-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mss-student-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mss-leader-badge {
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mss-student-meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ── Timeline Meta ── */
+.mss-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.mss-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mss-meta-item.deadline {
+  color: #94a3b8;
+}
+
+/* ── Files Stack ── */
+.mss-files-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mss-files-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mss-files-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mss-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.mss-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mss-file-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.mss-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mss-btn-download {
+  background: #10b981;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.mss-btn-download:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.mss-no-files {
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ── Empty State ── */
+.mss-empty-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+}
+
+.mss-empty-card {
+  max-width: 480px;
+  text-align: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.mss-empty-icon {
+  color: #3b82f6;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.mss-empty-card h4 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.mss-empty-card p {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+}

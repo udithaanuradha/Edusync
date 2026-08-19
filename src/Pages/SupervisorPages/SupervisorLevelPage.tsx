@@ -187,7 +187,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
     try {
       const userRaw = localStorage.getItem("user");
       const userObj = userRaw ? JSON.parse(userRaw) : null;
-      const currentUserName = userObj?.name || userObj?.full_name || viewer.name || "";
+      const joinedName = [userObj?.first_name, userObj?.last_name].filter(Boolean).join(" ");
+      const currentUserName = userObj?.name || userObj?.full_name || joinedName || viewer.name || "";
       const token = localStorage.getItem("token");
 
       const response = await fetch(
@@ -745,33 +746,6 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                   approval submissions.
                 </p>
               </div>
-
-              {/* 🎯 Real DB Evaluator Check අනුව පමණක් Display වන Button එක */}
-              {isEvaluatorAssigned && (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/supervisor/evaluation-panel`)}
-                  style={{
-                    backgroundColor: "#16a34a",
-                    color: "#ffffff",
-                    fontWeight: "600",
-                    padding: "10px 18px",
-                    borderRadius: "8px",
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-                    transition: "background-color 0.2s ease",
-                  }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#15803d")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#16a34a")
-                  }
-                >
-                  Start Evaluation →
-                </button>
-              )}
             </div>
 
             <div
