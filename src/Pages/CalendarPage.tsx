@@ -167,7 +167,6 @@ const normalizeFrozenDates = (value: unknown): FrozenDateRecord[] => {
     .filter((item): item is FrozenDateRecord => item !== null);
 };
 
-// Utility: format local date string robustly
 const getLocalDateStr = (d: string | Date | null | undefined): string => {
   if (!d) return "";
   const dateObj = new Date(d);
@@ -178,7 +177,6 @@ const getLocalDateStr = (d: string | Date | null | undefined): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Normalize a panel record from API to our ScheduledPanel shape
 const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => ({
   id: String(row.id ?? row.panel_id ?? `panel-${Date.now()}-${Math.random()}`),
   title: String(row.evaluation_type ?? row.title ?? "Evaluation Panel"),
@@ -649,24 +647,6 @@ const CalendarPage: React.FC = () => {
 
     const mapped = new Map<number, CalendarGridMarker>();
 
-    scheduledPanels.forEach((panel) => {
-      const panelDate = parseDateValue(panel.date);
-      if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
-        return;
-      }
-
-      const day = panelDate.getDate();
-      const current = mapped.get(day);
-      const existingPanels = current?.panels ?? 0;
-
-      mapped.set(day, {
-        day,
-        type: "panel",
-        panels: existingPanels + 1,
-        label: panel.title,
-      });
-    });
-
     if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
       supervisorAssignedPanels.forEach((p) => {
         const dateStr = getLocalDateStr(p.panel_date);
@@ -685,6 +665,24 @@ const CalendarPage: React.FC = () => {
             });
           }
         }
+      });
+    } else {
+      scheduledPanels.forEach((panel) => {
+        const panelDate = parseDateValue(panel.date);
+        if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
+          return;
+        }
+
+        const day = panelDate.getDate();
+        const current = mapped.get(day);
+        const existingPanels = current?.panels ?? 0;
+
+        mapped.set(day, {
+          day,
+          type: "panel",
+          panels: existingPanels + 1,
+          label: panel.title,
+        });
       });
     }
 
