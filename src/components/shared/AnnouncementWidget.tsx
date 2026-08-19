@@ -58,6 +58,23 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
     const [editTitle, setEditTitle] = useState("");
     const [editMessage, setEditMessage] = useState("");
     const [expandedAnnouncementId, setExpandedAnnouncementId] = useState<number | null>(null);
+    const [readIds, setReadIds] = useState<number[]>(() => {
+      if (!user?.id) return [];
+      const stored = localStorage.getItem(`edusync_read_announcements_${user.id}`);
+      return stored ? JSON.parse(stored) : [];
+    });
+
+    const markAsRead = (id: number) => {
+      setReadIds((prev) => {
+        if (prev.includes(id)) return prev;
+        const updated = [...prev, id];
+        if (user?.id) {
+          localStorage.setItem(`edusync_read_announcements_${user.id}`, JSON.stringify(updated));
+        }
+        window.dispatchEvent(new CustomEvent('announcementsReadUpdated', { detail: updated }));
+        return updated;
+      });
+    };
 
     const roleLabel = user?.role
       ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
@@ -343,9 +360,26 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
       return "slate";
     };
 
+    const toggleRead = (id: number) => {
+      setReadIds((prev) => {
+        const isRead = prev.includes(id);
+        const updated = isRead ? prev.filter((item) => item !== id) : [...prev, id];
+        if (user?.id) {
+          localStorage.setItem(`edusync_read_announcements_${user.id}`, JSON.stringify(updated));
+        }
+        window.dispatchEvent(new CustomEvent('announcementsReadUpdated', { detail: updated }));
+        return updated;
+      });
+    };
+
     const toggleExpanded = (id: number) => {
       setExpandedAnnouncementId((current) => (current === id ? null : id));
+      if (!readIds.includes(id)) {
+        markAsRead(id);
+      }
     };
+
+    const unreadCount = items.filter((item) => !readIds.includes(item.id)).length;
 
     return (
       <div className="announcement-widget-card">
@@ -353,6 +387,15 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
           <div className="announcement-widget-title-wrap">
             <Megaphone size={18} />
             <h3>{title}</h3>
+            {unreadCount > 0 ? (
+              <span className="announcement-unread-badge" style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+                {unreadCount} unread
+              </span>
+            ) : (
+              <span className="announcement-unread-badge" style={{ background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 500 }}>
+                All read
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -377,105 +420,158 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
 
         {!loading && !error && items.length > 0 && (
           <ul className="announcement-widget-list">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className={`announcement-widget-item ${getPriority(item) === "urgent" ? "is-urgent" : ""}`}
-              >
-                {editingId === item.id ? (
-                  <div className="announcement-edit-form">
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      placeholder="Title"
-                      className="edit-input"
-                    />
-                    <textarea
-                      value={editMessage}
-                      onChange={(e) => setEditMessage(e.target.value)}
-                      placeholder="Message"
-                      className="edit-textarea"
-                      rows={3}
-                    />
-                    <div className="edit-actions">
-                      <button
-                        className="edit-save-btn"
-                        onClick={() => updateAnnouncement(item.id)}
-                      >
-                        Save
-                      </button>
-                      <button className="edit-cancel-btn" onClick={cancelEdit}>
-                        Cancel
-                      </button>
+            {items.map((item) => {
+              const isRead = readIds.includes(item.id);
+              return (
+                <li
+                  key={item.id}
+                  className={`announcement-widget-item ${getPriority(item) === "urgent" ? "is-urgent" : ""} ${isRead ? "is-read" : ""}`}
+                  style={isRead ? { opacity: 0.88, background: '#ffffff' } : {}}
+                >
+                  {editingId === item.id ? (
+                    <div className="announcement-edit-form">
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Title"
+                        className="edit-input"
+                      />
+                      <textarea
+                        value={editMessage}
+                        onChange={(e) => setEditMessage(e.target.value)}
+                        placeholder="Message"
+                        className="edit-textarea"
+                        rows={3}
+                      />
+                      <div className="edit-actions">
+                        <button
+                          className="edit-save-btn"
+                          onClick={() => updateAnnouncement(item.id)}
+                        >
+                          Save
+                        </button>
+                        <button className="edit-cancel-btn" onClick={cancelEdit}>
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="announcement-top-row">
-                      <div className="announcement-title-block">
-                        <div className="announcement-title-row">
-                          {isRecentAnnouncement(item.created_at) && (
-                            <span className="announcement-unread-dot" aria-hidden="true" />
-                          )}
-                          <h4 className="announcement-title">{item.title}</h4>
-                          {getPriority(item) === "urgent" && (
-                            <span className="announcement-priority-badge">
-                              <AlertTriangle size={12} /> Urgent
+                  ) : (
+                    <>
+                      <div className="announcement-top-row">
+                        <div className="announcement-title-block">
+                          <div className="announcement-title-row">
+                            {!isRead && (
+                              <span className="announcement-unread-dot" aria-hidden="true" />
+                            )}
+                            <h4 className="announcement-title">{item.title}</h4>
+                            {getPriority(item) === "urgent" && (
+                              <span className="announcement-priority-badge">
+                                <AlertTriangle size={12} /> Urgent
+                              </span>
+                            )}
+                          </div>
+                          <div className="announcement-meta-row">
+                            <span className={`announcement-audience-badge tone-${getAudienceTone(item.target_audience)}`}>
+                              {getAudienceLabel(item.target_audience)}
                             </span>
+                            <span className="announcement-author-text">by {item.author_name}</span>
+                          </div>
+                        </div>
+                        <div className="announcement-actions-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div className="announcement-date-pill">
+                            <Clock3 size={12} />
+                            <span>{formatCompactDate(item.created_at)}</span>
+                          </div>
+                          {isRead ? (
+                            <button
+                              type="button"
+                              className="announcement-dismiss-btn read-badge"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleRead(item.id);
+                              }}
+                              title="Click to mark unread"
+                              style={{
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: '#64748b',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s'
+                              }}
+                            >
+                              ✓ Read
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="announcement-dismiss-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleRead(item.id);
+                              }}
+                              title="Click to mark as read"
+                              style={{
+                                background: '#eff6ff',
+                                border: '1px solid #bfdbfe',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: '#1d4ed8',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s'
+                              }}
+                            >
+                              Mark Read
+                            </button>
+                          )}
+                          {showEditDeleteButtons && (
+                            <div className="announcement-icon-buttons">
+                              <button
+                                className="announcement-icon-btn announcement-edit-icon-btn"
+                                onClick={() => startEdit(item)}
+                                title="Edit announcement"
+                                aria-label="Edit announcement"
+                              >
+                                ✎
+                              </button>
+                              <button
+                                className="announcement-icon-btn announcement-delete-icon-btn"
+                                onClick={() => deleteAnnouncement(item.id)}
+                                title="Delete announcement"
+                                aria-label="Delete announcement"
+                              >
+                                🗑️
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <div className="announcement-meta-row">
-                          <span className={`announcement-audience-badge tone-${getAudienceTone(item.target_audience)}`}>
-                            {getAudienceLabel(item.target_audience)}
-                          </span>
-                          <span className="announcement-author-text">by {item.author_name}</span>
-                        </div>
                       </div>
-                      <div className="announcement-date-pill">
-                        <Clock3 size={12} />
-                        <span>{formatCompactDate(item.created_at)}</span>
-                      </div>
-                      {showEditDeleteButtons && (
-                        <div className="announcement-icon-buttons">
-                          <button
-                            className="announcement-icon-btn announcement-edit-icon-btn"
-                            onClick={() => startEdit(item)}
-                            title="Edit announcement"
-                            aria-label="Edit announcement"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            className="announcement-icon-btn announcement-delete-icon-btn"
-                            onClick={() => deleteAnnouncement(item.id)}
-                            title="Delete announcement"
-                            aria-label="Delete announcement"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      )}
-                    </div>
 
-                    <button
-                      type="button"
-                      className="announcement-content-button"
-                      onClick={() => toggleExpanded(item.id)}
-                    >
-                      <div className={`announcement-content ${expandedAnnouncementId === item.id ? "is-expanded" : ""}`}>
-                        <p className="announcement-message">{item.message}</p>
-                      </div>
-                      <span className="announcement-read-more">
-                        {expandedAnnouncementId === item.id ? "Show less" : "Read more"}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        className="announcement-content-button"
+                        onClick={() => toggleExpanded(item.id)}
+                      >
+                        <div className={`announcement-content ${expandedAnnouncementId === item.id ? "is-expanded" : ""}`}>
+                          <p className="announcement-message">{item.message}</p>
+                        </div>
+                        <span className="announcement-read-more">
+                          {expandedAnnouncementId === item.id ? "Show less" : "Read more"}
+                        </span>
+                      </button>
 
-                    <div className="announcement-footnote">Posted {formatTime(item.created_at)}</div>
-                  </>
-                )}
-              </li>
-            ))}
+                      <div className="announcement-footnote">Posted {formatTime(item.created_at)}</div>
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

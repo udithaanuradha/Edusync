@@ -80,6 +80,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       }
 
       setStatus('success');
+      window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
       setTopic('');
       setPreferredDate('');
       setPreferredTime('');

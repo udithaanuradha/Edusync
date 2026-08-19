@@ -274,3 +274,21 @@
   background: #dbeafe;
   border-color: #93c5fd;
 }
+
+.timeline-inline-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  width: 100%;
+}
+
+.timeline-inline-card .timeline-container {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 16px;
+}
