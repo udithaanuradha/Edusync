@@ -13,7 +13,14 @@ export interface ApprovedGroupRequest {
   groupLeader: string;
   membersList: string;
   supervisorName: string;
+  department?: string;
   studentId?: number;
   projectLevel?: number;
   resolvedMembers?: ApprovedRequestMember[];
+  status?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+  isFinalSubmitted?: boolean;
+  isGroupCreated?: boolean;
+  raw?: Record<string, unknown>;
 }

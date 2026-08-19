@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/shared/Sidebar";
 import Header from "../../components/shared/Header";
 import SupervisorSidebar from "../../components/supervisor/SupervisorSidebar";
@@ -6,7 +7,7 @@ import "./SupervisorDashboard.css";
 import "./SupervisorLevelPage.css";
 
 interface SupervisorLevelPageProps {
-  levelNumber: number;
+  levelNumber?: number; // 🎯 App.tsx එකෙන් pass නොකළද error නොඑන සේ optional (?) කරන ලදී
 }
 
 type StageFile = {
@@ -154,14 +155,23 @@ const belongsToViewer = (
 };
 
 const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
-  levelNumber,
+  levelNumber: propsLevelNumber,
 }) => {
+  const navigate = useNavigate();
+  
+  // 🎯 URL Parameter (:levelNumber) හෝ Props හරහා එන level එක Dynamic ලෙස ගනී
+  const { levelNumber: urlLevelNumber } = useParams<{ levelNumber: string }>();
+  const levelNumber = propsLevelNumber ?? Number(urlLevelNumber) ?? 1;
+
   const viewer = useMemo(() => getViewerIdentity(), []);
   const [activeTab, setActiveTab] = useState<TabKey>("stages");
 
   const [stages, setStages] = useState<Stage[]>([]);
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
+
+  // 🎯 Real DB Result මත පමණක් button එක පෙන්නීමට default = false කර ඇත
+  const [isEvaluatorAssigned, setIsEvaluatorAssigned] = useState<boolean>(false);
 
   const [loadingStages, setLoadingStages] = useState(true);
   const [loadingGroups, setLoadingGroups] = useState(true);
@@ -170,6 +180,37 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   const [stagesError, setStagesError] = useState("");
   const [groupsError, setGroupsError] = useState("");
   const [submissionsError, setSubmissionsError] = useState("");
+
+  // 🎯 REAL Backend Evaluator Check Logic
+  const checkEvaluatorAssignment = async () => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      const userObj = userRaw ? JSON.parse(userRaw) : null;
+      const joinedName = [userObj?.first_name, userObj?.last_name].filter(Boolean).join(" ");
+      const currentUserName = userObj?.name || userObj?.full_name || joinedName || viewer.name || "";
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:5000/api/evaluation-panels/check-evaluator?level=${levelNumber}&evaluatorName=${encodeURIComponent(currentUserName)}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const resData = await response.json();
+        setIsEvaluatorAssigned(resData.isEvaluator === true);
+      } else {
+        setIsEvaluatorAssigned(false);
+      }
+    } catch (err) {
+      console.error("Failed to verify evaluator assignment:", err);
+      setIsEvaluatorAssigned(false);
+    }
+  };
 
   const loadStages = async () => {
     setLoadingStages(true);
@@ -380,11 +421,11 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
       setLoadingSubmissions(false);
     }
   };
-
   useEffect(() => {
     loadStages();
     loadGroups();
     loadSubmissions();
+    checkEvaluatorAssignment();
   }, [levelNumber]);
 
   const renderStages = () => {
@@ -570,12 +611,21 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
 
         <main className="content-container supervisor-content-container">
           <div className="supervisor-level-page">
-            <div className="supervisor-level-header">
-              <h2>Level {levelNumber} Management</h2>
-              <p>
-                Manage level-specific stages, supervisor-assigned groups, and
-                approval submissions.
-              </p>
+            <div
+              className="supervisor-level-header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <h2>Level {levelNumber} Management</h2>
+                <p>
+                  Manage level-specific stages, supervisor-assigned groups, and
+                  approval submissions.
+                </p>
+              </div>
             </div>
 
             <div
@@ -586,7 +636,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`supervisor-level-tab ${activeTab === "stages" ? "active" : ""}`}
+                className={`supervisor-level-tab ${
+                  activeTab === "stages" ? "active" : ""
+                }`}
                 aria-selected={activeTab === "stages"}
                 onClick={() => setActiveTab("stages")}
               >
@@ -595,7 +647,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`supervisor-level-tab ${activeTab === "groups" ? "active" : ""}`}
+                className={`supervisor-level-tab ${
+                  activeTab === "groups" ? "active" : ""
+                }`}
                 aria-selected={activeTab === "groups"}
                 onClick={() => setActiveTab("groups")}
               >
@@ -604,7 +658,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`supervisor-level-tab ${activeTab === "submissions" ? "active" : ""}`}
+                className={`supervisor-level-tab ${
+                  activeTab === "submissions" ? "active" : ""
+                }`}
                 aria-selected={activeTab === "submissions"}
                 onClick={() => setActiveTab("submissions")}
               >

@@ -1,0 +1,244 @@
+.task-scheduler-btn {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+  color: #4338ca !important;
+  border: 1px solid rgba(67, 56, 202, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.1) !important;
+}
+
+.task-scheduler-btn:hover {
+  background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%) !important;
+}
+
+/* Wide Drawer for Timeline */
+.timeline-drawer {
+  width: min(900px, 100vw) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Fixed Navigation Buttons */
+.timeline-nav-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 14px;
+  color: #475569;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.timeline-nav-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.week-display h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.week-display span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Timeline Grid */
+.timeline-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: #ffffff;
+}
+
+.timeline-axis {
+  display: flex;
+  margin-left: 100px;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.time-marker {
+  position: absolute;
+  font-size: 11px;
+  color: #64748b;
+  transform: translateX(-50%);
+}
+
+.timeline-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 70px;
+  margin-bottom: 12px;
+}
+
+.day-label {
+  width: 100px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 16px;
+  border-right: 2px solid #e2e8f0;
+}
+
+.day-label strong {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.day-label span {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.day-track {
+  flex: 1;
+  position: relative;
+  background: #f8fafc;
+  border-radius: 0 8px 8px 0;
+  cursor: crosshair;
+  background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px);
+  background-size: 12.5% 100%; /* 8 segments for 16 hours = 2hr blocks */
+}
+
+.day-track:hover {
+  background-color: #f1f5f9;
+}
+
+/* Timeline Blocks */
+.time-block {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.time-block:hover {
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+.time-block strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time-block span {
+  opacity: 0.8;
+  font-size: 10px;
+  /* Prevent long text from stretching the colored blocks */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-lecture {
+  background: #64748b;
+  border: 1px solid #475569;
+}
+.block-meeting {
+  background: #3b82f6;
+  border: 1px solid #2563eb;
+}
+.block-faculty {
+  background: #8b5cf6;
+  border: 1px solid #7c3aed;
+}
+.block-personal {
+  background: #10b981;
+  border: 1px solid #059669;
+}
+
+/* NEW: Expanded Category Colors */
+.block-interim {
+  background: #f59e0b;
+  border: 1px solid #d97706;
+} /* Amber */
+.block-evaluation {
+  background: #ef4444;
+  border: 1px solid #dc2626;
+} /* Red */
+.block-code {
+  background: #06b6d4;
+  border: 1px solid #0891b2;
+} /* Cyan */
+.block-final {
+  background: #ec4899;
+  border: 1px solid #db2777;
+} /* Pink */
+
+/* Mini Form Modal */
+.task-form-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.task-form-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Fixed Delete Button */
+.task-delete-btn {
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.task-delete-btn:hover {
+  background: #fee2e2;
+}

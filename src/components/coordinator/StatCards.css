@@ -1,19 +1,19 @@
 .stat-cards-container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 24px;
+  margin-bottom: 0;
 }
 
 .stat-card {
   background-color: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e5e7eb;
 }
 
 .stat-icon-wrapper {
@@ -29,22 +29,22 @@
 /* Specific Icon Background & Text Colors matching your design */
 .icon-blue {
   background-color: #eff6ff;
-  color: #3b82f6;
+  color: #2563eb;
 }
 
 .icon-green {
   background-color: #f0fdf4;
-  color: #22c55e;
+  color: #16a34a;
 }
 
 .icon-orange {
   background-color: #fff7ed;
-  color: #f97316;
+  color: #ea580c;
 }
 
 .icon-teal {
   background-color: #f0fdfa;
-  color: #14b8a6;
+  color: #0f766e;
 }
 
 .stat-details {
@@ -53,9 +53,9 @@
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0 0 4px 0;
   line-height: 1;
 }
@@ -69,7 +69,7 @@
 
 .stat-subtext {
   font-size: 12px;
-  color: #22c55e; /* The green positive trend text */
+  color: #166534; /* The green positive trend text */
   margin: 0;
   font-weight: 500;
 }

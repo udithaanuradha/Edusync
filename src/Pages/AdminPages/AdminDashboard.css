@@ -3,7 +3,7 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: #f8fafc; /* Light gray background from your design */
+  background-color: #f8fafc;
 }
 
 .main-viewport {
@@ -22,19 +22,37 @@
 .overview-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1e293b; /* Dark text */
+  color: #1e293b;
   margin: 0;
 }
 
 .overview-subtitle {
-  color: #64748b; /* Gray text */
+  color: #64748b;
   margin: 4px 0 32px 0;
 }
 
-/* Base styles for the stats grid we'll build */
+/* Updated Stats Grid for 5 Cards */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
+  /* Reduced min-width to 200px to help 5 cards fit on one row in most desktops */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px; 
   margin-bottom: 32px;
+}
+
+/* Optional: Add a slight transition for the cards if they hover */
+.stats-grid > div {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-grid > div:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.overview-row {
+  margin-top: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }

@@ -1,6 +1,6 @@
  import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import MentorSidebar from '../../components/mentor/MentorSidebar';
+import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import StatCards from '../../components/mentor/StatCard'; // FIXED: Plural import
 import RecentProjects from '../../components/mentor/RecentProjects';
@@ -35,7 +35,7 @@ const MentorDashboard: React.FC = () => {
 const MentorOverview: React.FC = () => {
   return (
     <div className="app-layout">
-      <MentorSidebar />
+      <Sidebar />
       <div className="main-viewport">
         <Header />
         <main className="content-container">

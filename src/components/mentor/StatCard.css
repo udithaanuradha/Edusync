@@ -57,6 +57,7 @@
   color: #1e293b;
   margin: 0;
   line-height: 1.1;
+  min-height: 1.1em;
 }
 
 .stat-title {
@@ -70,6 +71,7 @@
   font-size: 11px;
   font-weight: 600;
   margin: 0;
+  min-height: 1em;
 }
 
 /* Subtitle colors */
@@ -77,3 +79,29 @@
 .subtitle-green  { color: #22c55e; }
 .subtitle-orange { color: #f97316; }
 .subtitle-teal   { color: #14b8a6; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.stat-skeleton {
+  display: inline-block;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.stat-skeleton-value {
+  width: 48px;
+  height: 30px;
+  vertical-align: middle;
+}
+
+.stat-skeleton-subtitle {
+  width: 90px;
+  height: 12px;
+  vertical-align: middle;
+}

@@ -1,0 +1,108 @@
+/* ── Level 1 link — visually disabled for mentors ──────────────────────── */
+.mentor-sidebar-container a[href*="level-1"] {
+  pointer-events: auto !important; /* keep so our capture handler fires */
+  opacity: 0.45;
+  filter: grayscale(1);
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+/* Prevent child elements from receiving pointer events so the click
+   bubbles cleanly to the wrapper's onClickCapture handler */
+.mentor-sidebar-container a[href*="level-1"] * {
+  pointer-events: none;
+}
+
+/* Tooltip on hover */
+.mentor-sidebar-container a[href*="level-1"]::after {
+  content: 'Not available for mentors';
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 9999;
+}
+
+.mentor-sidebar-container a[href*="level-1"]:hover::after {
+  opacity: 1;
+}
+
+/* ── Modal Overlay ──────────────────────────────────────────────────────── */
+.mentor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: mentorFadeIn 0.15s ease;
+}
+
+@keyframes mentorFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal Box ──────────────────────────────────────────────────────────── */
+.mentor-modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px 36px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: mentorSlideUp 0.2s ease;
+}
+
+@keyframes mentorSlideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.mentor-modal-icon {
+  font-size: 42px;
+  margin-bottom: 16px;
+}
+
+.mentor-modal-box h3 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mentor-modal-box p {
+  margin: 0 0 28px 0;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.mentor-modal-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mentor-modal-btn:hover {
+  background: #1d4ed8;
+}

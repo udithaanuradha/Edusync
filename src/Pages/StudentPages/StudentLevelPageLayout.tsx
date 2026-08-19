@@ -15,13 +15,13 @@ const StudentLevelPageLayout: React.FC<StudentLevelPageLayoutProps> = ({
   children,
 }) => {
   return (
-    <div className="app-layout">
+    <div className="app-layout student-level-shell">
       <Sidebar />
 
       <div className="main-viewport">
         <Header pageTitle={title} />
 
-        <main className="content-container">
+        <main className="content-container student-level-content">
           <div className="dashboard-content">
             <div className="dashboard-header-section">
               <h2 className="overview-title">{title}</h2>

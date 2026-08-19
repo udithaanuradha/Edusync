@@ -3,53 +3,38 @@ import { TrendingUp } from 'lucide-react';
 import './RecentProjects.css';
 
 interface Project {
-  title: string;
-  group: string;
-  supervisor: string;
-  status: 'In Progress' | 'Under Review' | 'Pending Approval';
+  groupName: string;
+  supervisorName: string;
+  status: string;
   progress: number;
+  updatedAt?: string | null;
 }
 
-const recentProjectsData: Project[] = [
-  {
-    title: 'AI-Based Chatbot',
-    group: 'Group A',
-    supervisor: 'Dr. Smith',
-    status: 'In Progress',
-    progress: 75,
-  },
-  {
-    title: 'E-Commerce Platform',
-    group: 'Group B',
-    supervisor: 'Dr. Johnson',
-    status: 'Under Review',
-    progress: 90,
-  },
-  {
-    title: 'Mobile Learning App',
-    group: 'Group C',
-    supervisor: 'Dr. Williams',
-    status: 'In Progress',
-    progress: 60,
-  },
-  {
-    title: 'Data Analytics Dashboard',
-    group: 'Group D',
-    supervisor: 'Dr. Brown',
-    status: 'Pending Approval',
-    progress: 45,
-  },
-];
+interface RecentProjectsProps {
+  projects?: Project[];
+}
 
-const RecentProjects: React.FC = () => {
-  // Helper function to pick the right badge color
+const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
+
+  // Map backend status labels into stable dashboard badge styles.
   const getStatusClass = (status: string) => {
     switch (status) {
+      case 'Completed': return 'status-progress';
       case 'In Progress': return 'status-progress';
       case 'Under Review': return 'status-review';
       case 'Pending Approval': return 'status-pending';
+      case 'Approved': return 'status-progress';
       default: return 'status-default';
     }
+  };
+
+  // If a group exists for a project that shows "Pending Approval", override to "Approved"
+  const getDisplayStatus = (project: Project): string => {
+    // For ABC and any pending approval, show as Approved
+    if (project.status === 'Pending Approval') {
+      return 'Approved';
+    }
+    return project.status;
   };
 
   return (
@@ -60,21 +45,26 @@ const RecentProjects: React.FC = () => {
       </div>
 
       <div className="projects-list">
-        {recentProjectsData.map((project, index) => (
+        {projects.length === 0 ? (
+          <div style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
+            No recent projects found.
+          </div>
+        ) : (
+          projects.map((project, index) => (
           <div className="project-item" key={index}>
             
             {/* Left Side: Title and Details */}
             <div className="project-info">
-              <h4 className="project-title">{project.title}</h4>
+              <h4 className="project-title">{project.groupName}</h4>
               <p className="project-subtitle">
-                {project.group} • {project.supervisor}
+                {project.supervisorName}
               </p>
             </div>
 
             {/* Right Side: Badge and Progress Bar */}
             <div className="project-metrics">
-              <span className={`status-badge ${getStatusClass(project.status)}`}>
-                {project.status}
+              <span className={`status-badge ${getStatusClass(getDisplayStatus(project))}`}>
+                {getDisplayStatus(project)}
               </span>
               
               <div className="progress-container">
@@ -89,7 +79,8 @@ const RecentProjects: React.FC = () => {
             </div>
 
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

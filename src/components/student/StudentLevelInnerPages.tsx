@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CoordinatorStageUpdates from "./CoordinatorStageUpdates";
 import GroupRequest from "./GroupRequest";
+import StudentSubmissions from "./StudentSubmissions";
 import "./StudentLevelInnerPages.css";
 
 const tabItems = [
   { key: "projectStates", label: "Project States" },
   { key: "groupFormation", label: "Group Formation" },
   { key: "groups", label: "Groups" },
+  { key: "submissions", label: "Submissions" },
 ] as const;
 
 type TabKey = (typeof tabItems)[number]["key"];
@@ -43,7 +45,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
       setLoadingGroups(true);
       try {
         const response = await fetch(
-          `http://localhost:5000/api/groups/level/${levelNumber}`,
+          `http://localhost:5000/api/groups/student-group/${user.id}/${levelNumber}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -58,6 +60,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
         }
 
         const data = await response.json();
+        if (import.meta.env.DEV) console.log('[StudentLevelInnerPages] raw groups payload', data);
         const rawItems = Array.isArray(data)
           ? data
           : Array.isArray(data.groups)
@@ -136,7 +139,7 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                 supervisor, and track your request status.
               </p>
             </div>
-            <GroupRequest />
+            <GroupRequest levelNumber={levelNumber} />
           </div>
         );
 
@@ -183,17 +186,39 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                   ))}
                 </div>
               )}
-              <div className="manage-project-section">
-                <button
-                  className="manage-project-btn"
-                  onClick={() => navigate("/student/project-management")}
-                >
-                  Start Manage the Project
-                </button>
-              </div>
+              {groups.length > 0 && (
+                <div className="manage-project-section">
+                  <button
+                    className="manage-project-btn"
+                    onClick={() => {
+                      const userString = localStorage.getItem("user");
+                      const user = userString ? JSON.parse(userString) : null;
+                      const currentUserName = String(user?.name || "").trim().toLowerCase();
+                      const targetGroup =
+                        groups.find(
+                          (group) =>
+                            String(group.groupLeader || "").trim().toLowerCase() === currentUserName,
+                        ) || groups[0];
+
+                      navigate("/student/project-management", {
+                        state: {
+                          level: levelNumber,
+                          groupId: targetGroup.id,
+                          groupLeader: targetGroup.groupLeader,
+                        },
+                      });
+                    }}
+                  >
+                    Start Manage the Project
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
+
+      case "submissions":
+        return <StudentSubmissions levelNumber={levelNumber} />;
 
       default:
         return null;
