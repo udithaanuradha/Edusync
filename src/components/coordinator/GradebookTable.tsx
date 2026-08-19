@@ -262,7 +262,6 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
 
     return {
       ...totals,
-      submitted: totals.total,
       progress,
     };
   }, [selectedStageMarks]);
@@ -278,14 +277,13 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       ? selectedStageMarks
       : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
 
-  // Group marks by stage name for better display (one table per stage)
-  const groupedMarks: Record<string, GroupMark[]> = {};
+  // Group marks by stage for better display
+  const groupedMarks: Record<number, GroupMark[]> = {};
   filteredMarks.forEach((mark) => {
-    const key = mark.stage_name && String(mark.stage_name).trim().length > 0 ? String(mark.stage_name) : `Stage ${mark.stage_id}`;
-    if (!groupedMarks[key]) {
-      groupedMarks[key] = [];
+    if (!groupedMarks[mark.stage_id]) {
+      groupedMarks[mark.stage_id] = [];
     }
-    groupedMarks[key].push(mark);
+    groupedMarks[mark.stage_id].push(mark);
   });
 
   const renderMarkCell = (mark: GroupMark) => {
@@ -371,6 +369,26 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       </div>
 
       <div className="submission-tracker-panel">
+        <div className="submission-tracker-summary">
+          <div>
+            <div className="submission-tracker-meta">
+              <span className="submission-tracker-count">
+                {submissionStats.submitted}/{submissionStats.total} Groups Submitted
+              </span>
+              <span className="submission-tracker-percent">{submissionStats.progress}% complete</span>
+            </div>
+            <div className="submission-progress-bar" aria-label="Submission progress">
+              <div
+                className="submission-progress-fill"
+                style={{ width: `${submissionStats.progress}%` }}
+              />
+            </div>
+          </div>
+          <p className="submission-tracker-hint">
+            Use the status tabs to isolate submitted, pending, or late groups instantly.
+          </p>
+        </div>
+
         <div className="submission-status-tabs" role="tablist" aria-label="Submission status filters">
           {statusTabs.map((tab) => (
             <button
@@ -399,11 +417,11 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         </div>
       ) : (
         <div className="gradebook-wrapper">
-          {Object.entries(groupedMarks).map(([stageKey, stageMark]) => {
-            const stageName = stageMark[0]?.stage_name || String(stageKey);
+          {Object.entries(groupedMarks).map(([stageId, stageMark]) => {
+            const stageName = stageMark[0]?.stage_name || `Stage ${stageId}`;
 
             return (
-              <div key={stageKey} className="stage-section">
+              <div key={stageId} className="stage-section">
                 <h4 className="stage-title">{stageName}</h4>
                 <div className="stage-table">
                   <table>

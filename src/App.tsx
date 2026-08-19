@@ -37,6 +37,8 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import Level3mentor from './Pages/MentorPages/Level3mentor';
 import MentorLevel1Blocked from './Pages/MentorPages/MentorLevel1Blocked';
 import MentorSetupForm from './Pages/auth/MentorSetupForm';
+import MentorProjectDelaysPage from './Pages/MentorPages/MentorProjectDelaysPage';
+import MentorCalendarPage from './Pages/MentorPages/MentorCalendarPage';
 import SupervisorEvaluationPanel from './Pages/SupervisorPages/SupervisorEvaluationPanel';
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
@@ -98,7 +100,7 @@ function App() {
       />
 
       <Route
-        path="/mentor"
+        path="/mentor/*"
         element={
           userObj?.role === "mentor" ? <MentorDashboard /> : <Navigate to="/login" />
         }
@@ -106,7 +108,7 @@ function App() {
 
       {/* Dashboard redirect catch */}
       <Route
-        path="/dashboard"
+        path="/dashboard/*"
         element={
           userObj?.role === "student" ? (
             <StudentDashboard />
@@ -216,6 +218,8 @@ function App() {
         element={
           userObj?.role === "admin" ? (
             <AdminCalendarPage />
+          ) : userObj?.role === "mentor" ? (
+            <MentorCalendarPage />
           ) : userObj ? (
             <CalendarPage />
           ) : (
@@ -294,6 +298,20 @@ function App() {
       <Route
         path="/profile-settings"
         element={userObj ? <ProfileSettingsPage /> : <Navigate to="/login" />}
+      />
+
+      {/* Project Delays Route (Mentor Specific) */}
+      <Route
+        path="/dashboard/project-delays"
+        element={
+          userObj?.role === "mentor" ? (
+            <MentorProjectDelaysPage />
+          ) : userObj ? (
+            <Navigate to="/dashboard" />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
     </Routes>
   );

@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Award,
-  BarChart3,
-  CheckCircle2,
-  GraduationCap,
-  Layers,
-  TrendingUp,
-  Users,
+import { 
+  Award, 
+  BarChart3, 
+  CheckCircle2, 
+  FileSpreadsheet, 
+  GraduationCap, 
+  Layers, 
+  Search, 
+  TrendingUp, 
+  Users 
 } from 'lucide-react';
 
-// Grading Scale definition
+interface SupervisorReportPanelProps {
+  levelNumber?: number;
+}
+
+// Grading Scale definition strictly based on Dhofar / UoM University Grading System
 interface GradeDefinition {
   min: number;
   max: number;
@@ -36,7 +42,9 @@ const GRADING_SCALE: GradeDefinition[] = [
 const calculateGrade = (finalScore: number): GradeDefinition => {
   const score = Math.max(0, Math.min(100, Math.round(finalScore * 100) / 100));
   for (const grade of GRADING_SCALE) {
-    if (score >= grade.min && score <= grade.max) return grade;
+    if (score >= grade.min && score <= grade.max) {
+      return grade;
+    }
   }
   return GRADING_SCALE[GRADING_SCALE.length - 1];
 };
@@ -71,163 +79,203 @@ interface StudentReportItem {
   stages: { [stageId: string]: StageData };
   sum_obtained_marks: number;
   sum_total_max_marks: number;
-  final_mark: number;
+  final_mark: number; // percentage out of 100
   gradeInfo: GradeDefinition;
 }
 
 interface CanonicalStage {
-  canonical_id: string;
+  canonical_id: string | number;
   stage_name: string;
   raw_stage_ids: Array<string | number>;
 }
 
-interface SupervisorReportPanelProps {
-  levelNumber?: number;
-}
-
 const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumber = 2 }) => {
   const [students, setStudents] = useState<StudentReportItem[]>([]);
-  const [stages, setStages] = useState<Array<{ stage_id: string; stage_name: string }>>([]);
+  const [stages, setStages] = useState<Array<{ stage_id: number | string; stage_name: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedDegree, setSelectedDegree] = useState<DegreeType>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>('ALL');
 
+  // Degree helper directly from users table's academic_unit column
   const inferDegree = (item: any): 'IT' | 'AI' | 'ITM' => {
+    // 1. Primary: users.academic_unit
     const unit = String(item.academic_unit || item.degree || '').trim().toUpperCase();
-    if (unit === 'ITM' || unit.includes('ITM') || unit.includes('MANAGEMENT')) return 'ITM';
-    if (unit === 'AI' || unit.includes('AI') || unit.includes('ARTIFICIAL')) return 'AI';
-    if (unit === 'IT' || unit.includes('INFORMATION')) return 'IT';
+    if (unit === 'ITM' || unit.includes('ITM') || unit.includes('MANAGEMENT')) {
+      return 'ITM';
+    }
+    if (unit === 'AI' || unit.includes('AI') || unit.includes('ARTIFICIAL')) {
+      return 'AI';
+    }
+    if (unit === 'IT' || unit.includes('INFORMATION')) {
+      return 'IT';
+    }
 
+    // 2. Secondary fallback: group department / group name / student details
     const groupDept = (
-      String(item.group_department || '') + ' ' + String(item.department || '') + ' ' + String(item.group_name || '') + ' ' + String(item.university_id || '')
+      String(item.group_department || '') + ' ' +
+      String(item.department || '') + ' ' +
+      String(item.group_name || '') + ' ' +
+      String(item.university_id || '')
     ).toUpperCase();
 
-    if (groupDept.includes('ITM') || groupDept.includes('MANAGEMENT') || groupDept.includes('CYGEN')) return 'ITM';
-    if (groupDept.includes('AI') || groupDept.includes('ARTIFICIAL')) return 'AI';
-    if (groupDept.includes('IT')) return 'IT';
+    if (groupDept.includes('ITM') || groupDept.includes('MANAGEMENT') || groupDept.includes('CYGEN')) {
+      return 'ITM';
+    }
+    if (groupDept.includes('AI') || groupDept.includes('ARTIFICIAL')) {
+      return 'AI';
+    }
+    if (groupDept.includes('IT')) {
+      return 'IT';
+    }
+
     return 'ITM';
   };
 
+  // Fetch Level Marks Summary from Backend with Stage Deduplication
   const fetchReportData = async () => {
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/api/marks/summary/level/${levelNumber}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        },
       });
 
-      if (!response.ok) {
-        setStudents([]);
-        setStages([]);
-        return;
-      }
+      if (response.ok) {
+        const payload = await response.json();
+        const rawStages = payload.stages || [];
+        const rawData = payload.data || [];
 
-      const payload = await response.json();
-      const rawStages: any[] = Array.isArray(payload.stages) ? payload.stages : [];
-      const rawData: any[] = Array.isArray(payload.data) ? payload.data : [];
+        // 1. Deduplicate/group stages by normalized name (case-insensitive: Proposal=proposal, Interim=interim, Final=final)
+        const stageGroupMap = new Map<string, CanonicalStage>();
 
-      // Build canonical stage groups by normalized stage name
-      const canonicalByKey = new Map<string, CanonicalStage>();
-      rawStages.forEach((stg, idx) => {
-        const rawName = String(stg.stage_name || '').trim();
-        const key = rawName.toLowerCase();
-        if (!canonicalByKey.has(key)) {
-          canonicalByKey.set(key, { canonical_id: `c_${key}`, stage_name: rawName || `Stage ${idx + 1}`, raw_stage_ids: [stg.stage_id] });
-        } else {
-          const c = canonicalByKey.get(key)!;
-          if (!c.raw_stage_ids.includes(stg.stage_id)) c.raw_stage_ids.push(stg.stage_id);
-        }
-      });
+        rawStages.forEach((stg: any) => {
+          const rawName = String(stg.stage_name || '').trim();
+          const normalizedKey = rawName.toLowerCase();
+          const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
 
-      const canonicalStages = Array.from(canonicalByKey.values());
-      setStages(canonicalStages.map((c) => ({ stage_id: c.canonical_id, stage_name: c.stage_name })));
+          if (!stageGroupMap.has(normalizedKey)) {
+            stageGroupMap.set(normalizedKey, {
+              canonical_id: stg.stage_id,
+              stage_name: displayName,
+              raw_stage_ids: [stg.stage_id],
+            });
+          } else {
+            stageGroupMap.get(normalizedKey)!.raw_stage_ids.push(stg.stage_id);
+          }
+        });
 
-      // Helper to safely read student stage evaluator marks
-      const normalizeStudent = (item: any): StudentReportItem => {
-        const degree = inferDegree(item) as any;
-        const canonicalStagesMap: Record<string, StageData> = {};
-        let sumObtained = 0;
-        let sumMax = 0;
+        // Natural sort order: Proposal -> Interim -> Final -> other stages
+        const canonicalList = Array.from(stageGroupMap.values()).sort((a, b) => {
+          const order = ['proposal', 'interim', 'final'];
+          const idxA = order.indexOf(a.stage_name.toLowerCase());
+          const idxB = order.indexOf(b.stage_name.toLowerCase());
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.stage_name.localeCompare(b.stage_name);
+        });
 
-        canonicalStages.forEach((cStg) => {
-          // Collect evaluators across raw stage ids
-          const combinedEvaluators: EvaluatorMarkItem[] = [];
-          let stageTotalMax = 0;
+        setStages(canonicalList.map((s) => ({ stage_id: s.canonical_id, stage_name: s.stage_name })));
 
-          cStg.raw_stage_ids.forEach((rawId) => {
-            // item.stages may be an object keyed by rawId or an array — handle both
-            const rawStageData = (item.stages && item.stages[rawId]) || (Array.isArray(item.stages) && item.stages.find((s: any) => String(s.stage_id) === String(rawId))) || null;
-            if (rawStageData) {
-              // Accept 'evaluators' array or 'marks' array
-              const evals: any[] = rawStageData.evaluators || rawStageData.marks || rawStageData.evaluator_marks || [];
-              if (Array.isArray(evals)) {
-                evals.forEach((e) => {
-                  if (e && typeof e.mark === 'number') combinedEvaluators.push({ evaluator_name: e.evaluator_name || e.name || 'Evaluator', mark: Number(e.mark), total_marks: e.total_marks });
-                });
-              }
-              if (typeof rawStageData.total_marks === 'number') {
-                stageTotalMax += Number(rawStageData.total_marks);
-              } else if (typeof rawStageData.max_marks === 'number') {
-                stageTotalMax += Number(rawStageData.max_marks);
-              }
+        // 2. Process student marks aggregated across canonical stages
+        const processed: StudentReportItem[] = rawData.map((item: any) => {
+          const degree = inferDegree(item);
+          const canonicalStagesMap: { [canonicalId: string]: StageData } = {};
+          let sumObtained = 0;
+          let sumMax = 0;
+
+          canonicalList.forEach((cStg) => {
+            const combinedEvaluators: EvaluatorMarkItem[] = [];
+            let stageTotalMax = 100;
+
+            if (item.stages) {
+              cStg.raw_stage_ids.forEach((rId) => {
+                const stgData = item.stages[rId] || item.stages[String(rId)];
+                if (stgData) {
+                  if (stgData.total_marks) stageTotalMax = Number(stgData.total_marks);
+                  if (Array.isArray(stgData.evaluators) && stgData.evaluators.length > 0) {
+                    stgData.evaluators.forEach((ev: any) => {
+                      if (!combinedEvaluators.some((e) => e.evaluator_name === ev.evaluator_name && e.mark === ev.mark)) {
+                        combinedEvaluators.push({
+                          evaluator_name: ev.evaluator_name || 'Evaluator',
+                          mark: Number(ev.mark),
+                          total_marks: Number(ev.total_marks) || stageTotalMax,
+                          feedback: ev.feedback || '',
+                        });
+                      }
+                    });
+                  } else if (stgData.average_mark !== null && stgData.average_mark !== undefined) {
+                    combinedEvaluators.push({
+                      evaluator_name: 'Evaluator',
+                      mark: Number(stgData.average_mark),
+                      total_marks: stageTotalMax,
+                      feedback: '',
+                    });
+                  }
+                }
+              });
+            }
+
+            if (combinedEvaluators.length > 0) {
+              const avg = combinedEvaluators.reduce((sum, e) => sum + e.mark, 0) / combinedEvaluators.length;
+              const roundedAvg = Number(avg.toFixed(2));
+              canonicalStagesMap[cStg.canonical_id] = {
+                stage_id: cStg.canonical_id,
+                stage_name: cStg.stage_name,
+                average_mark: roundedAvg,
+                total_marks: stageTotalMax,
+                evaluator_count: combinedEvaluators.length,
+                evaluators: combinedEvaluators,
+              };
+              sumObtained += roundedAvg;
+              sumMax += stageTotalMax;
+            } else {
+              canonicalStagesMap[cStg.canonical_id] = {
+                stage_id: cStg.canonical_id,
+                stage_name: cStg.stage_name,
+                average_mark: null,
+                total_marks: stageTotalMax,
+                evaluator_count: 0,
+                evaluators: [],
+              };
             }
           });
 
-          let avg = null as number | null;
-          if (combinedEvaluators.length > 0) {
-            const s = combinedEvaluators.reduce((acc, x) => acc + (Number(x.mark) || 0), 0) / combinedEvaluators.length;
-            avg = Number(s.toFixed(2));
-            sumObtained += avg;
+          // Final Mark Formula: {(Sum of Stage Averages) / (Sum of Max Stage Marks)} * 100
+          let finalScore = 0;
+          if (sumMax > 0) {
+            finalScore = (sumObtained / sumMax) * 100;
+          } else if (item.final_mark !== undefined && item.final_mark !== null) {
+            finalScore = Number(item.final_mark);
           }
 
-          // If no explicit stageTotalMax, try to find in rawStages first matching any raw id
-          if (stageTotalMax === 0) {
-            const found = rawStages.find((rs) => cStg.raw_stage_ids.includes(rs.stage_id));
-            if (found && typeof found.max_marks === 'number') stageTotalMax = Number(found.max_marks);
-          }
-          if (stageTotalMax === 0) stageTotalMax = 100; // safe fallback
-          sumMax += stageTotalMax;
+          const roundedFinal = Number(finalScore.toFixed(2));
+          const gradeInfo = calculateGrade(roundedFinal);
 
-          canonicalStagesMap[cStg.canonical_id] = {
-            stage_id: cStg.canonical_id,
-            stage_name: cStg.stage_name,
-            average_mark: avg,
-            total_marks: stageTotalMax,
-            evaluator_count: combinedEvaluators.length,
-            evaluators: combinedEvaluators,
+          return {
+            student_id: item.student_id,
+            student_name: item.student_name,
+            university_id: item.university_id || 'N/A',
+            email: item.email || '',
+            group_id: item.group_id,
+            group_name: item.group_name || 'Group',
+            degree: degree,
+            is_leader: Boolean(item.is_leader),
+            stages: canonicalStagesMap,
+            sum_obtained_marks: Number(sumObtained.toFixed(2)),
+            sum_total_max_marks: Number(sumMax.toFixed(2)),
+            final_mark: roundedFinal,
+            gradeInfo: gradeInfo,
           };
         });
 
-        // Final mark calculation
-        let finalScore = 0;
-        if (sumMax > 0) {
-          finalScore = (sumObtained / sumMax) * 100;
-        } else if (item.final_mark !== undefined && item.final_mark !== null) {
-          finalScore = Number(item.final_mark);
-        }
-
-        const roundedFinal = Number(finalScore.toFixed(2));
-        const gradeInfo = calculateGrade(roundedFinal);
-
-        return {
-          student_id: item.student_id,
-          student_name: item.student_name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Unknown',
-          university_id: item.university_id || 'N/A',
-          email: item.email || '',
-          group_id: item.group_id || item.group || 'N/A',
-          group_name: item.group_name || item.group_name || item.group || 'Group',
-          degree: degree,
-          is_leader: Boolean(item.is_leader),
-          stages: canonicalStagesMap,
-          sum_obtained_marks: Number(sumObtained.toFixed(2)),
-          sum_total_max_marks: Number(sumMax.toFixed(2)),
-          final_mark: roundedFinal,
-          gradeInfo,
-        };
-      };
-
-      const processed: StudentReportItem[] = rawData.map((it) => normalizeStudent(it));
-      setStudents(processed);
+        setStudents(processed);
+      } else {
+        console.warn('Could not fetch marks summary from API. Using empty dataset.');
+        setStudents([]);
+      }
     } catch (err) {
       console.error('Error fetching marks reports:', err);
       setStudents([]);
@@ -238,9 +286,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
   useEffect(() => {
     fetchReportData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelNumber]);
 
+  // Filter students based on selected degree, search query, and grade filter
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       const matchDegree = selectedDegree === 'ALL' || s.degree === selectedDegree;
@@ -249,35 +297,70 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.university_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.group_name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchGrade = selectedGradeFilter === 'ALL' || s.gradeInfo.letter === selectedGradeFilter;
+      const matchGrade =
+        selectedGradeFilter === 'ALL' || s.gradeInfo.letter === selectedGradeFilter;
       return matchDegree && matchSearch && matchGrade;
     });
   }, [students, selectedDegree, searchQuery, selectedGradeFilter]);
 
-  const degreeStudents = useMemo(() => students.filter((s) => selectedDegree === 'ALL' || s.degree === selectedDegree), [students, selectedDegree]);
+  // Degree-specific students subset for calculating statistics
+  const degreeStudents = useMemo(() => {
+    return students.filter((s) => selectedDegree === 'ALL' || s.degree === selectedDegree);
+  }, [students, selectedDegree]);
 
+  // Calculate Grade Distribution Percentages & Statistics for Degree
   const degreeStats = useMemo(() => {
     const total = degreeStudents.length;
-    if (total === 0) return { total: 0, avgMark: 0, passCount: 0, passRate: 0, gradeCounts: {} as Record<string, number>, gradePercentages: {} as Record<string, number> };
+    if (total === 0) {
+      return {
+        total: 0,
+        avgMark: 0,
+        passCount: 0,
+        passRate: 0,
+        gradeCounts: {} as Record<string, number>,
+        gradePercentages: {} as Record<string, number>,
+      };
+    }
+
     const sumMarks = degreeStudents.reduce((acc, s) => acc + s.final_mark, 0);
     const passCount = degreeStudents.filter((s) => s.gradeInfo.letter !== 'I').length;
+
     const gradeCounts: Record<string, number> = {};
     GRADING_SCALE.forEach((g) => {
       gradeCounts[g.letter] = 0;
     });
+
     degreeStudents.forEach((s) => {
       const letter = s.gradeInfo.letter;
       gradeCounts[letter] = (gradeCounts[letter] || 0) + 1;
     });
+
     const gradePercentages: Record<string, number> = {};
     Object.keys(gradeCounts).forEach((letter) => {
       gradePercentages[letter] = Number(((gradeCounts[letter] / total) * 100).toFixed(1));
     });
-    return { total, avgMark: Number((sumMarks / total).toFixed(2)), passCount, passRate: Number(((passCount / total) * 100).toFixed(1)), gradeCounts, gradePercentages };
+
+    return {
+      total,
+      avgMark: Number((sumMarks / total).toFixed(2)),
+      passCount,
+      passRate: Number(((passCount / total) * 100).toFixed(1)),
+      gradeCounts,
+      gradePercentages,
+    };
   }, [degreeStudents]);
 
-  const countsByDegree = useMemo(() => ({ ALL: students.length, IT: students.filter((s) => s.degree === 'IT').length, AI: students.filter((s) => s.degree === 'AI').length, ITM: students.filter((s) => s.degree === 'ITM').length }), [students]);
+  // Degree Counts
+  const countsByDegree = useMemo(() => {
+    return {
+      ALL: students.length,
+      IT: students.filter((s) => s.degree === 'IT').length,
+      AI: students.filter((s) => s.degree === 'AI').length,
+      ITM: students.filter((s) => s.degree === 'ITM').length,
+    };
+  }, [students]);
 
+  // Export to CSV with Evaluator Marks Breakdown
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) {
       alert('No student marks available to export.');
@@ -301,7 +384,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
       const stageCols = stages.map((st) => {
         const data = s.stages[st.stage_id];
         if (data && data.average_mark !== null) {
-          const evalStr = data.evaluators && data.evaluators.length > 0 ? data.evaluators.map((e, i) => `E${i + 1}(${e.evaluator_name}): ${e.mark}`).join('; ') + ` | Avg: ${data.average_mark}` : `${data.average_mark}`;
+          const evalStr = data.evaluators && data.evaluators.length > 0
+            ? data.evaluators.map((e, i) => `E${i + 1}(${e.evaluator_name}): ${e.mark}`).join('; ') + ` | Avg: ${data.average_mark}`
+            : `${data.average_mark}`;
           return `"${evalStr}"`;
         }
         return '"—"';
@@ -343,7 +428,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
         >
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>Level {levelNumber} — Coordinator Marks & Grade Reports</h2>
+          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
+            Level {levelNumber} — Coordinator Marks & Grade Reports
+          </h2>
         </div>
         <div
           style={{
@@ -374,7 +461,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
         >
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>Level {levelNumber} — Coordinator Marks & Grade Reports</h2>
+          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
+            Level {levelNumber} — Coordinator Marks & Grade Reports
+          </h2>
         </div>
 
         <div
@@ -407,8 +496,12 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
           >
             <BarChart3 size={28} />
           </div>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>No evaluation records yet</h3>
-          <p style={{ margin: 0, fontSize: '14px', color: '#64748b', maxWidth: '420px' }}>No evaluation marks or student records have been submitted for Level {levelNumber} yet.</p>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+            No evaluation records yet
+          </h3>
+          <p style={{ margin: 0, fontSize: '14px', color: '#64748b', maxWidth: '420px' }}>
+            No evaluation marks or student records have been submitted for Level {levelNumber} yet.
+          </p>
         </div>
       </div>
     );
@@ -416,6 +509,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Header Banner & Download Action */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -431,7 +525,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         }}
       >
         <div>
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>Level {levelNumber} — Coordinator Marks & Grade Reports</h2>
+          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
+            Level {levelNumber} — Coordinator Marks & Grade Reports
+          </h2>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -458,129 +554,616 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         </div>
       </div>
 
-      {/* Degree Tabs */}
-      <div style={{ display: 'flex', gap: 12, borderBottom: '2px solid #e2e8f0', paddingBottom: 8 }}>
-        {(['ALL', 'IT', 'AI', 'ITM'] as DegreeType[]).map((deg) => (
-          <button
-            key={deg}
-            type="button"
-            onClick={() => setSelectedDegree(deg)}
+      {/* Degree Program Tabs (IT, AI, ITM, ALL) */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          borderBottom: '2px solid #e2e8f0',
+          paddingBottom: '2px',
+          overflowX: 'auto',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setSelectedDegree('ALL')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            border: 'none',
+            borderBottom: selectedDegree === 'ALL' ? '3px solid #2563eb' : '3px solid transparent',
+            backgroundColor: 'transparent',
+            color: selectedDegree === 'ALL' ? '#2563eb' : '#64748b',
+            fontWeight: selectedDegree === 'ALL' ? '700' : '600',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Layers size={18} />
+          All Degrees ({countsByDegree.ALL})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedDegree('IT')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            border: 'none',
+            borderBottom: selectedDegree === 'IT' ? '3px solid #0284c7' : '3px solid transparent',
+            backgroundColor: 'transparent',
+            color: selectedDegree === 'IT' ? '#0284c7' : '#64748b',
+            fontWeight: selectedDegree === 'IT' ? '700' : '600',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <GraduationCap size={18} />
+          IT — Information Technology ({countsByDegree.IT})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedDegree('AI')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            border: 'none',
+            borderBottom: selectedDegree === 'AI' ? '3px solid #7c3aed' : '3px solid transparent',
+            backgroundColor: 'transparent',
+            color: selectedDegree === 'AI' ? '#7c3aed' : '#64748b',
+            fontWeight: selectedDegree === 'AI' ? '700' : '600',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Award size={18} />
+          AI — Artificial Intelligence ({countsByDegree.AI})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedDegree('ITM')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 20px',
+            border: 'none',
+            borderBottom: selectedDegree === 'ITM' ? '3px solid #d97706' : '3px solid transparent',
+            backgroundColor: 'transparent',
+            color: selectedDegree === 'ITM' ? '#d97706' : '#64748b',
+            fontWeight: selectedDegree === 'ITM' ? '700' : '600',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <BarChart3 size={18} />
+          ITM — Info Tech & Management ({countsByDegree.ITM})
+        </button>
+      </div>
+
+      {/* Summary KPI Cards Row */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '16px',
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+          }}
+        >
+          <div
             style={{
-              padding: '10px 18px',
-              border: 'none',
-              background: 'transparent',
-              borderBottom: selectedDegree === deg ? '3px solid #2563eb' : '3px solid transparent',
-              color: selectedDegree === deg ? '#2563eb' : '#64748b',
-              fontWeight: selectedDegree === deg ? 700 : 600,
-              cursor: 'pointer',
+              width: '46px',
+              height: '46px',
+              borderRadius: '10px',
+              backgroundColor: '#eff6ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2563eb',
             }}
           >
-            {deg === 'ALL' ? `All Degrees (${countsByDegree.ALL})` : `${deg} — (${(countsByDegree as any)[deg] || 0})`}
-          </button>
-        ))}
-      </div>
-
-      {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-        <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
-          <div style={{ color: '#64748b', fontSize: 13 }}>Total Enrolled</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{degreeStats.total} <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>students</span></div>
-        </div>
-        <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
-          <div style={{ color: '#64748b', fontSize: 13 }}>Average Score</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{degreeStats.avgMark}%</div>
-        </div>
-        <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
-          <div style={{ color: '#64748b', fontSize: 13 }}>Pass Rate</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{degreeStats.passRate}% <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>({degreeStats.passCount}/{degreeStats.total})</span></div>
-        </div>
-      </div>
-
-      {/* Grade distribution bar and tiles */}
-      <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Users size={24} />
+          </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: 16 }}>📊 {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages</h3>
-            <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: 13 }}>Proportion and count of students falling into each letter grade bracket.</p>
-          </div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>Total Cohort: <strong>{degreeStats.total} students</strong></div>
-        </div>
-
-        <div style={{ marginTop: 12, height: 14, background: '#e6f4ea', borderRadius: 8, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: '#16a34a', width: `${degreeStats.total > 0 ? 100 : 0}%` }} />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12, marginTop: 12 }}>
-          {GRADING_SCALE.map((g) => (
-            <div key={g.letter} style={{ background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #eef2f7', textAlign: 'center' }}>
-              <div style={{ fontWeight: 700, color: g.badgeColor }}>{g.letter}</div>
-              <div style={{ color: '#64748b', fontSize: 13 }}>{(degreeStats.gradePercentages[g.letter] || 0)}%</div>
-              <div style={{ fontSize: 12, color: '#94a3b8' }}>{(degreeStats.gradeCounts[g.letter] || 0)} students</div>
+            <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
+              {selectedDegree === 'ALL' ? 'Total Enrolled' : `${selectedDegree} Students`}
             </div>
-          ))}
+            <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
+              {degreeStats.total} <span style={{ fontSize: '13px', fontWeight: 'normal', color: '#94a3b8' }}>students</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+          }}
+        >
+          <div
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '10px',
+              backgroundColor: '#ecfdf5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#059669',
+            }}
+          >
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>Average Score</div>
+            <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
+              {degreeStats.avgMark}%
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+          }}
+        >
+          <div
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '10px',
+              backgroundColor: '#dcfce7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#16a34a',
+            }}
+          >
+            <CheckCircle2 size={24} />
+          </div>
+          <div>
+            <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>Pass Rate</div>
+            <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
+              {degreeStats.passRate}%{' '}
+              <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>
+                ({degreeStats.passCount}/{degreeStats.total})
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Search + table */}
-      <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Student Marksheet ({filteredStudents.length})</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input placeholder="Search name, index, group..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #e6edf3' }} />
-            <button onClick={handleExportCSV} style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8 }}>Download CSV</button>
+      {/* Grade Distribution & Percentage Breakdown Card */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          padding: '24px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '16px', fontWeight: '700' }}>
+              📊 {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages
+            </h3>
+            <p style={{ margin: '2px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+              Proportion and count of students falling into each letter grade bracket for {selectedDegree === 'ALL' ? 'all degree programs' : selectedDegree}.
+            </p>
+          </div>
+
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+            Total Cohort: <strong>{degreeStats.total} students</strong>
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid #eef2f7' }}>
-                <th style={{ padding: '12px' }}>Student Details</th>
-                <th style={{ padding: '12px' }}>Reg / Index No</th>
-                <th style={{ padding: '12px' }}>Degree</th>
-                <th style={{ padding: '12px' }}>Project Group</th>
-                {stages.map((st) => (
-                  <th key={st.stage_id} style={{ padding: '12px' }}>{st.stage_name}<div style={{ fontSize: 12, color: '#94a3b8' }}>Evaluator Marks & Avg</div></th>
-                ))}
-                <th style={{ padding: '12px' }}>Final Mark (%)</th>
-                <th style={{ padding: '12px' }}>Letter Grade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.map((s) => (
-                <tr key={String(s.student_id)} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: 12 }}>
-                    <div style={{ fontWeight: 700 }}>{s.student_name} {s.is_leader && <span style={{ background: '#e6f4ea', color: '#16a34a', padding: '2px 6px', borderRadius: 6, marginLeft: 8, fontSize: 12 }}>Leader</span>}</div>
-                  </td>
-                  <td style={{ padding: 12 }}>{s.university_id}</td>
-                  <td style={{ padding: 12 }}>{s.degree}</td>
-                  <td style={{ padding: 12 }}>{s.group_name}</td>
-                  {stages.map((st) => {
-                    const data = s.stages[st.stage_id];
-                    return (
-                      <td key={st.stage_id} style={{ padding: 12, verticalAlign: 'top' }}>
-                        {data && data.evaluators && data.evaluators.length > 0 ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {data.evaluators!.map((e, i) => (
-                                <span key={i} style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: 6, fontSize: 12 }}>{`E${i + 1}: ${e.mark}`}</span>
-                              ))}
-                            </div>
-                            <div style={{ fontSize: 12, color: '#64748b' }}>Avg: {data.average_mark !== null ? `${data.average_mark}/${data.total_marks ?? ''}` : '—'}</div>
+        {/* Visual Stacked Progress Bar */}
+        {degreeStats.total > 0 && (
+          <div
+            style={{
+              height: '14px',
+              borderRadius: '7px',
+              backgroundColor: '#f1f5f9',
+              overflow: 'hidden',
+              display: 'flex',
+              marginBottom: '20px',
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+            }}
+          >
+            {GRADING_SCALE.map((g) => {
+              const pct = degreeStats.gradePercentages[g.letter] || 0;
+              if (pct === 0) return null;
+              return (
+                <div
+                  key={g.letter}
+                  title={`${g.letter}: ${pct}% (${degreeStats.gradeCounts[g.letter]} students)`}
+                  style={{
+                    width: `${pct}%`,
+                    backgroundColor: g.badgeColor,
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Grade Percentage Cards Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+            gap: '10px',
+          }}
+        >
+          {GRADING_SCALE.map((g) => {
+            const count = degreeStats.gradeCounts[g.letter] || 0;
+            const pct = degreeStats.gradePercentages[g.letter] || 0;
+            const isSelected = selectedGradeFilter === g.letter;
+
+            return (
+              <button
+                key={g.letter}
+                type="button"
+                onClick={() => setSelectedGradeFilter(isSelected ? 'ALL' : g.letter)}
+                style={{
+                  backgroundColor: isSelected ? g.badgeBg : '#f8fafc',
+                  border: isSelected ? `2px solid ${g.badgeColor}` : '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '12px 10px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: '800',
+                    color: g.badgeColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  {g.letter}
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>
+                  {pct}%
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                  {count} {count === 1 ? 'student' : 'students'}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedGradeFilter !== 'ALL' && (
+          <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeFilter('ALL')}
+              style={{
+                fontSize: '12px',
+                color: '#2563eb',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600',
+                textDecoration: 'underline',
+              }}
+            >
+              Clear Grade Filter (Show All)
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Main Student Marksheet Table */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Table Toolbar */}
+        <div
+          style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '16px' }}>
+              Student Marksheet ({filteredStudents.length})
+            </span>
+            {selectedDegree !== 'ALL' && (
+              <span
+                style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: '#eff6ff',
+                  color: '#2563eb',
+                }}
+              >
+                Degree: {selectedDegree}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* Search Box */}
+            <div style={{ position: 'relative' }}>
+              <Search
+                size={16}
+                color="#94a3b8"
+                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+              />
+              <input
+                type="text"
+                placeholder="Search name, index, group..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  padding: '8px 12px 8px 32px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '13px',
+                  width: '230px',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Table Content */}
+        {loading ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600' }}>Loading student marks and grade records...</div>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+            <FileSpreadsheet size={40} style={{ margin: '0 auto 12px auto', color: '#cbd5e1' }} />
+            <div style={{ fontSize: '16px', fontWeight: '700', color: '#334155' }}>No Student Marks Found</div>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px' }}>
+              {searchQuery || selectedGradeFilter !== 'ALL'
+                ? 'Try adjusting your search or filters.'
+                : `No evaluations recorded yet for Level ${levelNumber}. Marks submitted by panel evaluators will appear here.`}
+            </p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
+                  <th style={{ padding: '12px 16px', minWidth: '170px' }}>Student Details</th>
+                  <th style={{ padding: '12px 14px', minWidth: '110px' }}>Reg / Index No</th>
+                  <th style={{ padding: '12px 14px', minWidth: '80px' }}>Degree</th>
+                  <th style={{ padding: '12px 14px', minWidth: '110px' }}>Project Group</th>
+                  {stages.map((st) => (
+                    <th key={st.stage_id} style={{ padding: '12px 14px', textAlign: 'center', minWidth: '140px' }}>
+                      <div style={{ fontWeight: '700', color: '#1e293b' }}>{st.stage_name}</div>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>Evaluator Marks & Avg</div>
+                    </th>
+                  ))}
+                  <th style={{ padding: '12px 14px', textAlign: 'center', backgroundColor: '#f1f5f9', minWidth: '110px' }}>
+                    Final Mark (%)
+                  </th>
+                  <th style={{ padding: '12px 14px', textAlign: 'center', minWidth: '100px' }}>Letter Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((student) => {
+                  const gInfo = student.gradeInfo;
+
+                  return (
+                    <tr key={student.student_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      {/* Student Details */}
+                      <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
+                            {student.student_name}
+                          </span>
+                          {student.is_leader && (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                backgroundColor: '#2563eb',
+                                color: '#ffffff',
+                                padding: '1px 6px',
+                                borderRadius: '10px',
+                                fontWeight: '700',
+                              }}
+                            >
+                              Leader
+                            </span>
+                          )}
+                        </div>
+                        {student.email && (
+                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                            {student.email}
                           </div>
-                        ) : (
-                          <div style={{ color: '#94a3b8' }}>—</div>
                         )}
                       </td>
-                    );
-                  })}
-                  <td style={{ padding: 12 }}>{s.final_mark}%</td>
-                  <td style={{ padding: 12 }}><span style={{ background: '#ecfdf5', color: '#047857', padding: '6px 8px', borderRadius: 8 }}>{s.gradeInfo.letter}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+                      {/* Reg No */}
+                      <td style={{ padding: '14px', color: '#475569', fontWeight: '500', verticalAlign: 'middle' }}>
+                        {student.university_id}
+                      </td>
+
+                      {/* Degree Badge */}
+                      <td style={{ padding: '14px', verticalAlign: 'middle' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            backgroundColor:
+                              student.degree === 'IT'
+                                ? '#e0f2fe'
+                                : student.degree === 'AI'
+                                ? '#f3e8ff'
+                                : '#fef3c7',
+                            color:
+                              student.degree === 'IT'
+                                ? '#0369a1'
+                                : student.degree === 'AI'
+                                ? '#6b21a8'
+                                : '#92400e',
+                            border: `1px solid ${
+                              student.degree === 'IT'
+                                ? '#bae6fd'
+                                : student.degree === 'AI'
+                                ? '#e9d5ff'
+                                : '#fde68a'
+                            }`,
+                          }}
+                        >
+                          {student.degree}
+                        </span>
+                      </td>
+
+                      {/* Project Group */}
+                      <td style={{ padding: '14px', color: '#334155', fontWeight: '600', verticalAlign: 'middle' }}>
+                        {student.group_name}
+                      </td>
+
+                      {/* Stage Marks with Evaluator-wise breakdown */}
+                      {stages.map((st) => {
+                        const stgData = student.stages[st.stage_id];
+                        return (
+                          <td key={st.stage_id} style={{ padding: '14px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                            {stgData && stgData.average_mark !== null && stgData.average_mark !== undefined ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                {/* Evaluator-wise individual marks */}
+                                {stgData.evaluators && stgData.evaluators.length > 0 && (
+                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                    {stgData.evaluators.map((ev, eIdx) => (
+                                      <span
+                                        key={eIdx}
+                                        title={`${ev.evaluator_name}: ${ev.mark}/${ev.total_marks || 100}${ev.feedback ? ' (Feedback: ' + ev.feedback + ')' : ''}`}
+                                        style={{
+                                          fontSize: '11px',
+                                          backgroundColor: '#f8fafc',
+                                          color: '#334155',
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          border: '1px solid #e2e8f0',
+                                          fontWeight: '600',
+                                          cursor: 'default',
+                                        }}
+                                      >
+                                        E{eIdx + 1}: <strong style={{ color: '#0f172a' }}>{ev.mark}</strong>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Stage Average Mark */}
+                                <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>
+                                  Avg: {stgData.average_mark}
+                                  {stgData.total_marks && (
+                                    <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#94a3b8' }}>
+                                      /{stgData.total_marks}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#cbd5e1' }}>—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+
+                      {/* Final Mark */}
+                      <td style={{ padding: '14px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
+                        <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>
+                          {student.final_mark}%
+                        </div>
+                        {student.sum_total_max_marks > 0 && student.sum_total_max_marks !== 100 && (
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>
+                            ({student.sum_obtained_marks}/{student.sum_total_max_marks})
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Letter Grade */}
+                      <td style={{ padding: '14px', textAlign: 'center', verticalAlign: 'middle' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: '800',
+                            backgroundColor: gInfo.badgeBg,
+                            color: gInfo.badgeColor,
+                            border: `1px solid ${gInfo.borderColor}`,
+                          }}
+                        >
+                          {gInfo.letter}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -176,7 +176,6 @@ const getLocalDateStr = (d: string | Date | null | undefined): string => {
   const day = String(dateObj.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-
 const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => ({
   id: String(row.id ?? row.panel_id ?? `panel-${Date.now()}-${Math.random()}`),
   title: String(row.evaluation_type ?? row.title ?? "Evaluation Panel"),
@@ -498,14 +497,14 @@ const CalendarPage: React.FC = () => {
       }
 
       const payload = await response.json();
-      const rows: Record<string, unknown>[] = Array.isArray(payload)
-        ? payload as Record<string, unknown>[]
+      const rows = Array.isArray(payload)
+        ? payload
         : Array.isArray(payload?.data)
-          ? (payload.data as Record<string, unknown>[])
+          ? payload.data
           : [];
 
       setScheduledPanels(
-        rows.map((row: Record<string, unknown>) => normalizePanelFromApi(row)),
+        rows.map((row) => normalizePanelFromApi(row as Record<string, unknown>)),
       );
     } catch {
       const fallback = loadStoredJson<ScheduledPanel[]>(PANEL_STORAGE_KEY, []);
@@ -526,15 +525,15 @@ const CalendarPage: React.FC = () => {
       }
 
       const payload = await response.json();
-      const rows: Record<string, unknown>[] = Array.isArray(payload)
-        ? payload as Record<string, unknown>[]
+      const rows = Array.isArray(payload)
+        ? payload
         : Array.isArray(payload?.data)
-          ? (payload.data as Record<string, unknown>[])
+          ? payload.data
           : [];
 
       setFrozenDates(
         normalizeFrozenDates(
-          rows.map((row: Record<string, unknown>) => ({
+          rows.map((row) => ({
             date: String(row.frozen_date ?? row.date ?? ""),
             reason: String(row.reason ?? ""),
           })),
