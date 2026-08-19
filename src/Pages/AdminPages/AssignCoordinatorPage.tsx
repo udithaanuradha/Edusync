@@ -192,7 +192,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
             {currentCoordinator ? (
               <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#111827', fontWeight: '500' }}>
-                  {currentCoordinator.name} ({currentCoordinator.university_id})
+                  {currentCoordinator.name}{currentCoordinator.university_id ? ` (${currentCoordinator.university_id})` : ''}
                 </span>
                 <button 
                   onClick={handleRemoveCoordinator}
@@ -230,7 +230,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
                 <option value="">-- Choose Lecturer --</option>
                 {filteredLecturers.map(lecturer => (
                   <option key={lecturer.id} value={lecturer.id}>
-                    {lecturer.name} ({lecturer.university_id})
+                    {lecturer.name}{lecturer.university_id ? ` (${lecturer.university_id})` : ''}
                   </option>
                 ))}
               </select>
