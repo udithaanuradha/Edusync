@@ -31,7 +31,6 @@ interface StageManagementProps {
 
 const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
   const { user } = useAuth();
-  const effectiveRole = (user as any)?.effectiveRole || (user as any)?.designation || user?.role || 'coordinator';
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +118,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           deadline: formData.deadline || null,
           resource_link: formData.resource_link || null,
           created_by: user?.id || 1,
-          user_role: effectiveRole,
+          user_role: user?.role || 'admin',
         }),
       });
 
@@ -275,7 +274,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           description: editFormData.description,
           deadline: editFormData.deadline || null,
           resource_link: editFormData.resource_link || null,
-          user_role: effectiveRole,
+          user_role: user?.role || 'coordinator',
         }),
       });
 
@@ -340,7 +339,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ name: '', description: '', deadline: '', resource_link: '' });
+    setFormData({ name: '', description: '', deadline: '', mentor_details_url: '' });
     setUploadedFiles([]);
   };
 

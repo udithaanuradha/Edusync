@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { CalendarDays, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import Sidebar from "../components/shared/Sidebar";
 import CalendarGrid, {
@@ -65,40 +64,13 @@ const toDateValue = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const parseDateValue = (value: string) => {
-  if (!value) {
-    return new Date(NaN);
-  }
+const parseDateValue = (value: string) => new Date(`${value}T00:00:00`);
 
-  const trimmed = String(value).trim();
-
-  if (!trimmed) {
-    return new Date(NaN);
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return new Date(`${trimmed}T00:00:00`);
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
-    return new Date(trimmed);
-  }
-
-  return new Date(trimmed);
-};
-
-const formatShortDate = (value: string) => {
-  const parsed = parseDateValue(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "—";
-  }
-
-  return parsed.toLocaleDateString("en-US", {
+const formatShortDate = (value: string) =>
+  parseDateValue(value).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
-};
 
 const formatLongDate = (value: string) =>
   parseDateValue(value).toLocaleDateString("en-US", {
@@ -110,7 +82,6 @@ const formatLongDate = (value: string) =>
 
 const PANEL_STORAGE_KEY = "edusync.calendar.panels";
 const FROZEN_STORAGE_KEY = "edusync.calendar.frozenDates";
-const CALENDAR_API_BASE = "http://localhost:5000/api/calendar";
 
 const loadStoredJson = <T,>(storageKey: string, fallback: T): T => {
   if (typeof window === "undefined") {
@@ -168,44 +139,10 @@ const normalizeFrozenDates = (value: unknown): FrozenDateRecord[] => {
     .filter((item): item is FrozenDateRecord => item !== null);
 };
 
-const getLocalDateStr = (d: string | Date | null | undefined): string => {
-  if (!d) return "";
-  const dateObj = new Date(d);
-  if (isNaN(dateObj.getTime())) return String(d).split("T")[0];
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const day = String(dateObj.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => ({
-  id: String(row.id ?? row.panel_id ?? `panel-${Date.now()}-${Math.random()}`),
-  title: String(row.evaluation_type ?? row.title ?? "Evaluation Panel"),
-  level: Number(row.academic_level ?? row.level ?? 1),
-  groupId: String(
-    row.target_group_id ?? row.group_id ?? row.target_group ?? row.groupName ?? "",
-  ),
-  groupName: String(row.target_group ?? row.group_name ?? row.groupName ?? "Group"),
-  date: String(row.panel_date ?? row.date ?? toDateValue(new Date())),
-  time: String(row.start_time ?? row.time ?? "10:00"),
-  duration: String(row.duration ?? "60 min"),
-  evaluators: Array.isArray(row.evaluators)
-    ? row.evaluators
-      .map((item) => String(item ?? ""))
-      .filter(Boolean)
-    : typeof row.evaluators === "string"
-      ? JSON.parse(row.evaluators || "[]")
-      : [],
-  location: String(row.location ?? "To be announced"),
-  meetingLink: String(row.meeting_link ?? row.meetingLink ?? ""),
-  notes: String(row.notes ?? ""),
-  kind: String(row.kind ?? "Coordinator scheduled panel"),
-});
-
 const makeMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const CalendarPage: React.FC = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const storedUser = useMemo(
     () => loadStoredJson<Record<string, unknown> | null>("user", null),
@@ -266,12 +203,6 @@ const CalendarPage: React.FC = () => {
   const [frozenDates, setFrozenDates] = useState<FrozenDateRecord[]>(() =>
     normalizeFrozenDates(loadStoredJson(FROZEN_STORAGE_KEY, [])),
   );
-
-  // Supervisor assigned evaluation panels state
-  const [supervisorAssignedPanels, setSupervisorAssignedPanels] = useState<any[]>([]);
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
-  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
-  const [loadingSupervisorPanels, setLoadingSupervisorPanels] = useState<boolean>(false);
 
   const monthName = viewDate.toLocaleString("en-US", {
     month: "long",
@@ -441,14 +372,14 @@ const CalendarPage: React.FC = () => {
           ).trim();
           const supervisor = String(
             item.supervisor_name ??
-            item.supervisorName ??
-            item.supervisor ??
-            "Not assigned",
+              item.supervisorName ??
+              item.supervisor ??
+              "Not assigned",
           ).trim();
           const memberCount = Number(
             item.member_count ??
-            item.memberCount ??
-            (Array.isArray(item.members) ? item.members.length : 0),
+              item.memberCount ??
+              (Array.isArray(item.members) ? item.members.length : 0),
           );
 
           if (!name) return null;
@@ -494,105 +425,9 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const loadPanelsFromServer = async () => {
-    try {
-      const response = await fetch(`${CALENDAR_API_BASE}/panels`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Calendar panels endpoint returned ${response.status}`);
-      }
-
-      const payload = await response.json();
-      const rows = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.data)
-          ? payload.data
-          : [];
-
-      setScheduledPanels(
-        rows.map((row) => normalizePanelFromApi(row as Record<string, unknown>)),
-      );
-    } catch {
-      const fallback = loadStoredJson<ScheduledPanel[]>(PANEL_STORAGE_KEY, []);
-      setScheduledPanels(fallback);
-    }
-  };
-
-  const loadFrozenDatesFromServer = async () => {
-    try {
-      const response = await fetch(`${CALENDAR_API_BASE}/frozen-dates`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Frozen dates endpoint returned ${response.status}`);
-      }
-
-      const payload = await response.json();
-      const rows = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.data)
-          ? payload.data
-          : [];
-
-      setFrozenDates(
-        normalizeFrozenDates(
-          rows.map((row) => ({
-            date: String(row.frozen_date ?? row.date ?? ""),
-            reason: String(row.reason ?? ""),
-          })),
-        ),
-      );
-    } catch {
-      setFrozenDates(normalizeFrozenDates(loadStoredJson(FROZEN_STORAGE_KEY, [])));
-    }
-  };
-
   useEffect(() => {
     fetchSupervisors();
-    void loadPanelsFromServer();
-    void loadFrozenDatesFromServer();
   }, []);
-
-  // Fetch real assigned evaluation panels for supervisor
-  useEffect(() => {
-    if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
-      const fetchMyPanels = async () => {
-        setLoadingSupervisorPanels(true);
-        try {
-          const userObj = user as any;
-          const joinedName = [userObj?.first_name, userObj?.last_name].filter(Boolean).join(" ");
-          const userName = userObj?.name || userObj?.full_name || joinedName || "";
-          const token = localStorage.getItem("token");
-
-          const res = await fetch(
-            `http://localhost:5000/api/evaluation-panels/my-groups?evaluatorName=${encodeURIComponent(userName)}`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: token ? `Bearer ${token}` : "",
-              },
-            }
-          );
-          if (res.ok) {
-            const json = await res.json();
-            setSupervisorAssignedPanels(json.data || []);
-          }
-        } catch (err) {
-          console.error("Failed to load supervisor assigned panels:", err);
-        } finally {
-          setLoadingSupervisorPanels(false);
-        }
-      };
-      fetchMyPanels();
-    }
-  }, [user, userRole, isCoordinator]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -635,13 +470,6 @@ const CalendarPage: React.FC = () => {
     [scheduledPanels],
   );
 
-  const displayedSupervisorPanels = useMemo(() => {
-    if (!selectedCalendarDate) return supervisorAssignedPanels;
-    return supervisorAssignedPanels.filter(
-      (p) => getLocalDateStr(p.panel_date) === selectedCalendarDate
-    );
-  }, [supervisorAssignedPanels, selectedCalendarDate]);
-
   const { cells, markerMap } = useMemo(() => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
@@ -656,44 +484,23 @@ const CalendarPage: React.FC = () => {
 
     const mapped = new Map<number, CalendarGridMarker>();
 
-    if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
-      supervisorAssignedPanels.forEach((p) => {
-        const dateStr = getLocalDateStr(p.panel_date);
-        if (dateStr) {
-          const pDate = parseDateValue(dateStr);
-          if (pDate.getFullYear() === year && pDate.getMonth() === month) {
-            const day = pDate.getDate();
-            const current = mapped.get(day);
-            const existingPanels = current?.panels ?? 0;
+    scheduledPanels.forEach((panel) => {
+      const panelDate = parseDateValue(panel.date);
+      if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
+        return;
+      }
 
-            mapped.set(day, {
-              day,
-              type: "panel",
-              panels: existingPanels + 1,
-              label: `${p.group_name} (${p.stage_name || p.evaluation_type})`,
-            });
-          }
-        }
+      const day = panelDate.getDate();
+      const current = mapped.get(day);
+      const existingPanels = current?.panels ?? 0;
+
+      mapped.set(day, {
+        day,
+        type: "panel",
+        panels: existingPanels + 1,
+        label: panel.title,
       });
-    } else {
-      scheduledPanels.forEach((panel) => {
-        const panelDate = parseDateValue(panel.date);
-        if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
-          return;
-        }
-
-        const day = panelDate.getDate();
-        const current = mapped.get(day);
-        const existingPanels = current?.panels ?? 0;
-
-        mapped.set(day, {
-          day,
-          type: "panel",
-          panels: existingPanels + 1,
-          label: panel.title,
-        });
-      });
-    }
+    });
 
     frozenDates.forEach((value) => {
       const frozenDate = parseDateValue(value.date);
@@ -712,9 +519,9 @@ const CalendarPage: React.FC = () => {
     });
 
     return { cells: dayCells, markerMap: mapped };
-  }, [frozenDates, scheduledPanels, supervisorAssignedPanels, userRole, isCoordinator, viewDate]);
+  }, [frozenDates, scheduledPanels, viewDate]);
 
-  const handleScheduleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleScheduleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const selectedGroup = groups.find(
@@ -755,41 +562,11 @@ const CalendarPage: React.FC = () => {
       kind: "Coordinator scheduled panel",
     };
 
-    try {
-      const response = await fetch(`${CALENDAR_API_BASE}/panels`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({
-          evaluationType: nextPanel.title,
-          academicLevel: nextPanel.level,
-          targetGroup: nextPanel.groupName,
-          evaluators: nextPanel.evaluators,
-          panelDate: nextPanel.date,
-          startTime: nextPanel.time,
-          duration: nextPanel.duration,
-          location: nextPanel.location,
-          meetingLink: nextPanel.meetingLink,
-          notes: nextPanel.notes,
-          kind: nextPanel.kind,
-          created_by: user?.id ?? JSON.parse(localStorage.getItem("user") || "{}").id,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to store panel in database (${response.status})`);
-      }
-    } catch (error) {
-      console.error("Panel save to backend failed, keeping local fallback:", error);
-    }
-
     setScheduledPanels((current) =>
       editingPanelId
         ? current.map((panel) =>
-          panel.id === editingPanelId ? nextPanel : panel,
-        )
+            panel.id === editingPanelId ? nextPanel : panel,
+          )
         : [nextPanel, ...current],
     );
     setDrawerMode("schedule");
@@ -801,7 +578,7 @@ const CalendarPage: React.FC = () => {
     setNotes("");
   };
 
-  const deletePanel = async (panelId: string) => {
+  const deletePanel = (panelId: string) => {
     if (!isCoordinator) {
       return;
     }
@@ -810,21 +587,6 @@ const CalendarPage: React.FC = () => {
     const confirmed = window.confirm(`Delete ${panel?.title ?? "this panel"}?`);
     if (!confirmed) {
       return;
-    }
-
-    try {
-      const response = await fetch(`${CALENDAR_API_BASE}/panels/${encodeURIComponent(panelId)}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete panel (${response.status})`);
-      }
-    } catch (error) {
-      console.error("Backend panel delete failed, removing local copy only:", error);
     }
 
     setScheduledPanels((current) =>
@@ -836,7 +598,7 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const handleFreezeSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFreezeSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!freezeDate) {
@@ -845,36 +607,13 @@ const CalendarPage: React.FC = () => {
     }
 
     const trimmedReason = freezeReason.trim();
-
-    try {
-      const response = await fetch(`${CALENDAR_API_BASE}/freeze`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({
-          frozen_date: freezeDate,
-          reason: trimmedReason,
-          type: "calendar_freeze",
-          created_by: user?.id ?? JSON.parse(localStorage.getItem("user") || "{}").id,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to store frozen date (${response.status})`);
-      }
-    } catch (error) {
-      console.error("Freeze save to backend failed, keeping local fallback:", error);
-    }
-
     setFrozenDates((current) =>
       current.some((item) => item.date === freezeDate)
         ? current.map((item) =>
-          item.date === freezeDate
-            ? { ...item, reason: trimmedReason }
-            : item,
-        )
+            item.date === freezeDate
+              ? { ...item, reason: trimmedReason }
+              : item,
+          )
         : [{ date: freezeDate, reason: trimmedReason }, ...current],
     );
     setIsDrawerOpen(false);
@@ -890,16 +629,15 @@ const CalendarPage: React.FC = () => {
   };
 
   const onDayClick = (day: number) => {
+    if (!isCoordinator) {
+      return;
+    }
+
     const dateValue = toDateValue(
       new Date(viewDate.getFullYear(), viewDate.getMonth(), day),
     );
-    setSelectedDayNumber(day);
-    setSelectedCalendarDate(dateValue);
-
-    if (isCoordinator) {
-      openCreatePanelDrawer();
-      setScheduleDate(dateValue);
-    }
+    openCreatePanelDrawer();
+    setScheduleDate(dateValue);
   };
 
   return (
@@ -974,7 +712,6 @@ const CalendarPage: React.FC = () => {
                 cells={cells}
                 markerMap={markerMap}
                 isCoordinator={isCoordinator}
-                selectedDay={selectedDayNumber}
                 onPrevMonth={() =>
                   setViewDate(
                     (prev) =>
@@ -990,197 +727,66 @@ const CalendarPage: React.FC = () => {
                 onDayClick={onDayClick}
               />
 
-              {userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator) ? (
-                <aside
-                  className="calendar-right-card"
-                  aria-label="Assigned evaluation panels"
-                >
-                  <div className="calendar-side-header">
-                    <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                        Assigned Panels
-                      </h3>
-                      {selectedCalendarDate && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '12px', color: '#4f46e5', fontWeight: 600 }}>
-                            {formatShortDate(selectedCalendarDate)}
-                          </span>
-                          <button
-                            type="button"
-                            className="clear-filter-chip"
-                            onClick={() => {
-                              setSelectedCalendarDate(null);
-                              setSelectedDayNumber(null);
-                            }}
-                          >
-                            Show All
-                          </button>
-                        </div>
-                      )}
+              <aside
+                className="calendar-right-card"
+                aria-label="Upcoming panels"
+              >
+                <div className="calendar-side-header">
+                  <h3>Upcoming Panels</h3>
+                  <span className="calendar-side-count">
+                    {scheduledPanels.length}
+                  </span>
+                </div>
+                <div className="upcoming-list">
+                  {sortedPanels.length === 0 ? (
+                    <div className="empty-state-card">
+                      <strong>No saved panels yet</strong>
+                      <span>
+                        Create a panel from the drawer and it will stay after
+                        refresh.
+                      </span>
                     </div>
-                    <span className="calendar-side-count">
-                      {displayedSupervisorPanels.length}
-                    </span>
-                  </div>
-
-                  <div className="upcoming-list">
-                    {loadingSupervisorPanels ? (
-                      <div className="empty-state-card">
-                        <strong>Loading assigned panels...</strong>
-                      </div>
-                    ) : displayedSupervisorPanels.length === 0 ? (
-                      <div className="empty-state-card">
-                        <strong>No evaluation panels found</strong>
-                        <span>
-                          {selectedCalendarDate
-                            ? "No panels assigned for this selected date. Click another date or click 'Show All'."
-                            : "You have no assigned evaluation panels at this time."}
-                        </span>
-                        {selectedCalendarDate && (
-                          <button
-                            type="button"
-                            className="clear-filter-chip"
-                            style={{ marginTop: '8px', alignSelf: 'center' }}
-                            onClick={() => {
-                              setSelectedCalendarDate(null);
-                              setSelectedDayNumber(null);
-                            }}
-                          >
-                            View All Upcoming Panels
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      displayedSupervisorPanels.map((panel) => {
-                        const localDate = getLocalDateStr(panel.panel_date);
-                        let evaluatorsList = "Assigned Evaluators";
-                        try {
-                          if (Array.isArray(panel.evaluators)) {
-                            evaluatorsList = panel.evaluators.join(", ");
-                          } else if (typeof panel.evaluators === "string" && panel.evaluators.startsWith("[")) {
-                            evaluatorsList = JSON.parse(panel.evaluators).join(", ");
-                          } else if (panel.evaluators) {
-                            evaluatorsList = String(panel.evaluators);
-                          }
-                        } catch {
-                          evaluatorsList = String(panel.evaluators || "Assigned Evaluators");
-                        }
-
-                        return (
-                          <article
-                            key={panel.panel_id || panel.group_id}
-                            className="supervisor-panel-item"
-                            onClick={() => {
-                              navigate(
-                                `/supervisor/evaluation-panel?level=${panel.academic_level || 2}&groupId=${panel.group_id}&panelId=${panel.panel_id}`
-                              );
-                            }}
-                          >
-                            <div className="supervisor-panel-top">
-                              <div>
-                                <h4 className="supervisor-panel-title">{panel.group_name || panel.project_title}</h4>
-                                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                                  Leader: {panel.leader_name || 'Assigned Student'} • {panel.members?.length || 0} members
-                                </span>
-                              </div>
-                              <div className="supervisor-badges-row">
-                                <span className="level-badge">Level {panel.academic_level || 2}</span>
-                                <span className="stage-badge">{panel.stage_name || panel.evaluation_type}</span>
-                              </div>
+                  ) : (
+                    sortedPanels.map((panel) => (
+                      <article key={panel.id} className="upcoming-item">
+                        <div className="upcoming-date-chip">
+                          {formatShortDate(panel.date)}
+                        </div>
+                        <div className="upcoming-copy">
+                          <strong>{panel.title}</strong>
+                          <span>
+                            {panel.groupName} • Level {panel.level}
+                          </span>
+                          <span>{panel.kind}</span>
+                          <span className="panel-time">
+                            {panel.time} • {panel.duration}
+                          </span>
+                          {isCoordinator && (
+                            <div className="panel-action-row">
+                              <button
+                                type="button"
+                                className="panel-action-btn edit"
+                                onClick={() => openEditPanelDrawer(panel)}
+                              >
+                                <Pencil size={13} />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="panel-action-btn delete"
+                                onClick={() => deletePanel(panel.id)}
+                              >
+                                <Trash2 size={13} />
+                                Delete
+                              </button>
                             </div>
-
-                            <div className="supervisor-panel-meta">
-                              <span>
-                                📅 {localDate ? formatLongDate(localDate) : "Scheduled Date"}
-                              </span>
-                              <span>
-                                ⏰ {panel.start_time || "10:00 AM"} ({panel.duration || "45 min"}){panel.location && panel.location.toLowerCase() !== "to be announced" ? ` • 📍 ${panel.location}` : ""}
-                              </span>
-                              <span>
-                                👥 Evaluators: {evaluatorsList}
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              className="evaluate-btn-action"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(
-                                  `/supervisor/evaluation-panel?level=${panel.academic_level || 2}&groupId=${panel.group_id}&panelId=${panel.panel_id}`
-                                );
-                              }}
-                            >
-                              Evaluate Group Marks →
-                            </button>
-                          </article>
-                        );
-                      })
-                    )}
-                  </div>
-                </aside>
-              ) : (
-                <aside
-                  className="calendar-right-card"
-                  aria-label="Upcoming panels"
-                >
-                  <div className="calendar-side-header">
-                    <h3>Upcoming Panels</h3>
-                    <span className="calendar-side-count">
-                      {scheduledPanels.length}
-                    </span>
-                  </div>
-                  <div className="upcoming-list">
-                    {sortedPanels.length === 0 ? (
-                      <div className="empty-state-card">
-                        <strong>No saved panels yet</strong>
-                        <span>
-                          Create a panel from the drawer and it will stay after
-                          refresh.
-                        </span>
-                      </div>
-                    ) : (
-                      sortedPanels.map((panel) => (
-                        <article key={panel.id} className="upcoming-item">
-                          <div className="upcoming-date-chip">
-                            {formatShortDate(panel.date)}
-                          </div>
-                          <div className="upcoming-copy">
-                            <strong>{panel.title}</strong>
-                            <span>
-                              {panel.groupName} • Level {panel.level}
-                            </span>
-                            <span>{panel.kind}</span>
-                            <span className="panel-time">
-                              {panel.time} • {panel.duration}
-                            </span>
-                            {isCoordinator && (
-                              <div className="panel-action-row">
-                                <button
-                                  type="button"
-                                  className="panel-action-btn edit"
-                                  onClick={() => openEditPanelDrawer(panel)}
-                                >
-                                  <Pencil size={13} />
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  className="panel-action-btn delete"
-                                  onClick={() => deletePanel(panel.id)}
-                                >
-                                  <Trash2 size={13} />
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </div>
-                </aside>
-              )}
+                          )}
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </aside>
             </div>
           </div>
         </main>

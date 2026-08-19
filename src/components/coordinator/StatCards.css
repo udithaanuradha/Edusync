@@ -60,14 +60,6 @@
   line-height: 1;
 }
 
-.stat-value-empty {
-  font-size: 10px;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  font-weight: 700;
-}
-
 .stat-title {
   font-size: 13px;
   color: #64748b;

@@ -42,31 +42,20 @@ const Login: React.FC = () => {
     }
 
     setNeedsVerification(false);
-    const rawRole = String(data.user?.role || '').trim().toLowerCase();
-    const rawDesignation = String(data.user?.designation || '').trim().toLowerCase();
-    const rawEffectiveRole = String(data.user?.effectiveRole || '').trim().toLowerCase();
+    console.log('Logged in successfully:', data.user);
 
-    const effectiveRole =
-      rawEffectiveRole ||
-      rawDesignation ||
-      (rawRole === 'coordinator' ? 'coordinator' : '') ||
-      rawRole;
+    login(data.user);
 
-    const userObj = {
-      ...(data.user || {}),
-      role: rawRole === 'coordinator' ? 'lecturer' : rawRole,
-      designation: rawDesignation || (rawRole === 'coordinator' ? 'coordinator' : ''),
-      effectiveRole,
-    } as any;
-
-    login(userObj);
+    // Cast user to 'any' to dynamically handle the new backend designation field securely
+    const userObj = data.user as any;
 
     if (userObj.role === 'admin') {
       navigate('/admin');
     } else if (userObj.role === 'lecturer') {
-      if (effectiveRole === 'coordinator') {
+      if (userObj.designation === 'coordinator') {
         navigate('/coordinator');
       } else {
+        // Defaults to supervisor dashboard for newly registered lecturers
         navigate('/supervisor');
       }
     } else if (userObj.role === 'student') {

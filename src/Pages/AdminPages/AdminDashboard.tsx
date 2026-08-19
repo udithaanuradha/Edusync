@@ -77,31 +77,26 @@ const Dashboard: React.FC = () => {
               title="Total Users"
               value={loading ? '...' : stats.totalUsers}
               color="blue"
-              subtitle="Registered system accounts"
             />
             <StatCard
               title="Students"
               value={loading ? '...' : stats.totalStudents}
               color="green"
-              subtitle="Registered student accounts"
             />
             <StatCard
               title="Coordinators"
               value={loading ? '...' : stats.totalCoordinators}
               color="amber"
-              subtitle="Assigned coordinators"
             />
             <StatCard
               title="Supervisors"
               value={loading ? '...' : stats.totalSupervisors}
               color="purple"
-              subtitle="Project supervisors"
             />
             <StatCard
               title="Industry Mentors"
               value={loading ? '...' : stats.totalMentors}
-              color="red"
-              subtitle="External industry experts"
+              color="red" 
             />
           </div>
 
@@ -110,10 +105,9 @@ const Dashboard: React.FC = () => {
             width: '100%',
             margin: '24px 0',
             padding: '24px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '14px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            backgroundColor: '#fff7ed',
+            border: '1px solid #fed7aa',
+            borderRadius: '12px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -122,15 +116,15 @@ const Dashboard: React.FC = () => {
             <div style={{ textAlign: 'left' }}>
               <h3 style={{
                 margin: '0 0 4px 0',
-                color: '#0f172a',
+                color: '#9a3412',
                 fontSize: '16px',
-                fontWeight: '700'
+                fontWeight: '600'
               }}>
                 🎓 End of Year Student Promotion
               </h3>
               <p style={{
                 margin: 0,
-                color: '#64748b',
+                color: '#c2410c',
                 fontSize: '14px'
               }}>
                 Promote all eligible students to the next academic level
@@ -139,25 +133,16 @@ const Dashboard: React.FC = () => {
             <button
               onClick={handleBatchPromotion}
               style={{
-                backgroundColor: '#f1f5f9',
-                color: '#0f172a',
-                border: '1px solid #cbd5e1',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                border: 'none',
                 padding: '12px 24px',
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                flexShrink: 0,
-                transition: 'all 0.2s ease',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#e2e8f0';
-                e.currentTarget.style.borderColor = '#94a3b8';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#f1f5f9';
-                e.currentTarget.style.borderColor = '#cbd5e1';
+                flexShrink: 0
               }}
             >
               Promote All Students
@@ -166,7 +151,7 @@ const Dashboard: React.FC = () => {
 
           {/* AnnouncementWidget */}
           <div style={{ marginBottom: '24px', width: '100%' }}>
-            <AnnouncementWidget title="Latest Announcements" maxItems={2} />
+            <AnnouncementWidget />
           </div>
 
           <div className="overview-row" style={{ width: '100%' }}>

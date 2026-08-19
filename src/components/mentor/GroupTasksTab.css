@@ -1,14 +1,13 @@
 /* ================================================================
    GroupTasksTab.css
 
-   Styles for the Group Tasks tab in Mentor Dashboard.
-   Features:
-   1. Overall Group Progress card with live calculation
-   2. Milestone navigation tabs (filter by specific milestone)
-   3. Active Milestone detail & progress banner
-   4. Per-member task breakdown with 3 columns (Completed/Ongoing/Yet to Start)
-   5. Rich task details: milestone badge, due dates, descriptions
-   6. Inline expandable mentor feedback drawer
+   Styles for the Group Tasks tab — shown when mentor clicks
+   "See Tasks" from the Assigned Group tab.
+
+   Sections:
+   1. Fade-in animation
+   2. Overall Group Progress bar
+   3. Member task cards (Completed / Ongoing / Yet to Start)
 ================================================================ */
 
 /* ── Fade-in ─────────────────────────────────────────────────── */
@@ -21,112 +20,24 @@
   to   { opacity: 1; transform: translateY(0);   }
 }
 
-/* ── Top Group Selector Bar (if mentor has >1 group) ────────── */
-.gt-group-selector-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #ffffff;
-  padding: 12px 18px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.gt-selector-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-}
-
-.gt-group-select {
-  padding: 6px 12px;
-  border-radius: 7px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f172a;
-  outline: none;
-  cursor: pointer;
-}
-
-.gt-group-select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-}
-
-/* ── Loading and Error States ────────────────────────────────── */
-.gt-loading-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 20px;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.gt-spinner {
-  width: 22px;
-  height: 22px;
-  border: 2.5px solid #e2e8f0;
-  border-top-color: #2563eb;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.gt-error-box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.gt-error-icon {
-  color: #ef4444;
-  flex-shrink: 0;
-}
-
-.gt-error-text {
-  flex: 1;
-}
-
-.gt-error-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #991b1b;
-  margin: 0 0 2px 0;
-}
-
-.gt-error-desc {
-  font-size: 12px;
-  color: #b91c1c;
-  margin: 0;
+/* ── Section Title ───────────────────────────────────────────── */
+.gt-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.2px;
 }
 
 /* ================================================================
-   SECTION 1 — OVERALL GROUP PROGRESS CARD
+   OVERALL GROUP PROGRESS CARD
 ================================================================ */
 .gt-overall-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 24px 28px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
@@ -141,13 +52,7 @@
   font-size: 16px;
   font-weight: 700;
   color: #1e293b;
-  margin: 0 0 4px 0;
-}
-
-.gt-group-name-sub {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  margin: 0;
 }
 
 .gt-overall-pct {
@@ -218,6 +123,7 @@
 .gt-stat-dot.ongoing   { background: #f59e0b; }
 .gt-stat-dot.yet       { background: #cbd5e1; }
 
+/* ── Pending notice for overall (no data yet) ────────────────── */
 .gt-overall-pending {
   display: flex;
   align-items: center;
@@ -246,297 +152,9 @@
 }
 
 /* ================================================================
-   SECTION 2 — MILESTONE NAVIGATION TABS & ACTIVE CARD
+   MEMBER TASK CARDS SECTION
 ================================================================ */
-.gt-milestones-nav-section {
-  margin-bottom: 24px;
-}
-
-.gt-milestones-nav-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.gt-milestone-nav-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14.5px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.gt-target-icon {
-  color: #2563eb;
-}
-
-.gt-milestones-count-hint {
-  font-size: 11.5px;
-  color: #64748b;
-  font-style: italic;
-}
-
-/* Horizontal tabs container */
-.gt-milestone-tabs-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 16px;
-}
-
-.gt-milestone-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.gt-milestone-tab-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
-}
-
-.gt-milestone-tab-btn.active {
-  background: #eff6ff;
-  border-color: #3b82f6;
-  color: #1d4ed8;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
-}
-
-.gt-tab-badge {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 1.5px 6px;
-  border-radius: 12px;
-  background: #f1f5f9;
-  color: #94a3b8;
-}
-
-.gt-tab-badge.has-tasks {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.gt-milestone-tab-btn.active .gt-tab-badge.has-tasks {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-/* ── Active Milestone Banner Card ────────────────────────────── */
-.gt-active-milestone-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-left: 4px solid #2563eb;
-  border-radius: 12px;
-  padding: 18px 22px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-}
-
-.gt-all-milestones-summary {
-  border-left-color: #6366f1;
-}
-
-.gt-milestone-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
-.gt-milestone-info-left {
-  flex: 1;
-}
-
-.gt-milestone-title-flex {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
-.gt-milestone-icon-box {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: #eff6ff;
-  color: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gt-milestone-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-}
-
-.gt-milestone-status-pill {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.gt-milestone-status-pill.approved { background: #dcfce7; color: #15803d; }
-.gt-milestone-status-pill.pending  { background: #fef3c7; color: #b45309; }
-.gt-milestone-status-pill.rejected { background: #fee2e2; color: #dc2626; }
-
-.gt-milestone-desc {
-  font-size: 12px;
-  color: #64748b;
-  margin: 3px 0 6px 0;
-  line-height: 1.4;
-}
-
-.gt-milestone-date-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #475569;
-  background: #f1f5f9;
-  padding: 3px 9px;
-  border-radius: 6px;
-}
-
-/* Progress Box on Right side of Milestone Card */
-.gt-milestone-progress-box {
-  width: 220px;
-  background: #ffffff;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.gt-m-prog-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.gt-m-prog-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.gt-m-prog-pct {
-  font-size: 13px;
-  font-weight: 800;
-  color: #2563eb;
-}
-
-.gt-m-prog-track {
-  height: 6px;
-  background: #f1f5f9;
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 6px;
-}
-
-.gt-m-prog-fill {
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #2563eb, #3b82f6);
-  transition: width 0.5s ease;
-}
-
-.gt-m-prog-stat {
-  font-size: 10.5px;
-  color: #64748b;
-  font-weight: 500;
-  display: block;
-}
-
-/* ================================================================
-   SECTION 3 — MEMBER TASK CARDS & BREAKDOWN
-================================================================ */
-.gt-members-section {
-  margin-top: 8px;
-}
-
-.gt-members-section-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.gt-section-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 2px 0;
-  letter-spacing: -0.2px;
-}
-
-.gt-section-sub {
-  font-size: 12px;
-  color: #64748b;
-  margin: 0;
-}
-
-.gt-feedback-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: #64748b;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* Empty milestone state */
-.gt-empty-milestone-tasks {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 22px 24px;
-  background: #ffffff;
-  border: 1.5px dashed #cbd5e1;
-  border-radius: 12px;
-  margin-bottom: 18px;
-}
-
-.gt-empty-icon {
-  color: #94a3b8;
-  flex-shrink: 0;
-}
-
-.gt-empty-text h6 {
-  margin: 0 0 3px 0;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #334155;
-}
-
-.gt-empty-text p {
-  margin: 0;
-  font-size: 12px;
-  color: #64748b;
-}
+.gt-members-section { margin-top: 8px; }
 
 /* Individual member card */
 .gt-member-card {
@@ -544,14 +162,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 22px 26px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease;
-}
-
-.gt-member-card.is-leader-card {
-  border-color: #cbd5e1;
-  background: #fcfdfe;
 }
 
 /* Card top: avatar + name + mini progress */
@@ -565,11 +177,11 @@
 }
 
 .gt-member-avatar {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #475569;
+  background: #dbeafe;
+  color: #1d4ed8;
   font-size: 14px;
   font-weight: 700;
   display: flex;
@@ -578,123 +190,23 @@
   flex-shrink: 0;
 }
 
-.gt-member-avatar.leader-avatar {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
 .gt-member-name-block { flex: 1; }
 
-.gt-member-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
 .gt-member-name {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 700;
   color: #0f172a;
-  margin: 0;
+  margin: 0 0 2px 0;
 }
 
-.gt-role-badge {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.gt-role-badge.leader {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
-}
-
-.gt-role-badge.member {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.gt-member-subtitle {
-  font-size: 11.5px;
-  color: #94a3b8;
-  margin: 0;
-  font-weight: 500;
-}
-
-/* Progress & Contribution Group inside member header */
-.gt-member-progress-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Overall Project Contribution Chip */
-.gt-contribution-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 4px 10px;
-  border-radius: 8px;
-  cursor: help;
-  transition: all 0.2s ease;
-}
-
-.gt-contribution-chip:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.gt-contrib-left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.gt-contrib-icon {
-  color: #2563eb;
-}
-
-.gt-contrib-label {
+.gt-member-role {
   font-size: 11px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.gt-contrib-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.gt-contrib-badge {
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #1d4ed8;
-  background: #dbeafe;
-  padding: 1px 6px;
-  border-radius: 10px;
-}
-
-.gt-contrib-sub {
-  font-size: 10.5px;
-  color: #64748b;
+  color: #94a3b8;
   font-weight: 500;
 }
 
-/* Mini progress bar inside member header */
-.gt-mini-progress-wrap {
-  width: 140px;
-  text-align: right;
-}
+/* Mini progress bar inside the member header */
+.gt-mini-progress-wrap { width: 120px; text-align: right; }
 
 .gt-mini-bar-track {
   height: 6px;
@@ -721,23 +233,18 @@
 .gt-task-columns {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
 
-.gt-task-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+/* Column wrapper */
+.gt-task-col { display: flex; flex-direction: column; gap: 8px; }
 
+/* Column header label */
 .gt-col-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.7px;
   padding: 0 0 6px 0;
   border-bottom: 2px solid transparent;
   margin-bottom: 2px;
@@ -747,56 +254,31 @@
 .gt-col-label.ongoing   { color: #b45309; border-color: #f59e0b; }
 .gt-col-label.yet       { color: #64748b; border-color: #cbd5e1; }
 
-.gt-col-count-chip {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 10px;
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.gt-col-label.completed .gt-col-count-chip { background: #dcfce7; color: #15803d; }
-.gt-col-label.ongoing .gt-col-count-chip   { background: #fef3c7; color: #b45309; }
-
-.gt-no-tasks-box {
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px dashed #e2e8f0;
-  text-align: center;
-}
-
-.gt-no-tasks {
-  font-size: 11.5px;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-/* ── Task item (empty placeholder) ───────────────────────────── */
+/* Task item (empty placeholder) */
 .gt-task-item {
-  min-height: 38px;
-  border-radius: 8px;
+  height: 36px;
+  border-radius: 7px;
   border: 1.5px dashed #e2e8f0;
   background: #f8fafc;
   display: flex;
-  align-items: flex-start;
-  padding: 10px 12px;
-  gap: 10px;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
 }
 
+/* Colour-coded left indicator on each task slot */
 .gt-task-indicator {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 5px;
 }
 
-.gt-task-indicator.completed { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
-.gt-task-indicator.ongoing   { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
-.gt-task-indicator.yet       { background: #94a3b8; box-shadow: 0 0 0 2px #f1f5f9; }
+.gt-task-indicator.completed { background: #22c55e; }
+.gt-task-indicator.ongoing   { background: #f59e0b; }
+.gt-task-indicator.yet       { background: #cbd5e1; }
 
+/* Empty placeholder bar inside task item */
 .gt-task-placeholder-bar {
   height: 8px;
   border-radius: 4px;
@@ -804,81 +286,71 @@
   flex: 1;
 }
 
-/* ── Real Populated Task Item ────────────────────────────────── */
+/* "No tasks" label when column is empty */
+.gt-no-tasks {
+  font-size: 11px;
+  color: #cbd5e1;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* Pending notice at the bottom of member card */
+.gt-member-pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.gt-member-pending-text {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ================================================================
+   MENTOR FEEDBACK — per-task inline feedback panel
+================================================================ */
+
+/* Section header row: title + hint */
+.gt-members-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.gt-members-section-header .gt-section-title {
+  margin-bottom: 0;
+}
+
+/* "Click any task to leave feedback" hint */
+.gt-feedback-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ── Real task item (has feedback button) ────────────────────── */
 .gt-task-item--real {
   border: 1.5px solid #e2e8f0;
   background: #ffffff;
   cursor: default;
-  min-height: 48px;
+  min-height: 38px;
   height: auto;
-  transition: all 0.15s ease;
 }
 
-.gt-task-item--real:hover {
-  border-color: #cbd5e1;
-  background: #fafbfd;
-}
-
-.gt-task-main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
+/* Task name text */
 .gt-task-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 12px;
+  color: #334155;
+  flex: 1;
   line-height: 1.4;
-}
-
-.gt-task-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-
-.gt-task-milestone-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #4338ca;
-  background: #eef2ff;
-  border: 1px solid #e0e7ff;
-  padding: 1.5px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.gt-task-timeline-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 3.5px;
-  font-size: 10px;
-  font-weight: 500;
-  color: #475569;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  padding: 1.5px 6.5px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.gt-task-description {
-  font-size: 11px;
-  color: #64748b;
-  line-height: 1.35;
-  margin: 3px 0 0 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* ── Feedback toggle button ──────────────────────────────────── */
@@ -886,18 +358,17 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 4px 9px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
   transition: all 0.15s ease;
-  margin-top: 2px;
 }
 
 .gt-feedback-toggle:hover {
@@ -906,6 +377,7 @@
   color: #2563eb;
 }
 
+/* When feedback has been submitted — green tint */
 .gt-feedback-toggle.has-feedback {
   background: #f0fdf4;
   border-color: #bbf7d0;
@@ -937,7 +409,7 @@
 .gt-feedback-panel {
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
-  padding: 12px;
+  padding: 14px 12px 12px 12px;
   animation: feedbackSlide 0.2s ease;
 }
 
@@ -946,6 +418,7 @@
   to   { opacity: 1; transform: translateY(0);    }
 }
 
+/* Previously submitted feedback block */
 .gt-feedback-submitted {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -972,10 +445,11 @@
   color: #166534;
   line-height: 1.5;
   margin: 0;
-  padding-right: 56px;
+  padding-right: 56px; /* space for clear button */
   white-space: pre-wrap;
 }
 
+/* Clear button — top-right of the submitted block */
 .gt-feedback-clear-btn {
   position: absolute;
   top: 8px;
@@ -1009,14 +483,14 @@
 
 .gt-feedback-textarea {
   flex: 1;
-  padding: 8px 10px;
+  padding: 9px 11px;
   font-size: 12px;
   color: #1e293b;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 8px;
   resize: vertical;
-  min-height: 56px;
+  min-height: 62px;
   font-family: inherit;
   line-height: 1.5;
   transition: border-color 0.15s ease;
@@ -1030,6 +504,7 @@
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
 }
 
+/* Send button */
 .gt-feedback-send-btn {
   display: inline-flex;
   flex-direction: column;
@@ -1037,8 +512,8 @@
   justify-content: center;
   gap: 4px;
   padding: 0 14px;
-  height: 56px;
-  min-width: 52px;
+  height: 62px;
+  min-width: 54px;
   border: none;
   border-radius: 8px;
   background: #e2e8f0;

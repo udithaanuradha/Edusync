@@ -41,18 +41,6 @@ const SignUpPage: React.FC = () => {
     { value: 'industry mentor', label: 'Industry Mentor' }
   ];
 
-  const getAcademicUnit = () => {
-    if (formData.role === 'student') {
-      return formData.degreeProgram?.trim() || null;
-    }
-
-    if (formData.role === 'lecturer') {
-      return formData.department?.trim() || null;
-    }
-
-    return null;
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
@@ -155,21 +143,30 @@ const SignUpPage: React.FC = () => {
     // PHASE 1: Send registration details and write to database first
     if (!isOtpSent) {
       try {
-        const safeAcademicUnit = getAcademicUnit();
+        // 🔗 Points directly to your main backend signup pipeline in index.js
         const signupPayload = {
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          email: formData.email.trim().toLowerCase(),
+          // Backend expects firstName/lastName individually (it joins them
+          // into `name` itself before the INSERT) — sending a pre-joined
+          // `name` here left firstName/lastName undefined server-side and
+          // failed validation on every signup.
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
           password: formData.password,
-          role: formData.role,
-          university_id: formData.role === 'student' ? (formData.universityId?.trim() || null) : null,
-          phone: formData.phone?.trim() || null,
-          academic_unit: safeAcademicUnit && safeAcademicUnit.length > 50 ? safeAcademicUnit.slice(0, 50) : safeAcademicUnit
+          role:  formData.role,
+          university_id: formData.role === 'student' ? formData.universityId : null,
+          phone: formData.phone || null,
+          academic_unit: formData.role === 'student'
+            ? formData.degreeProgram
+            : formData.role === 'lecturer'
+            ? formData.department
+            : null
         };
 
         const response = await fetch('http://localhost:5000/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          // Send the user profile inputs to be saved in the database
           body: JSON.stringify(signupPayload)
         });
         const data = await response.json();
@@ -413,17 +410,17 @@ const SignUpPage: React.FC = () => {
 
                     {formData.role === 'student' && (
                       <>
-                        <option value="AI">Artificial Intelligence</option>
-                        <option value="IT">Information Technology</option>
-                        <option value="ITM">IT Management</option>
+                        <option value="AI">Artificial Intelligence (AI)</option>
+                        <option value="IT">Information Technology (IT)</option>
+                        <option value="ITM">IT Management (ITM)</option>
                       </>
                     )}
 
                     {formData.role === 'lecturer' && (
                       <>
-                        <option value="IT">IT</option>
-                        <option value="IDS">IDS</option>
-                        <option value="CM">CM</option>
+                        <option value="IT">IT - Information Technology</option>
+                        <option value="IDS">IDS - Interdisciplinary Studies</option>
+                        <option value="CM">CM - Computational Mathematics</option>
                       </>
                     )}
                   </select>

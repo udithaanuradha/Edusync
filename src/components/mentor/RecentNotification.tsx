@@ -1,4 +1,4 @@
-﻿// src/components/mentor/RecentNotifications.tsx
+// src/components/mentor/RecentNotifications.tsx
 import React, { useState, useEffect } from 'react';
 import { FileText, AlertCircle, MessageCircle, Clock } from 'lucide-react';
 import './RecentNotifications.css';
@@ -33,17 +33,9 @@ const RecentNotifications: React.FC = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const savedUser = localStorage.getItem('user');
-        const user = savedUser ? JSON.parse(savedUser) : null;
-        const mentorId = user?.id || '';
-        const url = mentorId 
-          ? `http://localhost:5000/api/mentor/notifications?mentorId=${mentorId}`
-          : 'http://localhost:5000/api/mentor/notifications';
-        const response = await fetch(url, {
-          headers: mentorId ? { 'x-user-id': String(mentorId) } : {}
-        });
+        const response = await fetch('http://localhost:5000/api/mentor/notifications');
         const data = await response.json();
-        setNotifications(Array.isArray(data) ? data : []);
+        setNotifications(data);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       } finally {

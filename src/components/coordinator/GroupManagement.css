@@ -20,15 +20,13 @@
   color: #fff;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
 }
 
 .groups-list-card {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
+  border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
 .groups-empty-state {
@@ -45,124 +43,54 @@
 
 .group-card {
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 12px 12px 10px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-  min-height: 220px;
-  max-width: 290px;
-  width: 100%;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.group-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
 }
 
 .group-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 10px;
 }
 
 .group-card-head h3 {
   margin: 0;
   color: #0f172a;
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.2;
+  font-size: 16px;
 }
 
 .group-meta-pill {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: 12px;
+  font-weight: 600;
   color: #1d4ed8;
   background: #dbeafe;
   border-radius: 999px;
   padding: 4px 8px;
-  white-space: nowrap;
 }
 
-.group-meta-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.group-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #374151;
+.group-meta {
+  margin: 8px 0 0;
+  color: #475569;
   font-size: 13px;
-  line-height: 1.4;
-}
-
-.group-meta-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: #2563eb;
-  flex-shrink: 0;
 }
 
 .group-members-preview {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 
-.group-member-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: #1f2937;
-  font-size: 14px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 6px 8px;
-}
-
-.group-member-name-wrap {
+.group-members-preview li {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 0;
-  color: #1f2937;
-}
-
-.group-member-name-wrap span:last-child {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.group-profile-btn {
-  background: transparent;
-  border: none;
-  color: #2563eb;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
-}
-
-.group-profile-btn:hover {
-  text-decoration: underline;
+  color: #334155;
+  font-size: 13px;
 }
 
 .group-card-actions {
@@ -170,26 +98,19 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.group-edit-btn,
-.group-delete-btn {
-  border-radius: 9px;
-  padding: 6px 10px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 12px;
 }
 
 .group-edit-btn {
   border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 6px 10px;
   background: #eff6ff;
   color: #1d4ed8;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
 }
 
 .group-edit-btn:hover {
@@ -198,8 +119,15 @@
 
 .group-delete-btn {
   border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 10px;
   background: #fef2f2;
   color: #dc2626;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
 }
 
 .group-delete-btn:hover {

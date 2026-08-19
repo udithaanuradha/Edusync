@@ -10,9 +10,6 @@ interface StageFile {
   file_name: string;
   file_url: string;
   uploaded_at: string;
-  uploaded_by?: number;
-  uploader_name?: string;
-  academic_unit?: string;
 }
 
 interface Stage {
@@ -22,22 +19,10 @@ interface Stage {
   deadline: string;
   level: number;
   created_at: string;
-  created_by?: number;
-  creator_name?: string;
-  academic_unit?: string;
   mentor_details_url?: string;
   resource_links?: string; // 💡 ඩේටාබේස් එකෙන් එන ලින්ක් එක සඳහා එකතු කලා
   files?: StageFile[];
 }
-
-const getDegreeNameFromAcademicUnit = (unit?: string | null): string => {
-  if (!unit) return '';
-  const clean = unit.trim().toUpperCase();
-  if (clean === 'IDS' || clean === 'ITM') return 'ITM';
-  if (clean === 'IT') return 'IT';
-  if (clean === 'CM' || clean === 'AI') return 'AI';
-  return clean;
-};
 
 interface GroupMember {
   id: number;
@@ -56,14 +41,24 @@ interface Group {
   status: string;
 }
 
+interface MarkReport {
+  student_name: string;
+  university_id: string;
+  group_name: string;
+  stage_name: string;
+  marks: number;
+  feedback: string;
+}
+
 interface AdminLevelPageProps {
   levelNumber: number;
 }
 
 const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
-  const [activeTab, setActiveTab] = useState<'stages' | 'groups'>('stages');
+  const [activeTab, setActiveTab] = useState<'stages' | 'groups' | 'marks'>('stages');
   const [stages, setStages] = useState<Stage[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [marks, setMarks] = useState<MarkReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -80,57 +75,46 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       setError('');
       
       const stageRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
-      if (stageRes.ok) {
-        const stageData = await stageRes.json();
-        if (stageData.success) {
-          setStages(stageData.data || []);
-        } else if (Array.isArray(stageData)) {
-          setStages(stageData);
-        }
-      } else {
-        setStages([]);
-      }
+      const stageData = await stageRes.json();
+      if (stageData.success) setStages(stageData.data);
 
+      
       const groupRes = await fetch(`http://localhost:5000/api/groups/level/${levelNumber}`);
-      let groupData = [];
-      if (groupRes.ok) {
-        const rawGroup = await groupRes.json();
-        groupData = Array.isArray(rawGroup) ? rawGroup : (rawGroup.data || []);
-      }
+      const groupData = await groupRes.json();
+      if (Array.isArray(groupData)) setGroups(groupData);
 
       // Fetch mentors list to map mentor names to their assigned groups
-      try {
-        const mentorRes = await fetch(`http://localhost:5000/api/users?role=mentor`);
-        if (mentorRes.ok) {
-          const mentorData = await mentorRes.json();
-          if (Array.isArray(groupData)) {
-            const enrichedGroups = groupData.map((group: any) => {
-              const assignedMentor = Array.isArray(mentorData) 
-                ? mentorData.find((m: any) => Number(m.id) === Number(group.mentor_id || group.mentorId))
-                : null;
+      const mentorRes = await fetch(`http://localhost:5000/api/users?role=mentor`);
+      const mentorData = await mentorRes.json();
 
-              return {
-                ...group,
-                mentorName: assignedMentor ? assignedMentor.name : (group.mentorName || null)
-              };
-            });
-            setGroups(enrichedGroups);
-          } else {
-            setGroups(groupData);
-          }
-        } else {
-          setGroups(groupData);
-        }
-      } catch {
-        setGroups(groupData);
-      }
+      if (Array.isArray(groupData)) {
+       const enrichedGroups = groupData.map((group: any) => {
+         const assignedMentor = Array.isArray(mentorData) 
+           ? mentorData.find((m: any) => Number(m.id) === Number(group.mentor_id || group.mentorId))
+           : null;
+
+        return {
+          ...group,
+          mentorName: assignedMentor ? assignedMentor.name : (group.mentorName || null)
+        };
+       });
+
+       setGroups(enrichedGroups);
+       }
+
+      const marksRes = await fetch(`http://localhost:5000/api/marks/level/${levelNumber}`);
+      const marksData = await marksRes.json();
+      if (marksData.success) setMarks(marksData.data);
 
     } catch (err) {
-      console.error('Error in fetchAllData:', err);
       setError('Connection to server failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateReport = () => {
+    alert(`Generating marks report for Level ${levelNumber}...`);
   };
 
   const formatDate = (date: string) => {
@@ -246,6 +230,12 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                     color: activeTab === 'groups' ? 'white' : '#6b7280' }}>
                   Project Groups
                 </button>
+                <button onClick={() => setActiveTab('marks')}
+                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
+                    backgroundColor: activeTab === 'marks' ? '#2563eb' : '#f3f4f6',
+                    color: activeTab === 'marks' ? 'white' : '#6b7280' }}>
+                  Marks Reports
+                </button>
               </div>
 
               {loading ? (
@@ -254,32 +244,12 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                 <div style={{ width: '100%' }}>
                   {activeTab === 'stages' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                      {stages.length > 0 ? stages.map((stage, index) => {
-                        const stageDegree = getDegreeNameFromAcademicUnit(stage.academic_unit);
-                        return (
+                      {stages.length > 0 ? stages.map((stage, index) => (
                         <div key={stage.stage_id} style={cardStyle}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                             <div style={badgeStyle}>{index + 1}</div>
                             <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{stage.stage_name}</h3>
-                                {stageDegree && (
-                                  <span
-                                    style={{
-                                      backgroundColor: stageDegree === 'ITM' ? '#dbeafe' : stageDegree === 'AI' ? '#f3e8ff' : '#e0f2fe',
-                                      color: stageDegree === 'ITM' ? '#1e40af' : stageDegree === 'AI' ? '#6b21a8' : '#0369a1',
-                                      border: `1px solid ${stageDegree === 'ITM' ? '#93c5fd' : stageDegree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
-                                      fontSize: '12px',
-                                      fontWeight: '700',
-                                      padding: '2px 8px',
-                                      borderRadius: '6px',
-                                      whiteSpace: 'nowrap',
-                                    }}
-                                  >
-                                    {stageDegree}
-                                  </span>
-                                )}
-                              </div>
+                              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>{stage.stage_name}</h3>
                               <div style={{ fontSize: '14px', marginBottom: '4px' }}>
                                 <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
                                 <span style={{ color: '#6b7280' }}>{stage.description || 'No description'}</span>
@@ -332,60 +302,18 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                   <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
                                     Documents ({stage.files.length}):
                                   </p>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {stage.files.map((file) => {
-                                      const degree = getDegreeNameFromAcademicUnit(file.academic_unit);
-                                      const badgeLabel = degree ? degree : (file.uploader_name ? file.uploader_name : 'General');
-                                      return (
-                                        <div
-                                          key={file.file_id}
-                                          style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            gap: '12px',
-                                            padding: '10px 16px',
-                                            backgroundColor: '#eff6ff',
-                                            borderRadius: '8px',
-                                            border: '1px solid #dbeafe',
-                                            width: '100%',
-                                            boxSizing: 'border-box',
-                                          }}
-                                        >
-                                          <a
-                                            href={file.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '8px',
-                                              color: '#2563eb',
-                                              textDecoration: 'none',
-                                              fontSize: '14px',
-                                              fontWeight: '500',
-                                            }}
-                                          >
-                                            📄 {file.file_name}
-                                          </a>
-
-                                          <span
-                                            style={{
-                                              backgroundColor: degree === 'ITM' ? '#dbeafe' : degree === 'AI' ? '#f3e8ff' : '#e0f2fe',
-                                              color: degree === 'ITM' ? '#1e40af' : degree === 'AI' ? '#6b21a8' : '#0369a1',
-                                              border: `1px solid ${degree === 'ITM' ? '#93c5fd' : degree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              padding: '4px 10px',
-                                              borderRadius: '6px',
-                                              whiteSpace: 'nowrap',
-                                            }}
-                                          >
-                                            {badgeLabel}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {stage.files.map((file) => (
+                                      <a
+                                        key={file.file_id}
+                                        href={file.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={fileLinkStyle}
+                                      >
+                                        📄 {file.file_name}
+                                      </a>
+                                    ))}
                                   </div>
                                 </div>
                               ) : (
@@ -397,7 +325,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                             </div>
                           </div>
                         </div>
-                      );}) : <p>No stages found.</p>}
+                      )) : <p>No stages found.</p>}
                     </div>
                   )}
 
@@ -448,6 +376,74 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       </div>
                     </div>
                   </div>  
+                  )}
+
+                  {activeTab === 'marks' && (
+                    <div style={cardStyle}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0 }}>Marks Report Generation</h3>
+                        <button 
+                          onClick={handleGenerateReport}
+                          style={{ 
+                            padding: '10px 20px', 
+                            backgroundColor: '#fee2e2', 
+                            color: '#991b1b', 
+                            border: '1px solid #fecaca',
+                            borderRadius: '8px', 
+                            cursor: 'pointer', 
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                        >
+                          Generate Marks Report
+                        </button>
+                      </div>
+
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
+                              <th style={{ padding: '12px' }}>Student</th>
+                              <th style={{ padding: '12px' }}>Group</th>
+                              <th style={{ padding: '12px' }}>Stage</th>
+                              <th style={{ padding: '12px' }}>Marks</th>
+                              <th style={{ padding: '12px' }}>Feedback</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {marks.length > 0 ? marks.map((m, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  <div style={{ fontWeight: '600' }}>{m.student_name}</div>
+                                  <div style={{ fontSize: '11px', color: '#6b7280' }}>{m.university_id}</div>
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{m.group_name}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>{m.stage_name}</td>
+                                <td style={{ padding: '12px', textAlign: 'left' }}>
+                                  <span style={{ 
+                                    backgroundColor: m.marks >= 40 ? '#dcfce7' : '#fee2e2', 
+                                    color: m.marks >= 40 ? '#166534' : '#991b1b',
+                                    padding: '4px 10px', borderRadius: '12px', fontWeight: '700'
+                                  }}>
+                                    {m.marks}%
+                                  </span>
+                                </td>
+                                <td style={{ padding: '12px', fontSize: '13px', color: '#4b5563', textAlign: 'left' }}>{m.feedback || 'No feedback'}</td>
+                              </tr>
+                            )) : (
+                              <tr>
+                                <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#9ca3af' }}>
+                                  No marks found for this level.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

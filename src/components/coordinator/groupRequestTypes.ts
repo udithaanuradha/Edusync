@@ -21,6 +21,5 @@ export interface ApprovedGroupRequest {
   rejectionReason?: string;
   createdAt?: string;
   isFinalSubmitted?: boolean;
-  isGroupCreated?: boolean;
   raw?: Record<string, unknown>;
 }

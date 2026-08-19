@@ -5,19 +5,17 @@ import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
 import GradebookTable from '../../components/coordinator/GradebookTable';
-import SupervisorReportPanel from '../../components/coordinator/SupervisorReportPanel';
 import { ApprovedGroupRequest } from '../../components/coordinator/groupRequestTypes';
 import './CoordinatorDashboard.css';
 import './CoordinatorLevelPage.css';
 
-type TabKey = 'stages' | 'requests' | 'groups' | 'marking' | 'reports';
+type TabKey = 'stages' | 'requests' | 'groups' | 'marking';
 
 const LEVEL_TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'stages', label: 'Project Stages' },
   { key: 'requests', label: 'Group Requests' },
   { key: 'groups', label: 'Project Groups' },
   { key: 'marking', label: 'Submissions' },
-  { key: 'reports', label: 'Reports' },
 ];
 
 interface CoordinatorLevelPageProps {
@@ -83,8 +81,6 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                   initialRequest={prefillRequest}
                   onPrefillHandled={() => setPrefillRequest(null)}
                 />
-              ) : activeTab === 'reports' ? (
-                <SupervisorReportPanel levelNumber={levelNumber} />
               ) : (
                 <GradebookTable levelNumber={levelNumber} />
               )}

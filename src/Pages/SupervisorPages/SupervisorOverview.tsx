@@ -9,22 +9,6 @@ import { ConversationV2, MessageV2 } from '../../types/chatV2';
 import SupervisorTaskScheduler from './SupervisorTaskScheduler';
 import './SupervisorOverview.css';
 
-const PANEL_STORAGE_KEY = 'edusync.calendar.panels';
-
-type StoredPanel = {
-  id: string;
-  title: string;
-  level: number;
-  groupName: string;
-  date: string;
-  time: string;
-  duration: string;
-  location: string;
-  meetingLink: string;
-  notes: string;
-  evaluators?: string[];
-};
-
 const notificationTabs = ['overall', 'Level1', 'level2', 'level3', 'admin', 'coordinator'] as const;
 type NotificationTab = (typeof notificationTabs)[number];
 
@@ -89,29 +73,6 @@ const SupervisorOverview: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [pendingMeetingsCount, setPendingMeetingsCount] = useState(0);
   const [announcementsCount, setAnnouncementsCount] = useState(0);
-  const [evaluationPanels, setEvaluationPanels] = useState<StoredPanel[]>([]);
-
-  // Read evaluation panels from localStorage
-  React.useEffect(() => {
-    const readPanels = () => {
-      try {
-        const raw = window.localStorage.getItem(PANEL_STORAGE_KEY);
-        if (!raw) {
-          setEvaluationPanels([]);
-          return;
-        }
-
-        const parsed = JSON.parse(raw) as StoredPanel[];
-        setEvaluationPanels(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        setEvaluationPanels([]);
-      }
-    };
-
-    readPanels();
-    window.addEventListener('storage', readPanels);
-    return () => window.removeEventListener('storage', readPanels);
-  }, []);
 
   const loadConversations = useCallback(async () => {
     if (!user?.id) return;
@@ -362,30 +323,6 @@ const SupervisorOverview: React.FC = () => {
           </div>
 
           <AnnouncementWidget title="Announcements" maxItems={4} />
-
-          <div className="message-card" style={{ marginTop: '16px' }}>
-            <div className="message-header">
-              <h3>evaluation panels</h3>
-              <span className="message-count">{evaluationPanels.length} scheduled</span>
-            </div>
-
-            <div className="notification-items">
-              {evaluationPanels.length === 0 ? (
-                <div className="notification-row">
-                  <div className="notif-title">No evaluation panels scheduled yet.</div>
-                </div>
-              ) : (
-                evaluationPanels.slice(0, 4).map((panel) => (
-                  <div key={panel.id} className="notification-row">
-                    <div className="notif-title">
-                      {panel.title} • Level {panel.level} • {panel.groupName}
-                    </div>
-                    <button className="read-btn" type="button">view</button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
 
           <div
             className="message-card"
