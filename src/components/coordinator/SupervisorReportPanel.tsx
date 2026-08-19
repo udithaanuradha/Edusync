@@ -458,26 +458,128 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         </div>
       </div>
 
-      {/* Degree Tabs, KPI cards, and rest of UI omitted for brevity but preserved in behavior */}
-      <div style={{ padding: '12px', background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-        <div style={{ marginBottom: 12 }}>
-          <strong>Students</strong> — showing {filteredStudents.length} of {students.length}
+      {/* Degree Tabs */}
+      <div style={{ display: 'flex', gap: 12, borderBottom: '2px solid #e2e8f0', paddingBottom: 8 }}>
+        {(['ALL', 'IT', 'AI', 'ITM'] as DegreeType[]).map((deg) => (
+          <button
+            key={deg}
+            type="button"
+            onClick={() => setSelectedDegree(deg)}
+            style={{
+              padding: '10px 18px',
+              border: 'none',
+              background: 'transparent',
+              borderBottom: selectedDegree === deg ? '3px solid #2563eb' : '3px solid transparent',
+              color: selectedDegree === deg ? '#2563eb' : '#64748b',
+              fontWeight: selectedDegree === deg ? 700 : 600,
+              cursor: 'pointer',
+            }}
+          >
+            {deg === 'ALL' ? `All Degrees (${countsByDegree.ALL})` : `${deg} — (${(countsByDegree as any)[deg] || 0})`}
+          </button>
+        ))}
+      </div>
+
+      {/* KPI cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
+          <div style={{ color: '#64748b', fontSize: 13 }}>Total Enrolled</div>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>{degreeStats.total} <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>students</span></div>
         </div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          {filteredStudents.map((s) => (
-            <div key={String(s.student_id)} style={{ padding: 10, borderRadius: 8, border: '1px solid #eef2f7' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{s.student_name}</div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>{s.university_id} — {s.group_name}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700 }}>{s.final_mark}%</div>
-                  <div style={{ fontSize: 12 }}>{s.gradeInfo.letter}</div>
-                </div>
-              </div>
+        <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
+          <div style={{ color: '#64748b', fontSize: 13 }}>Average Score</div>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>{degreeStats.avgMark}%</div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
+          <div style={{ color: '#64748b', fontSize: 13 }}>Pass Rate</div>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>{degreeStats.passRate}% <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>({degreeStats.passCount}/{degreeStats.total})</span></div>
+        </div>
+      </div>
+
+      {/* Grade distribution bar and tiles */}
+      <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16 }}>📊 {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages</h3>
+            <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: 13 }}>Proportion and count of students falling into each letter grade bracket.</p>
+          </div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>Total Cohort: <strong>{degreeStats.total} students</strong></div>
+        </div>
+
+        <div style={{ marginTop: 12, height: 14, background: '#e6f4ea', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ height: '100%', background: '#16a34a', width: `${degreeStats.total > 0 ? 100 : 0}%` }} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12, marginTop: 12 }}>
+          {GRADING_SCALE.map((g) => (
+            <div key={g.letter} style={{ background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #eef2f7', textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, color: g.badgeColor }}>{g.letter}</div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>{(degreeStats.gradePercentages[g.letter] || 0)}%</div>
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>{(degreeStats.gradeCounts[g.letter] || 0)} students</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Search + table */}
+      <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>Student Marksheet ({filteredStudents.length})</h3>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input placeholder="Search name, index, group..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #e6edf3' }} />
+            <button onClick={handleExportCSV} style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8 }}>Download CSV</button>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid #eef2f7' }}>
+                <th style={{ padding: '12px' }}>Student Details</th>
+                <th style={{ padding: '12px' }}>Reg / Index No</th>
+                <th style={{ padding: '12px' }}>Degree</th>
+                <th style={{ padding: '12px' }}>Project Group</th>
+                {stages.map((st) => (
+                  <th key={st.stage_id} style={{ padding: '12px' }}>{st.stage_name}<div style={{ fontSize: 12, color: '#94a3b8' }}>Evaluator Marks & Avg</div></th>
+                ))}
+                <th style={{ padding: '12px' }}>Final Mark (%)</th>
+                <th style={{ padding: '12px' }}>Letter Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredStudents.map((s) => (
+                <tr key={String(s.student_id)} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 700 }}>{s.student_name} {s.is_leader && <span style={{ background: '#e6f4ea', color: '#16a34a', padding: '2px 6px', borderRadius: 6, marginLeft: 8, fontSize: 12 }}>Leader</span>}</div>
+                  </td>
+                  <td style={{ padding: 12 }}>{s.university_id}</td>
+                  <td style={{ padding: 12 }}>{s.degree}</td>
+                  <td style={{ padding: 12 }}>{s.group_name}</td>
+                  {stages.map((st) => {
+                    const data = s.stages[st.stage_id];
+                    return (
+                      <td key={st.stage_id} style={{ padding: 12, verticalAlign: 'top' }}>
+                        {data && data.evaluators && data.evaluators.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {data.evaluators!.map((e, i) => (
+                                <span key={i} style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: 6, fontSize: 12 }}>{`E${i + 1}: ${e.mark}`}</span>
+                              ))}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#64748b' }}>Avg: {data.average_mark !== null ? `${data.average_mark}/${data.total_marks ?? ''}` : '—'}</div>
+                          </div>
+                        ) : (
+                          <div style={{ color: '#94a3b8' }}>—</div>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td style={{ padding: 12 }}>{s.final_mark}%</td>
+                  <td style={{ padding: 12 }}><span style={{ background: '#ecfdf5', color: '#047857', padding: '6px 8px', borderRadius: 8 }}>{s.gradeInfo.letter}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
