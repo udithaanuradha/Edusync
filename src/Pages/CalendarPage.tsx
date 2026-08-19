@@ -647,24 +647,6 @@ const CalendarPage: React.FC = () => {
 
     const mapped = new Map<number, CalendarGridMarker>();
 
-    scheduledPanels.forEach((panel) => {
-      const panelDate = parseDateValue(panel.date);
-      if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
-        return;
-      }
-
-      const day = panelDate.getDate();
-      const current = mapped.get(day);
-      const existingPanels = current?.panels ?? 0;
-
-      mapped.set(day, {
-        day,
-        type: "panel",
-        panels: existingPanels + 1,
-        label: panel.title,
-      });
-    });
-
     if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
       supervisorAssignedPanels.forEach((p) => {
         const dateStr = getLocalDateStr(p.panel_date);
@@ -683,6 +665,24 @@ const CalendarPage: React.FC = () => {
             });
           }
         }
+      });
+    } else {
+      scheduledPanels.forEach((panel) => {
+        const panelDate = parseDateValue(panel.date);
+        if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
+          return;
+        }
+
+        const day = panelDate.getDate();
+        const current = mapped.get(day);
+        const existingPanels = current?.panels ?? 0;
+
+        mapped.set(day, {
+          day,
+          type: "panel",
+          panels: existingPanels + 1,
+          label: panel.title,
+        });
       });
     }
 
