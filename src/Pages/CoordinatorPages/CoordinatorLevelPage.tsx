@@ -84,7 +84,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                   onPrefillHandled={() => setPrefillRequest(null)}
                 />
               ) : activeTab === 'reports' ? (
-                <SupervisorReportPanel />
+                <SupervisorReportPanel levelNumber={levelNumber} />
               ) : (
                 <GradebookTable levelNumber={levelNumber} />
               )}
