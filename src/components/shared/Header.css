@@ -28,6 +28,37 @@
   position: relative;
 }
 
+.notification-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bell-icon {
+  color: #64748b;
+}
+
+/* Dedicated to supervisor-feedback notifications — red, distinct from any
+   other notification styling. Don't repurpose for other notification types. */
+.notification-badge-feedback {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .user-name-text {
   font-size: 14px;
   color: #0f172a;

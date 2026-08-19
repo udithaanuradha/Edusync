@@ -1,84 +1,207 @@
-.student-inner-pages {
-  background: #f8fafc;
+/* ── Inner tab workspace (Project Timeline / Task Creation / My Tasks) ──
+   Two-tier "region + surface" depth: a softly-tinted outer frame holds the
+   segmented tab switcher and the active panel together as one cohesive
+   module, while the panel itself stays a crisp white surface that pops
+   forward with its own stronger shadow.
+
+   NOTE ON SCOPING: .student-inner-tab-panel/.student-inner-tab-heading are
+   NOT unique to this page — ProjectTimeline.css and StudentLevelInnerPages.css
+   both redefine the same class names, and Vite bundles every page's CSS into
+   one global stylesheet, so plain single-class rules here would fight those
+   other files for whichever happens to load last. Every rule below is
+   written as `.pm-inner-workspace <existing-class>` — a higher-specificity
+   descendant selector — so it wins deterministically on this page's DOM
+   regardless of source order, without editing (or being able to affect)
+   those other files. The root element carries both .student-inner-pages
+   (kept for continuity) and .pm-inner-workspace, so this first rule is
+   written as a compound selector requiring both classes — the same
+   higher-specificity trick, applied to the one rule that has no ancestor
+   of its own to hang a descendant selector off of. */
+.student-inner-pages.pm-inner-workspace {
+  background: linear-gradient(180deg, #eef2f9 0%, #eef2f7 100%);
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
-  padding: 24px;
+  padding: 20px;
   margin-top: 24px;
+  width: auto;
 }
 
-.student-inner-tabs {
+/* Segmented-control style switcher: a muted track with a floating white
+   "pill" for the active tab, rather than a flat solid-fill block. */
+.pm-inner-workspace .student-inner-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 10px;
-  margin-bottom: 24px;
+  gap: 4px;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 16px;
+  padding: 5px;
+  margin-bottom: 20px;
 }
 
-.student-inner-tab {
+.pm-inner-workspace .student-inner-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: transparent;
   border: none;
   color: #475569;
-  border-radius: 999px;
-  padding: 12px 22px;
+  border-radius: 12px;
+  padding: 11px 20px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.student-inner-tab:hover {
-  background: #f1f5f9;
+.pm-inner-workspace .student-inner-tab-icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.2s ease;
 }
+
+.pm-inner-workspace .student-inner-tab:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: #1e293b;
+}
+
 /*active tab in inner page*/
-.student-inner-tab.active {
-  background: #0445d0;
-  color: white;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+.pm-inner-workspace .student-inner-tab.active {
+  background: #ffffff;
+  color: #0445d0;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
 }
 
-.student-inner-content {
+.pm-inner-workspace .student-inner-tab.active .student-inner-tab-icon {
+  opacity: 1;
+}
+
+.pm-inner-workspace .student-inner-content {
   min-height: 520px;
 }
 
-.student-inner-panel {
+.pm-inner-workspace .student-inner-panel {
   background: #ffffff;
-  border-radius: 24px;
+  border-radius: 20px;
   border: 1px solid #e2e8f0;
-  padding: 24px;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+  padding: 28px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.07);
 }
 
-.student-inner-tab-panel {
+.pm-inner-workspace .student-inner-tab-panel {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  /* ProjectTimeline.css's .student-inner-tab-panel adds its own padding
+     and background-color — neutralize both so spacing/surface color come
+     only from .student-inner-panel above, consistently across all three
+     tabs (this class is shared by all three, not just Project Timeline). */
+  padding: 0;
+  background-color: transparent;
+  animation: student-inner-tab-fade-in 0.25s ease;
 }
 
-.student-inner-tab-heading {
+@keyframes student-inner-tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-inner-workspace .student-inner-tab-panel {
+    animation: none;
+  }
+}
+
+.pm-inner-workspace .student-inner-tab-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0;
+}
+
+.pm-inner-workspace .student-inner-tab-heading-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-inner-workspace .student-inner-tab-heading-text {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
-.student-inner-tab-heading h3 {
+.pm-inner-workspace .student-inner-tab-heading h3 {
   margin: 0;
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: #0f172a;
 }
 
-.student-inner-tab-heading p {
+.pm-inner-workspace .student-inner-tab-heading-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.pm-inner-workspace .student-inner-tab-heading p {
   margin: 0;
-  color: #475569;
+  color: #64748b;
   max-width: 740px;
-  line-height: 1.75;
+  line-height: 1.7;
+  font-size: 14px;
 }
 /* Layout styling */
 .dashboard-header-section {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+}
+
+/* .dashboard-header-section is reused by many other pages (Admin,
+   Coordinator, Mentor, Supervisor, Student Dashboard, etc.) via the shared
+   rule in index.css, which stacks its children in a column. This page's own
+   partial override above never set flex-direction, so that shared
+   column-stacking rule was winning and the heading block + role badge were
+   stacking instead of sitting side by side. Rather than editing the shared
+   index.css rule (which would affect every other page using that class),
+   this page-only modifier class fully specifies the row layout so it can't
+   be affected by — or leak onto — anything else using .dashboard-header-section. */
+.project-mgmt-header-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 /* Role Badge — read-only, determined from DB */
@@ -300,6 +423,165 @@
 .status-pill.completed {
   background: rgba(16, 185, 129, 0.12);
   color: #047857;
+}
+
+/* Milestone approval statuses (used by the Supervisor Feedback section) */
+.status-pill.pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.status-pill.approved {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.status-pill.rejected {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+/* Project Timeline / Task Creation / My Tasks differ in content height, so
+   the shared .content-container's vertical scrollbar (overflow-y: auto)
+   turns on for some tabs and not others. That toggle changes the width
+   available for centering .dashboard-content (and everything centered
+   inside it, including the avatar row below) by the scrollbar's width,
+   producing a visible left/right shift when switching tabs. Reserving the
+   scrollbar gutter unconditionally — scoped to this page only via this
+   modifier class, layered on top of the shared .content-container — keeps
+   that available width constant across all three tabs. */
+.project-mgmt-content-container {
+  overflow-y: scroll;
+}
+
+/* ── Team avatar row — students + supervisor + mentor ────────────────── */
+.team-avatar-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  margin: 4px 0 20px 0;
+}
+
+.team-avatar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 84px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.team-avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  border: 3px solid transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.team-avatar-item:hover .team-avatar-circle {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+/* Supervisor — amber border, distinct from plain student members */
+.team-avatar-circle.role-supervisor {
+  background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+  border-color: #fde68a;
+}
+
+/* Mentor — violet border, distinct from both members and supervisor */
+.team-avatar-circle.role-mentor {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  border-color: #ddd6fe;
+}
+
+.team-avatar-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.team-avatar-tag.role-supervisor {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.team-avatar-tag.role-mentor {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.team-avatar-name {
+  font-size: 12px;
+  color: #0f172a;
+  font-weight: 600;
+  text-align: center;
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Supervisor feedback section ──────────────────────────────────────── */
+.feedback-section {
+  margin: 4px 0 20px 0;
+}
+
+.feedback-section-title {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.feedback-card {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+}
+
+.feedback-card:last-child {
+  margin-bottom: 0;
+}
+
+.feedback-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.feedback-milestone-title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.feedback-text {
+  margin: 0;
+  color: #7f1d1d;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .empty-state-card {
