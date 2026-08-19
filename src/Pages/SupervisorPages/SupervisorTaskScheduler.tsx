@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Calendar,
+  Clock,
   X,
   Save,
   Trash2,
@@ -148,6 +149,12 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     getMonday(new Date()),
   );
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [recurring, setRecurring] = useState<WeeklySchedule>({});
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -464,17 +471,21 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
           <div
             style={{
               display: "flex",
-              alignItems: "baseline",
+              alignItems: "center",
               gap: "12px",
               flexWrap: "wrap",
             }}
           >
-            <h3>
-              {currentWeekStart.toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Calendar size={20} color="#3b82f6" />
+                {new Date().toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </h3>
+            </div>
             <span
               style={{
                 fontSize: "12px",
@@ -492,7 +503,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                 : "✨ Click any empty area on the grid to schedule a task"}
             </span>
           </div>
-          <span>
+          <span style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 500 }}>
             Week of {weekDays[0].display} - {weekDays[6].display}
           </span>
         </div>
@@ -593,28 +604,36 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                 ))}
 
                 {/* Specific Task Blocks */}
-                {dayTasks.map((task) => (
-                  <div
-                    key={`task-${task.id}`}
-                    className={`time-block block-${task.category.toLowerCase().split(" ")[0]}`}
-                    style={calculateStyle(task.start_time, task.end_time)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isInline) {
-                        openFullScheduler();
-                      } else {
-                        handleEditTask(e, task);
-                      }
-                    }}
-                    title={`${task.category}: ${task.description}`}
-                  >
-                    <strong>{task.category}</strong>
-                    <span>
-                      {task.description ||
-                        `${task.start_time} - ${task.end_time}`}
-                    </span>
-                  </div>
-                ))}
+                {dayTasks.map((task) => {
+                  const startTimeStr = task.start_time ? task.start_time.substring(0, 5) : "";
+                  const endTimeStr = task.end_time ? task.end_time.substring(0, 5) : "";
+                  const timePeriod = startTimeStr && endTimeStr ? `${startTimeStr} - ${endTimeStr}` : (startTimeStr || endTimeStr);
+                  const tooltipText = task.description
+                    ? `${task.category}: ${task.description} (${timePeriod})`
+                    : `${task.category} (${timePeriod})`;
+
+                  return (
+                    <div
+                      key={`task-${task.id}`}
+                      className={`time-block block-${task.category.toLowerCase().split(" ")[0]}`}
+                      style={calculateStyle(task.start_time, task.end_time)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isInline) {
+                          openFullScheduler();
+                        } else {
+                          handleEditTask(e, task);
+                        }
+                      }}
+                      title={tooltipText}
+                    >
+                      <strong>{task.category}</strong>
+                      <span>
+                        {task.description || timePeriod}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
