@@ -62,7 +62,13 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
     try {
       setLoading(true);
       setError('');
-      const stageRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+      // Scope to the student's own degree program — the backend also includes
+      // legacy/global stages (no academic_unit set) so this never hides
+      // pre-existing stages.
+      const academicUnitParam = currentUser?.academic_unit
+        ? `?academicUnit=${encodeURIComponent(currentUser.academic_unit)}`
+        : '';
+      const stageRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}${academicUnitParam}`);
       const stageData = await stageRes.json();
       const stageList = stageData?.success ? stageData.data : [];
       setStages(stageList);

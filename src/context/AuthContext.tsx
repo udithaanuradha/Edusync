@@ -8,6 +8,7 @@ interface User {
   designation?: string;
   effectiveRole?: string;
   level?: number;
+  academic_unit?: string;
 }
 
 const normalizeUserData = (userData: User): User => {
