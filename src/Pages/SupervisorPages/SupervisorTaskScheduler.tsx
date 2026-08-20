@@ -164,7 +164,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   const [recurring, setRecurring] = useState<WeeklySchedule>({});
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Form State (for modal)
+  // Form State (for full drawer modal)
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState<Task>({
@@ -576,12 +576,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
               </div>
               <div
                 className="day-track"
-                style={isInline ? { cursor: "pointer" } : {}}
-                onClick={
-                  isInline
-                    ? openFullScheduler
-                    : () => handleTrackClick(day.dateStr)
-                }
+                onClick={() => handleTrackClick(day.dateStr)}
               >
                 {/* Recurring Lecture Blocks */}
                 {dayRecurring.map((slot, idx) => (
@@ -589,15 +584,6 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                     key={`rec-${idx}`}
                     className="time-block block-lecture"
                     style={calculateStyle(slot.start, slot.end)}
-                    title={`Lecture (Frozen): ${slot.start} - ${slot.end}`}
-                    onClick={
-                      isInline
-                        ? (e) => {
-                          e.stopPropagation();
-                          openFullScheduler();
-                        }
-                        : undefined
-                    }
                   >
                     <strong>Lecture (Frozen)</strong>
                     <span>
