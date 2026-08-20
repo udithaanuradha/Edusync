@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, MessageSquare, Users, Calendar, Megaphone } from 'lucide-react';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
@@ -76,6 +76,16 @@ type GroupItem = {
   members: string;
 };
 
+// Shape returned by GET /api/supervice-st-progress/group/:groupId — only the
+// fields this widget actually renders (overall % + a short student list).
+type ActiveGroupProgress = {
+  overall: { total: number; completed: number; percent: number };
+  milestones: { status: string }[];
+  members: { id: number | string; name: string; total: number; completed: number; percent: number }[];
+};
+
+const PROGRESS_API_BASE = "http://localhost:5000/api/supervice-st-progress";
+
 const SupervisorOverview: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -86,10 +96,16 @@ const SupervisorOverview: React.FC = () => {
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
   const [allGroups, setAllGroups] = useState<GroupItem[]>([]);
   const [activeLevel, setActiveLevel] = useState<number>(1);
+  // Only jump to a level with groups once, the first time group data
+  // arrives — after that, the supervisor's own tab clicks always win, even
+  // if that level happens to be empty.
+  const autoSelectedLevelRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [pendingMeetingsCount, setPendingMeetingsCount] = useState(0);
   const [announcementsCount, setAnnouncementsCount] = useState(0);
   const [evaluationPanels, setEvaluationPanels] = useState<StoredPanel[]>([]);
+  const [activeGroupProgress, setActiveGroupProgress] = useState<ActiveGroupProgress | null>(null);
+  const [loadingActiveGroupProgress, setLoadingActiveGroupProgress] = useState(false);
 
   useEffect(() => {
     const readPanels = () => {
@@ -254,8 +270,61 @@ const SupervisorOverview: React.FC = () => {
 
   // Handle Level Tab Clicks
   const handleLevelClick = (level: number) => {
+    autoSelectedLevelRef.current = true; // a manual pick always wins from here on
     setActiveLevel(level);
     setCurrentGroupIndex(0);
+  };
+
+  // On first load, land on the first level (1-4) that actually has an
+  // assigned group instead of always defaulting to Level 1.
+  useEffect(() => {
+    if (autoSelectedLevelRef.current || allGroups.length === 0) return;
+    autoSelectedLevelRef.current = true;
+
+    const hasCurrentLevelGroups = allGroups.some((g) => g.level === activeLevel);
+    if (hasCurrentLevelGroups) return;
+
+    const firstLevelWithGroups = [1, 2, 3, 4].find((level) =>
+      allGroups.some((g) => g.level === level),
+    );
+    if (firstLevelWithGroups) {
+      setActiveLevel(firstLevelWithGroups);
+      setCurrentGroupIndex(0);
+    }
+  }, [allGroups, activeLevel]);
+
+  // Only the currently-browsed group is on screen at a time (prev/next just
+  // flips currentGroupIndex), so fetch its progress detail whenever it
+  // changes rather than pre-fetching every group in the level.
+  useEffect(() => {
+    if (!activeGroup) {
+      setActiveGroupProgress(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingActiveGroupProgress(true);
+    fetch(`${PROGRESS_API_BASE}/group/${activeGroup.groupId}`)
+      .then((res) => res.json().catch(() => ({})))
+      .then((payload) => {
+        if (cancelled) return;
+        setActiveGroupProgress(payload?.success ? (payload.data as ActiveGroupProgress) : null);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveGroupProgress(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingActiveGroupProgress(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeGroup?.groupId]);
+
+  const goToFullProgress = () => {
+    if (!activeGroup) return;
+    navigate(`/dashboard/level-${activeGroup.level}?tab=progress&groupId=${activeGroup.groupId}`);
   };
 
   return (
@@ -332,22 +401,21 @@ const SupervisorOverview: React.FC = () => {
           </div>
 
           <div
-            className="header-stat-card highlight-card"
-            onClick={() => {
-              sessionStorage.setItem("openScheduler", "true");
-              navigate('/dashboard/calendar?open=scheduler', { state: { openTimelineScheduler: true } });
-            }}
+            className="header-stat-card"
+            onClick={() => navigate('/dashboard/calendar')}
             role="button"
             tabIndex={0}
-            title="Open Timeline Scheduler"
+            title="View Incoming Panels"
           >
+            {evaluationPanels.length > 0 && <span className="stat-card-badge-dot" />}
             <div className="stat-badge-icon schedule-bg">
               <Calendar size={18} />
             </div>
             <div className="stat-info">
-              <div className="stat-label">Timeline Scheduler</div>
+              <div className="stat-label">Incoming Panels</div>
               <div className="stat-value">
-                <span className="schedule-link">Open Planner ↗</span>
+                <span className="num">{evaluationPanels.length}</span>
+                <span className="unit">panels</span>
               </div>
             </div>
           </div>
@@ -392,30 +460,6 @@ const SupervisorOverview: React.FC = () => {
             </div>
           </div>
 
-          <div className="message-card">
-            <div className="message-header">
-              <h3>message box</h3>
-              <span className="message-count">
-                {totalUnreadMessages > 0 ? `${totalUnreadMessages} unread` : `${conversations.length} active`}
-              </span>
-            </div>
-            <div className="message-actions">
-              <button
-                className="msg-btn"
-                type="button"
-                onClick={() => navigate('/dashboard/communication-v2')}
-              >
-                open chat (v2)
-              </button>
-              <button
-                className="msg-btn"
-                type="button"
-                onClick={() => navigate('/dashboard/communication-v2')}
-              >
-                read
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="right-section">
@@ -452,13 +496,17 @@ const SupervisorOverview: React.FC = () => {
                       r="50"
                       className="progress-fill"
                       style={{
-                        strokeDasharray: `${3.14 * 100 * (0 / 100)} 314`,
+                        strokeDasharray: `${3.14 * 100 * ((activeGroupProgress?.overall.percent ?? 0) / 100)} 314`,
                       }}
                     />
                   </svg>
                   <div className="progress-text">
-                    <span className="percentage">0%</span>
-                    <span className="status">Active</span>
+                    <span className="percentage">{activeGroupProgress?.overall.percent ?? 0}%</span>
+                    <span className="status">
+                      {activeGroupProgress
+                        ? `${activeGroupProgress.overall.completed}/${activeGroupProgress.overall.total} tasks`
+                        : "Active"}
+                    </span>
                   </div>
                 </div>
                 <div className="group-navigation">
@@ -492,6 +540,71 @@ const SupervisorOverview: React.FC = () => {
               </div>
             )}
           </div>
+
+          {activeGroup && (
+            <div className="group-progress" onClick={goToFullProgress} role="button" tabIndex={0}>
+              <h3>{activeGroup.groupName} — Group Details</h3>
+              <p className="overall">
+                Leader: <strong>{activeGroup.leader}</strong> · {activeGroup.memberCount} members
+              </p>
+
+              {loadingActiveGroupProgress ? (
+                <p className="overall">Loading progress summary...</p>
+              ) : activeGroupProgress ? (
+                <div className="progress-details">
+                  <p className="overall">
+                    Overall:{" "}
+                    <strong>
+                      {activeGroupProgress.overall.completed}/{activeGroupProgress.overall.total}
+                    </strong>{" "}
+                    tasks completed ({activeGroupProgress.overall.percent}%)
+                  </p>
+                  <p className="overall">
+                    Milestones:{" "}
+                    <strong>
+                      {activeGroupProgress.milestones.filter((m) => m.status === "APPROVED").length}/
+                      {activeGroupProgress.milestones.length}
+                    </strong>{" "}
+                    approved
+                  </p>
+
+                  {activeGroupProgress.members.slice(0, 4).map((member) => (
+                    <div key={member.id} className="student-item">
+                      <span>{member.name}</span>
+                      <span className="status">
+                        {member.total === 0
+                          ? "No tasks"
+                          : member.percent === 100
+                            ? "Completed"
+                            : member.percent === 0
+                              ? "Not started"
+                              : "In progress"}
+                      </span>
+                      <span className="progress">{member.percent}%</span>
+                    </div>
+                  ))}
+                  {activeGroupProgress.members.length > 4 && (
+                    <p className="progress-section-label">
+                      +{activeGroupProgress.members.length - 4} more member(s)
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="overall">Progress summary unavailable.</p>
+              )}
+
+              <button
+                type="button"
+                className="view-full-detail-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToFullProgress();
+                }}
+              >
+                View Full Progress
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

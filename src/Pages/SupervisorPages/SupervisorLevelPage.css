@@ -136,3 +136,174 @@
   padding: 10px;
   border-radius: 8px;
 }
+
+/* --- Progress tab --- */
+
+.supervisor-progress-card {
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.supervisor-progress-card:hover {
+  border-color: #93c5fd;
+}
+
+.supervisor-progress-back {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.supervisor-progress-back:hover {
+  text-decoration: underline;
+}
+
+/* Meter: the fill carries the completion band (good/warning/critical), the
+   track stays a neutral light gray, and the percent is always shown as text
+   next to it so color is never the only signal. */
+.progress-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-meter-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.progress-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.progress-meter-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.progress-meter-fraction {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.supervisor-progress-detail {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.supervisor-progress-detail-head h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.supervisor-progress-section h4 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.supervisor-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supervisor-progress-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.supervisor-progress-row-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.supervisor-progress-row-clickable:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.supervisor-progress-row-subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.supervisor-progress-row-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.supervisor-progress-row-title {
+  font-weight: 700;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.supervisor-progress-row-due {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.supervisor-pill-approved {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.supervisor-pill-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.supervisor-pill-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.supervisor-pill-inprogress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.supervisor-pill-todo {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.supervisor-pill-leader {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.supervisor-pill-delayed {
+  background: #ffedd5;
+  color: #c2410c;
+}
