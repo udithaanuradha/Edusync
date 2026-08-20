@@ -3,7 +3,7 @@ import { AlertTriangle, Check, Clock3, Edit2, Save, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './GradebookTable.css';
 
-type SubmissionStatus = 'all' | 'submitted' | 'pending' | 'late';
+type SubmissionStatus = 'all' | 'on_time' | 'late';
 
 interface GroupMark {
   group_id: number;
@@ -17,6 +17,8 @@ interface GroupMark {
   deadline?: string | null;
   current_status?: string | null;
   submitted_at?: string | null;
+  student_name?: string;
+  file_paths?: string[];
 }
 
 interface GradebookTableProps {
@@ -35,25 +37,53 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const [filterStatus, setFilterStatus] = useState<SubmissionStatus>('all');
   const [stages, setStages] = useState<Array<{ stage_id: number; stage_name: string }>>([]);
 
-  const normalizeStatus = (mark: GroupMark): Exclude<SubmissionStatus, 'all'> => {
-    const explicitStatus = String(mark.current_status ?? '').trim().toLowerCase();
-
-    if (explicitStatus === 'submitted' || explicitStatus === 'pending' || explicitStatus === 'late') {
-      return explicitStatus;
+  const parseFileLinks = (rawValue: unknown): string[] => {
+    if (Array.isArray(rawValue)) {
+      return rawValue.map((entry) => String(entry)).filter(Boolean);
     }
 
-    if (mark.submission_date || mark.submitted_at || mark.mark !== null) {
-      return 'submitted';
-    }
-
-    if (mark.deadline) {
-      const deadlineTime = new Date(mark.deadline).getTime();
-      if (!Number.isNaN(deadlineTime) && Date.now() > deadlineTime) {
-        return 'late';
+    if (typeof rawValue === 'string') {
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+          return parsed.map((entry) => String(entry)).filter(Boolean);
+        }
+      } catch {
+        return rawValue
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean);
       }
     }
 
-    return 'pending';
+    return [];
+  };
+
+  const normalizeStatus = (mark: GroupMark): Exclude<SubmissionStatus, 'all'> => {
+    const explicitStatus = String(mark.current_status ?? '').trim().toLowerCase();
+
+    if (explicitStatus === 'late') return 'late';
+    if (explicitStatus === 'on time' || explicitStatus === 'ontime' || explicitStatus === 'submitted' || explicitStatus === 'on_time') {
+      return 'on_time';
+    }
+
+    if (!mark.submission_date && !mark.submitted_at) {
+      return 'on_time';
+    }
+
+    const submittedAtValue = mark.submission_date || mark.submitted_at;
+    if (!submittedAtValue || !mark.deadline) {
+      return 'on_time';
+    }
+
+    const submittedAt = new Date(submittedAtValue).getTime();
+    const deadline = new Date(mark.deadline).getTime();
+
+    if (Number.isNaN(submittedAt) || Number.isNaN(deadline)) {
+      return 'on_time';
+    }
+
+    return submittedAt > deadline ? 'late' : 'on_time';
   };
 
   const normalizeMark = (item: Record<string, unknown>): GroupMark => ({
@@ -96,6 +126,8 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         : item.submittedAt !== undefined && item.submittedAt !== null
           ? String(item.submittedAt)
           : null,
+    student_name: item.student_name !== undefined && item.student_name !== null ? String(item.student_name) : undefined,
+    file_paths: parseFileLinks(item.file_paths ?? item.filePaths ?? item.files ?? []),
   });
 
   // Fetch marks from backend
@@ -103,22 +135,24 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     const fetchMarks = async () => {
       try {
         setLoading(true);
-        // The coordinator view reads marks directly from the API so it always shows the latest evaluation data.
-        const response = await fetch(
-          `http://localhost:5000/api/marks/level/${levelNumber}?coordinatorId=${user?.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          }
-        );
+
+        const response = await fetch(`http://localhost:5000/api/submissions/level/${levelNumber}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch marks: ${response.statusText}`);
+          throw new Error(response.statusText || 'Failed to fetch submissions');
         }
 
         const data = await response.json();
-        const rawMarks = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
+        const rawMarks = data?.success && Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
+
         const marksList = rawMarks.map((item: Record<string, unknown>) => normalizeMark(item));
         setMarks(marksList);
 
@@ -217,13 +251,14 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       (acc, mark) => {
         const status = normalizeStatus(mark);
         acc.total += 1;
-        acc[status] += 1;
+        if (status === 'late') acc.late += 1;
+        else acc.on_time += 1;
         return acc;
       },
-      { total: 0, submitted: 0, pending: 0, late: 0 }
+      { total: 0, on_time: 0, late: 0 }
     );
 
-    const progress = totals.total > 0 ? Math.round((totals.submitted / totals.total) * 100) : 0;
+    const progress = totals.total > 0 ? Math.round((totals.on_time / totals.total) * 100) : 0;
 
     return {
       ...totals,
@@ -232,10 +267,9 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   }, [selectedStageMarks]);
 
   const statusTabs: Array<{ key: SubmissionStatus; label: string; count: number }> = [
-    { key: 'all', label: 'All', count: submissionStats.total },
-    { key: 'submitted', label: 'Submitted', count: submissionStats.submitted },
-    { key: 'pending', label: 'Pending', count: submissionStats.pending },
-    { key: 'late', label: 'Late', count: submissionStats.late },
+    { key: 'all', label: 'All Submissions', count: submissionStats.total },
+    { key: 'on_time', label: 'On Time', count: submissionStats.on_time },
+    { key: 'late', label: 'Late Submissions', count: submissionStats.late },
   ];
 
   const filteredMarks =
@@ -243,13 +277,15 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       ? selectedStageMarks
       : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
 
-  // Group marks by stage for better display
-  const groupedMarks: Record<number, GroupMark[]> = {};
+  // Group marks by normalized stage name so we render one table per stage
+  const groupedByStageName: Record<string, { stage_id: number; stage_name: string; marks: GroupMark[] }> = {};
   filteredMarks.forEach((mark) => {
-    if (!groupedMarks[mark.stage_id]) {
-      groupedMarks[mark.stage_id] = [];
+    const rawName = String(mark.stage_name ?? `Stage ${mark.stage_id}`);
+    const key = rawName.trim().toLowerCase();
+    if (!groupedByStageName[key]) {
+      groupedByStageName[key] = { stage_id: mark.stage_id, stage_name: rawName.trim(), marks: [] };
     }
-    groupedMarks[mark.stage_id].push(mark);
+    groupedByStageName[key].marks.push(mark);
   });
 
   const renderMarkCell = (mark: GroupMark) => {
@@ -293,6 +329,16 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         </button>
       </div>
     );
+  };
+
+  const getFileLabel = (url: string) => {
+    try {
+      const decoded = decodeURIComponent(url.split('?')[0]);
+      const filename = decoded.split('/').pop();
+      return filename || 'Submission File';
+    } catch {
+      return 'Submission File';
+    }
   };
 
   if (loading) {
@@ -369,55 +415,87 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
 
       {filteredMarks.length === 0 ? (
         <div className="gradebook-empty">
-          <p>No marks found for the selected filter.</p>
+          <p>No submissions found for the selected filter.</p>
         </div>
       ) : (
         <div className="gradebook-wrapper">
-          {Object.entries(groupedMarks).map(([stageId, stageMark]) => {
-            const stageName = stageMark[0]?.stage_name || `Stage ${stageId}`;
+          {Object.values(groupedByStageName).map((group) => {
+            const stageId = group.stage_id;
+            const stageMark = group.marks;
+            const stageName = group.stage_name || `Stage ${stageId}`;
 
             return (
-              <div key={stageId} className="stage-section">
+              <div key={stageName} className="stage-section">
                 <h4 className="stage-title">{stageName}</h4>
                 <div className="stage-table">
                   <table>
                     <thead>
                       <tr>
-                        <th>Group Name</th>
-                        <th>Evaluator</th>
-                        <th>Mark</th>
-                        <th>Submitted</th>
+                        <th>Group</th>
+                        <th>Submitted By</th>
+                        <th>Submission Date</th>
+                        <th>Deadline</th>
+                        <th>File Name</th>
                         <th>Status</th>
+                        <th>Download</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stageMark.map((mark, idx) => (
-                        <tr key={idx} className={mark.mark !== null ? 'marked' : 'unmarked'}>
-                          <td className="group-col">{mark.group_name}</td>
-                          <td className="evaluator-col">{mark.evaluator_name || 'Not assigned'}</td>
-                          <td className="mark-col">{renderMarkCell(mark)}</td>
-                          <td className="date-col">
-                            {mark.submission_date
-                              ? new Date(mark.submission_date).toLocaleDateString()
-                              : '-'}
-                          </td>
-                          <td className="status-col">
-                            {normalizeStatus(mark) === 'submitted' ? (
-                              <span className="status-badge submitted">
-                                <Check size={14} /> Submitted
-                              </span>
-                            ) : normalizeStatus(mark) === 'late' ? (
-                              <span className="status-badge late">
-                                <AlertTriangle size={14} /> Late
-                              </span>
-                            ) : (
-                              <span className="status-badge pending">
-                                <Clock3 size={14} /> Pending
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {stageMark.map((mark, idx) => {
+                        const fileList = mark.file_paths && mark.file_paths.length > 0 ? mark.file_paths : [];
+                        const primaryFile = fileList[0] ?? '';
+                        const currentStatus = normalizeStatus(mark);
+
+                        return (
+                          <tr key={idx} className={currentStatus === 'late' ? 'late-row' : 'on-time-row'}>
+                            <td className="group-col">{mark.group_name}</td>
+                            <td className="evaluator-col">{mark.student_name || mark.group_name}</td>
+                            <td className="date-col">
+                              {mark.submission_date
+                                ? new Date(mark.submission_date).toLocaleString()
+                                : '-'}
+                            </td>
+                            <td className="date-col">
+                              {mark.deadline
+                                ? new Date(mark.deadline).toLocaleString()
+                                : '-'}
+                            </td>
+                            <td className="group-col">
+                              {fileList.length > 0 ? (
+                                <span>{fileList.map((fileUrl) => getFileLabel(fileUrl)).join(', ')}</span>
+                              ) : (
+                                <span>—</span>
+                              )}
+                            </td>
+                            <td className="status-col">
+                              {currentStatus === 'late' ? (
+                                <span className="status-badge late">
+                                  <AlertTriangle size={14} /> Late Submission
+                                </span>
+                              ) : (
+                                <span className="status-badge submitted">
+                                  <Check size={14} /> On Time
+                                </span>
+                              )}
+                            </td>
+                            <td className="mark-col">
+                              {primaryFile ? (
+                                <a
+                                  href={primaryFile}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="status-badge submitted"
+                                  style={{ display: 'inline-flex', textDecoration: 'none' }}
+                                >
+                                  Download
+                                </a>
+                              ) : (
+                                <span>—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

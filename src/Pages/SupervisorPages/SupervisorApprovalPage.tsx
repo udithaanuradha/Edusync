@@ -315,7 +315,7 @@ const SupervisorApprovalPage: React.FC = () => {
                       onClick={() => handleApprove(request.requestId)}
                       disabled={actionBusy === request.requestId}
                     >
-                      {actionBusy === request.requestId ? 'Processing...' : 'Approve'}
+                      {actionBusy === request.requestId ? 'Processing...' : 'Accept'}
                     </button>
 
                     <button

@@ -38,6 +38,9 @@ import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import Level3mentor from "./pages/MentorPages/Level3mentor";
 import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
 import MentorSetupForm from "./pages/auth/MentorSetupForm";
+import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
+import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
+import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -53,6 +56,7 @@ const isSupervisorUser = (u: any) =>
 function App() {
   const { user } = useAuth();
   const userObj = user as any; // Cast to bypass strict type check for designation field
+  const effectiveRole = String(userObj?.effectiveRole || userObj?.designation || userObj?.role || '').toLowerCase();
 
   return (
     <Routes>
@@ -90,7 +94,7 @@ function App() {
         path="/coordinator"
         element={
           userObj?.role === "lecturer" &&
-            userObj?.designation === "coordinator" ? (
+          (userObj?.designation === "coordinator" || effectiveRole === "coordinator") ? (
             <CoordinatorDashboard />
           ) : (
             <Navigate to="/login" />
@@ -110,7 +114,7 @@ function App() {
       />
 
       <Route
-        path="/mentor"
+        path="/mentor/*"
         element={
           userObj?.role === "mentor" ? (
             <MentorDashboard />
@@ -122,7 +126,7 @@ function App() {
 
       {/* Dashboard redirect catch */}
       <Route
-        path="/dashboard"
+        path="/dashboard/*"
         element={
           userObj?.role === "student" ? (
             <StudentDashboard />
@@ -131,7 +135,7 @@ function App() {
           ) : userObj?.role === "mentor" ? (
             <MentorDashboard />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? (
+            (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
               <CoordinatorDashboard />
             ) : (
               <SupervisorDashboard />
@@ -151,7 +155,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level1Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? (
+            (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
               <Level1Page />
             ) : (
               <SupervisorLevelPage levelNumber={1} />
@@ -174,7 +178,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level2Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? (
+            (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
               <Level2Page />
             ) : (
               <SupervisorLevelPage levelNumber={2} />
@@ -197,7 +201,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level3Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? (
+            (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
               <Level3Page />
             ) : (
               <SupervisorLevelPage levelNumber={3} />
@@ -220,7 +224,7 @@ function App() {
           userObj?.role === "student" ? (
             <Level4Student />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? (
+            (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
               <Level4Page />
             ) : (
               <SupervisorLevelPage levelNumber={4} />
@@ -259,6 +263,8 @@ function App() {
         element={
           userObj?.role === "admin" ? (
             <AdminCalendarPage />
+          ) : userObj?.role === "mentor" ? (
+            <MentorCalendarPage />
           ) : userObj ? (
             <CalendarPage />
           ) : (
@@ -274,7 +280,7 @@ function App() {
           userObj?.role === "admin" ? (
             <AdminAnnouncements />
           ) : userObj?.role === "lecturer" ? (
-            userObj.designation === "coordinator" ? (
+            (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
               <AnnouncementsPage />
             ) : (
               <SupervisorAnnouncementsPage />
@@ -307,7 +313,7 @@ function App() {
           userObj?.role === "admin" ? (
             <AdminCommunicationPage />
           ) : userObj?.role === "lecturer" &&
-            userObj?.designation === "supervisor" ? (
+            (userObj?.designation === "supervisor" || effectiveRole === "supervisor") ? (
             <SupervisorCommunicationPage />
           ) : userObj ? (
             <CommunicationPage />
@@ -331,7 +337,7 @@ function App() {
         path="/supervisor/approval"
         element={
           userObj?.role === "lecturer" &&
-            userObj?.designation === "supervisor" ? (
+          (userObj?.designation === "supervisor" || effectiveRole === "supervisor") ? (
             <SupervisorApprovalPage />
           ) : (
             <Navigate to="/login" />
@@ -343,8 +349,19 @@ function App() {
         path="/supervisor/communication"
         element={
           userObj?.role === "lecturer" &&
-            userObj?.designation === "supervisor" ? (
+          (userObj?.designation === "supervisor" || effectiveRole === "supervisor") ? (
             <SupervisorCommunicationPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/supervisor/evaluation-panel"
+        element={
+          isSupervisorUser(userObj) || userObj?.role === "admin" || userObj?.role === "lecturer" ? (
+            <SupervisorEvaluationPanel />
           ) : (
             <Navigate to="/login" />
           )
@@ -354,6 +371,20 @@ function App() {
       <Route
         path="/profile-settings"
         element={userObj ? <ProfileSettingsPage /> : <Navigate to="/login" />}
+      />
+
+      {/* Project Delays Route (Mentor Specific) */}
+      <Route
+        path="/dashboard/project-delays"
+        element={
+          userObj?.role === "mentor" ? (
+            <MentorProjectDelaysPage />
+          ) : userObj ? (
+            <Navigate to="/dashboard" />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
     </Routes>
   );
