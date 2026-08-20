@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Calendar,
-  Clock,
   X,
   Save,
   Trash2,
@@ -143,22 +142,29 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const supervisorId = user?.id;
+
+  const supervisorId = useMemo(() => {
+    if (user?.id) return user.id;
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.id ?? parsed.user_id ?? undefined;
+      }
+    } catch {
+      // ignore
+    }
+    return undefined;
+  }, [user]);
 
   const [isOpen, setIsOpen] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     getMonday(new Date()),
   );
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
   const [recurring, setRecurring] = useState<WeeklySchedule>({});
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Form State (for full drawer modal)
+  // Form State (for modal)
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState<Task>({
@@ -316,10 +322,6 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   }, [currentWeekStart]);
 
   const handleTrackClick = (dateStr: string) => {
-    if (inline) {
-      openFullScheduler();
-      return;
-    }
     setEditingTask(null);
     setFormData({
       task_date: dateStr,
@@ -334,10 +336,6 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
 
   const handleEditTask = (e: React.MouseEvent, task: Task) => {
     e.stopPropagation();
-    if (inline) {
-      openFullScheduler();
-      return;
-    }
     setEditingTask(task);
     const d = new Date(task.task_date);
     const safeDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -348,6 +346,10 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   };
 
   const saveTask = async () => {
+    if (!supervisorId) {
+      alert("Unable to find Supervisor ID. Please re-login.");
+      return;
+    }
     try {
       const headers = {
         "Content-Type": "application/json",
@@ -358,11 +360,11 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
         : `${API_TASKS}/${supervisorId}`;
       const method = editingTask?.id ? "PUT" : "POST";
 
-      let payload = formData;
-      let reqDetails = null;
+      let payload: any = formData;
+      let reqDetails: any = null;
 
       if (formData.category === "Group Meeting/Request Approve" && selectedRequestId !== "") {
-        const req = studentRequests.find(r => r.id === selectedRequestId);
+        const req = studentRequests.find((r: any) => r.id === selectedRequestId);
         if (req) {
           reqDetails = req;
           payload = {
@@ -380,7 +382,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
       });
 
       if (res.ok) {
-        if (reqDetails) {
+        if (reqDetails && selectedRequestId !== "") {
           const token = localStorage.getItem("token") || "auth_token";
           await fetch(`http://localhost:5000/api/meeting-requests/${selectedRequestId}/status`, {
             method: 'PUT',
@@ -390,7 +392,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
             },
             body: JSON.stringify({ status: 'approved', message: supervisorMessage || formData.description })
           });
-          setStudentRequests(studentRequests.filter(r => r.id !== selectedRequestId));
+          setStudentRequests(studentRequests.filter((r: any) => r.id !== selectedRequestId));
           window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
         }
         setIsFormOpen(false);
@@ -415,7 +417,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
           body: JSON.stringify({ status: 'rejected', message: supervisorMessage })
         });
         if (res.ok) {
-          setStudentRequests(studentRequests.filter(r => r.id !== selectedRequestId));
+          setStudentRequests(studentRequests.filter((r: any) => r.id !== selectedRequestId));
           window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
           setIsFormOpen(false);
           setSupervisorMessage("");
@@ -427,6 +429,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   };
 
   const deleteTask = async (taskId: number) => {
+    if (!supervisorId) return;
     try {
       const res = await fetch(`${API_TASKS}/${supervisorId}/${taskId}`, {
         method: "DELETE",
