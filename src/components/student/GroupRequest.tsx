@@ -19,7 +19,11 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 1 }) => {
   const [requestStatus, setRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
   const [rejectReason, setRejectReason] = useState('');
   const [isFinalized, setIsFinalized] = useState(false);
-  const [requestId, setRequestId] = useState<number | null>(null); 
+  const [requestId, setRequestId] = useState<number | null>(null);
+  // Set when the student already belongs to a real, live group at this level
+  // (via /api/groups/my-status) — takes priority over requestStatus so the
+  // form stays locked even if a stale/mismatched request row exists.
+  const [activeGroup, setActiveGroup] = useState<{ groupId: number; groupName: string } | null>(null);
   
   const [formData, setFormData] = useState({
     projectName: '',
@@ -81,6 +85,22 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 1 }) => {
         }
       })
       .catch(err => console.error("Error fetching students", err));
+
+    // Check whether the student already belongs to a real, live group at
+    // this level — if so, the form stays locked regardless of requestStatus.
+    fetch(`http://localhost:5000/api/groups/my-status/${user?.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const groups = Array.isArray(data) ? data : [];
+        const match = groups.find((g: any) => Number(g.level) === Number(levelNumber));
+        setActiveGroup(match ? { groupId: match.groupId, groupName: match.groupName } : null);
+      })
+      .catch(err => {
+        console.error("Error checking active group", err);
+        setActiveGroup(null);
+      });
 
     checkExistingRequest();
   }, [levelNumber]);
@@ -242,6 +262,23 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 1 }) => {
 
   // Filter out already selected students from the dropdown
   const availableStudents = allStudents.filter(s => !selectedMembers.some(m => m.id === s.id));
+
+  // activeGroup takes priority over requestStatus — a student already in a
+  // real, live group sees a locked notice instead of the form, regardless
+  // of what requestStatus currently holds.
+  if (activeGroup) {
+    return (
+      <div className="group-container">
+        <div className="group-header">
+          <h1>Project Group Formation</h1>
+          <p>EduSync Project Management System</p>
+        </div>
+        <div className="rejection-reason-box" style={{ backgroundColor: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe' }}>
+          <strong>You're already part of Group: {activeGroup.groupName}.</strong>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="group-container">

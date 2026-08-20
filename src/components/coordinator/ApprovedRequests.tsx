@@ -160,7 +160,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
         `${API_BASE}/coordinator/requests?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/requests?status=pending&level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/requests?status=approved&level=${levelNumber}&coordinatorId=${user?.id}`,
-        `${API_BASE}/coordinator/approved?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/approved?level=${levelNumber}&coordinatorId=${user?.id}&finalOnly=1`,
         `${API_BASE}/coordinator/pending?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/pending-requests?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/all?level=${levelNumber}&coordinatorId=${user?.id}`,
