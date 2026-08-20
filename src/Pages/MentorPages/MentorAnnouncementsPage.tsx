@@ -308,9 +308,33 @@ const MentorAnnouncementsPage: React.FC = () => {
     return false;
   };
 
+  // Counts for tabs
+  const tabCounts = useMemo(() => {
+    let mine = 0;
+    let level = 0;
+    let mentor = 0;
+    let general = 0;
+
+    announcements.forEach((item) => {
+      const isMine = isAuthorSelf(item);
+      const aud = (item.target_audience || '').toLowerCase();
+
+      if (isMine) {
+        mine++;
+      } else {
+        if (aud.includes('level') || aud.includes('assigned')) level++;
+        if (aud.includes('mentor')) mentor++;
+        if (aud === 'all' || aud.includes('system')) general++;
+      }
+    });
+
+    return { mine, level, mentor, general };
+  }, [announcements, currentMentorId, currentUser]);
+
   // Filtered list based on search and audience filter
   const filteredAnnouncements = useMemo(() => {
     return announcements.filter((item) => {
+      const isMine = isAuthorSelf(item);
       const title = (item.title || '').toLowerCase();
       const text = (item.message || item.content || '').toLowerCase();
       const author = (item.author_name || '').toLowerCase();
@@ -323,12 +347,23 @@ const MentorAnnouncementsPage: React.FC = () => {
 
       if (!matchesSearch) return false;
 
-      if (selectedAudienceFilter === 'all') return true;
-      if (selectedAudienceFilter === 'mine') return isAuthorSelf(item);
-      if (selectedAudienceFilter === 'mentor') return audience.includes('mentor');
-      if (selectedAudienceFilter === 'level') return audience.includes('level') || audience.includes('assigned');
-      if (selectedAudienceFilter === 'general') return audience === 'all' || audience.includes('system');
+      // When "Posted by Me" is selected, ONLY show announcements authored by this mentor
+      if (selectedAudienceFilter === 'mine') {
+        return isMine;
+      }
 
+      // When "Level & Group", "Mentors Only", or "General" is selected, EXCLUDE own announcements
+      if (selectedAudienceFilter === 'level') {
+        return !isMine && (audience.includes('level') || audience.includes('assigned'));
+      }
+      if (selectedAudienceFilter === 'mentor') {
+        return !isMine && audience.includes('mentor');
+      }
+      if (selectedAudienceFilter === 'general') {
+        return !isMine && (audience === 'all' || audience.includes('system'));
+      }
+
+      // 'all' shows all announcements
       return true;
     });
   }, [announcements, searchQuery, selectedAudienceFilter, currentMentorId, currentUser]);
@@ -530,28 +565,28 @@ const MentorAnnouncementsPage: React.FC = () => {
                   className={`filter-chip ${selectedAudienceFilter === 'mine' ? 'active' : ''}`}
                   onClick={() => setSelectedAudienceFilter('mine')}
                 >
-                  Posted by Me
+                  Posted by Me ({tabCounts.mine})
                 </button>
                 <button
                   type="button"
                   className={`filter-chip ${selectedAudienceFilter === 'level' ? 'active' : ''}`}
                   onClick={() => setSelectedAudienceFilter('level')}
                 >
-                  Level & Group
+                  Level & Group ({tabCounts.level})
                 </button>
                 <button
                   type="button"
                   className={`filter-chip ${selectedAudienceFilter === 'mentor' ? 'active' : ''}`}
                   onClick={() => setSelectedAudienceFilter('mentor')}
                 >
-                  Mentors Only
+                  Mentors Only ({tabCounts.mentor})
                 </button>
                 <button
                   type="button"
                   className={`filter-chip ${selectedAudienceFilter === 'general' ? 'active' : ''}`}
                   onClick={() => setSelectedAudienceFilter('general')}
                 >
-                  General
+                  General ({tabCounts.general})
                 </button>
               </div>
             </div>
