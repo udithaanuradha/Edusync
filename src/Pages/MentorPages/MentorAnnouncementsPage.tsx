@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import MentorSidebarWrapper from '../../components/mentor/MentorSidebarWrapper';
 import Header from '../../components/shared/Header';
 import {
-  Search,
   RefreshCw,
   AlertCircle,
   Bell,
@@ -56,7 +55,6 @@ const MentorAnnouncementsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedAudienceFilter, setSelectedAudienceFilter] = useState('all');
 
   // Modal / Form state for creating announcements
@@ -322,7 +320,7 @@ const MentorAnnouncementsPage: React.FC = () => {
       if (isMine) {
         mine++;
       } else {
-        if (aud.includes('level') || aud.includes('assigned')) level++;
+        if (aud.includes('level')) level++;
         if (aud.includes('mentor')) mentor++;
         if (aud === 'all' || aud.includes('system')) general++;
       }
@@ -331,30 +329,20 @@ const MentorAnnouncementsPage: React.FC = () => {
     return { mine, level, mentor, general };
   }, [announcements, currentMentorId, currentUser]);
 
-  // Filtered list based on search and audience filter
+  // Filtered list based on audience filter
   const filteredAnnouncements = useMemo(() => {
     return announcements.filter((item) => {
       const isMine = isAuthorSelf(item);
-      const title = (item.title || '').toLowerCase();
-      const text = (item.message || item.content || '').toLowerCase();
-      const author = (item.author_name || '').toLowerCase();
       const audience = (item.target_audience || '').toLowerCase();
-      const matchesSearch =
-        !searchQuery.trim() ||
-        title.includes(searchQuery.toLowerCase()) ||
-        text.includes(searchQuery.toLowerCase()) ||
-        author.includes(searchQuery.toLowerCase());
-
-      if (!matchesSearch) return false;
 
       // When "Posted by Me" is selected, ONLY show announcements authored by this mentor
       if (selectedAudienceFilter === 'mine') {
         return isMine;
       }
 
-      // When "Level & Group", "Mentors Only", or "General" is selected, EXCLUDE own announcements
+      // When "Level", "Mentors Only", or "General" is selected, EXCLUDE own announcements
       if (selectedAudienceFilter === 'level') {
-        return !isMine && (audience.includes('level') || audience.includes('assigned'));
+        return !isMine && audience.includes('level');
       }
       if (selectedAudienceFilter === 'mentor') {
         return !isMine && audience.includes('mentor');
@@ -366,7 +354,7 @@ const MentorAnnouncementsPage: React.FC = () => {
       // 'all' shows all announcements
       return true;
     });
-  }, [announcements, searchQuery, selectedAudienceFilter, currentMentorId, currentUser]);
+  }, [announcements, selectedAudienceFilter, currentMentorId, currentUser]);
 
   return (
     <div className="app-layout mentor-shell">
@@ -436,17 +424,6 @@ const MentorAnnouncementsPage: React.FC = () => {
                 >
                   <PlusCircle size={16} />
                   <span>Post Announcement</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="mentor-refresh-btn"
-                  onClick={fetchAnnouncements}
-                  disabled={loading}
-                  title="Refresh announcements"
-                >
-                  <RefreshCw size={15} className={loading ? 'spinning' : ''} />
-                  <span>Refresh</span>
                 </button>
               </div>
             </div>
@@ -540,18 +517,8 @@ const MentorAnnouncementsPage: React.FC = () => {
               </div>
             )}
 
-            {/* Filter and search bar */}
+            {/* Filter toolbar */}
             <div className="mentor-announcements-toolbar">
-              <div className="mentor-search-box">
-                <Search size={16} className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search announcements by title, content, or author..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-
               <div className="mentor-filter-chips">
                 <button
                   type="button"
@@ -572,7 +539,7 @@ const MentorAnnouncementsPage: React.FC = () => {
                   className={`filter-chip ${selectedAudienceFilter === 'level' ? 'active' : ''}`}
                   onClick={() => setSelectedAudienceFilter('level')}
                 >
-                  Level & Group ({tabCounts.level})
+                  Level ({tabCounts.level})
                 </button>
                 <button
                   type="button"
@@ -615,8 +582,8 @@ const MentorAnnouncementsPage: React.FC = () => {
                   <Bell size={32} className="empty-icon" />
                   <h3>No Announcements Found</h3>
                   <p>
-                    {searchQuery || selectedAudienceFilter !== 'all'
-                      ? 'No announcements match your search or filter criteria.'
+                    {selectedAudienceFilter !== 'all'
+                      ? 'No announcements match the selected filter category.'
                       : 'There are no active announcements matching your assigned level and mentor scope.'}
                   </p>
                 </div>
