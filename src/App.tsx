@@ -28,6 +28,7 @@ import AnnouncementsPage from "./pages/CoordinatorPages/AnnouncementsPage";
 import SupervisorAnnouncementsPage from "./pages/SupervisorPages/SupervisorAnnouncementsPage";
 import MentorAnnouncementsPage from "./pages/MentorPages/MentorAnnouncementsPage";
 import AdminAnnouncements from "./pages/AdminPages/AdminAnnouncements";
+import StudentAnnouncementsPage from "./pages/StudentPages/StudentAnnouncementsPage";
 import SupervisorCommunicationPage from "./pages/SupervisorPages/SupervisorCommunicationPage";
 import CommunicationPage from "./pages/shared/CommunicationPage";
 import CommunicationPageV2 from "./pages/shared/CommunicationPageV2";
@@ -289,6 +290,8 @@ function App() {
             <SupervisorAnnouncementsPage />
           ) : userObj?.role === "mentor" ? (
             <MentorAnnouncementsPage />
+          ) : userObj?.role === "student" ? (
+            <StudentAnnouncementsPage />
           ) : (
             <Navigate to="/login" />
           )

@@ -360,6 +360,17 @@
   color: #94a3b8;
 }
 
+.panel-meeting-link {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.panel-meeting-link:hover {
+  text-decoration: underline;
+}
+
 .drawer-overlay {
   position: fixed;
   top: var(--calendar-header-offset);

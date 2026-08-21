@@ -1160,6 +1160,17 @@ const CalendarPage: React.FC = () => {
                             <span className="panel-time">
                               {panel.time} • {panel.duration}
                             </span>
+                            {panel.meetingLink && (
+                              <a
+                                href={panel.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="panel-meeting-link"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                🔗 Join Meeting
+                              </a>
+                            )}
                             {isCoordinator && (
                               <div className="panel-action-row">
                                 <button

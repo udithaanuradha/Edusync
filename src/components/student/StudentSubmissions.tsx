@@ -1,11 +1,6 @@
-import React, { useEffect, useState } from 'react';
-
-interface StageFile {
-  file_id: number;
-  file_name: string;
-  file_url: string;
-  uploaded_at: string;
-}
+import React, { useEffect, useMemo, useState } from 'react';
+import { Edit2, Trash2 } from 'lucide-react';
+import './StudentSubmissions.css';
 
 interface Stage {
   stage_id: number;
@@ -13,7 +8,6 @@ interface Stage {
   description: string;
   deadline: string;
   level: number;
-  files?: StageFile[];
 }
 
 interface SubmissionItem {
@@ -21,11 +15,9 @@ interface SubmissionItem {
   stage_id: number;
   student_id: number;
   file_paths: string[];
+  submission_link: string | null;
   submitted_at: string;
   status: string;
-  stage_name?: string;
-  deadline?: string;
-  student_name?: string;
 }
 
 const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
@@ -36,53 +28,39 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
   const [error, setError] = useState('');
   const [busyStageId, setBusyStageId] = useState<number | null>(null);
   const [deletingSubmissionId, setDeletingSubmissionId] = useState<number | null>(null);
+  const [editingStageId, setEditingStageId] = useState<number | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Record<number, FileList | null>>({});
-  const [updatingSubmissionId, setUpdatingSubmissionId] = useState<number | null>(null);
-  const [updateFiles, setUpdateFiles] = useState<Record<number, FileList | null>>({});
+  const [linkDrafts, setLinkDrafts] = useState<Record<number, string>>({});
 
-  // Deliberately NOT memoized with an empty dependency array — this app
-  // navigates client-side (no full page reload) after login, so a stale
-  // memoized value here would keep showing the previous session's user
-  // (and therefore their group's submissions) if this component doesn't
-  // happen to fully remount between sessions. Reading localStorage fresh
-  // on every render is cheap and guarantees this always reflects whoever
-  // is actually logged in right now.
-  const getCurrentUser = () => {
+  const currentUser = useMemo(() => {
     try {
       const savedUser = localStorage.getItem('user');
       return savedUser ? JSON.parse(savedUser) : null;
-    } catch (error) {
+    } catch {
       return null;
     }
-  };
-
-  const currentUser = getCurrentUser();
+  }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError('');
-      // Scope to the student's own degree program — the backend also includes
-      // legacy/global stages (no academic_unit set) so this never hides
-      // pre-existing stages.
       const academicUnitParam = currentUser?.academic_unit
         ? `?academicUnit=${encodeURIComponent(currentUser.academic_unit)}`
         : '';
       const stageRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}${academicUnitParam}`);
       const stageData = await stageRes.json();
-      const stageList = stageData?.success ? stageData.data : [];
-      setStages(stageList);
+      setStages(stageData?.success ? stageData.data : []);
 
       if (!currentUser?.id) {
         setSubmissions([]);
         return;
       }
 
-      const submissionRes = await fetch(`http://localhost:5000/api/submissions/group/${currentUser.id}/${levelNumber}`);
+      const submissionRes = await fetch(`http://localhost:5000/api/submissions/student/${currentUser.id}`);
       const submissionData = await submissionRes.json();
-      const submissionList = submissionData?.success ? submissionData.data : [];
-      setSubmissions(submissionList);
-    } catch (err) {
+      setSubmissions(submissionData?.success ? submissionData.data : []);
+    } catch {
       setError('Unable to load submission data right now.');
     } finally {
       setLoading(false);
@@ -95,25 +73,66 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
 
   const getDaysRemaining = (deadline?: string) => {
     if (!deadline) return null;
-    const diff = new Date(deadline).getTime() - Date.now();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
 
-  const getSubmissionsForStage = (stageId: number) =>
-    submissions.filter((item) => item.stage_id === stageId);
-
-  const isOwnSubmission = (submission: SubmissionItem) => submission.student_id === currentUser?.id;
+  const getSubmissionForStage = (stageId: number) =>
+    submissions.find((item) => item.stage_id === stageId);
 
   const handleFileChange = (stageId: number, files: FileList | null) => {
     setSelectedFiles((prev) => ({ ...prev, [stageId]: files }));
   };
 
-  const handleUpload = async (stage: Stage) => {
+  const handleSubmit = async (stage: Stage) => {
     const files = selectedFiles[stage.stage_id];
-    if (!files || files.length === 0) {
-      setError('Please choose at least one file to upload.');
+    const link = (linkDrafts[stage.stage_id] || '').trim();
+
+    if ((!files || files.length === 0) && !link) {
+      setError('Attach at least one file or a link before submitting.');
       return;
     }
+    if (!currentUser?.id) {
+      setError('Student account information was not found. Please sign in again.');
+      return;
+    }
+
+    try {
+      setBusyStageId(stage.stage_id);
+      setError('');
+      setMessage('');
+
+      const formData = new FormData();
+      if (files) Array.from(files).forEach((file) => formData.append('files', file));
+      formData.append('stage_id', String(stage.stage_id));
+      formData.append('student_id', String(currentUser.id));
+      formData.append('deadline', stage.deadline || '');
+      if (link) formData.append('submission_link', link);
+
+      const response = await fetch('http://localhost:5000/api/submissions', {
+        method: 'POST',
+        body: formData,
+        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || 'Submission failed.');
+      }
+
+      setMessage(`Submitted for ${stage.stage_name}.`);
+      setSelectedFiles((prev) => ({ ...prev, [stage.stage_id]: null }));
+      setLinkDrafts((prev) => ({ ...prev, [stage.stage_id]: '' }));
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Submission failed.');
+    } finally {
+      setBusyStageId(null);
+    }
+  };
+
+  const handleUpdate = async (stage: Stage, submission: SubmissionItem) => {
+    const files = selectedFiles[stage.stage_id];
+    const link = linkDrafts[stage.stage_id];
 
     if (!currentUser?.id) {
       setError('Student account information was not found. Please sign in again.');
@@ -126,107 +145,59 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
       setMessage('');
 
       const formData = new FormData();
-      Array.from(files).forEach((file) => formData.append('files', file));
-      formData.append('stage_id', String(stage.stage_id));
+      if (files) Array.from(files).forEach((file) => formData.append('files', file));
       formData.append('student_id', String(currentUser.id));
       formData.append('deadline', stage.deadline || '');
+      // Always send submission_link (even empty) so the backend knows the field was
+      // intentionally touched — see updateSubmission's linkProvided check.
+      formData.append('submission_link', (link ?? submission.submission_link ?? '').trim());
 
-      const response = await fetch('http://localhost:5000/api/submissions', {
-        method: 'POST',
+      const response = await fetch(`http://localhost:5000/api/submissions/${submission.submission_id}`, {
+        method: 'PUT',
         body: formData,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
       });
 
       const data = await response.json();
       if (!response.ok || !data?.success) {
-        throw new Error(data?.message || 'Submission upload failed.');
+        throw new Error(data?.message || 'Update failed.');
       }
 
-      setMessage(`${files.length} file(s) submitted for ${stage.stage_name}.`);
+      setMessage(`Updated your submission for ${stage.stage_name}.`);
+      setEditingStageId(null);
       setSelectedFiles((prev) => ({ ...prev, [stage.stage_id]: null }));
+      setLinkDrafts((prev) => ({ ...prev, [stage.stage_id]: '' }));
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission upload failed.');
+      setError(err instanceof Error ? err.message : 'Update failed.');
     } finally {
       setBusyStageId(null);
     }
   };
 
-  const handleUpdateSubmission = async (submission: SubmissionItem, stage: Stage) => {
-    const files = updateFiles[submission.submission_id];
-    if (!files || files.length === 0) {
-      setError('Please choose at least one replacement file.');
-      return;
-    }
+  const handleDelete = async (submission: SubmissionItem) => {
     if (!currentUser?.id) {
       setError('Student account information was not found. Please sign in again.');
       return;
     }
-
-    try {
-      setUpdatingSubmissionId(submission.submission_id);
-      setError('');
-      setMessage('');
-
-      const formData = new FormData();
-      Array.from(files).forEach((file) => formData.append('files', file));
-      formData.append('student_id', String(currentUser.id));
-      formData.append('deadline', stage.deadline || '');
-
-      const response = await fetch(`http://localhost:5000/api/submissions/${submission.submission_id}`, {
-        method: 'PUT',
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.message || 'Submission update failed.');
-      }
-
-      setMessage('Submission updated successfully.');
-      setUpdateFiles((prev) => ({ ...prev, [submission.submission_id]: null }));
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission update failed.');
-    } finally {
-      setUpdatingSubmissionId(null);
-    }
-  };
-
-  const handleDeleteSubmission = async (submission: SubmissionItem) => {
-    if (!currentUser?.id) {
-      setError('Student account information was not found. Please sign in again.');
-      return;
-    }
-
-    const confirmed = window.confirm('Delete this submission?');
-    if (!confirmed) {
-      return;
-    }
+    if (!window.confirm('Delete this submission?')) return;
 
     try {
       setDeletingSubmissionId(submission.submission_id);
       setError('');
       setMessage('');
 
-      const response = await fetch(`http://localhost:5000/api/submissions/${submission.submission_id}?studentId=${currentUser.id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/submissions/${submission.submission_id}?studentId=${currentUser.id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` } },
+      );
 
       const data = await response.json();
       if (!response.ok || !data?.success) {
         throw new Error(data?.message || 'Failed to delete submission.');
       }
 
-      setMessage('Submission deleted successfully.');
+      setMessage('Submission deleted.');
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete submission.');
@@ -244,7 +215,8 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
       <div className="student-inner-tab-heading">
         <h3>Submissions</h3>
         <p>
-          Upload your work for each stage before the coordinator-set deadline. Accepted formats include PDF, PPT/PPTX, Word documents, images, and ZIP archives. You will see the remaining days and whether your submission is on time or late.
+          Upload your work for each stage before the coordinator-set deadline, or attach a link (e.g. a shared
+          drive folder). You can update what you've submitted at any time before it's reviewed.
         </p>
       </div>
 
@@ -254,139 +226,168 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
       {stages.length === 0 ? (
         <div className="student-tab-empty">No stages are available for this level yet.</div>
       ) : (
-        <div className="student-submission-list">
-          {stages.map((stage) => {
-            const stageSubmissions = getSubmissionsForStage(stage.stage_id);
-            const ownSubmission = stageSubmissions.find((item) => isOwnSubmission(item));
+        <div className="timeline-list">
+          {stages.map((stage, index) => {
+            const submission = getSubmissionForStage(stage.stage_id);
             const daysRemaining = getDaysRemaining(stage.deadline);
             const isOverdue = daysRemaining !== null && daysRemaining < 0;
             const isDueSoon = daysRemaining !== null && daysRemaining <= 3 && daysRemaining >= 0;
-            const statusLabel = ownSubmission?.status || (daysRemaining === null ? 'Pending' : isOverdue ? 'Late' : 'On Time');
-            const selectedFilesForStage = selectedFiles[stage.stage_id];
-            const selectedFileNames = selectedFilesForStage ? Array.from(selectedFilesForStage).map((file) => file.name) : [];
+            const statusLabel = submission?.status || (daysRemaining === null ? 'Pending' : isOverdue ? 'Late' : 'On Time');
+            const isEditing = editingStageId === stage.stage_id;
+            const selectedFileNames = selectedFiles[stage.stage_id]
+              ? Array.from(selectedFiles[stage.stage_id] as FileList).map((f) => f.name).join(', ')
+              : '';
 
             return (
-              <div className="student-submission-card" key={stage.stage_id}>
-                <div className="student-submission-card-header">
-                  <div>
-                    <h4>{stage.stage_name}</h4>
-                    <p>{stage.description || 'No description provided.'}</p>
-                  </div>
-                  <span className={`student-submission-badge ${isOverdue ? 'late' : isDueSoon ? 'soon' : 'active'}`}>
-                    {statusLabel}
-                  </span>
+              <div className="timeline-item" key={stage.stage_id}>
+                <div className="timeline-marker">
+                  <span className="stage-number">{index + 1}</span>
                 </div>
 
-                <div className="student-submission-main-panel">
-                  <div className="student-submission-meta">
-                    <span>
-                      <strong>Deadline:</strong>{' '}
-                      {stage.deadline ? new Date(stage.deadline).toLocaleString() : 'No deadline set'}
-                    </span>
-                    <span>
-                      <strong>Reminder:</strong>{' '}
-                      {daysRemaining === null
-                        ? 'No deadline set'
-                        : daysRemaining < 0
-                          ? `Overdue by ${Math.abs(daysRemaining)} day(s)`
-                          : daysRemaining === 0
-                            ? 'Due today'
-                            : `${daysRemaining} day(s) remaining`}
+                <div className="timeline-content">
+                  <div className="stage-header-row">
+                    <h4 className="stage-name">{stage.stage_name}</h4>
+                    <span className={`submission-status-badge ${isOverdue ? 'late' : isDueSoon ? 'soon' : 'active'}`}>
+                      {statusLabel}
                     </span>
                   </div>
 
-                  <div className="student-submission-upload-box">
-                    <div className="student-upload-picker">
-                      <label className="student-upload-label" htmlFor={`upload-${stage.stage_id}`}>
-                        Choose files for this stage
-                      </label>
-                      <div className="student-upload-input-shell">
-                        <input
-                          id={`upload-${stage.stage_id}`}
-                          type="file"
-                          multiple
-                          onChange={(event) => handleFileChange(stage.stage_id, event.target.files)}
-                        />
-                        <span className="student-upload-hint">
-                          {selectedFileNames.length > 0 ? selectedFileNames.join(', ') : 'PDF, Word, PPT, image, or ZIP files'}
-                        </span>
+                  <div className="stage-info">
+                    {stage.description && (
+                      <div className="info-item">
+                        <span className="info-label">Description:</span>
+                        <span className="info-value">{stage.description}</span>
                       </div>
+                    )}
+                    <div className="info-item">
+                      <span className="info-label">Deadline:</span>
+                      <span className="info-value">
+                        {stage.deadline ? new Date(stage.deadline).toLocaleString() : 'No deadline set'}
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      className="manage-project-btn"
-                      onClick={() => handleUpload(stage)}
-                      disabled={busyStageId === stage.stage_id}
-                    >
-                      {busyStageId === stage.stage_id ? 'Uploading...' : 'Submit Documents'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="student-submission-rows">
-                  <div className="student-submission-rows-header">
-                    <h5>Submitted files</h5>
-                    <span>{stageSubmissions.length} submission(s)</span>
-                  </div>
-
-                  {stageSubmissions.length === 0 ? (
-                    <div className="student-submission-history empty">
-                      No one in your group has submitted for this stage yet.
+                    <div className="info-item">
+                      <span className="info-label">Reminder:</span>
+                      <span className="info-value">
+                        {daysRemaining === null
+                          ? 'No deadline set'
+                          : daysRemaining < 0
+                            ? `Overdue by ${Math.abs(daysRemaining)} day(s)`
+                            : daysRemaining === 0
+                              ? 'Due today'
+                              : `${daysRemaining} day(s) remaining`}
+                      </span>
                     </div>
-                  ) : (
-                    stageSubmissions.flatMap((submission) =>
-                      (submission.file_paths || []).map((fileUrl, fileIndex) => (
-                        <div className="student-submission-sub-row" key={`${submission.submission_id}-${fileIndex}`}>
-                          <div className="student-submission-sub-row-info">
-                            <p className="student-submission-file-name">{fileUrl.split('/').pop()}</p>
-                            <p className="student-submission-file-meta">
-                              Submitted by {submission.student_name || (isOwnSubmission(submission) ? 'You' : 'Group member')}
-                              {' · '}
-                              {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : ''}
-                            </p>
-                          </div>
-                          <div className="student-submission-sub-row-actions">
-                            <a href={fileUrl} target="_blank" rel="noreferrer">View</a>
-                            {isOwnSubmission(submission) && (
-                              <>
-                                <label className="student-submission-update-control">
-                                  Update
-                                  <input
-                                    type="file"
-                                    multiple
-                                    style={{ display: 'none' }}
-                                    onChange={(e) =>
-                                      setUpdateFiles((prev) => ({ ...prev, [submission.submission_id]: e.target.files }))
-                                    }
-                                    onClick={(e) => {
-                                      // reset so selecting the same file again still fires onChange
-                                      (e.target as HTMLInputElement).value = '';
-                                    }}
-                                  />
-                                </label>
-                                {updateFiles[submission.submission_id]?.length ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateSubmission(submission, stage)}
-                                    disabled={updatingSubmissionId === submission.submission_id}
-                                  >
-                                    {updatingSubmissionId === submission.submission_id ? 'Updating...' : 'Confirm Update'}
-                                  </button>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteSubmission(submission)}
-                                  disabled={deletingSubmissionId === submission.submission_id}
-                                >
-                                  {deletingSubmissionId === submission.submission_id ? 'Deleting...' : 'Delete'}
-                                </button>
-                              </>
-                            )}
-                          </div>
+
+                    {submission?.submission_link && !isEditing && (
+                      <div className="info-item">
+                        <span className="info-label">Submission Link:</span>
+                        <a
+                          className="info-value"
+                          href={submission.submission_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#2563eb', textDecoration: 'none', wordBreak: 'break-word' }}
+                        >
+                          🔗 View submitted link
+                        </a>
+                      </div>
+                    )}
+
+                    {submission?.file_paths?.length ? (
+                      <div className="info-item">
+                        <span className="info-label">Documents:</span>
+                        <div className="submission-file-rows" style={{ flex: 1 }}>
+                          {submission.file_paths.map((fileUrl, idx) => (
+                            <div className="submission-file-row" key={`${submission.submission_id}-${idx}`}>
+                              <a href={fileUrl} target="_blank" rel="noreferrer">
+                                📄 File {idx + 1}
+                              </a>
+                            </div>
+                          ))}
                         </div>
-                      )),
-                    )
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {(!submission || isEditing) && (
+                    <div className="submission-upload-row">
+                      <input
+                        type="file"
+                        multiple
+                        className="submission-file-input"
+                        onChange={(e) => handleFileChange(stage.stage_id, e.target.files)}
+                      />
+                      {selectedFileNames && <span className="info-value">{selectedFileNames}</span>}
+                      <input
+                        type="url"
+                        className="submission-link-input"
+                        placeholder="Optional: paste a link (e.g. Google Drive, spreadsheet)"
+                        value={linkDrafts[stage.stage_id] ?? (isEditing ? submission?.submission_link || '' : '')}
+                        onChange={(e) =>
+                          setLinkDrafts((prev) => ({ ...prev, [stage.stage_id]: e.target.value }))
+                        }
+                      />
+                    </div>
                   )}
+
+                  <div className="submission-action-row">
+                    {!submission && (
+                      <button
+                        type="button"
+                        className="btn-submit-work"
+                        onClick={() => handleSubmit(stage)}
+                        disabled={busyStageId === stage.stage_id}
+                      >
+                        {busyStageId === stage.stage_id ? 'Submitting...' : 'Submit Work'}
+                      </button>
+                    )}
+
+                    {submission && !isEditing && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-edit-submission"
+                          onClick={() => setEditingStageId(stage.stage_id)}
+                        >
+                          <Edit2 size={16} />
+                          Edit Submission
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-delete-submission"
+                          onClick={() => handleDelete(submission)}
+                          disabled={deletingSubmissionId === submission.submission_id}
+                        >
+                          <Trash2 size={16} />
+                          {deletingSubmissionId === submission.submission_id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </>
+                    )}
+
+                    {submission && isEditing && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-edit-submission"
+                          onClick={() => handleUpdate(stage, submission)}
+                          disabled={busyStageId === stage.stage_id}
+                        >
+                          {busyStageId === stage.stage_id ? 'Saving...' : 'Save Changes'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-delete-submission"
+                          onClick={() => {
+                            setEditingStageId(null);
+                            setSelectedFiles((prev) => ({ ...prev, [stage.stage_id]: null }));
+                            setLinkDrafts((prev) => ({ ...prev, [stage.stage_id]: '' }));
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );

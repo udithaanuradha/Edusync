@@ -9,6 +9,7 @@ interface Stage {
   description: string;
   deadline?: string;
   level?: string;
+  resource_links?: string;
   files?: Array<{
     file_id?: number;
     file_name: string;
@@ -82,6 +83,23 @@ const StudentStageView: React.FC<StudentStageViewProps> = ({ levelNumber }) => {
               </div>
 
               <p className="stage-description">{stage.description}</p>
+
+              {stage.resource_links && (
+                <div className="stage-info" style={{ marginTop: '8px' }}>
+                  <div className="info-item">
+                    <span className="info-label">Resource Link:</span>
+                    <a
+                      className="info-value"
+                      href={stage.resource_links}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#2563eb', textDecoration: 'none', wordBreak: 'break-word' }}
+                    >
+                      🔗 View attached resource
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {/* Downloadable Files Section */}
               {stage.files && stage.files.length > 0 && (

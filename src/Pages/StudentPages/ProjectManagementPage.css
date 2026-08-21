@@ -68,7 +68,7 @@
 /*active tab in inner page*/
 .pm-inner-workspace .student-inner-tab.active {
   background: #ffffff;
-  color: #0445d0;
+  color: #2563eb;
   font-weight: 700;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
 }
@@ -330,10 +330,14 @@
 }
 
 .primary-btn {
-  background: #25eb32;
+  background: #2563eb;
   color: white;
   padding: 14px 22px;
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+}
+
+.primary-btn:hover {
+  background: #1d4ed8;
 }
 
 .secondary-btn {
@@ -799,7 +803,7 @@
 }
 
 .task-board-card:focus-visible {
-  outline: 2px solid #0445d0;
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
