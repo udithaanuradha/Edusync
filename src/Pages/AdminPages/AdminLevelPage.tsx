@@ -423,14 +423,14 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                               <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
                                 <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
                                 <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
-                                {/* 💡 Display Mentor Status */}
+                                {/* Display Mentor */}
                                 <td style={{ padding: '12px', textAlign: 'left' }}>
                                   {group.mentorName ? (
-                                    <span style={{ color: '#059669', fontWeight: '600' }}>👤 {group.mentorName}</span>
-                                   ) : (
+                                    group.mentorName
+                                  ) : (
                                     <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Unassigned</span>
-                                   )}
-                                  </td>
+                                  )}
+                                </td>
 
                                 <td style={{ padding: '12px' }}>
                                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

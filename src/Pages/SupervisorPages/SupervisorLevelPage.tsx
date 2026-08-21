@@ -257,8 +257,16 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   const loadGroups = async () => {
     setLoadingGroups(true);
     setGroupsError("");
+
+    if (!viewer.idStr) {
+      setGroupsError("Supervisor identity not found. Please login again.");
+      setGroups([]);
+      setLoadingGroups(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`${GROUPS_API_BASE}/level/${levelNumber}`);
+      const response = await fetch(`http://localhost:5000/api/groupdetailstosupervisordashboard/level/${levelNumber}/supervisor/${encodeURIComponent(viewer.idStr)}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch groups: ${response.statusText}`);
       }
@@ -274,25 +282,26 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             name: String(item.group_name ?? item.groupName ?? "Unnamed Group"),
             leader: String(
               item.group_leader ??
-                item.leader_name ??
-                item.leader ??
-                "Not specified",
+              item.leader_name ??
+              item.leader ??
+              "Not specified",
             ),
             members: String(
-              item.members_list ?? item.members ?? "Not available",
+              item.members ?? item.members_list ?? "Not available"
             ),
-            memberCount: Number(item.member_count ?? item.memberCount ?? 0),
+            memberCount: Number(item.memberCount ?? item.member_count ?? 0),
             supervisorId: String(
               item.supervisor_id ??
-                item.supervisorId ??
-                item.assigned_supervisor_id ??
-                "",
+              item.supervisorId ??
+              item.assigned_supervisor_id ??
+              "",
             ),
             supervisorName: String(
               item.supervisor_name ??
-                item.supervisorName ??
-                item.assigned_supervisor_name ??
-                "",
+              item.supervisorName ??
+              item.supervisor ??
+              item.assigned_supervisor_name ??
+              "",
             ),
             level:
               item.project_level !== undefined && item.project_level !== null
@@ -385,15 +394,15 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               status: String(item.status ?? item.request_status ?? "pending"),
               supervisorId: String(
                 item.supervisor_id ??
-                  item.supervisorId ??
-                  item.assigned_supervisor_id ??
-                  "",
+                item.supervisorId ??
+                item.assigned_supervisor_id ??
+                "",
               ),
               supervisorName: String(
                 item.supervisor_name ??
-                  item.supervisorName ??
-                  item.assigned_supervisor_name ??
-                  "",
+                item.supervisorName ??
+                item.assigned_supervisor_name ??
+                "",
               ),
             }),
           )
@@ -451,9 +460,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               (file.uploaded_by_role || "").toLowerCase() === "coordinator",
           )
             ? (stage.files || []).filter(
-                (file) =>
-                  (file.uploaded_by_role || "").toLowerCase() === "coordinator",
-              )
+              (file) =>
+                (file.uploaded_by_role || "").toLowerCase() === "coordinator",
+            )
             : stage.files || [];
 
           return (

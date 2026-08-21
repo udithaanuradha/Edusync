@@ -59,6 +59,8 @@ interface StudentSummary {
 
 const TOTAL_MARKS_PRESETS = [100, 50, 40, 30, 25, 20, 10];
 
+const getPanelKey = (g: GroupData) => String(g.panel_id || `${g.group_id}_${g.stage_id || g.evaluation_type}`);
+
 const SupervisorEvaluationPanel: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,7 +69,10 @@ const SupervisorEvaluationPanel: React.FC = () => {
   const [selectedLevel, setSelectedLevel] = useState<number>(initialLevel || 2);
 
   const [groups, setGroups] = useState<GroupData[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | string>("");
+  const [selectedPanelKey, setSelectedPanelKey] = useState<string>(() => {
+    const pId = searchParams.get("panelId");
+    return pId ? String(pId) : "";
+  });
   const [selectedGroup, setSelectedGroup] = useState<GroupData | null>(null);
 
   // Dynamic Total / Maximum Marks setting (out of 100, 50, 40, 30, etc.)
@@ -127,17 +132,31 @@ const SupervisorEvaluationPanel: React.FC = () => {
         setGroups(loadedGroups);
 
         if (loadedGroups.length > 0) {
+          const urlPanelId = searchParams.get("panelId");
           const urlGroupId = searchParams.get("groupId");
-          const currentValid = urlGroupId
-            ? loadedGroups.find((g) => String(g.group_id) === String(urlGroupId))
-            : loadedGroups.find((g) => String(g.group_id) === String(selectedGroupId));
-          const chosenGroup = currentValid || loadedGroups[0];
-          setSelectedGroupId(chosenGroup.group_id);
+
+          let chosenGroup: GroupData | undefined;
+          if (urlPanelId) {
+            chosenGroup = loadedGroups.find((g) => String(g.panel_id) === String(urlPanelId));
+          }
+          if (!chosenGroup && urlGroupId) {
+            chosenGroup = loadedGroups.find((g) => String(g.group_id) === String(urlGroupId));
+          }
+          if (!chosenGroup && selectedPanelKey) {
+            chosenGroup = loadedGroups.find((g) => getPanelKey(g) === String(selectedPanelKey));
+          }
+          if (!chosenGroup) {
+            chosenGroup = loadedGroups[0];
+          }
+
+          const chosenKey = getPanelKey(chosenGroup);
+          setSelectedPanelKey(chosenKey);
+          setSelectedGroup(chosenGroup);
           if (chosenGroup.total_marks) {
             setTotalMaxMarks(Number(chosenGroup.total_marks));
           }
         } else {
-          setSelectedGroupId("");
+          setSelectedPanelKey("");
           setSelectedGroup(null);
         }
       } else {
@@ -176,7 +195,11 @@ const SupervisorEvaluationPanel: React.FC = () => {
 
   // Update selected group when dropdown selection or groups change
   useEffect(() => {
-    const group = groups.find((g) => String(g.group_id) === String(selectedGroupId)) || null;
+    if (!groups.length) {
+      setSelectedGroup(null);
+      return;
+    }
+    const group = groups.find((g) => getPanelKey(g) === String(selectedPanelKey)) || groups[0] || null;
     setSelectedGroup(group);
 
     // Initialize evaluation inputs for each student
@@ -197,7 +220,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
       });
       setEvaluations(initialEval);
     }
-  }, [selectedGroupId, groups]);
+  }, [selectedPanelKey, groups]);
 
   const handleInputChange = (
     studentId: string | number,
@@ -526,8 +549,19 @@ const SupervisorEvaluationPanel: React.FC = () => {
                     </label>
                     <select
                       id="group-select"
-                      value={selectedGroupId}
-                      onChange={(e) => setSelectedGroupId(e.target.value)}
+                      value={selectedPanelKey}
+                      onChange={(e) => {
+                        const newKey = e.target.value;
+                        setSelectedPanelKey(newKey);
+                        const target = groups.find((g) => getPanelKey(g) === newKey);
+                        if (target) {
+                          setSearchParams({
+                            level: String(selectedLevel),
+                            groupId: String(target.group_id),
+                            panelId: String(target.panel_id || ""),
+                          });
+                        }
+                      }}
                       style={{
                         padding: "10px 14px",
                         borderRadius: "8px",
@@ -539,11 +573,14 @@ const SupervisorEvaluationPanel: React.FC = () => {
                         color: "#0f172a",
                       }}
                     >
-                      {groups.map((group) => (
-                        <option key={group.group_id} value={group.group_id}>
-                          {group.group_name} — {group.evaluation_type || "Evaluation"}
-                        </option>
-                      ))}
+                      {groups.map((group) => {
+                        const key = getPanelKey(group);
+                        return (
+                          <option key={key} value={key}>
+                            {group.group_name} — {group.evaluation_type || group.stage_name || "Evaluation"}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 
