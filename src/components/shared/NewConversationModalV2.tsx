@@ -101,13 +101,32 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
 
   if (!isOpen) return null;
 
+  // Mirrors the backend's role-based messaging rules (chatPermissionsV2.js)
+  // just enough to hide tabs that could never yield anyone for this sender
+  // — the backend's getRecipientsByRole is the actual permission boundary,
+  // so this only needs to be a light, non-authoritative UX filter.
+  const senderEffectiveRole = (currentUser as any)?.effectiveRole || currentUser?.role;
   const displayRoles = AVAILABLE_ROLES.filter((role) => {
     if (role === "assigned_groups") {
       return hasGroupConversations;
     }
-    if (currentUser?.role === "student" && role === "admin") return false;
-    if (currentUser?.role === "coordinator" && role === "student") return false;
-    return true;
+    switch (senderEffectiveRole) {
+      case "mentor":
+        return role === "student"; // mentors can only ever reach their assigned students
+      case "admin":
+        return role === "supervisor" || role === "coordinator" || role === "admin";
+      case "coordinator":
+        // Coordinators can only reach group leaders among students — the
+        // dedicated group_leader tab already covers that, so the generic
+        // student tab would just show the same filtered list again.
+        return role !== "student" && role !== "mentor";
+      case "supervisor":
+        return role !== "mentor";
+      case "student":
+        return role !== "admin";
+      default:
+        return true;
+    }
   });
 
   const filteredUsers = users.filter((u) => {

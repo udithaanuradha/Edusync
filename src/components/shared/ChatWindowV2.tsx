@@ -468,7 +468,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
         <div className="conversations-sidebar-v2">
           <div className="conversations-header-v2">
             <h3>Conversations ({conversations.length})</h3>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div className="conversations-header-actions-v2">
               {(user?.role === "supervisor" ||
                 user?.role === "lecturer" ||
                 user?.role === "mentor" ||
