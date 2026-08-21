@@ -27,8 +27,15 @@ const StudentStageView: React.FC<StudentStageViewProps> = ({ levelNumber }) => {
   useEffect(() => {
     const fetchStages = async () => {
       try {
+        // Scope to the student's own degree program — the backend also
+        // includes legacy/global stages (no academic_unit set) so this never
+        // hides pre-existing stages.
+        const savedUser = localStorage.getItem('user');
+        const user = savedUser ? JSON.parse(savedUser) : null;
+        const academicUnit = user?.academic_unit ? `?academicUnit=${encodeURIComponent(user.academic_unit)}` : '';
+
         // Fetching from the same backend port you confirmed (5000)
-        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}${academicUnit}`);
         const data = await response.json();
         if (data.success) setStages(data.data);
       } catch (err) {
