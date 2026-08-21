@@ -241,6 +241,26 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     setEditValue(null);
   };
 
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const getFileUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   const selectedStageMarks = useMemo(
     () => (filterStage === 'all' ? marks : marks.filter((m) => m.stage_id === Number(filterStage))),
     [filterStage, marks]
@@ -258,10 +278,12 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       { total: 0, on_time: 0, late: 0 }
     );
 
-    const progress = totals.total > 0 ? Math.round((totals.on_time / totals.total) * 100) : 0;
+    const submitted = totals.on_time + totals.late;
+    const progress = totals.total > 0 ? Math.round((submitted / totals.total) * 100) : 0;
 
     return {
       ...totals,
+      submitted,
       progress,
     };
   }, [selectedStageMarks]);
@@ -334,8 +356,11 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const getFileLabel = (url: string) => {
     try {
       const decoded = decodeURIComponent(url.split('?')[0]);
-      const filename = decoded.split('/').pop();
-      return filename || 'Submission File';
+      let filename = decoded.split('/').pop() || 'Submission File';
+      if (/^\d{10,}-/.test(filename)) {
+        filename = filename.replace(/^\d{10,}-/, '');
+      }
+      return filename;
     } catch {
       return 'Submission File';
     }
@@ -451,14 +476,10 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
                             <td className="group-col">{mark.group_name}</td>
                             <td className="evaluator-col">{mark.student_name || mark.group_name}</td>
                             <td className="date-col">
-                              {mark.submission_date
-                                ? new Date(mark.submission_date).toLocaleString()
-                                : '-'}
+                              {formatDateTime(mark.submission_date || mark.submitted_at)}
                             </td>
                             <td className="date-col">
-                              {mark.deadline
-                                ? new Date(mark.deadline).toLocaleString()
-                                : '-'}
+                              {formatDateTime(mark.deadline)}
                             </td>
                             <td className="group-col">
                               {fileList.length > 0 ? (
@@ -481,7 +502,7 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
                             <td className="mark-col">
                               {primaryFile ? (
                                 <a
-                                  href={primaryFile}
+                                  href={getFileUrl(primaryFile)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="status-badge submitted"
