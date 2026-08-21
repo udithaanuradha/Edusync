@@ -38,6 +38,7 @@ import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import Level3mentor from "./pages/MentorPages/Level3mentor";
 import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
 import MentorSetupForm from "./pages/auth/MentorSetupForm";
+import ResetPasswordForm from "./pages/auth/ResetPasswordForm";
 import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
 import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
@@ -66,6 +67,7 @@ function App() {
       <Route path="/signup" element={<SignUpPage />} />
 
       <Route path="/mentor-setup/:token" element={<MentorSetupForm />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
 
       {/* Protected Dashboard Routes */}
       <Route
