@@ -1,0 +1,81 @@
+.v2-comm-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+.v2-comm-page-container > header {
+  flex-shrink: 0;
+}
+
+.v2-comm-page-main {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.v2-comm-page-content {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #ffffff;
+  padding: 0;
+  margin: 0;
+}
+
+.chat-window-v2 {
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.chat-container-v2 {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-main-v2 {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.messages-stream-v2 {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.chat-input-box-v2 {
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+}

@@ -96,6 +96,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
   const [selectedDegree, setSelectedDegree] = useState<DegreeType>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>('ALL');
+  // Keyed by `${group_name}::${stage_name}` — tracks which single (group,
+  // stage) cell is mid-request, so only that button shows a loading state.
+  const [completingKey, setCompletingKey] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Degree helper directly from users table's academic_unit column
   const inferDegree = (item: any): 'IT' | 'AI' | 'ITM' => {
@@ -360,6 +364,73 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
     };
   }, [students]);
 
+  // Proposal/Interim/Code Review/Final each happen at genuinely different
+  // points in the year for a given group, so completion is per (group,
+  // stage) — NOT deferred until Final — otherwise an already-finished
+  // Proposal panel from months ago would keep sitting on the Calendar as
+  // "upcoming" until Final finally happens. Only affects the one group
+  // whose row this was clicked from, never the whole level.
+  const handleCompleteGroupStage = async (groupName: string, stageName: string) => {
+    const key = `${groupName}::${stageName}`;
+
+    const confirmed = window.confirm(
+      `Mark ${stageName} complete for "${groupName}"?\n\nThis removes just this stage's panel from the Calendar for this group.`,
+    );
+    if (!confirmed) return;
+
+    setCompletingKey(key);
+    try {
+      const response = await fetch('http://localhost:5000/api/calendar/panels/complete-for-groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level: levelNumber, groupNames: [groupName], stageName }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to complete panel.');
+      }
+      alert(`Done — ${result.panelsUpdated} panel(s) removed from the Calendar for "${groupName}".`);
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setCompletingKey(null);
+    }
+  };
+
+  // Download the server-generated "Marks Distribution Report" PDF (summary
+  // stats + a histogram/bell-curve chart, rendered entirely server-side —
+  // no chart is ever drawn in this UI). The response is a raw PDF stream,
+  // not JSON, so this fetches it as a Blob and triggers a normal browser
+  // file download via a throwaway <a download> element.
+  const handleDownloadPdfReport = async () => {
+    setDownloadingPdf(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/marks/report/level/${levelNumber}/pdf`);
+      if (!response.ok) {
+        // Errors come back as JSON, not a PDF — surface the real message if present.
+        const contentType = response.headers.get('content-type') || '';
+        const message = contentType.includes('application/json')
+          ? (await response.json())?.message
+          : null;
+        throw new Error(message || `Server returned ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Level_${levelNumber}_Marks_Distribution_Report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`Error downloading report: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   // Export to CSV with Evaluator Marks Breakdown
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) {
@@ -531,6 +602,27 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={handleDownloadPdfReport}
+            disabled={downloadingPdf}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '9px 18px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: downloadingPdf ? '#93c5fd' : '#2563eb',
+              color: '#ffffff',
+              fontWeight: '600',
+              fontSize: '13px',
+              cursor: downloadingPdf ? 'default' : 'pointer',
+              boxShadow: '0 2px 5px rgba(37, 99, 235, 0.25)',
+            }}
+          >
+            {downloadingPdf ? 'Generating…' : 'Download PDF Report'}
+          </button>
           <button
             type="button"
             onClick={handleExportCSV}
@@ -1003,8 +1095,14 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => {
+                {filteredStudents.map((student, rowIndex) => {
                   const gInfo = student.gradeInfo;
+                  // Show the per-stage "Complete" action only once per group
+                  // (its first visible row) — every row for that group shares
+                  // the same panel, so repeating the button on every member
+                  // would just be clutter, not extra functionality.
+                  const isFirstRowOfGroup =
+                    rowIndex === 0 || filteredStudents[rowIndex - 1].group_name !== student.group_name;
 
                   return (
                     <tr key={student.student_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -1120,6 +1218,34 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                                     </span>
                                   )}
                                 </div>
+
+                                {/* One "Complete" action per group per stage — shown once,
+                                    on the group's first visible row, not repeated per member. */}
+                                {isFirstRowOfGroup && (() => {
+                                  const key = `${student.group_name}::${st.stage_name}`;
+                                  const isCompleting = completingKey === key;
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
+                                      disabled={isCompleting}
+                                      title={`Mark ${st.stage_name} complete for "${student.group_name}" — removes just this stage's panel from the Calendar for this group`}
+                                      style={{
+                                        marginTop: '2px',
+                                        padding: '2px 7px',
+                                        borderRadius: '5px',
+                                        border: 'none',
+                                        backgroundColor: isCompleting ? '#a7f3d0' : '#16a34a',
+                                        color: '#ffffff',
+                                        fontWeight: '600',
+                                        fontSize: '9px',
+                                        cursor: isCompleting ? 'default' : 'pointer',
+                                      }}
+                                    >
+                                      {isCompleting ? 'Completing…' : 'Complete'}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             ) : (
                               <span style={{ color: '#cbd5e1' }}>—</span>

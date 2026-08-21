@@ -277,13 +277,15 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       ? selectedStageMarks
       : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
 
-  // Group marks by stage for better display
-  const groupedMarks: Record<number, GroupMark[]> = {};
+  // Group marks by normalized stage name so we render one table per stage
+  const groupedByStageName: Record<string, { stage_id: number; stage_name: string; marks: GroupMark[] }> = {};
   filteredMarks.forEach((mark) => {
-    if (!groupedMarks[mark.stage_id]) {
-      groupedMarks[mark.stage_id] = [];
+    const rawName = String(mark.stage_name ?? `Stage ${mark.stage_id}`);
+    const key = rawName.trim().toLowerCase();
+    if (!groupedByStageName[key]) {
+      groupedByStageName[key] = { stage_id: mark.stage_id, stage_name: rawName.trim(), marks: [] };
     }
-    groupedMarks[mark.stage_id].push(mark);
+    groupedByStageName[key].marks.push(mark);
   });
 
   const renderMarkCell = (mark: GroupMark) => {
@@ -417,11 +419,13 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         </div>
       ) : (
         <div className="gradebook-wrapper">
-          {Object.entries(groupedMarks).map(([stageId, stageMark]) => {
-            const stageName = stageMark[0]?.stage_name || `Stage ${stageId}`;
+          {Object.values(groupedByStageName).map((group) => {
+            const stageId = group.stage_id;
+            const stageMark = group.marks;
+            const stageName = group.stage_name || `Stage ${stageId}`;
 
             return (
-              <div key={stageId} className="stage-section">
+              <div key={stageName} className="stage-section">
                 <h4 className="stage-title">{stageName}</h4>
                 <div className="stage-table">
                   <table>
