@@ -117,7 +117,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           stage_name: formData.name,
           description: formData.description,
           deadline: formData.deadline || null,
-          resource_link: formData.resource_link || null,
+          resource_link: formData.resource_link.trim() || null,
           created_by: user?.id || 1,
           user_role: effectiveRole,
         }),
@@ -184,7 +184,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
         stage_name: formData.name,
         description: formData.description,
         deadline: formData.deadline || undefined,
-        resource_links: formData.resource_link || undefined,
+        resource_links: formData.resource_link.trim() || undefined,
         level: levelNumber.toString(),
         files: filesData,
       };
@@ -274,7 +274,10 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           stage_name: editFormData.stage_name,
           description: editFormData.description,
           deadline: editFormData.deadline || null,
-          resource_link: editFormData.resource_link || null,
+          // Trim first — a whitespace-only leftover (e.g. from clearing the
+          // field) is still truthy and would round-trip as a "link" that
+          // renders (and looks impossible to clear) even though it's blank.
+          resource_link: editFormData.resource_link.trim() || null,
           user_role: effectiveRole,
         }),
       });
@@ -285,7 +288,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
       const updatedStages = stages.map(s =>
         s.stage_id === editingStage.stage_id
-          ? { ...s, ...editFormData, resource_links: editFormData.resource_link }
+          ? { ...s, ...editFormData, resource_links: editFormData.resource_link.trim() || undefined }
           : s
       );
       setStages(updatedStages);
