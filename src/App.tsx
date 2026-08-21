@@ -42,6 +42,7 @@ import ResetPasswordForm from "./pages/auth/ResetPasswordForm";
 import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
 import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
+import AdminProjectDelaysPage from "./pages/AdminPages/AdminProjectDelaysPage";
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -375,14 +376,27 @@ function App() {
         element={userObj ? <ProfileSettingsPage /> : <Navigate to="/login" />}
       />
 
-      {/* Project Delays Route (Mentor Specific) */}
+      {/* Project Delays Routes */}
       <Route
         path="/dashboard/project-delays"
         element={
-          userObj?.role === "mentor" ? (
+          userObj?.role === "admin" ? (
+            <AdminProjectDelaysPage />
+          ) : userObj?.role === "mentor" ? (
             <MentorProjectDelaysPage />
           ) : userObj ? (
             <Navigate to="/dashboard" />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/admin/project-delays"
+        element={
+          userObj?.role === "admin" ? (
+            <AdminProjectDelaysPage />
           ) : (
             <Navigate to="/login" />
           )
