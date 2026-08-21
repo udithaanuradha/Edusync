@@ -71,8 +71,9 @@
 .conversations-header-v2 {
   padding: 1rem 1.25rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .conversations-header-v2 h3 {
@@ -82,23 +83,52 @@
   margin: 0;
 }
 
-.new-chat-btn-v2 {
-  background: #2563eb;
-  color: white;
-  border: none;
+/* Title sits on its own row above; the two actions share the row below in
+   equal halves — the sidebar is only 340px, not enough to fit a title and
+   two buttons on one row without cramping or wrapping mid-word. */
+.conversations-header-actions-v2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.new-chat-btn-v2,
+.assigned-groups-btn-v2 {
+  flex: 1;
   border-radius: 8px;
-  padding: 6px 12px;
+  padding: 6px 10px;
   font-size: 0.8rem;
   font-weight: 600;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.new-chat-btn-v2 {
+  background: #2563eb;
+  color: white;
+  border: none;
 }
 
 .new-chat-btn-v2:hover {
   background: #1d4ed8;
+}
+
+/* Secondary action, same shape/sizing as New Chat but outlined so the two
+   read as a pair without competing for primary emphasis. */
+.assigned-groups-btn-v2 {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.assigned-groups-btn-v2:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
 }
 
 .conversations-list-v2 {
@@ -419,9 +449,10 @@
 .send-btn-v2 {
   width: 40px;
   height: 40px;
+  min-width: 40px;
   border-radius: 50%;
   background: #2563eb;
-  color: white;
+  color: #ffffff;
   border: none;
   display: flex;
   align-items: center;
@@ -429,6 +460,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
 }
 
 .send-btn-v2:hover:not(:disabled) {
@@ -437,7 +469,9 @@
 }
 
 .send-btn-v2:disabled {
-  background: #cbd5e1;
+  background: #e2e8f0;
+  color: #94a3b8;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
