@@ -97,7 +97,11 @@ const Sidebar = () => {
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-header">
         <div className="logo-container">
-          <div className="logo-icon">E</div>
+          <img 
+            src="/edusync-logo.svg" 
+            alt="EduSync Logo" 
+            style={{ width: "38px", height: "38px", borderRadius: "8px", flexShrink: 0 }} 
+          />
           {!collapsed && <span className="logo-text">EduSync</span>}
         </div>
         <button

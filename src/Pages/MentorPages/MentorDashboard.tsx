@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MentorSidebarWrapper from '../../components/mentor/MentorSidebarWrapper';
 import Header from '../../components/shared/Header';
+import AssignedGroupsModal from '../../components/shared/AssignedGroupsModal';
 import {
   Target,
   CheckCircle2,
@@ -73,6 +74,8 @@ const MentorDashboard: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [mentorId, setMentorId] = useState<number | string | null>(null);
+  const [showAssignedGroups, setShowAssignedGroups] = useState(false);
 
   const fetchSummaryData = async () => {
     try {
@@ -82,6 +85,7 @@ const MentorDashboard: React.FC = () => {
       const savedUser = localStorage.getItem('user');
       const user = savedUser ? JSON.parse(savedUser) : null;
       const mentorId = user?.id || '';
+      setMentorId(mentorId || null);
       const token = localStorage.getItem('token');
 
       const headers: Record<string, string> = {
@@ -299,12 +303,35 @@ const MentorDashboard: React.FC = () => {
 
         <main className="content-container">
           {/* ── Page Header ───────────────────────────────────── */}
-          <div className="mentor-page-header">
-            <h1 className="mentor-page-title">Mentor Dashboard Overview</h1>
-            <p className="mentor-page-subtitle">
-              Executive health summary, milestone roadmap, and student contribution analytics for your assigned project groups.
-            </p>
+          <div className="mentor-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h1 className="mentor-page-title">Mentor Dashboard Overview</h1>
+              <p className="mentor-page-subtitle">
+                Executive health summary, milestone roadmap, and student contribution analytics for your assigned project groups.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAssignedGroups(true)}
+              disabled={!mentorId}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600,
+                color: '#fff', background: '#4f46e5', border: 'none', borderRadius: 8,
+                padding: '9px 16px', cursor: mentorId ? 'pointer' : 'not-allowed', opacity: mentorId ? 1 : 0.6,
+              }}
+            >
+              <Users size={15} />
+              Assigned Groups
+            </button>
           </div>
+
+          {showAssignedGroups && mentorId && (
+            <AssignedGroupsModal
+              role="mentor"
+              userId={mentorId}
+              onClose={() => setShowAssignedGroups(false)}
+            />
+          )}
 
           {/* ── Loading / Error State ─────────────────────────── */}
           {loading ? (

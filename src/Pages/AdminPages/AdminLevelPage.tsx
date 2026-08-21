@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
-import AssignCoordinatorPage from './AssignCoordinatorPage'; // අලුත් පිටුව Import කිරීම
+import AssignCoordinatorPage from './AssignCoordinatorPage';
+import SupervisorReportPanel from '../../components/coordinator/SupervisorReportPanel';
 import './AdminDashboard.css';
 import { MentorImportPanel } from '../../components/mentor/MentorImportPanel';
+import { 
+  Download, 
+  CheckCircle2, 
+  Layers, 
+  Users, 
+  BarChart3, 
+  X, 
+  UserPlus,
+  ClipboardList,
+  Scale,
+  Percent,
+  Award,
+  BookOpen
+} from 'lucide-react';
 
 interface StageFile {
   file_id: number;
@@ -26,7 +42,7 @@ interface Stage {
   creator_name?: string;
   academic_unit?: string;
   mentor_details_url?: string;
-  resource_links?: string; // 💡 ඩේටාබේස් එකෙන් එන ලින්ක් එක සඳහා එකතු කලා
+  resource_links?: string;
   files?: StageFile[];
 }
 
@@ -61,13 +77,18 @@ interface AdminLevelPageProps {
 }
 
 const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
-  const [activeTab, setActiveTab] = useState<'stages' | 'groups'>('stages');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'stages' | 'groups' | 'marks'>('stages');
   const [stages, setStages] = useState<Stage[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [isAssignView, setIsAssignView] = useState(false);
+
+  // Stage Weights & Rubrics modal state
+  const [isRubricsModalOpen, setIsRubricsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllData();
@@ -204,47 +225,198 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
             />
           ) : (
             <div style={{ width: '100%' }}>
+              
+              {/* Toast Message */}
+              {toastMessage && (
+                <div style={{
+                  padding: '12px 18px',
+                  backgroundColor: '#ecfdf5',
+                  border: '1px solid #a7f3d0',
+                  borderRadius: '10px',
+                  color: '#065f46',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}>
+                  <CheckCircle2 size={16} color="#059669" />
+                  <span>{toastMessage}</span>
+                </div>
+              )}
+
               <div className="dashboard-header-section" style={{ 
                 width: '100%', 
                 display: 'flex', 
                 flexDirection: 'row', 
                 alignItems: 'center', 
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px',
                 textAlign: 'left',
-                marginBottom: '32px'
+                marginBottom: '28px'
               }}>
                 <div>
                   <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
                   <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
-                    Manage and view project stages, groups, and marks for Level {levelNumber}.
+                    Administrative oversight, stage progression, group rosters, and grading results for Level {levelNumber}.
                   </p>
                 </div>
 
-                {/* + Add Coordinators Button */}
-                <button 
-                  onClick={() => setIsAssignView(true)}
-                  style={{
-                    padding: '10px 20px', backgroundColor: '#2563eb', color: 'white',
-                    border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px'
-                  }}
-                >
-                  + Add Coordinators
-                </button>
+                {/* Multiple Admin Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  
+                  {/* Export Level Report Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const stageSummary = stages.map(s => `Stage: ${s.stage_name} (Deadline: ${s.deadline || 'None'}, Unit: ${s.academic_unit || 'All'})`).join('; ');
+                      const headers = ['Group ID', 'Group Name', 'Supervisor', 'Mentor', 'Leader', 'Members Count', 'Members List', 'Level Stages Overview'];
+                      const rows = groups.map(g => [
+                        `"${g.groupId}"`,
+                        `"${g.groupName}"`,
+                        `"${g.supervisor}"`,
+                        `"${g.mentorName || 'Unassigned'}"`,
+                        `"${g.leader}"`,
+                        `"${g.members.length}"`,
+                        `"${g.members.map(m => m.name + (m.is_leader ? ' [Leader]' : '')).join(', ')}"`,
+                        `"${stageSummary}"`
+                      ]);
+
+                      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement('a');
+                      link.setAttribute('href', encodedUri);
+                      link.setAttribute('download', `Level_${levelNumber}_Master_Report_${new Date().toISOString().split('T')[0]}.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+
+                      setToastMessage(`✅ Level ${levelNumber} Master Report exported successfully!`);
+                      setTimeout(() => setToastMessage(null), 4000);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 14px',
+                      backgroundColor: '#ffffff',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f8fafc';
+                      e.currentTarget.style.borderColor = '#94a3b8';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = '#ffffff';
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    <Download size={15} color="#2563eb" />
+                    Export Level Report
+                  </button>
+
+                  {/* Stage Weights & Rubrics Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsRubricsModalOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 14px',
+                      backgroundColor: '#ffffff',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f8fafc';
+                      e.currentTarget.style.borderColor = '#94a3b8';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = '#ffffff';
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    <ClipboardList size={15} color="#0284c7" />
+                    Stage Weights & Rubrics
+                  </button>
+
+                  {/* + Add Coordinators Button */}
+                  <button 
+                    onClick={() => setIsAssignView(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 16px',
+                      backgroundColor: '#2563eb',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = '#1d4ed8';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = '#2563eb';
+                    }}
+                  >
+                    <UserPlus size={15} />
+                    + Add Coordinators
+                  </button>
+                </div>
               </div>
 
               {/* Tabs buttons */}
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
                 <button onClick={() => setActiveTab('stages')}
-                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
-                    backgroundColor: activeTab === 'stages' ? '#2563eb' : '#f3f4f6',
-                    color: activeTab === 'stages' ? 'white' : '#6b7280' }}>
-                  Project Stages
+                  style={{ 
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
+                    backgroundColor: activeTab === 'stages' ? '#2563eb' : '#f1f5f9',
+                    color: activeTab === 'stages' ? 'white' : '#475569' 
+                  }}>
+                  <Layers size={16} />
+                  Project Stages ({stages.length})
                 </button>
+                
                 <button onClick={() => setActiveTab('groups')}
-                  style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600',
-                    backgroundColor: activeTab === 'groups' ? '#2563eb' : '#f3f4f6',
-                    color: activeTab === 'groups' ? 'white' : '#6b7280' }}>
-                  Project Groups
+                  style={{ 
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
+                    backgroundColor: activeTab === 'groups' ? '#2563eb' : '#f1f5f9',
+                    color: activeTab === 'groups' ? 'white' : '#475569' 
+                  }}>
+                  <Users size={16} />
+                  Project Groups ({groups.length})
+                </button>
+
+                <button onClick={() => setActiveTab('marks')}
+                  style={{ 
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
+                    backgroundColor: activeTab === 'marks' ? '#2563eb' : '#f1f5f9',
+                    color: activeTab === 'marks' ? 'white' : '#475569' 
+                  }}>
+                  <BarChart3 size={16} />
+                  Student Marksheet & Results
                 </button>
               </div>
 
@@ -403,7 +575,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
                   {activeTab === 'groups' && (
                     <div>
-                     {/* 1.  puts the onboarding box right above your groups card */}        
                      <MentorImportPanel levelNumber={levelNumber} />
                      
                     <div style={cardStyle}>
@@ -423,14 +594,13 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                               <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
                                 <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
                                 <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
-                                {/* 💡 Display Mentor Status */}
                                 <td style={{ padding: '12px', textAlign: 'left' }}>
                                   {group.mentorName ? (
-                                    <span style={{ color: '#059669', fontWeight: '600' }}>👤 {group.mentorName}</span>
-                                   ) : (
+                                    group.mentorName
+                                  ) : (
                                     <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Unassigned</span>
-                                   )}
-                                  </td>
+                                  )}
+                                </td>
 
                                 <td style={{ padding: '12px' }}>
                                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -449,8 +619,312 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                     </div>
                   </div>  
                   )}
+
+                  {activeTab === 'marks' && (
+                    <div style={{ width: '100%' }}>
+                      <SupervisorReportPanel levelNumber={levelNumber} />
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Stage Weights & Rubrics Modal */}
+          {isRubricsModalOpen && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999,
+              padding: '16px',
+            }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                width: '100%',
+                maxWidth: '720px',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden',
+              }}>
+                {/* Modal Header */}
+                <div style={{
+                  padding: '18px 24px',
+                  borderBottom: '1px solid #f1f5f9',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: '#fafbfc',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px',
+                      backgroundColor: '#e0f2fe', color: '#0284c7',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1px solid #bae6fd',
+                    }}>
+                      <ClipboardList size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>
+                        Level {levelNumber} Evaluation Scheme & Stage Weightages
+                      </h3>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                        Marking weight allocations, evaluation criteria, and panel rubric breakdown.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsRubricsModalOpen(false)}
+                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* Top Stats Banner */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: '12px',
+                    padding: '14px 18px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                  }}>
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Configured Stages</span>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginTop: '2px' }}>
+                        {stages.length} Active Stage{stages.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Total Weightage</span>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#0284c7', marginTop: '2px' }}>
+                        100% Comprehensive
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Evaluation Panel</span>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', marginTop: '4px' }}>
+                        Supervisor (50%) + Panel (50%)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 1: Stage-wise Weightage Allocation */}
+                  <div>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Percent size={15} color="#2563eb" />
+                      Stage-wise Weight Distribution (Level {levelNumber})
+                    </h4>
+
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
+                            <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569' }}>Stage Name</th>
+                            <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569' }}>Degree Unit</th>
+                            <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569' }}>Assessment Mode</th>
+                            <th style={{ padding: '10px 14px', fontWeight: '600', color: '#475569', textAlign: 'right' }}>Weightage %</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stages.length > 0 ? (
+                            stages.map((st, idx) => {
+                              const degree = getDegreeNameFromAcademicUnit(st.academic_unit);
+                              const defaultWeight = Math.round(100 / stages.length);
+                              return (
+                                <tr key={st.stage_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '10px 14px', fontWeight: '600', color: '#0f172a' }}>
+                                    {idx + 1}. {st.stage_name}
+                                  </td>
+                                  <td style={{ padding: '10px 14px' }}>
+                                    <span style={{
+                                      backgroundColor: degree === 'ITM' ? '#dbeafe' : degree === 'AI' ? '#f3e8ff' : '#e0f2fe',
+                                      color: degree === 'ITM' ? '#1e40af' : degree === 'AI' ? '#6b21a8' : '#0369a1',
+                                      padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '700'
+                                    }}>
+                                      {degree || 'All Units'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px 14px', color: '#475569' }}>
+                                    {st.stage_name.toLowerCase().includes('final') || st.stage_name.toLowerCase().includes('viva')
+                                      ? 'Oral Viva & System Demo'
+                                      : st.stage_name.toLowerCase().includes('interim') || st.stage_name.toLowerCase().includes('proposal')
+                                      ? 'SRS & Architecture Review'
+                                      : 'Code & Progress Evaluation'}
+                                  </td>
+                                  <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#0284c7' }}>
+                                    {idx === stages.length - 1 ? 100 - defaultWeight * (stages.length - 1) : defaultWeight}%
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={4} style={{ textAlign: 'center', padding: '16px', color: '#94a3b8' }}>
+                                No stages configured for Level {levelNumber} yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Standard Marking Rubric Criteria */}
+                  <div>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Scale size={15} color="#7c3aed" />
+                      Core Evaluation Criteria & Rubric Dimensions
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div style={{ padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fafbfc' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '600', fontSize: '13px', color: '#0f172a' }}>1. System Architecture & Technical Rigor</span>
+                          <span style={{ fontWeight: '700', fontSize: '12px', color: '#2563eb' }}>30%</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+                          Database schema, cloud deployment, security implementation, and API engineering.
+                        </p>
+                      </div>
+
+                      <div style={{ padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fafbfc' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '600', fontSize: '13px', color: '#0f172a' }}>2. Code Quality & Execution Completeness</span>
+                          <span style={{ fontWeight: '700', fontSize: '12px', color: '#2563eb' }}>25%</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+                          Repository cleanliness, test coverage, functional MVP, and adherence to coding standards.
+                        </p>
+                      </div>
+
+                      <div style={{ padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fafbfc' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '600', fontSize: '13px', color: '#0f172a' }}>3. Problem Analysis & Requirement Spec</span>
+                          <span style={{ fontWeight: '700', fontSize: '12px', color: '#2563eb' }}>20%</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+                          Scope clarity, SRS alignment, user stories, and literature/industry benchmark accuracy.
+                        </p>
+                      </div>
+
+                      <div style={{ padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fafbfc' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '600', fontSize: '13px', color: '#0f172a' }}>4. Viva Presentation & Q&A Response</span>
+                          <span style={{ fontWeight: '700', fontSize: '12px', color: '#2563eb' }}>15%</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+                          Individual understanding, defense of design choices, and confident articulation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Degree Focus Alignment */}
+                  <div style={{ padding: '12px 16px', backgroundColor: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontWeight: '700', fontSize: '12px', color: '#1e40af' }}>
+                      <Award size={14} />
+                      Degree-Specific Project Focus Areas (Level {levelNumber})
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '11px', color: '#1e3a8a' }}>
+                      <div><strong>IT:</strong> Full-Stack Systems, Cloud Infrastructure & DevOps</div>
+                      <div><strong>ITM:</strong> Business Value, Enterprise Solutions & Process Optimization</div>
+                      <div><strong>AI:</strong> Machine Learning Models, Data Pipelines & Analytics</div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Modal Footer */}
+                <div style={{
+                  padding: '14px 24px',
+                  backgroundColor: '#f8fafc',
+                  borderTop: '1px solid #f1f5f9',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ['Stage Number', 'Stage Name', 'Degree Unit', 'Assessment Mode', 'Weightage'];
+                      const rows = stages.map((st, idx) => {
+                        const degree = getDegreeNameFromAcademicUnit(st.academic_unit) || 'All Units';
+                        const defaultWeight = Math.round(100 / (stages.length || 1));
+                        const w = idx === stages.length - 1 ? 100 - defaultWeight * (stages.length - 1) : defaultWeight;
+                        return [
+                          `"${idx + 1}"`,
+                          `"${st.stage_name}"`,
+                          `"${degree}"`,
+                          `"Oral Viva & Assessment"`,
+                          `"${w}%"`
+                        ];
+                      });
+
+                      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement('a');
+                      link.setAttribute('href', encodedUri);
+                      link.setAttribute('download', `Level_${levelNumber}_Rubrics_Weightages_${new Date().toISOString().split('T')[0]}.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+
+                      setToastMessage(`✅ Level ${levelNumber} Rubrics & Weightages Scheme exported!`);
+                      setTimeout(() => setToastMessage(null), 4000);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#334155',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Download size={13} color="#2563eb" />
+                    Export Scheme (CSV)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsRubricsModalOpen(false)}
+                    style={{
+                      padding: '8px 18px',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Close Scheme
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </main>

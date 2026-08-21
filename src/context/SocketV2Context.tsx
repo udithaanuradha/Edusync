@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
-import { MessageV2, ReadReceiptPayload } from "../types/chatV2";
+import { MessageV2, ReadReceiptPayload, GroupMessageV2 } from "../types/chatV2";
 
 interface SocketV2ContextType {
   socket: Socket | null;
@@ -21,6 +21,11 @@ interface SocketV2ContextType {
   sendTypingStatus: (receiverId: number, isTyping: boolean) => void;
   subscribeToMessages: (callback: (message: MessageV2) => void) => () => void;
   subscribeToReadReceipts: (callback: (receipt: ReadReceiptPayload) => void) => () => void;
+  // Group chat (supervisor<->group, mentor<->group) — same connection, a
+  // separate event pair (group:send / group:message:received) from the 1:1
+  // ones above, so none of the existing 1:1 behavior is touched.
+  sendGroupMessage: (conversationId: number, messageText: string) => Promise<GroupMessageV2 | null>;
+  subscribeToGroupMessages: (callback: (message: GroupMessageV2) => void) => () => void;
 }
 
 const SOCKET_SERVER_URL = "http://localhost:5000";
@@ -36,6 +41,7 @@ export const SocketV2Provider: React.FC<{ children: ReactNode }> = ({ children }
 
   const messageSubscribersRef = useRef<Set<(message: MessageV2) => void>>(new Set());
   const readReceiptSubscribersRef = useRef<Set<(receipt: ReadReceiptPayload) => void>>(new Set());
+  const groupMessageSubscribersRef = useRef<Set<(message: GroupMessageV2) => void>>(new Set());
 
   useEffect(() => {
     if (!user) {
@@ -94,6 +100,10 @@ export const SocketV2Provider: React.FC<{ children: ReactNode }> = ({ children }
 
     newSocket.on("message:received", (message: MessageV2) => {
       messageSubscribersRef.current.forEach((callback) => callback(message));
+    });
+
+    newSocket.on("group:message:received", (message: GroupMessageV2) => {
+      groupMessageSubscribersRef.current.forEach((callback) => callback(message));
     });
 
     newSocket.on("message:read_receipt", (receipt: ReadReceiptPayload) => {
@@ -159,6 +169,37 @@ export const SocketV2Provider: React.FC<{ children: ReactNode }> = ({ children }
     [socket]
   );
 
+  const sendGroupMessage = useCallback(
+    async (conversationId: number, messageText: string): Promise<GroupMessageV2 | null> => {
+      if (!socket || !socket.connected || !user) {
+        return null;
+      }
+
+      return new Promise((resolve) => {
+        socket.emit(
+          "group:send",
+          { conversation_id: conversationId, message_text: messageText },
+          (response: { success: boolean; data?: GroupMessageV2; error?: string }) => {
+            if (response && response.success && response.data) {
+              resolve(response.data);
+            } else {
+              console.error("[SocketV2] Failed to send group message:", response?.error);
+              resolve(null);
+            }
+          }
+        );
+      });
+    },
+    [socket, user]
+  );
+
+  const subscribeToGroupMessages = useCallback((callback: (message: GroupMessageV2) => void) => {
+    groupMessageSubscribersRef.current.add(callback);
+    return () => {
+      groupMessageSubscribersRef.current.delete(callback);
+    };
+  }, []);
+
   const subscribeToMessages = useCallback((callback: (message: MessageV2) => void) => {
     messageSubscribersRef.current.add(callback);
     return () => {
@@ -185,6 +226,8 @@ export const SocketV2Provider: React.FC<{ children: ReactNode }> = ({ children }
         sendTypingStatus,
         subscribeToMessages,
         subscribeToReadReceipts,
+        sendGroupMessage,
+        subscribeToGroupMessages,
       }}
     >
       {children}
