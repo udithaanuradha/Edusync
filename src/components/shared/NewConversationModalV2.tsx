@@ -1,28 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { X, Search, Loader, Users, Shield, MessageSquare } from "lucide-react";
+import { X, Search, Loader, Users, MessageSquare } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocketV2 } from "../../hooks/useSocketV2";
 import { fetchRecipientsV2 } from "../../utils/apiV2";
-import { UserV2 } from "../../types/chatV2";
+import { fetchMyGroupConversationsV2 } from "../../utils/groupChatApiV2";
+import { UserV2, GroupConversationV2 } from "../../types/chatV2";
 import "./NewConversationModalV2.css";
 
 interface NewConversationModalV2Props {
   isOpen: boolean;
   onClose: () => void;
-  onSelectUser: (user: UserV2 & { groupMembers?: UserV2[]; isGroupChat?: boolean; groupName?: string; level?: number }) => void;
+  onSelectUser: (user: UserV2) => void;
+  onSelectGroupConversation: (conversationId: number) => void;
   initialTab?: string;
-}
-
-interface AssignedGroup {
-  groupId: number;
-  groupName: string;
-  level: number;
-  supervisorId: number;
-  supervisorName: string;
-  leader: string;
-  memberCount: number;
-  members: string;
-  leaderId?: number;
 }
 
 const AVAILABLE_ROLES: Array<UserV2["role"] | "assigned_groups"> = [
@@ -39,21 +29,26 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
   isOpen,
   onClose,
   onSelectUser,
+  onSelectGroupConversation,
   initialTab,
 }) => {
   const { user: currentUser } = useAuth();
   const { onlineUserIds } = useSocketV2();
 
-  const isSupervisorUser =
-    currentUser?.role === "supervisor" || currentUser?.role === "lecturer";
+  // Real group conversations (supervisor<->group, mentor<->group) exist for
+  // every role tied to a project group, not just supervisors.
+  const hasGroupConversations =
+    currentUser?.role === "supervisor" ||
+    currentUser?.role === "lecturer" ||
+    currentUser?.role === "mentor" ||
+    currentUser?.role === "student";
 
   const [selectedRole, setSelectedRole] = useState<string>(
-    initialTab || (isSupervisorUser ? "assigned_groups" : "supervisor")
+    initialTab || (hasGroupConversations ? "assigned_groups" : "supervisor")
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<UserV2[]>([]);
-  const [assignedGroups, setAssignedGroups] = useState<AssignedGroup[]>([]);
-  const [allStudents, setAllStudents] = useState<UserV2[]>([]);
+  const [groupConversations, setGroupConversations] = useState<GroupConversationV2[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -73,24 +68,11 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
         setError("");
 
         if (selectedRole === "assigned_groups") {
-          const supervisorId = currentUser?.id;
-          const token = localStorage.getItem("token") || localStorage.getItem("jwt");
-          const headers: Record<string, string> = { "Content-Type": "application/json" };
-          if (token) headers["Authorization"] = `Bearer ${token}`;
-
-          const [groupsRes, studentsData] = await Promise.all([
-            fetch(`http://localhost:5000/api/groupdetailstosupervisordashboard/supervisor/${supervisorId}`, { headers }),
-            fetchRecipientsV2("student", currentUser?.id),
-          ]);
-
-          if (isMounted) {
-            setAllStudents(studentsData);
-            if (groupsRes.ok) {
-              const groupsData = await groupsRes.json();
-              setAssignedGroups(Array.isArray(groupsData) ? groupsData : []);
-            } else {
-              setAssignedGroups([]);
-            }
+          if (currentUser?.id) {
+            const data = await fetchMyGroupConversationsV2(currentUser.id);
+            if (isMounted) setGroupConversations(data);
+          } else if (isMounted) {
+            setGroupConversations([]);
           }
         } else {
           const data = await fetchRecipientsV2(selectedRole, currentUser?.id);
@@ -121,7 +103,7 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
 
   const displayRoles = AVAILABLE_ROLES.filter((role) => {
     if (role === "assigned_groups") {
-      return isSupervisorUser;
+      return hasGroupConversations;
     }
     if (currentUser?.role === "student" && role === "admin") return false;
     if (currentUser?.role === "coordinator" && role === "student") return false;
@@ -134,43 +116,14 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
     return u.name.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
   });
 
-  const filteredGroups = assignedGroups.filter((g) => {
+  const filteredGroups = groupConversations.filter((g) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    return (
-      g.groupName.toLowerCase().includes(q) ||
-      `level ${g.level}`.toLowerCase().includes(q) ||
-      g.leader.toLowerCase().includes(q) ||
-      g.members.toLowerCase().includes(q)
-    );
+    return g.group_name.toLowerCase().includes(q) || `level ${g.level}`.toLowerCase().includes(q);
   });
 
-  const handleGroupSelect = (group: AssignedGroup) => {
-    const memberNames = (group.members || "")
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
-
-    const matchedMembers = allStudents.filter((s) =>
-      memberNames.some((m) => s.name.trim().toLowerCase().includes(m) || m.includes(s.name.trim().toLowerCase()))
-    );
-
-    const leaderMatch = allStudents.find(
-      (s) => s.name.trim().toLowerCase() === group.leader.trim().toLowerCase()
-    ) || matchedMembers[0];
-
-    const targetUser = {
-      id: leaderMatch ? leaderMatch.id : (group.groupId || 99999),
-      name: group.groupName,
-      role: `Level ${group.level} Group` as any,
-      email: leaderMatch ? leaderMatch.email : `${group.groupName.toLowerCase().replace(/\s+/g, '')}@student.uom.lk`,
-      groupMembers: matchedMembers.length > 0 ? matchedMembers : (leaderMatch ? [leaderMatch] : []),
-      isGroupChat: true,
-      groupName: group.groupName,
-      level: group.level,
-    };
-
-    onSelectUser(targetUser);
+  const handleGroupSelect = (group: GroupConversationV2) => {
+    onSelectGroupConversation(group.conversation_id);
     onClose();
   };
 
@@ -209,7 +162,7 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
               type="text"
               placeholder={
                 selectedRole === "assigned_groups"
-                  ? "Search assigned group, level, leader, member..."
+                  ? "Search group, level..."
                   : "Search by name or email..."
               }
               value={searchQuery}
@@ -223,7 +176,7 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
               <div className="user-v2-state-text">
                 <Loader size={24} className="spinner" />
                 <p style={{ marginTop: "0.5rem" }}>
-                  {selectedRole === "assigned_groups" ? "Loading assigned groups..." : "Loading contacts..."}
+                  {selectedRole === "assigned_groups" ? "Loading your groups..." : "Loading contacts..."}
                 </p>
               </div>
             ) : error ? (
@@ -232,12 +185,12 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
               filteredGroups.length === 0 ? (
                 <div className="user-v2-state-text">
                   <Users size={32} style={{ opacity: 0.4, marginBottom: "8px" }} />
-                  <p>No assigned groups found for this supervisor</p>
+                  <p>No group chats yet — one appears automatically once a group is assigned to you.</p>
                 </div>
               ) : (
                 filteredGroups.map((group) => (
                   <div
-                    key={group.groupId}
+                    key={group.conversation_id}
                     className="assigned-group-v2-card"
                     onClick={() => handleGroupSelect(group)}
                   >
@@ -246,19 +199,21 @@ const NewConversationModalV2: React.FC<NewConversationModalV2Props> = ({
                     </div>
                     <div className="group-v2-info">
                       <div className="group-v2-header-row">
-                        <span className="group-v2-name">{group.groupName}</span>
+                        <span className="group-v2-name">{group.group_name}</span>
                         <span className={`group-level-badge level-${group.level}`}>
                           Level {group.level}
                         </span>
                       </div>
                       <div className="group-v2-leader">
-                        <Shield size={12} className="leader-shield-icon" />
-                        <span>Leader: <strong>{group.leader}</strong></span>
-                        <span className="group-member-count-pill">{group.memberCount} members</span>
+                        <span>{group.type === "mentor" ? "Mentor" : "Supervisor"} Group</span>
+                        <span className="group-member-count-pill">{group.member_count} members</span>
+                        {group.unread_count > 0 && (
+                          <span className="unread-badge-v2">{group.unread_count}</span>
+                        )}
                       </div>
-                      {group.members && (
-                        <div className="group-v2-members-preview" title={group.members}>
-                          {group.members}
+                      {group.last_message_text && (
+                        <div className="group-v2-members-preview">
+                          {group.last_message_text}
                         </div>
                       )}
                     </div>

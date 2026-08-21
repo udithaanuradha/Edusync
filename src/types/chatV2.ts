@@ -47,3 +47,34 @@ export interface ReadReceiptPayload {
   sender_id: number;
   reader_id: number;
 }
+
+// Group chat (supervisor<->group, mentor<->group) — a separate shape from
+// MessageV2/ConversationV2 above since a group message has no single
+// receiver and a group conversation has no single "partner".
+export interface GroupConversationV2 {
+  conversation_id: number;
+  type: 'supervisor' | 'mentor';
+  project_group_id: number;
+  group_name: string;
+  level: number;
+  member_count: number;
+  last_message_text: string | null;
+  last_message_time: string | null;
+  last_sender_id: number | null;
+  unread_count: number;
+}
+
+export interface GroupMessageV2 {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  sender_role: string;
+  group_conversation_id: number;
+  message_text: string;
+  created_at: string;
+}
+
+export interface GroupSocketMessagePayload {
+  conversation_id: number;
+  message_text: string;
+}
