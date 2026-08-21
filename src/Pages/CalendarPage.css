@@ -541,6 +541,47 @@
   color: #dc2626;
 }
 
+.supervisor-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.supervisor-search-input:focus {
+  outline: none;
+  border-color: #1d4ed8;
+}
+
+.supervisor-picker-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supervisor-dept-group + .supervisor-dept-group {
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.supervisor-dept-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.supervisor-dept-label span {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .supervisor-picker {
   display: flex;
   flex-wrap: wrap;
