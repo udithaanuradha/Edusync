@@ -430,50 +430,13 @@
   cursor: not-allowed;
 }
 
-/* ── Toolbar: Search & Filter Chips ────────────────────────────────────────── */
+/* ── Toolbar: Filter Chips ─────────────────────────────────────────────────── */
 
 .mentor-announcements-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-}
-
-.mentor-search-box {
-  position: relative;
-  flex: 1;
-  min-width: 280px;
-}
-
-.mentor-search-box .search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  pointer-events: none;
-}
-
-.mentor-search-box input {
-  width: 100%;
-  padding: 10px 14px 10px 38px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #0f172a;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.mentor-search-box input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-}
-
-.mentor-search-box input::placeholder {
-  color: #94a3b8;
 }
 
 .mentor-filter-chips {
