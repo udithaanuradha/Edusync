@@ -447,9 +447,11 @@
 }
 
 .send-btn-v2 {
+  box-sizing: border-box;
+  flex: 0 0 40px;
   width: 40px;
   height: 40px;
-  min-width: 40px;
+  padding: 0;
   border-radius: 50%;
   background: #2563eb;
   color: #ffffff;
@@ -459,8 +461,13 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
-  flex-shrink: 0;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+}
+
+.send-btn-v2 svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
 }
 
 .send-btn-v2:hover:not(:disabled) {
@@ -468,9 +475,14 @@
   transform: scale(1.05);
 }
 
+.send-btn-v2:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
 .send-btn-v2:disabled {
-  background: #e2e8f0;
+  background: #f1f5f9;
   color: #94a3b8;
+  border: 1px solid #e2e8f0;
   box-shadow: none;
   cursor: not-allowed;
 }
