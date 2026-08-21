@@ -6,10 +6,10 @@ import "./CommunicationPageV2.css";
 
 const CommunicationPageV2: React.FC = () => {
   return (
-    <div className="v2-comm-page-container">
-      <Header />
-      <div className="v2-comm-page-main">
-        <Sidebar />
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-viewport">
+        <Header />
         <main className="v2-comm-page-content">
           <ChatWindowV2 title="Real-Time Messages (V2)" />
         </main>
