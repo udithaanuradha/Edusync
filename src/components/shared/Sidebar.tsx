@@ -80,11 +80,9 @@ const Sidebar = () => {
       icon: MessageSquare,
       label: "Communication",
     },
-    {
-      path: "/dashboard/communication-v2",
-      icon: MessageSquare,
-      label: "Communication (V2)",
-    },
+    // "Communication (V2)" link removed — both routes render the same chat
+    // now (see App.tsx), so a second nav entry was pure duplication. The
+    // /dashboard/communication-v2 route itself is untouched, just unlinked.
     { path: announcementsPath, icon: ClipboardList, label: "Announcements" },
     {
       path: "/dashboard/project-delays",
@@ -97,7 +95,11 @@ const Sidebar = () => {
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-header">
         <div className="logo-container">
-          <div className="logo-icon">E</div>
+          <img 
+            src="/edusync-logo.svg" 
+            alt="EduSync Logo" 
+            style={{ width: "38px", height: "38px", borderRadius: "8px", flexShrink: 0 }} 
+          />
           {!collapsed && <span className="logo-text">EduSync</span>}
         </div>
         <button

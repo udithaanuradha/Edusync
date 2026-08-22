@@ -18,6 +18,19 @@ type SupervisorOption = {
   id: number;
   name: string;
   email: string;
+  academic_unit?: string;
+};
+
+// Lecturer/supervisor records store a raw department code (IT/IDS/CM — see
+// SignUpPage.tsx's lecturer option list); IDS displays as "ITM" here to
+// match the department groups the coordinator actually thinks in.
+const DEPARTMENT_GROUPS = ["IT", "CM", "ITM"] as const;
+const getSupervisorDepartment = (unit?: string): (typeof DEPARTMENT_GROUPS)[number] | "Other" => {
+  const clean = String(unit || "").trim().toUpperCase();
+  if (clean === "IT") return "IT";
+  if (clean === "CM") return "CM";
+  if (clean === "IDS" || clean === "ITM") return "ITM";
+  return "Other";
 };
 
 type GroupOption = {
@@ -263,6 +276,7 @@ const CalendarPage: React.FC = () => {
   const [supervisors, setSupervisors] = useState<SupervisorOption[]>([]);
   const [supervisorsLoading, setSupervisorsLoading] = useState(false);
   const [supervisorsError, setSupervisorsError] = useState<string | null>(null);
+  const [supervisorSearchQuery, setSupervisorSearchQuery] = useState("");
   const [groups, setGroups] = useState<GroupOption[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState<string | null>(null);
@@ -398,10 +412,12 @@ const CalendarPage: React.FC = () => {
               item.name ?? item.full_name ?? item.fullName ?? "",
             ).trim();
             const email = String(item.email ?? "").trim();
+            const academic_unit = String(item.academic_unit ?? "").trim() || undefined;
 
             if (!Number.isFinite(id) || !name) return null;
 
-            return { id, name, email };
+            const supervisor: SupervisorOption = { id, name, email, academic_unit };
+            return supervisor;
           })
           .filter((item): item is SupervisorOption => item !== null);
 
@@ -640,6 +656,28 @@ const CalendarPage: React.FC = () => {
       ),
     [scheduledPanels],
   );
+
+  // Evaluator picker: filter by the search box, then group by department so
+  // a long supervisor list is actually navigable (IT/CM/ITM, in that order,
+  // with any unrecognized/missing department bucketed last).
+  const groupedSupervisors = useMemo(() => {
+    const query = supervisorSearchQuery.trim().toLowerCase();
+    const filtered = query
+      ? supervisors.filter((s) => s.name.toLowerCase().includes(query))
+      : supervisors;
+
+    const groups = new Map<string, SupervisorOption[]>();
+    filtered.forEach((supervisor) => {
+      const dept = getSupervisorDepartment(supervisor.academic_unit);
+      if (!groups.has(dept)) groups.set(dept, []);
+      groups.get(dept)!.push(supervisor);
+    });
+
+    const order = [...DEPARTMENT_GROUPS, "Other"];
+    return order
+      .filter((dept) => groups.has(dept))
+      .map((dept) => ({ department: dept, members: groups.get(dept)! }));
+  }, [supervisors, supervisorSearchQuery]);
 
   const displayedSupervisorPanels = useMemo(() => {
     if (!selectedCalendarDate) return supervisorAssignedPanels;
@@ -1160,6 +1198,17 @@ const CalendarPage: React.FC = () => {
                             <span className="panel-time">
                               {panel.time} • {panel.duration}
                             </span>
+                            {panel.meetingLink && (
+                              <a
+                                href={panel.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="panel-meeting-link"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                🔗 Join Meeting
+                              </a>
+                            )}
                             {isCoordinator && (
                               <div className="panel-action-row">
                                 <button
@@ -1314,7 +1363,16 @@ const CalendarPage: React.FC = () => {
 
                 <label className="drawer-field">
                   <span>Selected Evaluators</span>
-                  <div className="supervisor-picker">
+                  {!supervisorsLoading && !supervisorsError && supervisors.length > 0 && (
+                    <input
+                      type="text"
+                      className="supervisor-search-input"
+                      placeholder="Search supervisors by name..."
+                      value={supervisorSearchQuery}
+                      onChange={(event) => setSupervisorSearchQuery(event.target.value)}
+                    />
+                  )}
+                  <div className="supervisor-picker-groups">
                     {supervisorsLoading ? (
                       <div className="drawer-help">Loading supervisors...</div>
                     ) : supervisorsError ? (
@@ -1325,21 +1383,34 @@ const CalendarPage: React.FC = () => {
                       <div className="drawer-help">
                         No supervisors available.
                       </div>
+                    ) : groupedSupervisors.length === 0 ? (
+                      <div className="drawer-help">
+                        No supervisors match "{supervisorSearchQuery}".
+                      </div>
                     ) : (
-                      supervisors.map((supervisor) => (
-                        <button
-                          key={supervisor.id}
-                          type="button"
-                          className={
-                            selectedSupervisorIds.includes(supervisor.id)
-                              ? "supervisor-chip active"
-                              : "supervisor-chip"
-                          }
-                          onClick={() => toggleSupervisor(supervisor.id)}
-                        >
-                          <Users size={13} />
-                          <span>{supervisor.name}</span>
-                        </button>
+                      groupedSupervisors.map(({ department, members }) => (
+                        <div key={department} className="supervisor-dept-group">
+                          <div className="supervisor-dept-label">
+                            {department} <span>({members.length})</span>
+                          </div>
+                          <div className="supervisor-picker">
+                            {members.map((supervisor) => (
+                              <button
+                                key={supervisor.id}
+                                type="button"
+                                className={
+                                  selectedSupervisorIds.includes(supervisor.id)
+                                    ? "supervisor-chip active"
+                                    : "supervisor-chip"
+                                }
+                                onClick={() => toggleSupervisor(supervisor.id)}
+                              >
+                                <Users size={13} />
+                                <span>{supervisor.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       ))
                     )}
                   </div>

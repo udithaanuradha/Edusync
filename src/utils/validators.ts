@@ -43,30 +43,102 @@ export function validateRole(role: string): boolean {
 
 /**
  * Validates email format
+ * Must be valid email format e.g. medini@gmail.com or edirisinghmw.23@uom.lk
  */
 export function validateEmail(email: string): string {
   if (!email || typeof email !== 'string') {
     return 'Email is required';
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
-    return 'Invalid email format';
+  const trimmed = email.trim();
+  // Valid email pattern with proper domain and TLD (e.g., @gmail.com or @uom.lk)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(trimmed)) {
+    return 'Please enter a valid email address (e.g., name@gmail.com or name.23@uom.lk)';
   }
 
   return '';
 }
 
 /**
- * Validates password strength (minimum 6 characters)
+ * Validates phone number format
+ * Must contain exactly 10 digits (e.g., 07XXXXXXXX), letters rejected
+ */
+export function validatePhone(phone: string): string {
+  if (!phone || typeof phone !== 'string') {
+    return ''; // Phone is optional if not provided
+  }
+
+  const trimmed = phone.trim();
+  if (trimmed === '') return '';
+
+  // Check if it contains only digits and is exactly 10 digits long
+  if (!/^\d+$/.test(trimmed)) {
+    return 'Phone number must contain only numbers (letters and symbols are rejected)';
+  }
+
+  if (trimmed.length !== 10) {
+    return 'Phone number must contain exactly 10 digits (e.g., 07XXXXXXXX)';
+  }
+
+  return '';
+}
+
+/**
+ * Password strength checklist helper
+ */
+export interface PasswordCriteria {
+  minLength: boolean;
+  hasUpper: boolean;
+  hasLower: boolean;
+  hasNumber: boolean;
+  hasSpecial: boolean;
+  isValid: boolean;
+}
+
+export function getPasswordCriteria(password: string): PasswordCriteria {
+  const p = password || '';
+  const minLength = p.length >= 8;
+  const hasUpper = /[A-Z]/.test(p);
+  const hasLower = /[a-z]/.test(p);
+  const hasNumber = /[0-9]/.test(p);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>_~`+=\\/\-[\]]/.test(p);
+
+  return {
+    minLength,
+    hasUpper,
+    hasLower,
+    hasNumber,
+    hasSpecial,
+    isValid: minLength && hasUpper && hasLower && hasNumber && hasSpecial,
+  };
+}
+
+/**
+ * Validates password strength:
+ * Minimum 8 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special character
  */
 export function validatePassword(password: string): string {
   if (!password || typeof password !== 'string') {
     return 'Password is required';
   }
 
-  if (password.length < 6) {
-    return 'Password must be at least 6 characters long';
+  const criteria = getPasswordCriteria(password);
+
+  if (!criteria.minLength) {
+    return 'Password must be at least 8 characters long';
+  }
+  if (!criteria.hasUpper) {
+    return 'Password must contain at least 1 uppercase letter (A-Z)';
+  }
+  if (!criteria.hasLower) {
+    return 'Password must contain at least 1 lowercase letter (a-z)';
+  }
+  if (!criteria.hasNumber) {
+    return 'Password must contain at least 1 number (0-9)';
+  }
+  if (!criteria.hasSpecial) {
+    return 'Password must contain at least 1 special character (!@#$%^&*)';
   }
 
   return '';
@@ -76,6 +148,9 @@ export function validatePassword(password: string): string {
  * Validates password confirmation
  */
 export function validatePasswordMatch(password: string, confirmPassword: string): string {
+  if (!confirmPassword) {
+    return 'Please confirm your password';
+  }
   if (password !== confirmPassword) {
     return 'Passwords do not match';
   }
@@ -105,7 +180,8 @@ export function validateName(name: string, fieldName: string): string {
 }
 
 /**
- * Validates university ID format (alphanumeric, minimum 3 characters)
+ * Validates university ID format:
+ * Must contain 6 digits followed by a character (e.g., 235020G or XX1234K)
  */
 export function validateUniversityId(universityId: string): string {
   if (!universityId || typeof universityId !== 'string') {
@@ -113,12 +189,14 @@ export function validateUniversityId(universityId: string): string {
   }
 
   const trimmed = universityId.trim();
-  if (trimmed.length < 3) {
-    return 'University ID must be at least 3 characters';
+  if (!trimmed) {
+    return 'University ID is required for students';
   }
 
-  if (!/^[a-zA-Z0-9]+$/.test(trimmed)) {
-    return 'University ID must be alphanumeric (letters and numbers only)';
+  // Structure check: 6 digits followed by 1 letter (total 7 chars, e.g. 235020G)
+  const uniIdRegex = /^\d{6}[a-zA-Z]$/;
+  if (!uniIdRegex.test(trimmed)) {
+    return 'University ID must contain 6 numbers followed by 1 letter';
   }
 
   return '';
@@ -134,6 +212,7 @@ export interface SignUpValidationResult {
     firstName?: string;
     lastName?: string;
     email?: string;
+    phone?: string;
     password?: string;
     confirmPassword?: string;
     role?: string;
@@ -146,6 +225,7 @@ export function validateSignUpForm(formData: {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   password: string;
   confirmPassword: string;
   role: string;
@@ -165,6 +245,12 @@ export function validateSignUpForm(formData: {
   // Validate email
   const emailError = validateEmail(formData.email);
   if (emailError) fieldErrors.email = emailError;
+
+  // Validate phone (if provided or role requirements)
+  if (formData.phone && formData.phone.trim() !== '') {
+    const phoneError = validatePhone(formData.phone);
+    if (phoneError) fieldErrors.phone = phoneError;
+  }
 
   // Validate role
   if (!validateRole(formData.role)) {
@@ -212,6 +298,8 @@ export function validateField(
       return validateName(value, 'Last name');
     case 'email':
       return validateEmail(value);
+    case 'phone':
+      return validatePhone(value);
     case 'password':
       return validatePassword(value);
     case 'confirmPassword':
@@ -230,3 +318,4 @@ export function validateField(
       return '';
   }
 }
+

@@ -13,8 +13,54 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard' }) => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [feedbackCount, setFeedbackCount] = useState(0);
 
   const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
+
+  // Red notification badge — count of unseen supervisor feedback on the
+  // student's own group milestones. Students only; other roles never see
+  // this badge since there's nothing to fetch for them.
+  useEffect(() => {
+    if (!user?.id || user.role !== 'student') {
+      setFeedbackCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadFeedbackCount = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`http://localhost:5000/api/milestones/feedback/unseen-count/${user.id}`, {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+            'X-User-Id': String(user.id),
+            'X-User-Role': user.role,
+          },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data.success) {
+          setFeedbackCount(Number(data.count) || 0);
+        }
+      } catch {
+        // Silently ignore — the badge just stays at its last known count.
+      }
+    };
+
+    loadFeedbackCount();
+    // Poll periodically in case feedback arrives while the header is mounted.
+    const intervalId = setInterval(loadFeedbackCount, 60000);
+    // Also refresh immediately when ProjectManagementPage marks feedback seen,
+    // so the badge clears without waiting for the next poll.
+    window.addEventListener('supervisor-feedback-seen', loadFeedbackCount);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+      window.removeEventListener('supervisor-feedback-seen', loadFeedbackCount);
+    };
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -61,9 +107,13 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard' }) => {
             {user?.name || 'User'}
           </span>
 
-          <div className="notification-wrapper">
+          <div className="notification-wrapper" title={feedbackCount > 0 ? 'New supervisor feedback' : undefined}>
             <Bell size={20} className="bell-icon" />
-            <span className="notification-badge">2</span>
+            {feedbackCount > 0 && (
+              <span className="notification-badge notification-badge-feedback">
+                {feedbackCount > 9 ? '9+' : feedbackCount}
+              </span>
+            )}
           </div>
 
           <div className="account-menu-wrap">

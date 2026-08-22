@@ -28,6 +28,7 @@ import AnnouncementsPage from "./pages/CoordinatorPages/AnnouncementsPage";
 import SupervisorAnnouncementsPage from "./pages/SupervisorPages/SupervisorAnnouncementsPage";
 import MentorAnnouncementsPage from "./pages/MentorPages/MentorAnnouncementsPage";
 import AdminAnnouncements from "./pages/AdminPages/AdminAnnouncements";
+import StudentAnnouncementsPage from "./pages/StudentPages/StudentAnnouncementsPage";
 import CommunicationPageV2 from "./pages/shared/CommunicationPageV2";
 import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
@@ -35,9 +36,11 @@ import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import Level3mentor from "./pages/MentorPages/Level3mentor";
 import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
 import MentorSetupForm from "./pages/auth/MentorSetupForm";
+import ResetPasswordForm from "./pages/auth/ResetPasswordForm";
 import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
 import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
+import AdminProjectDelaysPage from "./pages/AdminPages/AdminProjectDelaysPage";
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -63,6 +66,7 @@ function App() {
       <Route path="/signup" element={<SignUpPage />} />
 
       <Route path="/mentor-setup/:token" element={<MentorSetupForm />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordForm />} />
 
       {/* Protected Dashboard Routes */}
       <Route
@@ -286,6 +290,8 @@ function App() {
             <SupervisorAnnouncementsPage />
           ) : userObj?.role === "mentor" ? (
             <MentorAnnouncementsPage />
+          ) : userObj?.role === "student" ? (
+            <StudentAnnouncementsPage />
           ) : (
             <Navigate to="/login" />
           )
@@ -362,14 +368,27 @@ function App() {
         element={userObj ? <ProfileSettingsPage /> : <Navigate to="/login" />}
       />
 
-      {/* Project Delays Route (Mentor Specific) */}
+      {/* Project Delays Routes */}
       <Route
         path="/dashboard/project-delays"
         element={
-          userObj?.role === "mentor" ? (
+          userObj?.role === "admin" ? (
+            <AdminProjectDelaysPage />
+          ) : userObj?.role === "mentor" ? (
             <MentorProjectDelaysPage />
           ) : userObj ? (
             <Navigate to="/dashboard" />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
+        path="/admin/project-delays"
+        element={
+          userObj?.role === "admin" ? (
+            <AdminProjectDelaysPage />
           ) : (
             <Navigate to="/login" />
           )
