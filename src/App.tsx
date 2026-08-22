@@ -28,10 +28,7 @@ import AnnouncementsPage from "./pages/CoordinatorPages/AnnouncementsPage";
 import SupervisorAnnouncementsPage from "./pages/SupervisorPages/SupervisorAnnouncementsPage";
 import MentorAnnouncementsPage from "./pages/MentorPages/MentorAnnouncementsPage";
 import AdminAnnouncements from "./pages/AdminPages/AdminAnnouncements";
-import SupervisorCommunicationPage from "./pages/SupervisorPages/SupervisorCommunicationPage";
-import CommunicationPage from "./pages/shared/CommunicationPage";
 import CommunicationPageV2 from "./pages/shared/CommunicationPageV2";
-import AdminCommunicationPage from "./pages/AdminPages/AdminCommunicationPage";
 import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
@@ -306,21 +303,13 @@ function App() {
         }
       />
 
-      {/* Communication Routes */}
+      {/* Communication Routes — the old per-role pages (AdminCommunicationPage/
+          SupervisorCommunicationPage/CommunicationPage) are gone; every role
+          now lands on the same real-time V2 chat /dashboard/communication-v2
+          already used. */}
       <Route
         path="/dashboard/communication"
-        element={
-          userObj?.role === "admin" ? (
-            <AdminCommunicationPage />
-          ) : userObj?.role === "lecturer" &&
-            (userObj?.designation === "supervisor" || effectiveRole === "supervisor") ? (
-            <SupervisorCommunicationPage />
-          ) : userObj ? (
-            <CommunicationPage />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
+        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
       />
 
       <Route
@@ -350,7 +339,7 @@ function App() {
         element={
           userObj?.role === "lecturer" &&
           (userObj?.designation === "supervisor" || effectiveRole === "supervisor") ? (
-            <SupervisorCommunicationPage />
+            <CommunicationPageV2 />
           ) : (
             <Navigate to="/login" />
           )
