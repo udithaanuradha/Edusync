@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/shared/Sidebar";
 import Header from "../../components/shared/Header";
 import SupervisorSidebar from "../../components/supervisor/SupervisorSidebar";
+import SupervisorFeedback from "../../components/supervisor/SupervisorFeedback";
 import "./SupervisorDashboard.css";
 import "./SupervisorLevelPage.css";
 
@@ -803,10 +804,20 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   const isPastDue = (dueDate?: string): boolean =>
     Boolean(dueDate) && new Date(dueDate as string).getTime() < Date.now();
 
-  const renderDelayedBadge = (dueDate: string | undefined, isDone: boolean) =>
-    isPastDue(dueDate) && !isDone ? (
-      <span className="supervisor-pill supervisor-pill-delayed">Delayed</span>
-    ) : null;
+  const daysLate = (dueDate: string): number =>
+    Math.max(1, Math.ceil((Date.now() - new Date(dueDate).getTime()) / 86400000));
+
+  // Always shows a status — "On time" or "Delayed Nd" — rather than only
+  // appearing when late, so the state is visible at a glance either way.
+  const renderDelayedBadge = (dueDate: string | undefined, isDone: boolean) => {
+    if (!dueDate) return null;
+    const delayed = isPastDue(dueDate) && !isDone;
+    return (
+      <span className={`supervisor-pill ${delayed ? "supervisor-pill-delayed" : "supervisor-pill-on-time"}`}>
+        {delayed ? `Delayed ${daysLate(dueDate)}d` : "On time"}
+      </span>
+    );
+  };
 
   // Milestones have a real start_date; student_tasks has no start-date
   // column, so task rows pass created_at as their "Start" stand-in.
@@ -894,6 +905,11 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                     </span>
                     {renderDelayedBadge(m.due_date, m.status === "APPROVED")}
                     {renderDateRange(m.start_date, m.due_date)}
+                    <SupervisorFeedback
+                      kind="milestone"
+                      groupId={progressDetail.group.id}
+                      milestoneTitle={m.title}
+                    />
                   </div>
                   {renderProgressMeter(m.percent, `${m.completed}/${m.total} tasks`)}
                 </div>
@@ -908,31 +924,40 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             <p className="supervisor-level-muted">No members in this group.</p>
           ) : (
             <div className="supervisor-progress-list">
-              {progressDetail.members.map((member) => (
-                <div
-                  key={member.id}
-                  className="supervisor-progress-row supervisor-progress-row-clickable"
-                  onClick={() => setSelectedStudentId(member.id)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="supervisor-progress-row-head">
-                    <span className="supervisor-progress-row-title">
-                      {member.name}
-                      {(member.is_leader === 1 || member.is_leader === true) && (
-                        <span className="supervisor-pill supervisor-pill-leader">Leader</span>
+              {progressDetail.members.map((member) => {
+                const delayedCount = progressDetail.tasks.filter(
+                  (t) => t.assigned_to === member.id && isPastDue(t.due_date) && t.status !== "COMPLETED",
+                ).length;
+
+                return (
+                  <div
+                    key={member.id}
+                    className="supervisor-progress-row supervisor-progress-row-clickable"
+                    onClick={() => setSelectedStudentId(member.id)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="supervisor-progress-row-head">
+                      <span className="supervisor-progress-row-title">
+                        {member.name}
+                        {(member.is_leader === 1 || member.is_leader === true) && (
+                          <span className="supervisor-pill supervisor-pill-leader">Leader</span>
+                        )}
+                      </span>
+                      <span className={`supervisor-pill ${delayedCount > 0 ? "supervisor-pill-delayed" : "supervisor-pill-on-time"}`}>
+                        {delayedCount > 0 ? `${delayedCount} task(s) delayed` : "On time"}
+                      </span>
+                      {member.university_id && (
+                        <span className="supervisor-progress-row-due">{member.university_id}</span>
                       )}
-                    </span>
-                    {member.university_id && (
-                      <span className="supervisor-progress-row-due">{member.university_id}</span>
+                    </div>
+                    {renderProgressMeter(
+                      member.percent,
+                      `${member.completed}/${member.total} assigned tasks completed`,
                     )}
                   </div>
-                  {renderProgressMeter(
-                    member.percent,
-                    `${member.completed}/${member.total} assigned tasks completed`,
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -949,6 +974,13 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
         </span>
         {renderDelayedBadge(task.due_date, task.status === "COMPLETED")}
         {renderDateRange(task.created_at, task.due_date)}
+        <SupervisorFeedback
+          kind="task"
+          studentId={task.assigned_to}
+          studentName={task.assigned_to_name}
+          taskName={task.task_name}
+          milestoneTitle={task.milestone_title}
+        />
       </div>
       <p className="supervisor-progress-row-subtitle">{subtitle}</p>
       {task.description && (
