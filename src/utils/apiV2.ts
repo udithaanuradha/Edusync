@@ -140,12 +140,13 @@ export const fetchRecipientsV2 = async (role?: string, currentUserId?: number): 
     });
 
     if (!response.ok) {
-      // Fallback to legacy endpoint if V2 not yet running
-      const legacyUrl = role === "group_leader"
-        ? "http://localhost:5000/api/messages/leaders"
-        : `http://localhost:5000/api/users?role=${role === "supervisor" || role === "coordinator" ? "lecturer" : role}`;
-      
-      const legacyRes = await fetch(legacyUrl, { headers: getAuthHeaders() });
+      // Fallback to the plain users endpoint if the V2 recipients call fails
+      // (group leaders are just students — no dedicated legacy endpoint for them).
+      const fallbackRole = role === "group_leader"
+        ? "student"
+        : role === "supervisor" || role === "coordinator" ? "lecturer" : role;
+
+      const legacyRes = await fetch(`http://localhost:5000/api/users?role=${fallbackRole}`, { headers: getAuthHeaders() });
       if (legacyRes.ok) {
         const legacyData = await legacyRes.json();
         return Array.isArray(legacyData) ? legacyData : legacyData.data || [];

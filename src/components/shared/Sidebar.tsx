@@ -80,11 +80,9 @@ const Sidebar = () => {
       icon: MessageSquare,
       label: "Communication",
     },
-    {
-      path: "/dashboard/communication-v2",
-      icon: MessageSquare,
-      label: "Communication (V2)",
-    },
+    // "Communication (V2)" link removed — both routes render the same chat
+    // now (see App.tsx), so a second nav entry was pure duplication. The
+    // /dashboard/communication-v2 route itself is untouched, just unlinked.
     { path: announcementsPath, icon: ClipboardList, label: "Announcements" },
     {
       path: "/dashboard/project-delays",
