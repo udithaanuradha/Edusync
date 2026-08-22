@@ -3,6 +3,32 @@
    Executive, modern, scannable dashboard styling for Mentors.
 ================================================================ */
 
+/* ── Page Header Container ───────────────────────────────────── */
+.mentor-page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;    /* RIGHT-align the title and subtitle */
+  text-align: right;
+  margin-bottom: 24px;
+  width: 100%;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mentor-page-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
+}
+
+.mentor-page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
 .md-group-picker-top {
   display: flex;
   align-items: center;
@@ -505,13 +531,13 @@
 }
 
 .md-count-badge.ongoing.active {
-  background: #fef3c7;
-  color: #b45309;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .md-count-badge.yet.active {
-  background: #f1f5f9;
-  color: #475569;
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .md-total-assigned {

@@ -196,15 +196,15 @@
 }
 
 .gt-stat-pill.ongoing {
-  background: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
 }
 
 .gt-stat-pill.yet {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .gt-stat-dot {
@@ -215,8 +215,8 @@
 }
 
 .gt-stat-dot.completed { background: #22c55e; }
-.gt-stat-dot.ongoing   { background: #f59e0b; }
-.gt-stat-dot.yet       { background: #cbd5e1; }
+.gt-stat-dot.ongoing   { background: #3b82f6; }
+.gt-stat-dot.yet       { background: #f59e0b; }
 
 .gt-overall-pending {
   display: flex;
@@ -744,8 +744,8 @@
 }
 
 .gt-col-label.completed { color: #15803d; border-color: #22c55e; }
-.gt-col-label.ongoing   { color: #b45309; border-color: #f59e0b; }
-.gt-col-label.yet       { color: #64748b; border-color: #cbd5e1; }
+.gt-col-label.ongoing   { color: #1d4ed8; border-color: #3b82f6; }
+.gt-col-label.yet       { color: #b45309; border-color: #f59e0b; }
 
 .gt-col-count-chip {
   font-size: 10px;
@@ -757,7 +757,8 @@
 }
 
 .gt-col-label.completed .gt-col-count-chip { background: #dcfce7; color: #15803d; }
-.gt-col-label.ongoing .gt-col-count-chip   { background: #fef3c7; color: #b45309; }
+.gt-col-label.ongoing .gt-col-count-chip   { background: #dbeafe; color: #1d4ed8; }
+.gt-col-label.yet .gt-col-count-chip       { background: #fef3c7; color: #b45309; }
 
 .gt-no-tasks-box {
   padding: 12px;
@@ -794,8 +795,8 @@
 }
 
 .gt-task-indicator.completed { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
-.gt-task-indicator.ongoing   { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
-.gt-task-indicator.yet       { background: #94a3b8; box-shadow: 0 0 0 2px #f1f5f9; }
+.gt-task-indicator.ongoing   { background: #3b82f6; box-shadow: 0 0 0 2px #dbeafe; }
+.gt-task-indicator.yet       { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
 
 .gt-task-placeholder-bar {
   height: 8px;

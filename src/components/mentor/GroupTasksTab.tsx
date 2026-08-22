@@ -102,13 +102,13 @@ const FeedbackPanel: React.FC<{
         <div className="gt-feedback-submitted">
           <div className="gt-feedback-submitted-label">
             <MessageSquare size={11} />
-            <span>Your feedback (Saved in Database)</span>
+            <span>Your Feedback</span>
           </div>
           <p className="gt-feedback-submitted-text">{submitted}</p>
           <button
             className="gt-feedback-clear-btn"
             onClick={() => onClear(feedbackKey, taskId)}
-            title="Clear feedback from database"
+            title="Clear feedback"
           >
             <X size={11} /> Clear
           </button>
@@ -119,7 +119,7 @@ const FeedbackPanel: React.FC<{
       <div className="gt-feedback-input-row">
         <textarea
           className="gt-feedback-textarea"
-          placeholder="Write your mentor feedback for this task (saves to database)…"
+          placeholder="Write your mentor feedback for this task…"
           value={draft}
           rows={3}
           onChange={(e) => onDraftChange(feedbackKey, e.target.value)}
@@ -128,7 +128,7 @@ const FeedbackPanel: React.FC<{
           className={`gt-feedback-send-btn ${draft.trim() ? 'active' : ''}`}
           disabled={!draft.trim()}
           onClick={() => onSubmit(feedbackKey, taskId)}
-          title="Save feedback to database"
+          title="Send feedback"
         >
           <Send size={13} />
           <span>Send</span>
@@ -315,139 +315,139 @@ const MemberCard: React.FC<{
   onSubmit,
   onClear,
 }) => {
-  // Milestone-scoped counts
-  const total =
-    member.tasks.completed.length +
-    member.tasks.ongoing.length +
-    member.tasks.yetToStart.length;
+    // Milestone-scoped counts
+    const total =
+      member.tasks.completed.length +
+      member.tasks.ongoing.length +
+      member.tasks.yetToStart.length;
 
-  const pct = total > 0
-    ? Math.round((member.tasks.completed.length / total) * 100)
-    : 0;
+    const pct = total > 0
+      ? Math.round((member.tasks.completed.length / total) * 100)
+      : 0;
 
-  // ── Overall Project Contribution Math ──
-  // Calculate how many completed tasks this student has across ALL milestones in the project
-  const overallCompletedCount = (allGroupTasks || []).filter((t: any) => {
-    const isAssigned =
-      Number(t.assigned_to) === Number(member.member_id) ||
-      (t.assigned_to_name && t.assigned_to_name.trim().toLowerCase() === member.name.trim().toLowerCase());
-    const isDone = String(t.status || '').toUpperCase().trim() === 'COMPLETED';
-    return isAssigned && isDone;
-  }).length;
+    // ── Overall Project Contribution Math ──
+    // Calculate how many completed tasks this student has across ALL milestones in the project
+    const overallCompletedCount = (allGroupTasks || []).filter((t: any) => {
+      const isAssigned =
+        Number(t.assigned_to) === Number(member.member_id) ||
+        (t.assigned_to_name && t.assigned_to_name.trim().toLowerCase() === member.name.trim().toLowerCase());
+      const isDone = String(t.status || '').toUpperCase().trim() === 'COMPLETED';
+      return isAssigned && isDone;
+    }).length;
 
-  // Percentage of total project tasks completed by this student
-  const projectContributionPct = totalGroupTasks > 0
-    ? Math.round((overallCompletedCount / totalGroupTasks) * 100)
-    : 0;
+    // Percentage of total project tasks completed by this student
+    const projectContributionPct = totalGroupTasks > 0
+      ? Math.round((overallCompletedCount / totalGroupTasks) * 100)
+      : 0;
 
-  const initials = member.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
+    const initials = member.name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase();
 
-  const isLeader = member.role === 'Leader';
+    const isLeader = member.role === 'Leader';
 
-  return (
-    <div className={`gt-member-card ${isLeader ? 'is-leader-card' : ''}`}>
-      {/* Header: avatar + name + overall contribution & milestone progress */}
-      <div className="gt-member-card-header">
-        <div className={`gt-member-avatar ${isLeader ? 'leader-avatar' : ''}`}>
-          {initials || '?'}
+    return (
+      <div className={`gt-member-card ${isLeader ? 'is-leader-card' : ''}`}>
+        {/* Header: avatar + name + overall contribution & milestone progress */}
+        <div className="gt-member-card-header">
+          <div className={`gt-member-avatar ${isLeader ? 'leader-avatar' : ''}`}>
+            {initials || '?'}
+          </div>
+
+          <div className="gt-member-name-block">
+            <div className="gt-member-title-row">
+              <p className="gt-member-name">{member.name || 'Member Name'}</p>
+              <span className={`gt-role-badge ${isLeader ? 'leader' : 'member'}`}>
+                {member.role}
+              </span>
+            </div>
+            {member.universityId && (
+              <p className="gt-member-subtitle">{member.universityId}</p>
+            )}
+          </div>
+
+          {/* Dual Metric: Overall Project Contribution + Active Milestone Progress */}
+          <div className="gt-member-progress-group">
+            {/* Overall Project Contribution Pill */}
+            {!hasPendingData && (
+              <div
+                className="gt-contribution-chip"
+                title={`${member.name} completed ${overallCompletedCount} of ${totalGroupTasks} total project tasks (${projectContributionPct}% overall project contribution)`}
+              >
+                <div className="gt-contrib-left">
+                  <TrendingUp size={12} className="gt-contrib-icon" />
+                  <span className="gt-contrib-label">Project Contribution</span>
+                </div>
+                <div className="gt-contrib-right">
+                  <span className="gt-contrib-badge">{projectContributionPct}%</span>
+                  <span className="gt-contrib-sub">({overallCompletedCount}/{totalGroupTasks} tasks)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Active Milestone Progress Bar */}
+            <div className="gt-mini-progress-wrap">
+              <div className="gt-mini-bar-track">
+                <div className="gt-mini-bar-fill" style={{ width: `${pct}%` }}></div>
+              </div>
+              <span className="gt-mini-pct">{pct}% milestone ({member.tasks.completed.length}/{total})</span>
+            </div>
+          </div>
         </div>
 
-        <div className="gt-member-name-block">
-          <div className="gt-member-title-row">
-            <p className="gt-member-name">{member.name || 'Member Name'}</p>
-            <span className={`gt-role-badge ${isLeader ? 'leader' : 'member'}`}>
-              {member.role}
+        {/* Three task columns */}
+        <div className="gt-task-columns">
+          <TaskColumn
+            label="Completed"
+            type="completed"
+            tasks={member.tasks.completed}
+            hasPendingData={hasPendingData}
+            memberId={member.member_id}
+            feedbackMap={feedbackMap}
+            onDraftChange={onDraftChange}
+            onSubmit={onSubmit}
+            onClear={onClear}
+          />
+          <TaskColumn
+            label="Ongoing"
+            type="ongoing"
+            tasks={member.tasks.ongoing}
+            hasPendingData={hasPendingData}
+            memberId={member.member_id}
+            feedbackMap={feedbackMap}
+            onDraftChange={onDraftChange}
+            onSubmit={onSubmit}
+            onClear={onClear}
+          />
+          <TaskColumn
+            label="Yet to Start"
+            type="yet"
+            tasks={member.tasks.yetToStart}
+            hasPendingData={hasPendingData}
+            memberId={member.member_id}
+            feedbackMap={feedbackMap}
+            onDraftChange={onDraftChange}
+            onSubmit={onSubmit}
+            onClear={onClear}
+          />
+        </div>
+
+        {/* Pending notice */}
+        {hasPendingData && (
+          <div className="gt-member-pending">
+            <span className="gt-pending-dot"></span>
+            <span className="gt-member-pending-text">
+              Task data pending — feedback will be available once tasks are assigned.
             </span>
           </div>
-          {member.universityId && (
-            <p className="gt-member-subtitle">{member.universityId}</p>
-          )}
-        </div>
-
-        {/* Dual Metric: Overall Project Contribution + Active Milestone Progress */}
-        <div className="gt-member-progress-group">
-          {/* Overall Project Contribution Pill */}
-          {!hasPendingData && (
-            <div
-              className="gt-contribution-chip"
-              title={`${member.name} completed ${overallCompletedCount} of ${totalGroupTasks} total project tasks (${projectContributionPct}% overall project contribution)`}
-            >
-              <div className="gt-contrib-left">
-                <TrendingUp size={12} className="gt-contrib-icon" />
-                <span className="gt-contrib-label">Project Contribution</span>
-              </div>
-              <div className="gt-contrib-right">
-                <span className="gt-contrib-badge">{projectContributionPct}%</span>
-                <span className="gt-contrib-sub">({overallCompletedCount}/{totalGroupTasks} tasks)</span>
-              </div>
-            </div>
-          )}
-
-          {/* Active Milestone Progress Bar */}
-          <div className="gt-mini-progress-wrap">
-            <div className="gt-mini-bar-track">
-              <div className="gt-mini-bar-fill" style={{ width: `${pct}%` }}></div>
-            </div>
-            <span className="gt-mini-pct">{pct}% milestone ({member.tasks.completed.length}/{total})</span>
-          </div>
-        </div>
+        )}
       </div>
-
-      {/* Three task columns */}
-      <div className="gt-task-columns">
-        <TaskColumn
-          label="Completed"
-          type="completed"
-          tasks={member.tasks.completed}
-          hasPendingData={hasPendingData}
-          memberId={member.member_id}
-          feedbackMap={feedbackMap}
-          onDraftChange={onDraftChange}
-          onSubmit={onSubmit}
-          onClear={onClear}
-        />
-        <TaskColumn
-          label="Ongoing"
-          type="ongoing"
-          tasks={member.tasks.ongoing}
-          hasPendingData={hasPendingData}
-          memberId={member.member_id}
-          feedbackMap={feedbackMap}
-          onDraftChange={onDraftChange}
-          onSubmit={onSubmit}
-          onClear={onClear}
-        />
-        <TaskColumn
-          label="Yet to Start"
-          type="yet"
-          tasks={member.tasks.yetToStart}
-          hasPendingData={hasPendingData}
-          memberId={member.member_id}
-          feedbackMap={feedbackMap}
-          onDraftChange={onDraftChange}
-          onSubmit={onSubmit}
-          onClear={onClear}
-        />
-      </div>
-
-      {/* Pending notice */}
-      {hasPendingData && (
-        <div className="gt-member-pending">
-          <span className="gt-pending-dot"></span>
-          <span className="gt-member-pending-text">
-            Task data pending — feedback will be available once tasks are assigned.
-          </span>
-        </div>
-      )}
-    </div>
-  );
-};
+    );
+  };
 
 /* ──────────────────────────────────────────────────────────────
    Main GroupTasksTab Component

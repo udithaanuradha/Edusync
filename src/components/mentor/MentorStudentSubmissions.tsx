@@ -255,7 +255,7 @@ const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ lev
             <FileText size={48} className="mss-empty-icon" />
             <h4>No Submissions Yet</h4>
             <p>
-              Students in your assigned group ({groupName}) haven't submitted any stage deliverables for Level {levelNumber} yet. Uploaded student reports will automatically appear here.
+              Students in your assigned group ({groupName}) haven't submitted any stage deliverables for Level {levelNumber} yet.
             </p>
           </div>
         </div>
