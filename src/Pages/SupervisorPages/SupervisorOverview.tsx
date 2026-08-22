@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MessageSquare, Users, Calendar, Megaphone } from 'lucide-react';
+import { User, MessageSquare, Users, Calendar, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import { useAuth } from '../../context/AuthContext';
 import { useSocketV2 } from '../../hooks/useSocketV2';
@@ -76,15 +76,44 @@ type GroupItem = {
   members: string;
 };
 
-// Shape returned by GET /api/supervice-st-progress/group/:groupId — only the
-// fields this widget actually renders (overall % + a short student list).
+// Shape returned by GET /api/supervice-st-progress/group/:groupId — the
+// same payload SupervisorLevelPage's Progress tab uses, just picking up the
+// extra milestone dates / raw tasks here too so this widget can show
+// on-time-vs-delayed status without any backend change.
+type ActiveGroupMilestone = {
+  id: number;
+  title: string;
+  status: string;
+  due_date?: string;
+  total: number;
+  completed: number;
+  percent: number;
+};
+
+type ActiveGroupTask = {
+  id: number;
+  assigned_to: number | string;
+  due_date?: string;
+  status: string;
+};
+
 type ActiveGroupProgress = {
   overall: { total: number; completed: number; percent: number };
-  milestones: { status: string }[];
+  milestones: ActiveGroupMilestone[];
   members: { id: number | string; name: string; total: number; completed: number; percent: number }[];
+  tasks: ActiveGroupTask[];
 };
 
 const PROGRESS_API_BASE = "http://localhost:5000/api/supervice-st-progress";
+
+// A milestone/task counts as delayed once its due date has passed and it
+// hasn't reached its "done" state (APPROVED for a milestone, COMPLETED for
+// a task) — same rule SupervisorLevelPage's Progress tab uses.
+const isPastDue = (dueDate?: string): boolean =>
+  Boolean(dueDate) && new Date(dueDate as string).getTime() < Date.now();
+
+const daysLate = (dueDate: string): number =>
+  Math.max(1, Math.ceil((Date.now() - new Date(dueDate).getTime()) / 86400000));
 
 const SupervisorOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -483,62 +512,102 @@ const SupervisorOverview: React.FC = () => {
             })}
           </div>
 
-          <div className="groups-grid">
+          <div className="group-overview-card">
+            <button
+              className="group-nav-arrow group-nav-arrow-left"
+              onClick={() =>
+                setCurrentGroupIndex(
+                  (currentGroupIndex - 1 + groupsInLevel.length) % groupsInLevel.length
+                )
+              }
+              type="button"
+              disabled={groupsInLevel.length <= 1}
+              aria-label="Previous group"
+              title="Previous group"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
             {activeGroup ? (
-              <div key={activeGroup.groupId} className="group-card">
-                <h4>{activeGroup.groupName}</h4>
-                <div className="progress-circle">
-                  <svg viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" className="progress-bg" />
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="50"
-                      className="progress-fill"
-                      style={{
-                        strokeDasharray: `${3.14 * 100 * ((activeGroupProgress?.overall.percent ?? 0) / 100)} 314`,
-                      }}
-                    />
-                  </svg>
-                  <div className="progress-text">
-                    <span className="percentage">{activeGroupProgress?.overall.percent ?? 0}%</span>
-                    <span className="status">
-                      {activeGroupProgress
-                        ? `${activeGroupProgress.overall.completed}/${activeGroupProgress.overall.total} tasks`
-                        : "Active"}
-                    </span>
+              <div key={activeGroup.groupId} className="group-overview-body">
+                <div className="group-overview-circle-col">
+                  <h4>{activeGroup.groupName}</h4>
+                  <div className="progress-circle">
+                    <svg viewBox="0 0 120 120">
+                      <circle cx="60" cy="60" r="50" className="progress-bg" />
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="50"
+                        className="progress-fill"
+                        style={{
+                          strokeDasharray: `${3.14 * 100 * ((activeGroupProgress?.overall.percent ?? 0) / 100)} 314`,
+                        }}
+                      />
+                    </svg>
+                    <div className="progress-text">
+                      <span className="percentage">{activeGroupProgress?.overall.percent ?? 0}%</span>
+                      <span className="status">
+                        {activeGroupProgress
+                          ? `${activeGroupProgress.overall.completed}/${activeGroupProgress.overall.total} tasks`
+                          : "Active"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="group-navigation">
-                  <button
-                    className="view-all-btn"
-                    onClick={() =>
-                      setCurrentGroupIndex(
-                        (currentGroupIndex - 1 + groupsInLevel.length) % groupsInLevel.length
-                      )
-                    }
-                    type="button"
-                    disabled={groupsInLevel.length <= 1}
-                  >
-                    previous
-                  </button>
-                  <button
-                    className="view-all-btn"
-                    onClick={() =>
-                      setCurrentGroupIndex((currentGroupIndex + 1) % groupsInLevel.length)
-                    }
-                    type="button"
-                    disabled={groupsInLevel.length <= 1}
-                  >
-                    next
-                  </button>
+
+                <div className="group-overview-divider" />
+
+                <div className="group-overview-milestones-col">
+                  <h4>Milestones</h4>
+                  {loadingActiveGroupProgress ? (
+                    <p className="overall">Loading milestones...</p>
+                  ) : !activeGroupProgress || activeGroupProgress.milestones.length === 0 ? (
+                    <p className="overall">No milestones created yet.</p>
+                  ) : (
+                    <div className="milestone-mini-list">
+                      {activeGroupProgress.milestones.map((m) => {
+                        const delayed = isPastDue(m.due_date) && m.status !== "APPROVED";
+                        return (
+                          <div key={m.id} className="milestone-mini-row">
+                            <div className="milestone-mini-top">
+                              <span className="milestone-mini-title">{m.title}</span>
+                              <span className={`milestone-mini-badge ${delayed ? "delayed" : "on-time"}`}>
+                                {delayed ? `Delayed ${daysLate(m.due_date as string)}d` : "On time"}
+                              </span>
+                            </div>
+                            <div className="milestone-mini-track">
+                              <div
+                                className="milestone-mini-fill"
+                                style={{ width: `${Math.min(100, Math.max(0, m.percent))}%` }}
+                              />
+                            </div>
+                            <span className="milestone-mini-percent">
+                              {m.percent}% ({m.completed}/{m.total} tasks)
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="group-card">
+              <div className="group-overview-body">
                 <p>no groups found for level {activeLevel}</p>
               </div>
             )}
+
+            <button
+              className="group-nav-arrow group-nav-arrow-right"
+              onClick={() => setCurrentGroupIndex((currentGroupIndex + 1) % groupsInLevel.length)}
+              type="button"
+              disabled={groupsInLevel.length <= 1}
+              aria-label="Next group"
+              title="Next group"
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
 
           {activeGroup && (
@@ -568,26 +637,33 @@ const SupervisorOverview: React.FC = () => {
                     approved
                   </p>
 
-                  {activeGroupProgress.members.slice(0, 4).map((member) => (
-                    <div key={member.id} className="student-item">
-                      <span>{member.name}</span>
-                      <span className="status">
-                        {member.total === 0
-                          ? "No tasks"
-                          : member.percent === 100
-                            ? "Completed"
-                            : member.percent === 0
-                              ? "Not started"
-                              : "In progress"}
-                      </span>
-                      <span className="progress">{member.percent}%</span>
-                    </div>
-                  ))}
-                  {activeGroupProgress.members.length > 4 && (
-                    <p className="progress-section-label">
-                      +{activeGroupProgress.members.length - 4} more member(s)
-                    </p>
-                  )}
+                  {activeGroupProgress.members.map((member) => {
+                    const delayedCount = activeGroupProgress.tasks.filter(
+                      (t) =>
+                        t.assigned_to === member.id &&
+                        isPastDue(t.due_date) &&
+                        t.status !== "COMPLETED",
+                    ).length;
+
+                    return (
+                      <div key={member.id} className="student-item">
+                        <span>{member.name}</span>
+                        <span className="status">
+                          {member.total === 0
+                            ? "No tasks"
+                            : member.percent === 100
+                              ? "Completed"
+                              : member.percent === 0
+                                ? "Not started"
+                                : "In progress"}
+                        </span>
+                        <span className={`student-delay-badge ${delayedCount > 0 ? "delayed" : "on-time"}`}>
+                          {delayedCount > 0 ? `${delayedCount} task(s) delayed` : "On time"}
+                        </span>
+                        <span className="progress">{member.percent}%</span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="overall">Progress summary unavailable.</p>

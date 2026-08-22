@@ -605,18 +605,165 @@
 	color: white;
 }
 
-.groups-grid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 16px;
-}
-
-.group-card {
+/* One card for the whole "currently-browsed group" widget: circle progress
+   + milestones side by side, with prev/next as arrows flanking the box
+   instead of a separate two-card grid + text buttons. */
+.group-overview-card {
+	position: relative;
 	background: white;
 	border-radius: 12px;
-	padding: 20px;
+	padding: 20px 56px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	display: flex;
+	align-items: center;
+}
+
+.group-overview-body {
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	width: 100%;
+	min-width: 0;
+}
+
+.group-overview-circle-col {
+	flex-shrink: 0;
 	text-align: center;
+}
+
+.group-overview-circle-col h4 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0 0 16px 0;
+	color: #1a202c;
+	text-transform: capitalize;
+}
+
+.group-overview-divider {
+	width: 1px;
+	align-self: stretch;
+	background: #e2e8f0;
+	flex-shrink: 0;
+}
+
+.group-overview-milestones-col {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.group-overview-milestones-col h4 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0;
+	color: #1a202c;
+}
+
+.group-nav-arrow {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	border: 1px solid #e2e8f0;
+	background: #ffffff;
+	color: #4a5568;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+	transition: all 0.2s ease;
+	z-index: 1;
+}
+
+.group-nav-arrow:hover:not(:disabled) {
+	background: #667eea;
+	border-color: #667eea;
+	color: white;
+}
+
+.group-nav-arrow:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.group-nav-arrow-left {
+	left: 12px;
+}
+
+.group-nav-arrow-right {
+	right: 12px;
+}
+
+.milestone-mini-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	overflow-y: auto;
+}
+
+.milestone-mini-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.milestone-mini-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.milestone-mini-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: #2d3748;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.milestone-mini-badge {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 3px 9px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.milestone-mini-badge.on-time {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.milestone-mini-badge.delayed {
+	background: #ffedd5;
+	color: #c2410c;
+}
+
+.milestone-mini-track {
+	width: 100%;
+	height: 6px;
+	border-radius: 999px;
+	background: #e2e8f0;
+	overflow: hidden;
+}
+
+.milestone-mini-fill {
+	height: 100%;
+	border-radius: 999px;
+	background: #667eea;
+}
+
+.milestone-mini-percent {
+	font-size: 11px;
+	color: #718096;
 }
 
 .group-card h4 {
@@ -674,27 +821,6 @@
 .status {
 	font-size: 11px;
 	color: #718096;
-}
-
-.view-all-btn {
-	background: none;
-	border: none;
-	color: #667eea;
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	transition: color 0.2s;
-}
-
-.view-all-btn:hover {
-	color: #764ba2;
-}
-
-.group-navigation {
-	display: flex;
-	gap: 12px;
-	justify-content: center;
-	margin-top: 12px;
 }
 
 .view-full-detail-btn {
@@ -803,6 +929,26 @@
 	text-align: right;
 }
 
+.student-delay-badge {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 3px 9px;
+	border-radius: 999px;
+	white-space: nowrap;
+	margin: 0 10px;
+}
+
+.student-delay-badge.on-time {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.student-delay-badge.delayed {
+	background: #ffedd5;
+	color: #c2410c;
+}
+
 .view-progress-btn {
 	background: #667eea;
 	color: white;
@@ -894,8 +1040,14 @@
 		padding-right: 24px;
 	}
 
-	.groups-grid {
-		grid-template-columns: repeat(3, 1fr);
+	.group-overview-body {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.group-overview-divider {
+		width: 100%;
+		height: 1px;
 	}
 }
 
@@ -922,8 +1074,8 @@
 		margin-bottom: 0;
 	}
 
-	.groups-grid {
-		grid-template-columns: repeat(2, 1fr);
+	.group-overview-card {
+		padding: 20px 44px;
 	}
 
 	.meeting-table {
@@ -957,8 +1109,21 @@
 		width: 100%;
 	}
 
-	.groups-grid {
-		grid-template-columns: 1fr;
+	.group-overview-card {
+		padding: 16px 36px;
+	}
+
+	.group-nav-arrow {
+		width: 28px;
+		height: 28px;
+	}
+
+	.group-nav-arrow-left {
+		left: 6px;
+	}
+
+	.group-nav-arrow-right {
+		right: 6px;
 	}
 
 	.message-actions {

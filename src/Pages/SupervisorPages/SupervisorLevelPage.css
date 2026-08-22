@@ -208,6 +208,12 @@
   gap: 20px;
 }
 
+.supervisor-progress-section + .supervisor-progress-section {
+  margin-top: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
 .supervisor-progress-detail-head h3 {
   margin: 0 0 8px;
   color: #0f172a;
@@ -306,4 +312,9 @@
 .supervisor-pill-delayed {
   background: #ffedd5;
   color: #c2410c;
+}
+
+.supervisor-pill-on-time {
+  background: #dcfce7;
+  color: #166534;
 }
