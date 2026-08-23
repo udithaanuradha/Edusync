@@ -800,40 +800,40 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
             <p>Create the first group to get started.</p>
           </div>
         ) : (
-          <div className="groups-grid">
+          <div className="coordinator-groups-grid">
             {groups.map((group) => (
-              <article key={group.id} className="group-card">
-                <div className="group-card-head">
+              <article key={group.id} className="coordinator-group-card">
+                <div className="coordinator-group-card-head">
                   <h3>{group.name}</h3>
-                  <span className="group-meta-pill">{group.memberCount} members</span>
+                  <span className="coordinator-group-meta-pill">{group.memberCount} members</span>
                 </div>
 
-                <div className="group-meta-list">
-                  <div className="group-meta-row">
-                    <span className="group-meta-icon"><Crown size={13} /></span>
+                <div className="coordinator-group-meta-list">
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-icon"><Crown size={13} /></span>
                     <span>{group.leaderName}</span>
                   </div>
-                  <div className="group-meta-row">
-                    <span className="group-meta-icon"><ShieldCheck size={13} /></span>
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-icon"><ShieldCheck size={13} /></span>
                     <span>{group.supervisor}</span>
                   </div>
                   {group.supervisor2 && (
-                    <div className="group-meta-row">
-                      <span className="group-meta-icon"><ShieldCheck size={13} /></span>
+                    <div className="coordinator-group-meta-row">
+                      <span className="coordinator-group-meta-icon"><ShieldCheck size={13} /></span>
                       <span>{group.supervisor2}</span>
                     </div>
                   )}
-                  <div className="group-meta-row">
-                    <span className="group-meta-icon"><Building2 size={13} /></span>
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-icon"><Building2 size={13} /></span>
                     <span>{group.department || 'Not set'}</span>
                   </div>
                 </div>
 
                 {group.members.length > 0 && (
-                  <ul className="group-members-preview">
+                  <ul className="coordinator-group-members-preview">
                     {group.members.map((member) => (
-                      <li key={`${group.id}-${member.id ?? member.name}`} className="group-member-row">
-                        <span className="group-member-name-wrap">
+                      <li key={`${group.id}-${member.id ?? member.name}`} className="coordinator-group-member-row">
+                        <span className="coordinator-group-member-name-wrap">
                           <Users size={12} />
                           <span>{member.name}</span>
                         </span>
@@ -850,7 +850,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                     ))}
                   </ul>
                 )}
-                <div className="group-card-actions">
+                <div className="coordinator-group-card-actions">
                   <button type="button" className="group-edit-btn" onClick={() => void openEditModal(group)}>
                     <Pencil size={13} />
                     Edit
