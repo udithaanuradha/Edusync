@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { KeyRound, Search, Shield, User, Users, Clock, CheckCircle2 } from 'lucide-react';
+import { 
+  KeyRound, 
+  Search, 
+  Shield, 
+  User, 
+  Users, 
+  Clock, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ShieldCheck, 
+  ShieldAlert, 
+  Activity, 
+  MailCheck, 
+  UserX,
+  Sparkles
+} from 'lucide-react';
 import PasswordResetModal, { TargetUser } from './PasswordResetModal';
 
 export interface LoginRow {
@@ -9,6 +24,7 @@ export interface LoginRow {
   role: string;
   time: string;
   isOnline?: boolean;
+  isVerified?: boolean;
 }
 
 const columnHeaderStyle: React.CSSProperties = {
@@ -27,9 +43,10 @@ const LoginTable: React.FC = () => {
   const [recentLogins, setRecentLogins] = useState<LoginRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'recent' | 'all' | 'student' | 'lecturer' | 'mentor'>('recent');
+  const [activeFilter, setActiveFilter] = useState<'recent' | 'all' | 'student' | 'lecturer' | 'mentor' | 'unverified'>('recent');
   const [selectedUser, setSelectedUser] = useState<TargetUser | null>(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [verifiedUserIds, setVerifiedUserIds] = useState<Set<string>>(new Set());
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
@@ -57,6 +74,7 @@ const LoginTable: React.FC = () => {
           role: r.role || 'user',
           time: r.time || new Date().toISOString(),
           isOnline: true,
+          isVerified: true,
         })) : [];
         setRecentLogins(mappedRecent);
 
@@ -79,43 +97,67 @@ const LoginTable: React.FC = () => {
           ...studentList.map((u: any) => ({
             id: u.id,
             username: u.name || u.username || 'Student User',
-            email: u.email || `${(u.name || 'student').toLowerCase().replace(/\s+/g, '')}@uom.lk`,
+            email: u.email || u.user_email || u.userEmail || u.mail || '',
             role: 'student',
             time: u.created_at || u.updated_at || new Date().toISOString(),
             isOnline: false,
+            isVerified: Boolean(u.email || u.user_email),
           })),
           ...lecturerList.map((u: any) => ({
             id: u.id,
             username: u.name || u.username || 'Lecturer User',
-            email: u.email || `${(u.name || 'lecturer').toLowerCase().replace(/\s+/g, '')}@uom.lk`,
+            email: u.email || u.user_email || u.userEmail || u.mail || '',
             role: u.designation === 'coordinator' ? 'coordinator' : u.designation === 'supervisor' ? 'supervisor' : 'lecturer',
             time: u.created_at || u.updated_at || new Date().toISOString(),
             isOnline: false,
+            isVerified: Boolean(u.email || u.user_email),
           })),
           ...mentorList.map((u: any) => ({
             id: u.id,
             username: u.name || u.username || 'Mentor User',
-            email: u.email || `${(u.name || 'mentor').toLowerCase().replace(/\s+/g, '')}@expert.lk`,
+            email: u.email || u.user_email || u.userEmail || u.mail || '',
             role: 'mentor',
             time: u.created_at || u.updated_at || new Date().toISOString(),
             isOnline: false,
+            isVerified: Boolean(u.email || u.user_email),
           })),
         ];
 
-        // Merge: recent logins first with exact login timestamps and online status
+        // Enrich recent logins with exact email and user ID matched from registered database cohort
+        const enrichedRecent: LoginRow[] = mappedRecent.map((r) => {
+          const match = combinedCohort.find(
+            (c) => c.username.toLowerCase().trim() === r.username.toLowerCase().trim()
+          );
+          return {
+            ...r,
+            id: match?.id || r.id,
+            email: match?.email || r.email || '',
+            isVerified: true,
+          };
+        });
+        setRecentLogins(enrichedRecent);
+
+        // Merge: all users from database cohort with active online recent logins overlay
         const mergedMap = new Map<string, LoginRow>();
-        mappedRecent.forEach((r) => {
-          const key = (r.email || r.username || '').toLowerCase().trim();
-          mergedMap.set(key, r);
+        
+        combinedCohort.forEach((u) => {
+          const key = u.username.toLowerCase().trim();
+          mergedMap.set(key, u);
         });
 
-        combinedCohort.forEach((u) => {
-          const key = (u.email || u.username || '').toLowerCase().trim();
+        enrichedRecent.forEach((r) => {
+          const key = r.username.toLowerCase().trim();
           if (mergedMap.has(key)) {
             const existing = mergedMap.get(key)!;
-            if (u.id) existing.id = u.id;
+            mergedMap.set(key, {
+              ...existing,
+              time: r.time,
+              isOnline: true,
+              email: existing.email || r.email || '',
+              isVerified: true,
+            });
           } else {
-            mergedMap.set(key, u);
+            mergedMap.set(key, r);
           }
         });
 
@@ -129,6 +171,37 @@ const LoginTable: React.FC = () => {
 
     loadAllDirectoryData();
   }, []);
+
+  const handleManualVerify = (login: LoginRow) => {
+    const key = String(login.id || login.username);
+    setVerifiedUserIds((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+
+    setAllUsers((prev) =>
+      prev.map((u) => {
+        if ((login.id && u.id === login.id) || u.username === login.username) {
+          return { ...u, isVerified: true, email: u.email || `${u.username.toLowerCase().replace(/\s+/g, '')}@uom.lk` };
+        }
+        return u;
+      })
+    );
+  };
+
+  const isUserVerified = (login: LoginRow): boolean => {
+    const key = String(login.id || login.username);
+    if (verifiedUserIds.has(key)) return true;
+    return Boolean(login.email && login.email.trim().length > 0 && login.isVerified !== false);
+  };
+
+  const studentCount = useMemo(() => allUsers.filter((u) => u.role.toLowerCase() === 'student').length, [allUsers]);
+  const lecturerCount = useMemo(() => allUsers.filter((u) => ['lecturer', 'supervisor', 'coordinator'].includes(u.role.toLowerCase())).length, [allUsers]);
+  const mentorCount = useMemo(() => allUsers.filter((u) => u.role.toLowerCase() === 'mentor').length, [allUsers]);
+
+  const verifiedCount = useMemo(() => allUsers.filter((u) => isUserVerified(u)).length, [allUsers, verifiedUserIds]);
+  const unverifiedCount = useMemo(() => allUsers.length - verifiedCount, [allUsers, verifiedCount]);
 
   const displayedLogins = useMemo(() => {
     // If there is an active search query, search through ALL users in the system
@@ -156,8 +229,11 @@ const LoginTable: React.FC = () => {
     if (activeFilter === 'mentor') {
       return allUsers.filter((u) => u.role.toLowerCase() === 'mentor');
     }
+    if (activeFilter === 'unverified') {
+      return allUsers.filter((u) => !isUserVerified(u));
+    }
     return allUsers;
-  }, [allUsers, recentLogins, searchQuery, activeFilter]);
+  }, [allUsers, recentLogins, searchQuery, activeFilter, verifiedUserIds]);
 
   const handleOpenReset = (login: LoginRow) => {
     setSelectedUser({
@@ -180,7 +256,7 @@ const LoginTable: React.FC = () => {
       width: '100%',
     }}>
       
-      {/* Title Header: Clean White with Search & Filter Pills */}
+      {/* Title Header: Clean White with Search Box */}
       <div style={{ 
         padding: '18px 24px', 
         borderBottom: '1px solid #f1f5f9',
@@ -196,9 +272,6 @@ const LoginTable: React.FC = () => {
             <Users size={18} color="#2563eb" />
             System Users Directory & Security Management
           </h2>
-          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-            Search across all {allUsers.length > 0 ? `${allUsers.length} ` : ''}enrolled students, lecturers, supervisors, mentors, and administrators.
-          </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -246,9 +319,143 @@ const LoginTable: React.FC = () => {
               </button>
             )}
           </div>
+        </div>
+      </div>
 
-          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.04em' }}>
-            TIMEZONE: IST (SL)
+      {/* Method 4: Security Audit Overview Bar (KPI Summary Strip) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '12px',
+        padding: '14px 24px',
+        backgroundColor: '#f8fafc',
+        borderBottom: '1px solid #e2e8f0',
+      }}>
+        {/* Total Accounts KPI */}
+        <div 
+          onClick={() => setActiveFilter('all')}
+          style={{
+            backgroundColor: '#ffffff',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#93c5fd')}
+          onMouseOut={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
+        >
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            backgroundColor: '#eff6ff', color: '#2563eb',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Users size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Total Enrolled</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{allUsers.length} <span style={{ fontSize: '11px', fontWeight: '500', color: '#64748b' }}>Accounts</span></div>
+          </div>
+        </div>
+
+        {/* Online / Active Sessions KPI */}
+        <div 
+          onClick={() => setActiveFilter('recent')}
+          style={{
+            backgroundColor: '#ffffff',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#86efac')}
+          onMouseOut={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
+        >
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            backgroundColor: '#ecfdf5', color: '#059669',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Activity size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Active Online</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#059669', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {recentLogins.length} 
+              <span className="pulse-dot"></span>
+              <span style={{ fontSize: '11px', fontWeight: '500', color: '#059669' }}>Sessions</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Verified Accounts KPI */}
+        <div 
+          onClick={() => setActiveFilter('all')}
+          style={{
+            backgroundColor: '#ffffff',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#a7f3d0')}
+          onMouseOut={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
+        >
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            backgroundColor: '#f0fdf4', color: '#16a34a',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ShieldCheck size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Verified Access</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#166534' }}>{verifiedCount} <span style={{ fontSize: '11px', fontWeight: '500', color: '#16a34a' }}>Users</span></div>
+          </div>
+        </div>
+
+        {/* Unverified / Failed Logins KPI (Method 4) */}
+        <div 
+          onClick={() => setActiveFilter('unverified')}
+          style={{
+            backgroundColor: activeFilter === 'unverified' ? '#fef3c7' : '#ffffff',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            border: activeFilter === 'unverified' ? '1px solid #f59e0b' : '1px solid #fed7aa',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#f59e0b')}
+          onMouseOut={(e) => (e.currentTarget.style.borderColor = activeFilter === 'unverified' ? '#f59e0b' : '#fed7aa')}
+        >
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '8px',
+            backgroundColor: '#fff7ed', color: '#ea580c',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ShieldAlert size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#c2410c', fontWeight: '700', textTransform: 'uppercase' }}>Unverified / Failed</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#ea580c' }}>{unverifiedCount} <span style={{ fontSize: '11px', fontWeight: '600', color: '#c2410c' }}>Pending</span></div>
           </div>
         </div>
       </div>
@@ -259,7 +466,7 @@ const LoginTable: React.FC = () => {
           display: 'flex',
           gap: '8px',
           padding: '10px 24px',
-          backgroundColor: '#fafbfc',
+          backgroundColor: '#ffffff',
           borderBottom: '1px solid #f1f5f9',
           overflowX: 'auto',
         }}>
@@ -322,7 +529,7 @@ const LoginTable: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            Students
+            Students ({studentCount})
           </button>
 
           <button
@@ -340,7 +547,7 @@ const LoginTable: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            Lecturers & Staff
+            Lecturers & Staff ({lecturerCount})
           </button>
 
           <button
@@ -358,7 +565,31 @@ const LoginTable: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            Industry Mentors
+            Industry Mentors ({mentorCount})
+          </button>
+
+          {/* Unverified / Failed Logins Filter Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveFilter('unverified')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              border: 'none',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: activeFilter === 'unverified' ? '#ea580c' : '#fff7ed',
+              color: activeFilter === 'unverified' ? '#ffffff' : '#c2410c',
+              transition: 'all 0.15s ease',
+              marginLeft: 'auto',
+            }}
+          >
+            <AlertTriangle size={13} />
+            ⚠️ Failed & Unverified ({unverifiedCount})
           </button>
         </div>
       )}
@@ -377,7 +608,7 @@ const LoginTable: React.FC = () => {
               <th style={columnHeaderStyle}>User Identity</th>
               <th style={columnHeaderStyle}>Security Role</th>
               <th style={columnHeaderStyle}>Access / Activity</th>
-              <th style={columnHeaderStyle}>Status</th>
+              <th style={columnHeaderStyle}>Verification & Status</th>
               <th style={{ ...columnHeaderStyle, textAlign: 'right' }}>Security Actions</th>
             </tr>
           </thead>
@@ -386,116 +617,173 @@ const LoginTable: React.FC = () => {
             {loading ? (
               <tr><td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>Syncing users directory from server...</td></tr>
             ) : displayedLogins.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>No users match the search filter "{searchQuery}".</td></tr>
+              <tr><td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>No users match the selected filter.</td></tr>
             ) : (
-              displayedLogins.map((login, index) => (
-                <tr 
-                  key={`${login.id || index}-${login.username}`} 
-                  className="pro-table-row" 
-                  style={{ 
-                    borderBottom: '1px solid #f8fafc',
-                    backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafbfc' 
-                  }}
-                >
-                  <td style={{ padding: '12px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '32px', height: '32px', borderRadius: '8px', 
-                        backgroundColor: '#eff6ff', color: '#2563eb',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: '700', fontSize: '12px', border: '1px solid #dbeafe',
-                        flexShrink: 0,
-                      }}>
-                        {login.username ? login.username.charAt(0).toUpperCase() : 'U'}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: '600', color: '#1e293b' }}>
-                          {login.username}
-                          {login.id && (
-                            <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '6px', fontWeight: '400' }}>
-                              #{login.id}
-                            </span>
-                          )}
+              displayedLogins.map((login, index) => {
+                const verified = isUserVerified(login);
+
+                return (
+                  <tr 
+                    key={`${login.id || index}-${login.username}`} 
+                    className="pro-table-row" 
+                    style={{ 
+                      borderBottom: '1px solid #f8fafc',
+                      backgroundColor: !verified ? '#fffdf7' : index % 2 === 0 ? '#ffffff' : '#fafbfc' 
+                    }}
+                  >
+                    <td style={{ padding: '12px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '8px', 
+                          backgroundColor: !verified ? '#fff7ed' : '#eff6ff', 
+                          color: !verified ? '#ea580c' : '#2563eb',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: '700', fontSize: '12px', 
+                          border: !verified ? '1px solid #fed7aa' : '1px solid #dbeafe',
+                          flexShrink: 0,
+                        }}>
+                          {login.username ? login.username.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>
-                          {login.email || `${login.username.toLowerCase().replace(/\s+/g, '')}@uom.lk`}
+                        <div>
+                          <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                            {login.username}
+                          </div>
+                          <div style={{ fontSize: '11px', color: login.email ? '#64748b' : '#c2410c', fontWeight: !login.email ? '600' : '400' }}>
+                            {login.email || '⚠️ No email registered'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td style={{ padding: '12px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ 
-                        width: '7px', height: '7px', borderRadius: '50%', 
-                        backgroundColor: getRoleColor(login.role) 
-                      }} />
-                      <span style={{ color: '#475569', fontWeight: '600', fontSize: '12px', textTransform: 'capitalize' }}>
-                        {login.role}
-                      </span>
-                    </div>
-                  </td>
+                    <td style={{ padding: '12px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ 
+                          width: '7px', height: '7px', borderRadius: '50%', 
+                          backgroundColor: getRoleColor(login.role) 
+                        }} />
+                        <span style={{ color: '#475569', fontWeight: '600', fontSize: '12px', textTransform: 'capitalize' }}>
+                          {login.role}
+                        </span>
+                      </div>
+                    </td>
 
-                  <td style={{ padding: '12px 24px', color: '#64748b', fontVariantNumeric: 'tabular-nums', fontSize: '12px' }}>
-                    {login.isOnline ? (
-                      new Date(login.time).toLocaleString('en-GB', { 
-                        timeZone: 'Asia/Colombo',
-                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true 
-                      })
-                    ) : (
-                      <span style={{ color: '#94a3b8' }}>Enrolled User</span>
-                    )}
-                  </td>
+                    <td style={{ padding: '12px 24px', color: '#64748b', fontVariantNumeric: 'tabular-nums', fontSize: '12px' }}>
+                      {login.isOnline ? (
+                        new Date(login.time).toLocaleString('en-GB', { 
+                          timeZone: 'Asia/Colombo',
+                          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true 
+                        })
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>Enrolled User</span>
+                      )}
+                    </td>
 
-                  <td style={{ padding: '12px 24px' }}>
-                    {login.isOnline ? (
+                    {/* Verification & Status Badges */}
+                    <td style={{ padding: '12px 24px' }}>
+                      {login.isOnline ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                           <span className="pulse-dot"></span>
+                           <span style={{ color: '#059669', fontSize: '11px', fontWeight: '700' }}>ONLINE</span>
+                        </div>
+                      ) : !verified ? (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          backgroundColor: '#fff7ed',
+                          color: '#c2410c',
+                          border: '1px solid #fed7aa',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                        }}>
+                          <AlertTriangle size={12} color="#ea580c" />
+                          UNVERIFIED / BLOCKED
+                        </div>
+                      ) : (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          backgroundColor: '#ecfdf5',
+                          color: '#047857',
+                          border: '1px solid #a7f3d0',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                        }}>
+                          <CheckCircle2 size={12} color="#059669" />
+                          VERIFIED
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Security Actions Column */}
+                    <td style={{ padding: '12px 24px', textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                         <span className="pulse-dot"></span>
-                         <span style={{ color: '#059669', fontSize: '11px', fontWeight: '700' }}>ONLINE</span>
-                      </div>
-                    ) : (
-                      <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '500' }}>
-                        Active
-                      </span>
-                    )}
-                  </td>
+                        {!verified && (
+                          <button
+                            type="button"
+                            onClick={() => handleManualVerify(login)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              backgroundColor: '#ecfdf5',
+                              border: '1px solid #a7f3d0',
+                              borderRadius: '8px',
+                              padding: '6px 10px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              color: '#047857',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                            title="Manually verify this account"
+                          >
+                            <CheckCircle2 size={12} />
+                            Verify
+                          </button>
+                        )}
 
-                  {/* Reset Password Action Column */}
-                  <td style={{ padding: '12px 24px', textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenReset(login)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        color: '#1e293b',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#eff6ff';
-                        e.currentTarget.style.borderColor = '#93c5fd';
-                        e.currentTarget.style.color = '#1d4ed8';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f8fafc';
-                        e.currentTarget.style.borderColor = '#cbd5e1';
-                        e.currentTarget.style.color = '#1e293b';
-                      }}
-                    >
-                      <KeyRound size={13} color="#2563eb" />
-                      Reset Password
-                    </button>
-                  </td>
-                </tr>
-              ))
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReset(login)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            color: '#1e293b',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#eff6ff';
+                            e.currentTarget.style.borderColor = '#93c5fd';
+                            e.currentTarget.style.color = '#1d4ed8';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                            e.currentTarget.style.color = '#1e293b';
+                          }}
+                        >
+                          <KeyRound size={13} color="#2563eb" />
+                          Reset Password
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

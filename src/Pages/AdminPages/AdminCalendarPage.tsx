@@ -139,6 +139,7 @@ const AdminCalendarPage: React.FC = () => {
   const [showFreezeModal, setShowFreezeModal] = useState<boolean>(false);
   const [freezeDateInput, setFreezeDateInput] = useState<string>(formatDateOnly(new Date()));
   const [freezeReasonInput, setFreezeReasonInput] = useState<string>('');
+  const [freezeError, setFreezeError] = useState<string | null>(null);
   const [isSubmittingFreeze, setIsSubmittingFreeze] = useState<boolean>(false);
 
   const [selectedStageDetail, setSelectedStageDetail] = useState<StageEvent | null>(null);
@@ -182,24 +183,76 @@ const AdminCalendarPage: React.FC = () => {
         })
         .catch(() => []);
 
-      // 3. Fetch Evaluation Panels
-      const panelsPromise = fetch('http://localhost:5000/api/calendar/panels')
+      // 3. Fetch Evaluation Panels (From Database + Local fallback)
+      const panelsPromise = fetch('http://localhost:5000/api/calendar/panels', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
         .then(res => res.ok ? res.json() : [])
         .then(resData => {
-          const list = Array.isArray(resData) ? resData : (resData?.data || []);
-          return list.map((p: any) => ({
+          const list = Array.isArray(resData) 
+            ? resData 
+            : Array.isArray(resData?.data)
+              ? resData.data
+              : Array.isArray(resData?.panels)
+                ? resData.panels
+                : [];
+          
+          let parsed = list.map((p: any) => ({
             id: p.id || p.panel_id,
-            group_name: p.group_name || p.target_group || 'Evaluation Panel',
-            evaluation_type: p.evaluation_type || p.title || 'Viva',
+            group_name: p.group_name || p.target_group || p.groupName || 'Evaluation Panel',
+            evaluation_type: p.evaluation_type || p.title || p.type || 'Viva',
             academic_level: Number(p.academic_level || p.level || 1),
-            panel_date: p.panel_date || p.date,
-            start_time: p.start_time || p.time,
+            panel_date: p.panel_date || p.date || p.panelDate,
+            start_time: p.start_time || p.time || p.startTime,
             duration: p.duration,
             evaluators: p.evaluators,
             location: p.location
           }));
+
+          if (parsed.length === 0) {
+            try {
+              const localPanels = JSON.parse(localStorage.getItem('edusync.calendar.panels') || '[]');
+              if (Array.isArray(localPanels) && localPanels.length > 0) {
+                parsed = localPanels.map((p: any) => ({
+                  id: p.id,
+                  group_name: p.groupName || p.target_group || 'Evaluation Panel',
+                  evaluation_type: p.title || p.evaluation_type || 'Viva',
+                  academic_level: Number(p.level || p.academic_level || 1),
+                  panel_date: p.date || p.panel_date,
+                  start_time: p.time || p.start_time,
+                  duration: p.duration,
+                  evaluators: p.evaluators,
+                  location: p.location
+                }));
+              }
+            } catch {
+              // fallback ignore
+            }
+          }
+
+          return parsed;
         })
-        .catch(() => []);
+        .catch(() => {
+          try {
+            const localPanels = JSON.parse(localStorage.getItem('edusync.calendar.panels') || '[]');
+            return Array.isArray(localPanels) ? localPanels.map((p: any) => ({
+              id: p.id,
+              group_name: p.groupName || p.target_group || 'Evaluation Panel',
+              evaluation_type: p.title || p.evaluation_type || 'Viva',
+              academic_level: Number(p.level || p.academic_level || 1),
+              panel_date: p.date || p.panel_date,
+              start_time: p.time || p.start_time,
+              duration: p.duration,
+              evaluators: p.evaluators,
+              location: p.location
+            })) : [];
+          } catch {
+            return [];
+          }
+        });
 
       const [stageResults, frozenResults, panelResults] = await Promise.all([
         Promise.all(stagePromises),
@@ -315,11 +368,12 @@ const AdminCalendarPage: React.FC = () => {
   const handleCreateFreeze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!freezeDateInput || !freezeReasonInput.trim()) {
-      alert('Please enter both date and reason.');
+      setFreezeError('Please enter both date and reason.');
       return;
     }
     try {
       setIsSubmittingFreeze(true);
+      setFreezeError(null);
       const res = await fetch('http://localhost:5000/api/calendar/freeze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -332,12 +386,13 @@ const AdminCalendarPage: React.FC = () => {
       if (res.ok) {
         setShowFreezeModal(false);
         setFreezeReasonInput('');
+        setFreezeError(null);
         await fetchAllAcademicData();
       } else {
-        alert('Failed to freeze date.');
+        setFreezeError('Failed to freeze date.');
       }
     } catch {
-      alert('Error connecting to server.');
+      setFreezeError('Error connecting to server.');
     } finally {
       setIsSubmittingFreeze(false);
     }
@@ -361,24 +416,27 @@ const AdminCalendarPage: React.FC = () => {
   const firstDayOfWeek = new Date(year, month, 1).getDay();
   const todayStr = formatDateOnly(new Date());
 
-  // Metrics for Top Bar
-  const activeStageCount = allStages.length;
-  const upcomingDeadlineCount = allStages.filter(s => {
+  // Metrics for Top Bar (Dynamically respects Level / Degree filters)
+  const activeStageCount = filteredStages.length;
+  const upcomingDeadlineCount = filteredStages.filter(s => {
     const d = parseDateString(s.deadline);
     if (!d) return false;
     const diff = d.getTime() - new Date().getTime();
     return diff >= 0 && diff <= 30 * 24 * 60 * 60 * 1000;
   }).length;
-  const panelCount = evaluationPanels.length;
+  const panelCount = (levelFilter === 'all' 
+    ? evaluationPanels 
+    : evaluationPanels.filter(p => String(p.academic_level) === levelFilter)
+  ).length;
   const frozenCount = frozenDates.length;
 
   return (
-    <div className="app-layout" style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+    <div className="app-layout" style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
       <Sidebar />
-      <div className="main-viewport" style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+      <div className="main-viewport" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto', position: 'relative' }}>
         <Header />
 
-        <main className="content-container" style={{ padding: '24px 32px', maxWidth: '1600px', margin: '0 auto' }}>
+        <main className="content-container" style={{ padding: '24px 32px', width: '100%', boxSizing: 'border-box' }}>
           
           {/* Header Title Section */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
@@ -1002,6 +1060,21 @@ const AdminCalendarPage: React.FC = () => {
               <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', lineHeight: 1.4 }}>
                 Freezing a date marks it university-wide (e.g. for study leave, public holiday, sports meet). Coordinators cannot schedule evaluation panels on frozen dates.
               </p>
+
+              {freezeError && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  backgroundColor: '#fef2f2',
+                  color: '#b91c1c',
+                  border: '1px solid #fecaca',
+                }}>
+                  {freezeError}
+                </div>
+              )}
 
               <form onSubmit={handleCreateFreeze}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Date to Freeze</label>

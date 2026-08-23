@@ -18,7 +18,11 @@ import {
   Scale,
   Percent,
   Award,
-  BookOpen
+  BookOpen,
+  Trash2,
+  User,
+  UserCheck,
+  Briefcase
 } from 'lucide-react';
 
 interface StageFile {
@@ -89,6 +93,36 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   // Stage Weights & Rubrics modal state
   const [isRubricsModalOpen, setIsRubricsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [deletingStageId, setDeletingStageId] = useState<number | null>(null);
+
+  const handleDeleteStage = async (stageId: number, stageName: string) => {
+    try {
+      setDeletingStageId(stageId);
+      const response = await fetch(`http://localhost:5000/api/projects/delete/${stageId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed with status: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.success || response.ok) {
+        setStages(prev => prev.filter(s => s.stage_id !== stageId));
+        setToastMessage(`✅ Stage "${stageName}" deleted successfully.`);
+        setTimeout(() => setToastMessage(null), 3500);
+      } else {
+        throw new Error(result.message || 'Failed to delete stage');
+      }
+    } catch (err) {
+      console.error('❌ Error deleting stage:', err);
+      setToastMessage(`❌ Failed to delete stage: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setDeletingStageId(null);
+    }
+  };
 
   useEffect(() => {
     fetchAllData();
@@ -259,9 +293,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
               }}>
                 <div>
                   <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
-                  <p className="overview-subtitle" style={{ textAlign: 'left', margin: '4px 0 0 0' }}>
-                    Administrative oversight, stage progression, group rosters, and grading results for Level {levelNumber}.
-                  </p>
                 </div>
 
                 {/* Multiple Admin Action Buttons */}
@@ -505,68 +536,119 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                     Documents ({stage.files.length}):
                                   </p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {stage.files.map((file) => {
-                                      const degree = getDegreeNameFromAcademicUnit(file.academic_unit);
-                                      const badgeLabel = degree ? degree : (file.uploader_name ? file.uploader_name : 'General');
-                                      return (
-                                        <div
-                                          key={file.file_id}
+                                    {stage.files.map((file) => (
+                                      <div
+                                        key={file.file_id}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          gap: '12px',
+                                          padding: '10px 16px',
+                                          backgroundColor: '#eff6ff',
+                                          borderRadius: '8px',
+                                          border: '1px solid #dbeafe',
+                                          width: '100%',
+                                          boxSizing: 'border-box',
+                                        }}
+                                      >
+                                        <a
+                                          href={file.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
                                           style={{
-                                            display: 'flex',
+                                            display: 'inline-flex',
                                             alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            gap: '12px',
-                                            padding: '10px 16px',
-                                            backgroundColor: '#eff6ff',
-                                            borderRadius: '8px',
-                                            border: '1px solid #dbeafe',
-                                            width: '100%',
-                                            boxSizing: 'border-box',
+                                            gap: '8px',
+                                            color: '#2563eb',
+                                            textDecoration: 'none',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
                                           }}
                                         >
-                                          <a
-                                            href={file.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '8px',
-                                              color: '#2563eb',
-                                              textDecoration: 'none',
-                                              fontSize: '14px',
-                                              fontWeight: '500',
-                                            }}
-                                          >
-                                            📄 {file.file_name}
-                                          </a>
+                                          📄 {file.file_name}
+                                        </a>
 
-                                          <span
-                                            style={{
-                                              backgroundColor: degree === 'ITM' ? '#dbeafe' : degree === 'AI' ? '#f3e8ff' : '#e0f2fe',
-                                              color: degree === 'ITM' ? '#1e40af' : degree === 'AI' ? '#6b21a8' : '#0369a1',
-                                              border: `1px solid ${degree === 'ITM' ? '#93c5fd' : degree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              padding: '4px 10px',
-                                              borderRadius: '6px',
-                                              whiteSpace: 'nowrap',
-                                            }}
-                                          >
-                                            {badgeLabel}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
+                                        {/* Green Download Button */}
+                                        <a
+                                          href={file.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          download={file.file_name}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            backgroundColor: '#16a34a',
+                                            color: '#ffffff',
+                                            padding: '6px 14px',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: '600',
+                                            textDecoration: 'none',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                            transition: 'background-color 0.15s ease',
+                                            whiteSpace: 'nowrap',
+                                            flexShrink: 0,
+                                          }}
+                                          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
+                                          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#16a34a')}
+                                          title={`Download ${file.file_name}`}
+                                        >
+                                          <Download size={13} />
+                                          Download
+                                        </a>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
                               ) : (
                                 <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '12px' }}>No documents uploaded</p>
                               )}
                             </div>
-                            <div style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' }}>
-                              View Only
-                            </div>
+
+                            {/* Admin Delete Stage Action */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStage(stage.stage_id, stage.stage_name)}
+                              disabled={deletingStageId === stage.stage_id}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                border: '1px solid #fecaca',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: deletingStageId === stage.stage_id ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.15s ease',
+                                flexShrink: 0,
+                              }}
+                              onMouseOver={(e) => {
+                                if (deletingStageId !== stage.stage_id) {
+                                  e.currentTarget.style.backgroundColor = '#fee2e2';
+                                  e.currentTarget.style.borderColor = '#fca5a5';
+                                  e.currentTarget.style.color = '#b91c1c';
+                                }
+                              }}
+                              onMouseOut={(e) => {
+                                if (deletingStageId !== stage.stage_id) {
+                                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                                  e.currentTarget.style.borderColor = '#fecaca';
+                                  e.currentTarget.style.color = '#dc2626';
+                                }
+                              }}
+                              title={`Delete ${stage.stage_name}`}
+                            >
+                              <Trash2 size={13} />
+                              {deletingStageId === stage.stage_id ? 'Deleting...' : 'Delete'}
+                            </button>
                           </div>
                         </div>
                       );}) : <p>No stages found.</p>}
@@ -574,50 +656,227 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                   )}
 
                   {activeTab === 'groups' && (
-                    <div>
-                     <MentorImportPanel levelNumber={levelNumber} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                      <MentorImportPanel levelNumber={levelNumber} />
                      
-                    <div style={cardStyle}>
-                      <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                          <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #f3f4f6', color: '#6b7280' }}>
-                              <th style={{ padding: '12px' }}>Group Name</th>
-                              <th style={{ padding: '12px' }}>Supervisor</th>
-                              <th style={{ padding: '12px' }}>Assigned Mentor</th>
-                              <th style={{ padding: '12px' }}>Members</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {groups.map((group) => (
-                              <tr key={group.groupId} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
-                                <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
-                                <td style={{ padding: '12px', textAlign: 'left' }}>
-                                  {group.mentorName ? (
-                                    group.mentorName
-                                  ) : (
-                                    <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Unassigned</span>
-                                  )}
-                                </td>
+                      {/* Registered Groups Card */}
+                      <div style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '20px',
+                          borderBottom: '1px solid #f1f5f9',
+                          paddingBottom: '14px',
+                          flexWrap: 'wrap',
+                          gap: '12px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '10px',
+                              backgroundColor: '#eff6ff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#2563eb'
+                            }}>
+                              <Users size={18} />
+                            </div>
+                            <div>
+                              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#0f172a', textAlign: 'left' }}>
+                                Level {levelNumber} Registered Groups
+                              </h3>
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>
+                                Active student cohorts, supervisors and assigned mentors
+                              </span>
+                            </div>
+                          </div>
 
-                                <td style={{ padding: '12px' }}>
-                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                    {group.members.map((m) => (
-                                      <span key={m.id} style={{ backgroundColor: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
-                                        {m.name} {m.is_leader ? '👑' : ''}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                          <span style={{
+                            backgroundColor: '#eff6ff',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            padding: '4px 12px',
+                            borderRadius: '20px'
+                          }}>
+                            {groups.length} {groups.length === 1 ? 'Group' : 'Groups'} Enrolled
+                          </span>
+                        </div>
+
+                        {groups.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                            <Users size={32} style={{ marginBottom: '10px', opacity: 0.5 }} />
+                            <p style={{ margin: 0, fontSize: '14px', fontWeight: '500' }}>No registered project groups found for Level {levelNumber}.</p>
+                          </div>
+                        ) : (
+                          <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                              <thead>
+                                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Group Name</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Supervisor</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Mentor</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Team Members</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {groups.map((group) => (
+                                  <tr 
+                                    key={group.groupId} 
+                                    style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}
+                                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                  >
+                                    {/* Group Name & Badge */}
+                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{
+                                          width: '34px',
+                                          height: '34px',
+                                          borderRadius: '8px',
+                                          backgroundColor: '#eef2ff',
+                                          color: '#4f46e5',
+                                          fontWeight: '700',
+                                          fontSize: '14px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0
+                                        }}>
+                                          {group.groupName ? group.groupName.charAt(0).toUpperCase() : 'G'}
+                                        </div>
+                                        <div>
+                                          <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a' }}>
+                                            {group.groupName}
+                                          </div>
+                                          {group.groupId && (
+                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                              ID: {group.groupId}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {/* Supervisor */}
+                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#1e293b', fontWeight: '500' }}>
+                                        <UserCheck size={14} color="#059669" />
+                                        {group.supervisor || 'Unassigned'}
+                                      </div>
+                                    </td>
+
+                                    {/* Assigned Mentor */}
+                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
+                                      {group.mentorName ? (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '600',
+                                          color: '#b45309',
+                                          backgroundColor: '#fffbeb',
+                                          border: '1px solid #fde68a',
+                                          padding: '3px 10px',
+                                          borderRadius: '6px'
+                                        }}>
+                                          <Briefcase size={13} color="#d97706" />
+                                          {group.mentorName}
+                                        </span>
+                                      ) : (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          fontSize: '12px',
+                                          color: '#94a3b8',
+                                          backgroundColor: '#f1f5f9',
+                                          padding: '3px 8px',
+                                          borderRadius: '6px',
+                                          fontStyle: 'italic'
+                                        }}>
+                                          Unassigned
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* Members */}
+                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
+                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                        {group.members.map((m) => (
+                                          m.is_leader ? (
+                                            <span 
+                                              key={m.id} 
+                                              style={{ 
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '5px',
+                                                backgroundColor: '#ecfdf5', 
+                                                color: '#065f46', 
+                                                border: '1px solid #a7f3d0',
+                                                padding: '3px 9px', 
+                                                borderRadius: '6px', 
+                                                fontSize: '12px',
+                                                fontWeight: '600'
+                                              }}
+                                            >
+                                              <span style={{ 
+                                                backgroundColor: '#059669', 
+                                                color: '#ffffff', 
+                                                fontSize: '9px', 
+                                                fontWeight: '800', 
+                                                padding: '1px 5px', 
+                                                borderRadius: '3px',
+                                                letterSpacing: '0.02em',
+                                                textTransform: 'uppercase'
+                                              }}>
+                                                Leader
+                                              </span>
+                                              {m.name}
+                                            </span>
+                                          ) : (
+                                            <span 
+                                              key={m.id} 
+                                              style={{ 
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                backgroundColor: '#eff6ff', 
+                                                color: '#1d4ed8', 
+                                                border: '1px solid #dbeafe',
+                                                padding: '3px 9px', 
+                                                borderRadius: '6px', 
+                                                fontSize: '12px',
+                                                fontWeight: '500'
+                                              }}
+                                            >
+                                              <User size={12} color="#60a5fa" />
+                                              {m.name}
+                                            </span>
+                                          )
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </div>  
+                    </div>  
                   )}
 
                   {activeTab === 'marks' && (

@@ -24,6 +24,8 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
   const [loading, setLoading] = useState(false);
   const [currentCoordinator, setCurrentCoordinator] = useState<Lecturer | null>(null);
 
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   useEffect(() => {
     fetchAllLecturers();
   }, []);
@@ -77,17 +79,20 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
 
   const handleAssignCoordinator = async () => {
     if (currentCoordinator) {
-      alert("A coordinator is already assigned. Please remove the current coordinator first!");
+      setFeedback({ type: 'error', message: 'A coordinator is already assigned. Please remove the current coordinator first!' });
+      setTimeout(() => setFeedback(null), 3500);
       return;
     }
 
     if (!selectedLecturerId || !selectedDepartment) {
-      alert("Please select both a Degree Program and a Lecturer!");
+      setFeedback({ type: 'error', message: 'Please select both a Degree Program and a Lecturer!' });
+      setTimeout(() => setFeedback(null), 3500);
       return;
     }
 
     try {
       setLoading(true);
+      setFeedback(null);
       const response = await fetch('http://localhost:5000/api/users/assign-coordinator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,15 +104,18 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
       });
 
       if (response.ok) {
-        alert('Coordinator assigned successfully!');
+        setFeedback({ type: 'success', message: '✅ Coordinator assigned successfully!' });
+        setTimeout(() => setFeedback(null), 3500);
         await fetchAllLecturers();
         onSuccess();
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Failed to assign coordinator');
+        setFeedback({ type: 'error', message: `❌ ${errorData.error || 'Failed to assign coordinator'}` });
+        setTimeout(() => setFeedback(null), 3500);
       }
     } catch (err) {
-      alert('Backend connection error');
+      setFeedback({ type: 'error', message: '❌ Backend connection error' });
+      setTimeout(() => setFeedback(null), 3500);
     } finally {
       setLoading(false);
     }
@@ -115,10 +123,10 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
 
   const handleRemoveCoordinator = async () => {
     if (!selectedDepartment) return;
-    if (!window.confirm(`Are you sure you want to remove the current Coordinator for Level ${levelNumber} (${selectedDepartment})?`)) return;
 
     try {
       setLoading(true);
+      setFeedback(null);
       const response = await fetch('http://localhost:5000/api/users/remove-coordinator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,14 +137,17 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
       });
 
       if (response.ok) {
-        alert('Coordinator removed successfully!');
+        setFeedback({ type: 'success', message: '✅ Coordinator removed successfully!' });
+        setTimeout(() => setFeedback(null), 3500);
         setCurrentCoordinator(null);
         await fetchAllLecturers();
       } else {
-        alert('Failed to remove coordinator');
+        setFeedback({ type: 'error', message: '❌ Failed to remove coordinator' });
+        setTimeout(() => setFeedback(null), 3500);
       }
     } catch (err) {
-      alert('Backend connection error');
+      setFeedback({ type: 'error', message: '❌ Backend connection error' });
+      setTimeout(() => setFeedback(null), 3500);
     } finally {
       setLoading(false);
     }
@@ -161,9 +172,24 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
       </button>
 
       <div style={cardStyle}>
-        <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: '600', color: '#111827' }}>
+        <h3 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600', color: '#111827' }}>
           Assign Degree Coordinator - Level {levelNumber}
         </h3>
+
+        {feedback && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '13px',
+            fontWeight: '600',
+            backgroundColor: feedback.type === 'success' ? '#f0fdf4' : '#fef2f2',
+            color: feedback.type === 'success' ? '#15803d' : '#b91c1c',
+            border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+          }}>
+            {feedback.message}
+          </div>
+        )}
         
         {/* Degree Program Selection */}
         <div style={{ marginBottom: '16px' }}>
