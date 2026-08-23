@@ -307,6 +307,22 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
     });
   }, [students, selectedDegree, searchQuery, selectedGradeFilter]);
 
+  // Member count per group, for the group section header (avoids repeating
+  // "N members" logic inline and re-scanning the array per row).
+  const groupMemberCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    filteredStudents.forEach((s) => {
+      counts.set(s.group_name, (counts.get(s.group_name) ?? 0) + 1);
+    });
+    return counts;
+  }, [filteredStudents]);
+
+  const degreeBadgeStyle = (degree: string) => ({
+    backgroundColor: degree === 'IT' ? '#e0f2fe' : degree === 'AI' ? '#f3e8ff' : '#fef3c7',
+    color: degree === 'IT' ? '#0369a1' : degree === 'AI' ? '#6b21a8' : '#92400e',
+    border: `1px solid ${degree === 'IT' ? '#bae6fd' : degree === 'AI' ? '#e9d5ff' : '#fde68a'}`,
+  });
+
   // Degree-specific students subset for calculating statistics
   const degreeStudents = useMemo(() => {
     return students.filter((s) => selectedDegree === 'ALL' || s.degree === selectedDegree);
@@ -1078,10 +1094,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '12px 16px', minWidth: '170px' }}>Student Details</th>
+                  <th style={{ padding: '12px 16px', minWidth: '190px' }}>Student Details</th>
                   <th style={{ padding: '12px 14px', minWidth: '110px' }}>Reg / Index No</th>
-                  <th style={{ padding: '12px 14px', minWidth: '80px' }}>Degree</th>
-                  <th style={{ padding: '12px 14px', minWidth: '110px' }}>Project Group</th>
                   {stages.map((st) => (
                     <th key={st.stage_id} style={{ padding: '12px 14px', textAlign: 'center', minWidth: '140px' }}>
                       <div style={{ fontWeight: '700', color: '#1e293b' }}>{st.stage_name}</div>
@@ -1103,9 +1117,46 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                   // would just be clutter, not extra functionality.
                   const isFirstRowOfGroup =
                     rowIndex === 0 || filteredStudents[rowIndex - 1].group_name !== student.group_name;
+                  const totalColumns = 4 + stages.length;
 
                   return (
-                    <tr key={student.student_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <React.Fragment key={student.student_id}>
+                    {isFirstRowOfGroup && (
+                      <tr>
+                        <td
+                          colSpan={totalColumns}
+                          style={{
+                            padding: '10px 16px',
+                            backgroundColor: '#f1f5f9',
+                            borderTop: rowIndex === 0 ? 'none' : '2px solid #e2e8f0',
+                            borderBottom: '1px solid #e2e8f0',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontWeight: '800', fontSize: '14px', color: '#0f172a' }}>
+                              {student.group_name}
+                            </span>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                ...degreeBadgeStyle(student.degree),
+                              }}
+                            >
+                              {student.degree}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              {groupMemberCounts.get(student.group_name)} member
+                              {groupMemberCounts.get(student.group_name) === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                       {/* Student Details */}
                       <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1137,45 +1188,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       {/* Reg No */}
                       <td style={{ padding: '14px', color: '#475569', fontWeight: '500', verticalAlign: 'middle' }}>
                         {student.university_id}
-                      </td>
-
-                      {/* Degree Badge */}
-                      <td style={{ padding: '14px', verticalAlign: 'middle' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            backgroundColor:
-                              student.degree === 'IT'
-                                ? '#e0f2fe'
-                                : student.degree === 'AI'
-                                ? '#f3e8ff'
-                                : '#fef3c7',
-                            color:
-                              student.degree === 'IT'
-                                ? '#0369a1'
-                                : student.degree === 'AI'
-                                ? '#6b21a8'
-                                : '#92400e',
-                            border: `1px solid ${
-                              student.degree === 'IT'
-                                ? '#bae6fd'
-                                : student.degree === 'AI'
-                                ? '#e9d5ff'
-                                : '#fde68a'
-                            }`,
-                          }}
-                        >
-                          {student.degree}
-                        </span>
-                      </td>
-
-                      {/* Project Group */}
-                      <td style={{ padding: '14px', color: '#334155', fontWeight: '600', verticalAlign: 'middle' }}>
-                        {student.group_name}
                       </td>
 
                       {/* Stage Marks with Evaluator-wise breakdown */}
@@ -1284,6 +1296,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                         </span>
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
