@@ -52,6 +52,11 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
   // State for dynamic member selection
   const [selectedMembers, setSelectedMembers] = useState<Student[]>([]);
   const [currentSelection, setCurrentSelection] = useState<string>('');
+  // university_ids parsed out of a saved request's members_list, waiting on
+  // allStudents to finish loading (separate fetch, may resolve after
+  // checkExistingRequest) so they can be matched back into full Student
+  // objects for selectedMembers — see the restore effect below.
+  const [pendingMemberIds, setPendingMemberIds] = useState<string[]>([]);
 
   // 1. Fetch supervisors and students on load
   useEffect(() => {
@@ -119,6 +124,20 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
     checkExistingRequest();
   }, [levelNumber]);
 
+  // Runs once both pieces are in: the saved request's member university_ids
+  // (set by checkExistingRequest) and the student list to match them against
+  // (a separate, independently-timed fetch above). Clears pendingMemberIds
+  // once matched so it doesn't re-run and clobber later manual add/remove.
+  useEffect(() => {
+    if (pendingMemberIds.length === 0 || allStudents.length === 0) return;
+
+    const matched = allStudents.filter((s) => pendingMemberIds.includes(s.university_id));
+    if (matched.length > 0) {
+      setSelectedMembers(matched);
+    }
+    setPendingMemberIds([]);
+  }, [pendingMemberIds, allStudents]);
+
   const checkExistingRequest = async () => {
     const userString = localStorage.getItem('user');
     const user = userString ? JSON.parse(userString) : null;
@@ -150,6 +169,16 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
           groupLeader: latest.members_list?.match(/Leader:\s*([^,\n]+)/i)?.[1]?.trim() || '',
           message: latest.request_message?.split('. ')?.[1] || '',
         });
+
+        // members_list looks like "Leader: X, Members: Name1 (id1), Name2 (id2)"
+        // (see handleRequestSlot) — pull the university_ids back out so the
+        // "Add Group Members" list reflects the group's real, saved members
+        // instead of resetting to empty on every reload. Queued in
+        // pendingMemberIds because allStudents (a separate fetch) may not
+        // have loaded yet; the restore effect below matches them once it has.
+        const membersSegment = latest.members_list?.match(/Members:\s*(.+)$/i)?.[1] || '';
+        const memberIds = Array.from(membersSegment.matchAll(/\(([^()]+)\)/g)).map((m) => m[1].trim());
+        setPendingMemberIds(memberIds);
 
         // Populate the two supervisor slots from this request's per-supervisor
         // responses (at most 2, since the form only ever sends 2). A
