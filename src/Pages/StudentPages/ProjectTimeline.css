@@ -3,11 +3,20 @@
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
+  --primary-tint: #eff6ff;
   --bg-main: #f8fafc;
   --text-dark: #0f172a;
   --text-muted: #64748b;
+  --text-label: #475569;
   --border: #e2e8f0;
   --white: #ffffff;
+  --success: #047857;
+  --success-tint: #ecfdf5;
+  --danger: #b91c1c;
+  --danger-tint: #fef2f2;
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --shadow-card: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
 
 /* Container Adjustments */
@@ -26,57 +35,50 @@
 .student-inner-tab-heading h3 {
   margin: 0;
   font-size: 24px;
-  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-dark);
 }
 
 .student-inner-tab-heading p {
   margin: 0;
-  color: #475569;
+  color: var(--text-label);
   max-width: 740px;
   line-height: 1.75;
+  font-size: 14px;
 }
 
 /* Side-by-Side Layout Wrapper */
 .timeline-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 24px;
 }
 
-/* Individual Sections (Cards) — each is now a full-width row, stacked */
+/* Individual Sections (Cards) — each is a full-width row, stacked */
 .timeline-section {
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  width: 100%;
-}
-
-/* Row 1: Project Overview */
-.timeline-section:first-of-type {
-  width: 100%;
-}
-
-/* Row 2: Milestones & Duration */
-.timeline-section:nth-of-type(2) {
+  border-radius: var(--radius-card);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
   width: 100%;
 }
 
 .section-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 18px 0;
   color: var(--primary);
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.06em;
 }
 
 /* Form Grids */
 .timeline-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 18px;
 }
 
 .timeline-form-full {
@@ -87,135 +89,239 @@
 .timeline-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 8px;
 }
 
 .timeline-form-group label {
-  font-size: 0.75rem;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--text-label);
 }
 
 .timeline-form-input {
-  padding: 0.5rem 0.75rem;
+  padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  transition: all 0.2s;
+  border-radius: var(--radius-control);
+  background: var(--bg-main);
+  color: var(--text-dark);
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .timeline-form-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 /* Summary Box */
 .timeline-summary {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #eff6ff;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  color: var(--primary);
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--primary-tint);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  color: var(--primary-hover);
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-summary strong {
+  font-size: 14px;
 }
 
 /* Task Entry Row (Right Side) */
 .task-input-row {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr auto;
-  gap: 0.75rem;
+  gap: 14px;
   align-items: flex-end;
   background: var(--bg-main);
-  padding: 1rem;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 16px;
 }
 
 .add-task-btn {
-  background: var(--text-dark);
+  background: var(--primary);
   color: white;
-  padding: 0.55rem 1rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: 700;
   border: none;
   cursor: pointer;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.add-task-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 /* Table Styling */
+.tasks-display-list {
+  margin-top: 18px;
+}
+
+.no-tasks-text {
+  margin: 0;
+  padding: 22px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg-main);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+
 .tasks-table-wrapper {
-  margin-top: 1rem;
+  margin-top: 0;
   max-height: 250px; /* Limits table height to keep view compact */
   overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 .tasks-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 13px;
+  min-width: 560px;
 }
 
 .tasks-table th {
+  position: sticky;
+  top: 0;
   background: var(--bg-main);
-  padding: 0.6rem;
+  padding: 12px 14px;
   text-align: left;
-  font-weight: 600;
-  color: var(--text-muted);
-  border-bottom: 2px solid var(--border);
-}
-
-.tasks-table td {
-  padding: 0.6rem;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-label);
   border-bottom: 1px solid var(--border);
 }
 
-.remove-task-btn {
-  color: #ef4444;
-  background: #fef2f2;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
+.tasks-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dark);
 }
 
-/* Footer (Future Chart Area) */
+.tasks-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tasks-table tbody tr:hover {
+  background: var(--bg-main);
+}
+
+.remove-task-btn {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.remove-task-btn:hover {
+  background: #fee2e2;
+  transform: translateY(-1px);
+}
+
+/* Footer (Submit) */
 .timeline-form-footer {
   width: 100%;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  margin-top: 4px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2rem;
+  gap: 16px;
+}
+
+.timeline-submit-message {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.timeline-submit-message.success {
+  background: var(--success-tint);
+  color: var(--success);
+  border: 1px solid #a7f3d0;
+}
+
+.timeline-submit-message.error {
+  background: var(--danger-tint);
+  color: var(--danger);
+  border: 1px solid #fecaca;
 }
 
 .submit-btn {
   background: var(--primary);
   color: #ffffff;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 .submit-btn:disabled {
   background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
-/* Placeholder for your Chart */
+/* Placeholder for chart area (unused now that GanttChart renders instead,
+   kept for backward compatibility with any other consumer of this class) */
 .chart-container-placeholder {
   width: 100%;
   height: 200px;
-  background: #f1f5f9;
-  border: 2px dashed #cbd5e1;
+  background: var(--bg-main);
+  border: 2px dashed var(--border);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+  .timeline-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-form-full {
+    grid-column: span 1;
+  }
+
+  .task-input-row {
+    grid-template-columns: 1fr;
+  }
 }
