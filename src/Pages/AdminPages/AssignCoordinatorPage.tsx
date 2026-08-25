@@ -143,7 +143,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
   };
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px',
+    backgroundColor: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border)', borderRadius: '12px',
     padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', width: '100%',
     maxWidth: '480px', margin: '0 auto', textAlign: 'left'
   };
@@ -153,7 +153,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
       <button 
         onClick={onBack} 
         style={{
-          backgroundColor: 'transparent', border: 'none', color: '#2563eb',
+          backgroundColor: 'transparent', border: 'none', color: 'var(--eds-color-primary)',
           cursor: 'pointer', fontWeight: '600', fontSize: '14px', marginBottom: '20px', padding: 0
         }}
       >
@@ -161,19 +161,19 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
       </button>
 
       <div style={cardStyle}>
-        <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: '600', color: '#111827' }}>
+        <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: '600', color: 'var(--eds-color-text-strong)' }}>
           Assign Degree Coordinator - Level {levelNumber}
         </h3>
         
         {/* Degree Program Selection */}
         <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--eds-color-text-body)', marginBottom: '6px' }}>
             Select Degree Program
           </label>
           <select 
             value={selectedDepartment} 
             onChange={(e) => setSelectedDepartment(e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px' }}
+            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', fontSize: '14px' }}
           >
             <option value="">-- Choose Degree Program --</option>
             <option value="IT">IT</option>
@@ -185,20 +185,20 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
         {/* Active Coordinator Status */}
         {selectedDepartment && (
           <div style={{
-            backgroundColor: '#f9fafb', border: '1px dashed #d1d5db', borderRadius: '8px',
+            backgroundColor: 'var(--eds-color-bg-surface-soft)', border: '1px dashed var(--eds-color-border)', borderRadius: '8px',
             padding: '12px', marginBottom: '20px', fontSize: '14px'
           }}>
-            <span style={{ fontWeight: '600', color: '#4b5563' }}>Current Coordinator: </span>
+            <span style={{ fontWeight: '600', color: 'var(--eds-color-text-muted)' }}>Current Coordinator: </span>
             {currentCoordinator ? (
               <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#111827', fontWeight: '500' }}>
+                <span style={{ color: 'var(--eds-color-text-strong)', fontWeight: '500' }}>
                   {currentCoordinator.name}{currentCoordinator.university_id ? ` (${currentCoordinator.university_id})` : ''}
                 </span>
                 <button 
                   onClick={handleRemoveCoordinator}
                   disabled={loading}
                   style={{
-                    backgroundColor: '#fee2e2', color: '#dc2626', border: 'none',
+                    backgroundColor: 'var(--eds-color-danger-bg)', color: 'var(--eds-color-danger-solid)', border: 'none',
                     padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600'
                   }}
                 >
@@ -206,7 +206,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
                 </button>
               </div>
             ) : (
-              <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Not Assigned Yet</span>
+              <span style={{ color: 'var(--eds-color-text-faint)', fontStyle: 'italic' }}>Not Assigned Yet</span>
             )}
           </div>
         )}
@@ -215,7 +215,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
         {selectedDepartment && !currentCoordinator && (
           <>
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: 'var(--eds-color-text-body)', marginBottom: '6px' }}>
                 Select Lecturer
               </label>
               <select 
@@ -223,8 +223,8 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
                 onChange={(e) => setSelectedLecturerId(e.target.value)}
                 style={{ 
                   width: '100%', padding: '10px', borderRadius: '8px', 
-                  border: '1px solid #d1d5db', fontSize: '14px',
-                  backgroundColor: '#ffffff'
+                  border: '1px solid var(--eds-color-border)', fontSize: '14px',
+                  backgroundColor: 'var(--eds-color-bg-surface)'
                 }}
               >
                 <option value="">-- Choose Lecturer --</option>
@@ -235,7 +235,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
                 ))}
               </select>
               {filteredLecturers.length === 0 && (
-                <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px', margin: 0 }}>
+                <p style={{ color: 'var(--eds-color-danger-solid)', fontSize: '12px', marginTop: '6px', margin: 0 }}>
                   No available lecturers found for this program.
                 </p>
               )}
@@ -246,7 +246,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
               disabled={loading || !selectedLecturerId}
               style={{ 
                 width: '100%', padding: '12px', 
-                backgroundColor: !selectedLecturerId ? '#9ca3af' : '#16a34a', 
+                backgroundColor: !selectedLecturerId ? 'var(--eds-color-text-faint)' : 'var(--eds-color-primary)', 
                 color: 'white', border: 'none', borderRadius: '8px', 
                 fontWeight: '600', cursor: !selectedLecturerId ? 'not-allowed' : 'pointer', fontSize: '15px'
               }}
@@ -259,8 +259,8 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
         {/* Warning Prompt */}
         {selectedDepartment && currentCoordinator && (
           <div style={{
-            backgroundColor: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '8px',
-            padding: '12px', fontSize: '13px', color: '#8c6b00', textAlign: 'center'
+            backgroundColor: 'var(--eds-color-warning-bg)', border: '1px solid var(--eds-color-warning-bg)', borderRadius: '8px',
+            padding: '12px', fontSize: '13px', color: 'var(--eds-color-warning-text)', textAlign: 'center'
           }}>
             ⚠️ Please remove the current coordinator before assigning a new one.
           </div>

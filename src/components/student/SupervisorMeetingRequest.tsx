@@ -129,10 +129,10 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
               </button>
             </div>
 
-            <div className="drawer-summary-card" style={{ margin: '0 1.5rem 1.5rem', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-              <span className="drawer-summary-label" style={{ color: '#1e3a8a' }}>Level {levelNumber} Project</span>
-              <strong style={{ color: '#1e3a8a' }}>Supervisor Meeting</strong>
-              <span style={{ color: '#3b82f6' }}>
+            <div className="drawer-summary-card" style={{ margin: '0 1.5rem 1.5rem', background: 'var(--eds-color-primary-soft)', border: '1px solid var(--eds-color-primary-soft-border)' }}>
+              <span className="drawer-summary-label" style={{ color: 'var(--eds-color-primary-hover)' }}>Level {levelNumber} Project</span>
+              <strong style={{ color: 'var(--eds-color-primary-hover)' }}>Supervisor Meeting</strong>
+              <span style={{ color: 'var(--eds-color-primary)' }}>
                 Use this form to request a meeting with your project supervisor. They will be notified and can schedule the meeting in their calendar.
               </span>
             </div>
@@ -152,7 +152,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
 
               {requestsHistory.length > 0 && (
                 <div style={{ marginBottom: '2rem' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', color: 'var(--eds-color-text-muted)', marginBottom: '1rem', borderBottom: '1px solid var(--eds-color-border)', paddingBottom: '0.5rem' }}>
                     Your Request History
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -160,34 +160,34 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                       <div key={req.id} style={{ 
                         padding: '1rem', 
                         borderRadius: '8px', 
-                        border: `1px solid ${req.status === 'approved' ? '#a7f3d0' : req.status === 'rejected' ? '#fecaca' : '#e5e7eb'}`,
-                        background: req.status === 'approved' ? '#f0fdf4' : req.status === 'rejected' ? '#fef2f2' : '#ffffff' 
+                        border: `1px solid ${req.status === 'approved' ? 'var(--eds-color-success-solid)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-border)'}`,
+                        background: req.status === 'approved' ? 'var(--eds-color-success-bg)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface)' 
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <strong style={{ fontSize: '0.95rem', color: '#111827' }}>{req.topic}</strong>
+                          <strong style={{ fontSize: '0.95rem', color: 'var(--eds-color-text-strong)' }}>{req.topic}</strong>
                           <span style={{ 
                             fontSize: '0.75rem', 
                             padding: '2px 8px', 
                             borderRadius: '12px',
                             fontWeight: 600,
                             textTransform: 'capitalize',
-                            backgroundColor: req.status === 'approved' ? '#10b981' : req.status === 'rejected' ? '#ef4444' : '#f59e0b',
-                            color: '#fff'
+                            backgroundColor: req.status === 'approved' ? 'var(--eds-color-success-solid)' : req.status === 'rejected' ? 'var(--eds-color-danger-solid)' : '#f59e0b',
+                            color: 'var(--eds-color-bg-surface)'
                           }}>
                             {req.status}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--eds-color-text-muted)', marginBottom: '0.5rem' }}>
                           Requested for: {req.preferred_date ? req.preferred_date.split('T')[0] : ''} at {req.preferred_time ? req.preferred_time.substring(0, 5) : ''} to {req.end_time ? req.end_time.substring(0, 5) : ''}
                         </div>
                         {req.supervisor_message && (
                           <div style={{ 
                             fontSize: '0.85rem', 
-                            color: '#374151', 
+                            color: 'var(--eds-color-text-body)', 
                             background: 'rgba(255,255,255,0.6)', 
                             padding: '0.5rem', 
                             borderRadius: '4px',
-                            borderLeft: `3px solid ${req.status === 'approved' ? '#10b981' : '#ef4444'}`,
+                            borderLeft: `3px solid ${req.status === 'approved' ? 'var(--eds-color-success-solid)' : 'var(--eds-color-danger-solid)'}`,
                             marginTop: '0.5rem'
                           }}>
                             <strong>Supervisor Message:</strong><br/>
@@ -200,7 +200,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                 </div>
               )}
 
-              <h4 style={{ fontSize: '0.9rem', color: '#4b5563', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--eds-color-text-muted)', marginBottom: '1rem', borderBottom: '1px solid var(--eds-color-border)', paddingBottom: '0.5rem' }}>
                 New Meeting Request
               </h4>
               <form className="drawer-form" onSubmit={handleSubmit}>
@@ -296,7 +296,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                     type="submit" 
                     className="drawer-primary-btn"
                     disabled={status === 'submitting' || status === 'success'}
-                    style={{ background: '#4f46e5', boxShadow: '0 4px 15px rgba(79, 70, 229, 0.3)' }}
+                    style={{ background: 'var(--eds-color-primary)', boxShadow: '0 4px 15px rgba(79, 70, 229, 0.3)' }}
                   >
                     <Send size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                     {status === 'submitting' ? 'Submitting...' : 'Send Request'}

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import Sidebar from '../../components/shared/Sidebar';
-import Header from '../../components/shared/Header';
+import AppShell from '../../components/shared/layout/AppShell';
 import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
@@ -35,22 +34,12 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   };
 
   return (
-    <div
-      className="app-layout coordinator-level-shell"
-      style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}
-    >
-      <Sidebar />
-
-      <div className="main-viewport" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header />
-
-        <main className="content-container coordinator-level-content">
-          <div className="dashboard-content">
+    <AppShell>
+      <div className="coordinator-level-shell">
+        <div className="dashboard-content">
             <div className="dashboard-header-section">
-              <h2 className="overview-title" style={{ color: '#0f172a' }}>
-                Level {levelNumber} Management
-              </h2>
-              <p className="overview-subtitle" style={{ color: '#64748b' }}>
+              <h2 className="overview-title">Level {levelNumber} Management</h2>
+              <p className="overview-subtitle">
                 Manage and create project stages and groups for Level {levelNumber} students
               </p>
             </div>
@@ -89,10 +78,9 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                 <GradebookTable levelNumber={levelNumber} />
               )}
             </section>
-          </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

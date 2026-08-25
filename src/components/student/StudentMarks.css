@@ -17,8 +17,8 @@
   gap: 12px;
   padding: 28px 20px;
   border-radius: 20px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   text-align: center;
 }
 
@@ -55,14 +55,14 @@
 
 .student-marks-meta {
   margin: 4px 0 0;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-size: 13px;
   font-weight: 600;
 }
 
 .student-marks-percent {
   margin: 0;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-size: 12px;
 }
 
@@ -85,9 +85,9 @@
   gap: 8px;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -95,12 +95,12 @@
 }
 
 .student-marks-stage-menu-item:hover {
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
 }
 
 .student-marks-stage-menu-item.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--eds-color-primary);
+  border-color: var(--eds-color-primary);
   color: white;
 }
 
@@ -109,11 +109,11 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: #cbd5e1;
+  background: var(--eds-color-border);
 }
 
 .student-marks-stage-dot.marked {
-  background: #22c55e;
+  background: var(--eds-color-success-solid);
 }
 
 .student-marks-stage-menu-item.active .student-marks-stage-dot {
@@ -126,14 +126,14 @@
   gap: 14px;
   padding: 20px;
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
   min-height: 120px;
 }
 
 .student-marks-feedback-row {
   padding-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
 .student-marks-feedback-row:last-child {
@@ -145,7 +145,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #2563eb;
+  color: var(--eds-color-primary);
   margin-bottom: 6px;
 }
 
@@ -156,7 +156,7 @@
 
 .student-marks-feedback-text {
   margin: 0;
-  color: #334155;
+  color: var(--eds-color-text-body);
   font-size: 14px;
   line-height: 1.6;
 }

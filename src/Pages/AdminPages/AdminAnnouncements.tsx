@@ -125,23 +125,23 @@ const AdminAnnouncements: React.FC = () => {
           </div>
 
           {/* Post Form */}
-          <div style={{ maxWidth: '600px', margin: '0 auto 40px auto', backgroundColor: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+          <div style={{ maxWidth: '600px', margin: '0 auto 40px auto', backgroundColor: 'var(--eds-color-bg-surface)', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid var(--eds-color-border)' }}>
             <h3 style={{ marginBottom: '20px', fontSize: '18px' }}>Post Announcement</h3>
             <form onSubmit={handlePost}>
               <input
-                style={{ width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', boxSizing: 'border-box' }}
                 placeholder="Title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               />
               <textarea
-                style={{ width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '100px', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', minHeight: '100px', boxSizing: 'border-box' }}
                 placeholder="Message"
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               />
               <select
-                style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', boxSizing: 'border-box' }}
                 value={formData.target_audience}
                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
               >
@@ -154,7 +154,7 @@ const AdminAnnouncements: React.FC = () => {
               <button
                 type="submit"
                 disabled={isPosting}
-                style={{ width: '100%', padding: '12px', backgroundColor: isPosting ? '#93c5fd' : '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: isPosting ? 'not-allowed' : 'pointer' }}
+                style={{ width: '100%', padding: '12px', backgroundColor: isPosting ? 'var(--eds-color-primary-soft-border)' : 'var(--eds-color-primary)', color: 'var(--eds-color-bg-surface)', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: isPosting ? 'not-allowed' : 'pointer' }}
               >
                 {isPosting ? 'Posting...' : 'Post Announcement'}
               </button>
@@ -165,27 +165,27 @@ const AdminAnnouncements: React.FC = () => {
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             <h3 style={{ marginBottom: '16px' }}>Recent Announcements</h3>
             {loading ? (
-              <p style={{ color: '#94a3b8', textAlign: 'center' }}>Loading...</p>
+              <p style={{ color: 'var(--eds-color-text-faint)', textAlign: 'center' }}>Loading...</p>
             ) : announcements.length === 0 ? (
-              <p style={{ color: '#94a3b8', textAlign: 'center' }}>No announcements yet.</p>
+              <p style={{ color: 'var(--eds-color-text-faint)', textAlign: 'center' }}>No announcements yet.</p>
             ) : (
               announcements.map((ann) => (
-                <div key={ann.id} style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '12px', marginBottom: '12px', border: `1px solid ${isMyAnnouncement(ann) ? '#bfdbfe' : '#e2e8f0'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div key={ann.id} style={{ backgroundColor: 'var(--eds-color-bg-surface)', padding: '20px', borderRadius: '12px', marginBottom: '12px', border: `1px solid ${isMyAnnouncement(ann) ? 'var(--eds-color-primary-soft-border)' : 'var(--eds-color-border)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '4px' }}>
+                      <span style={{ fontSize: '11px', background: 'var(--eds-color-primary-soft-border)', color: 'var(--eds-color-primary-hover)', padding: '2px 8px', borderRadius: '4px' }}>
                         {ann.target_audience}
                       </span>
                   
                       {isMyAnnouncement(ann) && (
-                        <span style={{ fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                        <span style={{ fontSize: '11px', background: 'var(--eds-color-success-bg)', color: 'var(--eds-color-success-text)', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
                           Your Post
                         </span>
                       )}
                     </div>
                     <h4 style={{ margin: '0 0 6px 0' }}>{ann.title}</h4>
-                    <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 8px 0' }}>{ann.message}</p>
-                    <small style={{ color: '#94a3b8' }}>
+                    <p style={{ fontSize: '14px', color: 'var(--eds-color-text-muted)', margin: '0 0 8px 0' }}>{ann.message}</p>
+                    <small style={{ color: 'var(--eds-color-text-faint)' }}>
                       By {ann.author_name} • {new Date(ann.created_at).toLocaleString()}
                     </small>
                   </div>
@@ -194,7 +194,7 @@ const AdminAnnouncements: React.FC = () => {
                   {isMyAnnouncement(ann) && (
                     <button
                       onClick={() => handleDelete(ann)}
-                      style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px', marginLeft: '16px', flexShrink: 0 }}
+                      style={{ color: 'var(--eds-color-danger-solid)', border: 'none', background: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px', marginLeft: '16px', flexShrink: 0 }}
                     >
                       Delete
                     </button>

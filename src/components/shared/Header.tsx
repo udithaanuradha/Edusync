@@ -6,9 +6,13 @@ import './Header.css';
 
 interface HeaderProps {
   pageTitle?: string;
+  /** Optional override for whether the feedback-bell badge can show. When
+   * omitted, falls back to the original behavior (student role only) — so
+   * every existing direct `<Header />` usage is unaffected. */
+  showFeedbackBadge?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard' }) => {
+const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard', showFeedbackBadge }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +25,8 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard' }) => {
   // student's own group milestones. Students only; other roles never see
   // this badge since there's nothing to fetch for them.
   useEffect(() => {
-    if (!user?.id || user.role !== 'student') {
+    const canShowBadge = showFeedbackBadge ?? (user?.role === 'student');
+    if (!user?.id || !canShowBadge) {
       setFeedbackCount(0);
       return;
     }
@@ -60,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard' }) => {
       clearInterval(intervalId);
       window.removeEventListener('supervisor-feedback-seen', loadFeedbackCount);
     };
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.role, showFeedbackBadge]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

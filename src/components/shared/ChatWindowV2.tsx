@@ -522,8 +522,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                     onClick={() => setSelectedConversation(conv)}
                   >
                     <div
-                      className="conversation-avatar-v2"
-                      style={isGroupConv(conv) ? { background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" } : {}}
+                      className={`conversation-avatar-v2 ${isGroupConv(conv) ? "group-avatar-v2" : ""}`}
                     >
                       {isGroupConv(conv) ? <Users size={16} /> : conv.partner_name.charAt(0).toUpperCase()}
                       {isOnline && <span className="avatar-online-badge" />}
@@ -564,8 +563,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
             <>
               <div className="chat-partner-header-v2">
                 <div
-                  className="conversation-avatar-v2"
-                  style={isGroupConv(selectedConversation) ? { background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" } : {}}
+                  className={`conversation-avatar-v2 ${isGroupConv(selectedConversation) ? "group-avatar-v2" : ""}`}
                 >
                   {isGroupConv(selectedConversation) ? <Users size={18} /> : selectedConversation.partner_name.charAt(0).toUpperCase()}
                   {isPartnerOnline && <span className="avatar-online-badge" />}
@@ -574,7 +572,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <h3>{selectedConversation.partner_name}</h3>
                     {isGroupConv(selectedConversation) && (
-                      <span style={{ fontSize: "11px", background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: "10px", fontWeight: 700 }}>
+                      <span className="group-label-v2">
                         👥 {selectedConversation.groupConversationType === "mentor" ? "Mentor" : "Supervisor"} Group ({selectedConversation.memberCount} Members)
                       </span>
                     )}
@@ -607,7 +605,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                         className={`message-bubble-v2 ${isSentByMe ? "sent" : "received"}`}
                       >
                         {!isSentByMe && isGroupConv(selectedConversation) && msg.sender_name && (
-                          <div style={{ fontSize: "11px", fontWeight: 700, color: "#2563eb", marginBottom: "3px" }}>
+                          <div className="group-sender-name-v2">
                             {msg.sender_name}
                           </div>
                         )}

@@ -480,8 +480,8 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
-                <Calendar size={20} color="#3b82f6" />
+              <h3 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 700, color: "var(--eds-color-text-strong)", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Calendar size={20} color="var(--eds-color-primary)" />
                 {new Date().toLocaleDateString("en-US", {
                   month: "long",
                   day: "numeric",
@@ -492,7 +492,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
             <span
               style={{
                 fontSize: "12px",
-                color: "#059669",
+                color: "var(--eds-color-success-solid)",
                 fontWeight: 700,
                 backgroundColor: "#d1fae5",
                 padding: "4px 10px",
@@ -506,7 +506,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                 : "✨ Click any empty area on the grid to schedule a task"}
             </span>
           </div>
-          <span style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 500 }}>
+          <span style={{ fontSize: "12.5px", color: "var(--eds-color-text-muted)", fontWeight: 500 }}>
             Week of {weekDays[0].display} - {weekDays[6].display}
           </span>
         </div>
@@ -740,24 +740,24 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                     <div
                       className="student-request-detail-box"
                       style={{
-                        background: "#f8fafc",
-                        border: "1px solid #cbd5e1",
+                        background: "var(--eds-color-bg-surface-soft)",
+                        border: "1px solid var(--eds-color-border)",
                         borderRadius: "8px",
                         padding: "10px 12px",
                       }}
                     >
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "#1e293b", marginBottom: "4px" }}>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--eds-color-text-strong)", marginBottom: "4px" }}>
                         📌 Student Request Details
                       </div>
-                      <div style={{ fontSize: "12px", color: "#334155", marginBottom: "4px" }}>
+                      <div style={{ fontSize: "12px", color: "var(--eds-color-text-body)", marginBottom: "4px" }}>
                         <strong>Group:</strong> {req.group_name || `Group #${req.group_id}`} &nbsp;|&nbsp; <strong>Topic:</strong> {req.topic || "General Meeting"}
                       </div>
                       {req.reason && (
-                        <div style={{ fontSize: "12px", color: "#475569", background: "#ffffff", border: "1px solid #e2e8f0", padding: "6px 8px", borderRadius: "6px", margin: "4px 0" }}>
-                          <span style={{ fontWeight: 600, color: "#0f172a" }}>Student Request Note:</span> {req.reason}
+                        <div style={{ fontSize: "12px", color: "var(--eds-color-text-muted)", background: "var(--eds-color-bg-surface)", border: "1px solid var(--eds-color-border)", padding: "6px 8px", borderRadius: "6px", margin: "4px 0" }}>
+                          <span style={{ fontWeight: 600, color: "var(--eds-color-text-strong)" }}>Student Request Note:</span> {req.reason}
                         </div>
                       )}
-                      <div style={{ fontSize: "11px", color: "#64748b" }}>
+                      <div style={{ fontSize: "11px", color: "var(--eds-color-text-muted)" }}>
                         Requested: {req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "")} ({req.preferred_time ? req.preferred_time.substring(0, 5) : ""} - {req.end_time ? req.end_time.substring(0, 5) : ""})
                       </div>
                     </div>
@@ -807,7 +807,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                     type="button"
                     className="drawer-primary-btn"
                     onClick={rejectRequest}
-                    style={{ background: "#ef4444" }}
+                    style={{ background: "var(--eds-color-danger-solid)" }}
                   >
                     Reject
                   </button>
@@ -815,7 +815,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                     type="button"
                     className="drawer-primary-btn"
                     onClick={saveTask}
-                    style={{ background: "#10b981" }}
+                    style={{ background: "var(--eds-color-success-solid)" }}
                   >
                     <Save size={16} /> Approve & Save
                   </button>

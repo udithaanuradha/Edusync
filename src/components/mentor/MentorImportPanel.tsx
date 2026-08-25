@@ -110,13 +110,13 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
   };
 
   return (
-    <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+    <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', borderRadius: '12px', border: '1px solid var(--eds-color-border)', padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-        <Users size={20} color="#2563eb" />
-        <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 }}>Onboard Industry Mentors</h3>
+        <Users size={20} color="var(--eds-color-primary)" />
+        <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--eds-color-text-strong)', margin: 0 }}>Onboard Industry Mentors</h3>
       </div>
 
-      <p style={{ fontSize: '14px', color: '#475569', marginBottom: '20px' }}>
+      <p style={{ fontSize: '14px', color: 'var(--eds-color-text-muted)', marginBottom: '20px' }}>
         Upload a <strong>.csv</strong> file mapping external industry mentors to your Level {levelNumber} project groups. Matched mentors will receive credentials setup emails directly.
       </p>
 
@@ -127,9 +127,9 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
           accept=".csv" 
           ref={fileInputRef}
           onChange={handleFileUpload} 
-          style={{ fontSize: '14px', border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', width: '250px' }} 
+          style={{ fontSize: '14px', border: '1px solid var(--eds-color-border)', padding: '8px', borderRadius: '6px', width: '250px' }} 
         />
-        <span style={{ fontSize: '12px', color: '#64748b' }}>Headers required: Group Name, Mentor Name, Email</span>
+        <span style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>Headers required: Group Name, Mentor Name, Email</span>
       </div>
 
       {statusMessage.text && (
@@ -141,8 +141,8 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
           display: 'flex', 
           alignItems: 'center', 
           gap: '8px',
-          backgroundColor: statusMessage.type === 'error' ? '#fef2f2' : statusMessage.type === 'success' ? '#f0fdf4' : '#eff6ff',
-          color: statusMessage.type === 'error' ? '#991b1b' : statusMessage.type === 'success' ? '#166534' : '#1e40af'
+          backgroundColor: statusMessage.type === 'error' ? 'var(--eds-color-danger-bg)' : statusMessage.type === 'success' ? 'var(--eds-color-success-bg)' : 'var(--eds-color-primary-soft)',
+          color: statusMessage.type === 'error' ? 'var(--eds-color-danger-text)' : statusMessage.type === 'success' ? 'var(--eds-color-success-text)' : 'var(--eds-color-primary-hover)'
         }}>
           <AlertCircle size={16} />
           <span>{statusMessage.text}</span>
@@ -152,32 +152,32 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
       {/* Preview Table */}
       {mentors.length > 0 && (
         <div>
-          <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>Mapping Preview:</h4>
-          <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '20px', maxHeight: '250px' }}>
+          <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--eds-color-text-body)', marginBottom: '10px' }}>Mapping Preview:</h4>
+          <div style={{ overflowX: 'auto', border: '1px solid var(--eds-color-border)', borderRadius: '8px', marginBottom: '20px', maxHeight: '250px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-              <thead style={{ backgroundColor: '#f8fafc', position: 'sticky', top: 0 }}>
+              <thead style={{ backgroundColor: 'var(--eds-color-bg-surface-soft)', position: 'sticky', top: 0 }}>
                 <tr>
-                  <th style={{ padding: '10px 12px', color: '#475569' }}>Group No</th>
-                  <th style={{ padding: '10px 12px', color: '#475569' }}>Group Name</th>
-                  <th style={{ padding: '10px 12px', color: '#475569' }}>Mentor</th>
-                  <th style={{ padding: '10px 12px', color: '#475569' }}>Email</th>
-                  <th style={{ padding: '10px 12px', color: '#475569' }}>Status</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Group No</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Group Name</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Mentor</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Email</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {mentors.map((mentor, index) => (
-                  <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <tr key={index} style={{ borderBottom: '1px solid var(--eds-color-border)' }}>
                     <td style={{ padding: '10px 12px' }}>{mentor.groupNo}</td>
                     <td style={{ padding: '10px 12px' }}>{mentor.groupName}</td>
                     <td style={{ padding: '10px 12px', fontWeight: 500 }}>{mentor.name}</td>
-                    <td style={{ padding: '10px 12px', color: '#64748b' }}>{mentor.email}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>{mentor.email}</td>
                     <td style={{ padding: '10px 12px' }}>
                       {mentor.groupMatched ? (
-                        <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--eds-color-success-solid)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle size={14} /> Match found
                         </span>
                       ) : (
-                        <span style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--eds-color-danger-solid)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <XCircle size={14} /> Group missing
                         </span>
                       )}
@@ -196,8 +196,8 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
               alignItems: 'center',
               gap: '8px',
               padding: '10px 20px',
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
+              backgroundColor: 'var(--eds-color-primary)',
+              color: 'var(--eds-color-bg-surface)',
               border: 'none',
               borderRadius: '6px',
               fontSize: '14px',

@@ -20,9 +20,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   padding: 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--eds-color-border);
 }
 
 .week-nav {
@@ -33,11 +33,11 @@
 
 /* Fixed Navigation Buttons */
 .timeline-nav-btn {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 6px;
   padding: 6px 14px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
@@ -49,19 +49,19 @@
 }
 
 .timeline-nav-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: var(--eds-color-border-soft);
+  border-color: var(--eds-color-text-faint);
 }
 
 .week-display h3 {
   margin: 0;
   font-size: 18px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .week-display span {
   font-size: 13px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 /* Timeline Grid */
@@ -69,13 +69,13 @@
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
 }
 
 .timeline-axis {
   display: flex;
   margin-left: 100px;
-  border-bottom: 1px solid #cbd5e1;
+  border-bottom: 1px solid var(--eds-color-border);
   padding-bottom: 8px;
   margin-bottom: 16px;
   position: relative;
@@ -84,7 +84,7 @@
 .time-marker {
   position: absolute;
   font-size: 11px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   transform: translateX(-50%);
 }
 
@@ -102,32 +102,32 @@
   flex-direction: column;
   justify-content: center;
   padding-right: 16px;
-  border-right: 2px solid #e2e8f0;
+  border-right: 2px solid var(--eds-color-border);
 }
 
 .day-label strong {
   font-size: 14px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .day-label span {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
 }
 
 .day-track {
   flex: 1;
   position: relative;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   border-radius: 0 8px 8px 0;
   cursor: crosshair;
-  background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px);
+  background-image: linear-gradient(to right, var(--eds-color-border) 1px, transparent 1px);
   background-size: 12.5% 100%;
   /* 8 segments for 16 hours = 2hr blocks */
 }
 
 .day-track:hover {
-  background-color: #f1f5f9;
+  background-color: var(--eds-color-border-soft);
 }
 
 /* Timeline Blocks */
@@ -138,7 +138,7 @@
   border-radius: 6px;
   padding: 4px 8px;
   font-size: 11px;
-  color: #ffffff;
+  color: var(--eds-color-bg-surface);
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -168,13 +168,13 @@
 }
 
 .block-lecture {
-  background: #64748b;
-  border: 1px solid #475569;
+  background: var(--eds-color-text-muted);
+  border: 1px solid var(--eds-color-text-muted);
 }
 
 .block-meeting {
-  background: #3b82f6;
-  border: 1px solid #2563eb;
+  background: var(--eds-color-primary);
+  border: 1px solid var(--eds-color-primary);
 }
 
 .block-faculty {
@@ -183,20 +183,20 @@
 }
 
 .block-personal {
-  background: #10b981;
-  border: 1px solid #059669;
+  background: var(--eds-color-success-solid);
+  border: 1px solid var(--eds-color-success-solid);
 }
 
 /* NEW: Expanded Category Colors */
 .block-interim {
-  background: #f59e0b;
-  border: 1px solid #d97706;
+  background: #b45309;
+  border: 1px solid #b45309;
 }
 
 /* Amber */
 .block-evaluation {
-  background: #ef4444;
-  border: 1px solid #dc2626;
+  background: var(--eds-color-danger-solid);
+  border: 1px solid var(--eds-color-danger-solid);
 }
 
 /* Red */
@@ -237,8 +237,8 @@
 
 /* Fixed Delete Button */
 .task-delete-btn {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-solid);
   border: none;
   border-radius: 8px;
   padding: 8px 14px;
@@ -252,13 +252,13 @@
 }
 
 .task-delete-btn:hover {
-  background: #fee2e2;
+  background: var(--eds-color-danger-bg);
 }
 
 .timeline-open-page-btn {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border: 1px solid var(--eds-color-primary-soft-border);
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 13px;
@@ -271,15 +271,15 @@
 }
 
 .timeline-open-page-btn:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
+  background: var(--eds-color-primary-soft-border);
+  border-color: var(--eds-color-primary-soft-border);
 }
 
 .timeline-inline-card {
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   overflow: hidden;
   display: flex;
   flex-direction: column;

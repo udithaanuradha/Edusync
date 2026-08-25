@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Plus, X, Edit2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import PrimaryButton from '../shared/ui/PrimaryButton';
 import './StageManagement.css';
 
 interface Stage {
@@ -350,13 +351,13 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
   return (
     <div className="stage-management-container">
       <div className="stages-header">
-        <button
+        <PrimaryButton
           className="btn-add-stage"
+          icon={<Plus size={18} />}
           onClick={() => setShowModal(true)}
         >
-          <Plus size={18} />
           Add Stage
-        </button>
+        </PrimaryButton>
       </div>
 
       {/* Master List View */}
@@ -473,31 +474,17 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
                     {/* Action Buttons */}
                     <div style={{ display: 'flex', gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
-                      <button
+                      <PrimaryButton
+                        variant="secondary"
+                        icon={<Edit2 size={16} />}
+                        className="stage-edit-action"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEditStage(stage);
                         }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 14px',
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
                       >
-                        <Edit2 size={16} />
                         Edit Stage
-                      </button>
+                      </PrimaryButton>
                     </div>
                   </div>
                 </div>
@@ -630,12 +617,12 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
             </div>
 
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseModal} disabled={uploadingFiles}>
+              <PrimaryButton variant="secondary" className="btn-cancel" onClick={handleCloseModal} disabled={uploadingFiles}>
                 Cancel
-              </button>
-              <button className="btn-save" onClick={handleAddStage} disabled={uploadingFiles}>
+              </PrimaryButton>
+              <PrimaryButton className="btn-save" onClick={handleAddStage} disabled={uploadingFiles}>
                 {uploadingFiles ? 'Uploading files...' : 'Save Stage'}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -710,12 +697,12 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
             </div>
 
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseEditModal}>
+              <PrimaryButton variant="secondary" className="btn-cancel" onClick={handleCloseEditModal}>
                 Cancel
-              </button>
-              <button className="btn-save" onClick={handleSaveEdit}>
+              </PrimaryButton>
+              <PrimaryButton className="btn-save" onClick={handleSaveEdit}>
                 Save Changes
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>

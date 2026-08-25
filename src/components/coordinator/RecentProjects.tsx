@@ -41,7 +41,7 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
     <div className="recent-projects-card">
       <div className="card-header">
         <TrendingUp size={20} className="header-icon" />
-        <h3 className="card-title">Recent Projects</h3>
+        <h3 className="card-title">Projects</h3>
       </div>
 
       <div className="projects-list">

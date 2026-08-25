@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './ApprovedRequests.css';
+import PrimaryButton from '../shared/ui/PrimaryButton';
 import { ApprovedGroupRequest, ApprovedRequestMember } from './groupRequestTypes';
 
 type ApiRecord = Record<string, unknown>;
@@ -295,9 +296,9 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button type="button" className="approved-refresh-btn" onClick={loadApprovedRequests}>
+          <PrimaryButton type="button" variant="secondary" className="approved-refresh-btn" onClick={loadApprovedRequests}>
             Refresh
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 
@@ -357,13 +358,13 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                 )}
 
                 {alreadyCreated ? (
-                  <button type="button" className="approved-create-btn approved-create-btn--disabled" disabled>
+                  <PrimaryButton type="button" variant="secondary" className="approved-create-btn approved-create-btn--disabled" disabled>
                     Already Created
-                  </button>
+                  </PrimaryButton>
                 ) : (
-                  <button type="button" className="approved-create-btn" onClick={() => onCreateGroup(request)}>
+                  <PrimaryButton type="button" className="approved-create-btn" onClick={() => onCreateGroup(request)}>
                     Create Group
-                  </button>
+                  </PrimaryButton>
                 )}
               </div>
             </article>

@@ -1,7 +1,7 @@
 /* ── Mentor Student Submissions Styles ── */
 .mss-container {
   padding: 32px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   min-height: 100vh;
 }
 
@@ -12,14 +12,14 @@
   justify-content: center;
   min-height: 320px;
   gap: 16px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 .mss-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #2563eb;
+  border: 3px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
   border-radius: 50%;
   animation: mss-spin 0.8s linear infinite;
 }
@@ -36,7 +36,7 @@
   justify-content: space-between;
   align-items: center;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 16px;
   padding: 24px 32px;
   margin-bottom: 28px;
@@ -46,8 +46,8 @@
 
 .mss-header-badge {
   display: inline-block;
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
   font-size: 12px;
   font-weight: 700;
   padding: 4px 12px;
@@ -60,13 +60,13 @@
 .mss-header-left h3 {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   margin: 0 0 6px 0;
 }
 
 .mss-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   margin: 0;
   max-width: 650px;
   line-height: 1.5;
@@ -82,15 +82,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
   padding: 10px 16px;
 }
 
 .mss-stat-pill.late {
-  background: #fffbeb;
-  border-color: #fde68a;
+  background: var(--eds-color-warning-bg);
+  border-color: var(--eds-color-warning-bg);
 }
 
 .mss-stat-meta {
@@ -101,14 +101,14 @@
 .mss-stat-val {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   line-height: 1.2;
 }
 
 .mss-stat-lbl {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   text-transform: uppercase;
 }
 
@@ -117,9 +117,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-solid);
   padding: 14px 18px;
   border-radius: 10px;
   margin-bottom: 24px;
@@ -135,7 +135,7 @@
 
 .mss-submission-card {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
@@ -155,7 +155,7 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
 .mss-stage-badge-wrap {
@@ -165,8 +165,8 @@
 }
 
 .mss-stage-chip {
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-body);
   font-weight: 700;
   font-size: 13px;
   padding: 4px 10px;
@@ -181,13 +181,13 @@
 }
 
 .mss-status-chip.ontime {
-  background: #ecfdf5;
-  color: #059669;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-solid);
 }
 
 .mss-status-chip.late {
-  background: #fffbeb;
-  color: #d97706;
+  background: var(--eds-color-warning-bg);
+  color: #b45309;
 }
 
 .mss-group-badge {
@@ -196,11 +196,11 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
-  background: #f8fafc;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-bg-surface-soft);
   padding: 4px 10px;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
 }
 
 /* ── Student Row ── */
@@ -213,8 +213,8 @@
 .mss-avatar-circle {
   width: 40px;
   height: 40px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -237,11 +237,11 @@
 .mss-student-name {
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .mss-leader-badge {
-  background: #fef3c7;
+  background: var(--eds-color-warning-bg);
   color: #b45309;
   font-size: 10px;
   font-weight: 700;
@@ -251,7 +251,7 @@
 
 .mss-student-meta {
   font-size: 12px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 /* ── Timeline Meta ── */
@@ -260,8 +260,8 @@
   flex-wrap: wrap;
   gap: 16px;
   font-size: 12px;
-  color: #64748b;
-  background: #f8fafc;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-bg-surface-soft);
   padding: 10px 14px;
   border-radius: 8px;
 }
@@ -273,7 +273,7 @@
 }
 
 .mss-meta-item.deadline {
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
 }
 
 /* ── Files Stack ── */
@@ -286,7 +286,7 @@
 .mss-files-title {
   font-size: 12px;
   font-weight: 700;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -301,8 +301,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 8px;
   padding: 10px 14px;
   gap: 12px;
@@ -317,21 +317,21 @@
 }
 
 .mss-file-icon {
-  color: #2563eb;
+  color: var(--eds-color-primary);
   flex-shrink: 0;
 }
 
 .mss-file-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .mss-btn-download {
-  background: #10b981;
+  background: var(--eds-color-success-solid);
   color: white;
   border: none;
   cursor: pointer;
@@ -347,13 +347,13 @@
 }
 
 .mss-btn-download:hover {
-  background: #059669;
+  background: var(--eds-color-success-solid);
   transform: translateY(-1px);
 }
 
 .mss-no-files {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-style: italic;
 }
 
@@ -369,14 +369,14 @@
   max-width: 480px;
   text-align: center;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 16px;
   padding: 40px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .mss-empty-icon {
-  color: #3b82f6;
+  color: var(--eds-color-primary);
   margin-bottom: 16px;
   opacity: 0.8;
 }
@@ -384,13 +384,13 @@
 .mss-empty-card h4 {
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   margin: 0 0 10px 0;
 }
 
 .mss-empty-card p {
   font-size: 14px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   line-height: 1.6;
   margin: 0;
 }

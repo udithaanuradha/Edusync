@@ -13,13 +13,13 @@ export interface LoginRow {
 
 const columnHeaderStyle: React.CSSProperties = {
   padding: '12px 24px',
-  color: '#64748b',
+  color: 'var(--eds-color-text-muted)',
   fontWeight: '600',
   fontSize: '12px',
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
-  borderBottom: '1px solid #e2e8f0',
-  backgroundColor: '#f8fafc',
+  borderBottom: '1px solid var(--eds-color-border)',
+  backgroundColor: 'var(--eds-color-bg-surface-soft)',
 };
 
 const LoginTable: React.FC = () => {
@@ -34,12 +34,12 @@ const LoginTable: React.FC = () => {
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin': return '#e11d48'; 
-      case 'student': return '#2563eb'; 
-      case 'coordinator': return '#059669'; 
+      case 'student': return 'var(--eds-color-primary)'; 
+      case 'coordinator': return 'var(--eds-color-success-solid)'; 
       case 'supervisor': return '#7c3aed'; 
       case 'lecturer': return '#0284c7';
       case 'mentor': return '#d97706';
-      default: return '#64748b';
+      default: return 'var(--eds-color-text-muted)';
     }
   };
 
@@ -171,10 +171,10 @@ const LoginTable: React.FC = () => {
 
   return (
     <div style={{
-      backgroundColor: '#ffffff',
+      backgroundColor: 'var(--eds-color-bg-surface)',
       marginTop: '32px',
       borderRadius: '14px',
-      border: '1px solid #e2e8f0',
+      border: '1px solid var(--eds-color-border)',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
       width: '100%',
@@ -183,20 +183,20 @@ const LoginTable: React.FC = () => {
       {/* Title Header: Clean White with Search & Filter Pills */}
       <div style={{ 
         padding: '18px 24px', 
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: '1px solid var(--eds-color-border-soft)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: '14px',
-        backgroundColor: '#ffffff'
+        backgroundColor: 'var(--eds-color-bg-surface)'
       }}>
         <div>
-          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={18} color="#2563eb" />
+          <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--eds-color-text-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={18} color="var(--eds-color-primary)" />
             System Users Directory & Security Management
           </h2>
-          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
             Search across all {allUsers.length > 0 ? `${allUsers.length} ` : ''}enrolled students, lecturers, supervisors, mentors, and administrators.
           </p>
         </div>
@@ -207,14 +207,14 @@ const LoginTable: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #cbd5e1',
+            backgroundColor: 'var(--eds-color-bg-surface-soft)',
+            border: '1px solid var(--eds-color-border)',
             borderRadius: '8px',
             padding: '7px 12px',
             width: '280px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
           }}>
-            <Search size={14} color="#64748b" />
+            <Search size={14} color="var(--eds-color-text-muted)" />
             <input
               type="text"
               placeholder="Search all users by name, email, role..."
@@ -226,7 +226,7 @@ const LoginTable: React.FC = () => {
                 outline: 'none',
                 fontSize: '12px',
                 width: '100%',
-                color: '#0f172a',
+                color: 'var(--eds-color-text-strong)',
               }}
             />
             {searchQuery && (
@@ -236,7 +236,7 @@ const LoginTable: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: 'var(--eds-color-text-faint)',
                   fontSize: '13px',
                   cursor: 'pointer',
                   padding: 0,
@@ -247,7 +247,7 @@ const LoginTable: React.FC = () => {
             )}
           </div>
 
-          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: '11px', color: 'var(--eds-color-text-faint)', fontWeight: '600', letterSpacing: '0.04em' }}>
             TIMEZONE: IST (SL)
           </div>
         </div>
@@ -259,8 +259,8 @@ const LoginTable: React.FC = () => {
           display: 'flex',
           gap: '8px',
           padding: '10px 24px',
-          backgroundColor: '#fafbfc',
-          borderBottom: '1px solid #f1f5f9',
+          backgroundColor: 'var(--eds-color-bg-surface-soft)',
+          borderBottom: '1px solid var(--eds-color-border-soft)',
           overflowX: 'auto',
         }}>
           <button
@@ -276,8 +276,8 @@ const LoginTable: React.FC = () => {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: activeFilter === 'recent' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'recent' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'recent' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'recent' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -298,8 +298,8 @@ const LoginTable: React.FC = () => {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: activeFilter === 'all' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'all' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'all' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'all' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -317,8 +317,8 @@ const LoginTable: React.FC = () => {
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
-              backgroundColor: activeFilter === 'student' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'student' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'student' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'student' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -335,8 +335,8 @@ const LoginTable: React.FC = () => {
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
-              backgroundColor: activeFilter === 'lecturer' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'lecturer' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'lecturer' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'lecturer' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -353,8 +353,8 @@ const LoginTable: React.FC = () => {
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
-              backgroundColor: activeFilter === 'mentor' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'mentor' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'mentor' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'mentor' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -365,7 +365,7 @@ const LoginTable: React.FC = () => {
 
       {/* Search Result Counter */}
       {searchQuery && (
-        <div style={{ padding: '8px 24px', backgroundColor: '#eff6ff', borderBottom: '1px solid #dbeafe', fontSize: '12px', color: '#1e40af', fontWeight: '600' }}>
+        <div style={{ padding: '8px 24px', backgroundColor: 'var(--eds-color-primary-soft)', borderBottom: '1px solid var(--eds-color-primary-soft-border)', fontSize: '12px', color: 'var(--eds-color-primary-hover)', fontWeight: '600' }}>
           Showing {displayedLogins.length} user{displayedLogins.length !== 1 ? 's' : ''} matching "{searchQuery}" across entire university database:
         </div>
       )}
@@ -384,40 +384,40 @@ const LoginTable: React.FC = () => {
 
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>Syncing users directory from server...</td></tr>
+              <tr><td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: 'var(--eds-color-text-faint)' }}>Syncing users directory from server...</td></tr>
             ) : displayedLogins.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>No users match the search filter "{searchQuery}".</td></tr>
+              <tr><td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: 'var(--eds-color-text-faint)' }}>No users match the search filter "{searchQuery}".</td></tr>
             ) : (
               displayedLogins.map((login, index) => (
                 <tr 
                   key={`${login.id || index}-${login.username}`} 
                   className="pro-table-row" 
                   style={{ 
-                    borderBottom: '1px solid #f8fafc',
-                    backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafbfc' 
+                    borderBottom: '1px solid var(--eds-color-bg-surface-soft)',
+                    backgroundColor: index % 2 === 0 ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-bg-surface-soft)' 
                   }}
                 >
                   <td style={{ padding: '12px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
                         width: '32px', height: '32px', borderRadius: '8px', 
-                        backgroundColor: '#eff6ff', color: '#2563eb',
+                        backgroundColor: 'var(--eds-color-primary-soft)', color: 'var(--eds-color-primary)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: '700', fontSize: '12px', border: '1px solid #dbeafe',
+                        fontWeight: '700', fontSize: '12px', border: '1px solid var(--eds-color-primary-soft-border)',
                         flexShrink: 0,
                       }}>
                         {login.username ? login.username.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div>
-                        <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--eds-color-text-strong)' }}>
                           {login.username}
                           {login.id && (
-                            <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '6px', fontWeight: '400' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--eds-color-text-faint)', marginLeft: '6px', fontWeight: '400' }}>
                               #{login.id}
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--eds-color-text-muted)' }}>
                           {login.email || `${login.username.toLowerCase().replace(/\s+/g, '')}@uom.lk`}
                         </div>
                       </div>
@@ -430,20 +430,20 @@ const LoginTable: React.FC = () => {
                         width: '7px', height: '7px', borderRadius: '50%', 
                         backgroundColor: getRoleColor(login.role) 
                       }} />
-                      <span style={{ color: '#475569', fontWeight: '600', fontSize: '12px', textTransform: 'capitalize' }}>
+                      <span style={{ color: 'var(--eds-color-text-muted)', fontWeight: '600', fontSize: '12px', textTransform: 'capitalize' }}>
                         {login.role}
                       </span>
                     </div>
                   </td>
 
-                  <td style={{ padding: '12px 24px', color: '#64748b', fontVariantNumeric: 'tabular-nums', fontSize: '12px' }}>
+                  <td style={{ padding: '12px 24px', color: 'var(--eds-color-text-muted)', fontVariantNumeric: 'tabular-nums', fontSize: '12px' }}>
                     {login.isOnline ? (
                       new Date(login.time).toLocaleString('en-GB', { 
                         timeZone: 'Asia/Colombo',
                         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true 
                       })
                     ) : (
-                      <span style={{ color: '#94a3b8' }}>Enrolled User</span>
+                      <span style={{ color: 'var(--eds-color-text-faint)' }}>Enrolled User</span>
                     )}
                   </td>
 
@@ -451,10 +451,10 @@ const LoginTable: React.FC = () => {
                     {login.isOnline ? (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                          <span className="pulse-dot"></span>
-                         <span style={{ color: '#059669', fontSize: '11px', fontWeight: '700' }}>ONLINE</span>
+                         <span style={{ color: 'var(--eds-color-success-solid)', fontSize: '11px', fontWeight: '700' }}>ONLINE</span>
                       </div>
                     ) : (
-                      <span style={{ color: '#64748b', fontSize: '11px', fontWeight: '500' }}>
+                      <span style={{ color: 'var(--eds-color-text-muted)', fontSize: '11px', fontWeight: '500' }}>
                         Active
                       </span>
                     )}
@@ -469,28 +469,28 @@ const LoginTable: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #cbd5e1',
+                        backgroundColor: 'var(--eds-color-bg-surface-soft)',
+                        border: '1px solid var(--eds-color-border)',
                         borderRadius: '8px',
                         padding: '6px 12px',
                         fontSize: '12px',
                         fontWeight: '600',
-                        color: '#1e293b',
+                        color: 'var(--eds-color-text-strong)',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
                       }}
                       onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#eff6ff';
-                        e.currentTarget.style.borderColor = '#93c5fd';
-                        e.currentTarget.style.color = '#1d4ed8';
+                        e.currentTarget.style.backgroundColor = 'var(--eds-color-primary-soft)';
+                        e.currentTarget.style.borderColor = 'var(--eds-color-primary-soft-border)';
+                        e.currentTarget.style.color = 'var(--eds-color-primary-hover)';
                       }}
                       onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f8fafc';
-                        e.currentTarget.style.borderColor = '#cbd5e1';
-                        e.currentTarget.style.color = '#1e293b';
+                        e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface-soft)';
+                        e.currentTarget.style.borderColor = 'var(--eds-color-border)';
+                        e.currentTarget.style.color = 'var(--eds-color-text-strong)';
                       }}
                     >
-                      <KeyRound size={13} color="#2563eb" />
+                      <KeyRound size={13} color="var(--eds-color-primary)" />
                       Reset Password
                     </button>
                   </td>
@@ -513,12 +513,12 @@ const LoginTable: React.FC = () => {
       
       <style>{`
         .pro-table-row { transition: background-color 0.1s ease; }
-        .pro-table-row:hover { background-color: #f0f7ff !important; }
+        .pro-table-row:hover { background-color: var(--eds-color-primary-soft) !important; }
         
         .pulse-dot {
           width: 6px;
           height: 6px;
-          background-color: #10b981;
+          background-color: var(--eds-color-success-solid);
           border-radius: 50%;
           position: relative;
         }
@@ -528,7 +528,7 @@ const LoginTable: React.FC = () => {
           position: absolute;
           width: 100%;
           height: 100%;
-          background-color: #10b981;
+          background-color: var(--eds-color-success-solid);
           border-radius: 50%;
           animation: pulse 2s infinite;
         }

@@ -34,6 +34,13 @@ interface AnnouncementWidgetProps {
   useRoleQuery?: boolean;
   showOnlyMyAnnouncements?: boolean;
   showOnlyAllAudience?: boolean;
+  // Opt-in, read-time-only filter: hides announcements older than this many
+  // days from THIS view. Nothing is deleted (soft or otherwise) and no
+  // scheduled job is involved — an announcement still shows normally in any
+  // usage of this widget that doesn't pass recentDays (e.g. a dedicated
+  // Announcements page), and an unread one is never hidden from someone who
+  // hasn't seen it just because it's old — see the on-widget unread count.
+  recentDays?: number;
 }
 
 const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidgetProps>(
@@ -47,6 +54,7 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
       useRoleQuery = true,
       showOnlyMyAnnouncements = false,
       showOnlyAllAudience = false,
+      recentDays,
     },
     ref
   ) => {
@@ -182,7 +190,16 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
 
         console.log("Parsed announcements list:", list);
 
-        const filteredList = applyScopeFilter(list);
+        let filteredList = applyScopeFilter(list);
+        if (recentDays) {
+          const cutoff = Date.now() - recentDays * 24 * 60 * 60 * 1000;
+          // Age only hides an announcement once it's both old AND already
+          // read — an unread one stays visible no matter how old, so it's
+          // never silently missed.
+          filteredList = filteredList.filter(
+            (item) => readIds.includes(item.id) === false || new Date(item.created_at).getTime() >= cutoff
+          );
+        }
         setItems(filteredList.slice(0, maxItems));
       } catch (err) {
         const message =
@@ -286,6 +303,7 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
       user?.id,
       showOnlyMyAnnouncements,
       showOnlyAllAudience,
+      recentDays,
     ]);
 
     const formatTime = (value: string) => {

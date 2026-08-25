@@ -572,7 +572,7 @@ const ProjectManagementPage: React.FC = () => {
                 <button 
                   onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
                   className="secondary-btn"
-                  style={{ marginTop: '15px', border: '1px solid #cbd5e1' }}
+                  style={{ marginTop: '15px', border: '1px solid var(--eds-color-border)' }}
                 >
                   Retry Loading
                 </button>
@@ -614,7 +614,7 @@ const ProjectManagementPage: React.FC = () => {
                 <button 
                   onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
                   className="secondary-btn"
-                  style={{ marginTop: '15px', border: '1px solid #cbd5e1' }}
+                  style={{ marginTop: '15px', border: '1px solid var(--eds-color-border)' }}
                 >
                   Retry Loading
                 </button>
