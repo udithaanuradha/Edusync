@@ -336,7 +336,7 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
           <h1>Project Group Formation</h1>
           <p>EduSync Project Management System</p>
         </div>
-        <div className="rejection-reason-box" style={{ backgroundColor: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe' }}>
+        <div className="rejection-reason-box" style={{ backgroundColor: 'var(--eds-color-primary-soft-border)', color: 'var(--eds-color-primary-hover)', border: '1px solid var(--eds-color-primary-soft-border)' }}>
           <strong>You're already part of Group: {activeGroup.groupName}.</strong>
         </div>
       </div>
@@ -391,7 +391,7 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
                 value={currentSelection}
                 onChange={(e) => setCurrentSelection(e.target.value)}
                 disabled={requestStatus !== 'none' && requestStatus !== 'rejected' || selectedMembers.length >= 4}
-                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid var(--eds-color-border)' }}
               >
                 <option value="">Choose a student...</option>
                 {availableStudents.map(s => (
@@ -402,21 +402,21 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
                 type="button"
                 onClick={addMember}
                 disabled={!currentSelection || requestStatus !== 'none' && requestStatus !== 'rejected'}
-                style={{ padding: '0 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                style={{ padding: '0 20px', backgroundColor: 'var(--eds-color-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
               >
                 Add
               </button>
             </div>
 
-            <div className="selected-members-list" style={{ minHeight: '100px', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
-              {selectedMembers.length === 0 && <p style={{ color: '#9ca3af', fontSize: '14px', textAlign: 'center', marginTop: '30px' }}>No members added yet.</p>}
+            <div className="selected-members-list" style={{ minHeight: '100px', padding: '10px', border: '1px solid var(--eds-color-border)', borderRadius: '8px', backgroundColor: 'var(--eds-color-bg-surface-soft)' }}>
+              {selectedMembers.length === 0 && <p style={{ color: 'var(--eds-color-text-faint)', fontSize: '14px', textAlign: 'center', marginTop: '30px' }}>No members added yet.</p>}
               {selectedMembers.map(member => (
-                <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px', marginBottom: '8px' }}>
+                <div key={member.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'white', border: '1px solid var(--eds-color-border)', borderRadius: '6px', marginBottom: '8px' }}>
                   <span style={{ fontSize: '14px', fontWeight: '500' }}>{member.name} ({member.university_id})</span>
                   {(requestStatus === 'none' || requestStatus === 'rejected') && (
                     <button
                       onClick={() => removeMember(member.id)}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--eds-color-danger-solid)', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
                     >
                       Remove
                     </button>

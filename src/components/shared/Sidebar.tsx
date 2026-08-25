@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FC } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -25,7 +25,7 @@ interface AcademicLevel {
   path: string;
 }
 
-interface MenuItem {
+export interface MenuItem {
   path?: string;
   key?: string;
   icon: LucideIcon;
@@ -34,7 +34,14 @@ interface MenuItem {
   submenu?: AcademicLevel[] | SubMenuItem[];
 }
 
-const Sidebar = () => {
+interface SidebarProps {
+  /** Optional, role-driven nav item list — e.g. passed by AppShell. When
+   * omitted, Sidebar falls back to its original hardcoded list exactly as
+   * before, so every existing direct `<Sidebar />` usage is unaffected. */
+  navItems?: MenuItem[];
+}
+
+const Sidebar: FC<SidebarProps> = ({ navItems }) => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const { user } = useAuth();
   const userObj = user as any; // Cast to bypass strict type check for designation field
@@ -60,7 +67,7 @@ const Sidebar = () => {
     }
   };
 
-  const menuItems: MenuItem[] = [
+  const defaultMenuItems: MenuItem[] = [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     {
       key: "academicLevel",
@@ -90,6 +97,8 @@ const Sidebar = () => {
       label: "Project Delays",
     },
   ];
+
+  const menuItems = navItems ?? defaultMenuItems;
 
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>

@@ -13,21 +13,21 @@
 
 .approval-page-head h2 {
   font-size: 1.6rem;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .approval-refresh-btn {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--eds-color-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-strong);
   padding: 8px 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .approval-refresh-btn:hover {
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
 }
 
 .approval-request-grid {
@@ -37,8 +37,8 @@
 }
 
 .approval-request-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 8px 20px rgba(2, 6, 23, 0.06);
@@ -55,7 +55,7 @@
 }
 
 .approval-card-head h3 {
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 1.1rem;
 }
 
@@ -83,26 +83,26 @@
 }
 
 .approval-btn.approve {
-  background: #16a34a;
-  color: #ffffff;
+  background: var(--eds-color-success-solid);
+  color: var(--eds-color-bg-surface);
 }
 
 .approval-btn.approve:hover {
-  background: #15803d;
+  background: var(--eds-color-success-solid-hover);
 }
 
 .approval-btn.reject {
-  background: #dc2626;
-  color: #ffffff;
+  background: var(--eds-color-danger-solid);
+  color: var(--eds-color-bg-surface);
 }
 
 .approval-btn.reject:hover {
-  background: #b91c1c;
+  background: var(--eds-color-danger-text);
 }
 
 .approval-btn.ghost {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--eds-color-border);
+  color: var(--eds-color-text-strong);
 }
 
 .approval-btn:disabled {
@@ -111,13 +111,13 @@
 }
 
 .approval-muted {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 .approval-error {
-  color: #b91c1c;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
+  color: var(--eds-color-danger-text);
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
   border-radius: 8px;
   padding: 10px;
 }
@@ -134,7 +134,7 @@
 
 .approval-modal {
   width: min(540px, 92vw);
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   border-radius: 12px;
   padding: 18px;
   display: flex;
@@ -143,15 +143,15 @@
 }
 
 .approval-modal h3 {
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .approval-modal p {
-  color: #475569;
+  color: var(--eds-color-text-muted);
 }
 
 .approval-modal textarea {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--eds-color-border);
   border-radius: 8px;
   padding: 10px;
   resize: vertical;

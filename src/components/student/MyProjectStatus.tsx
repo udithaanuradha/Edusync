@@ -1,73 +1,20 @@
  import React from 'react';
 import { FiCheckCircle, FiClock, FiAlertCircle, FiUsers, FiCalendar } from 'react-icons/fi';
-import './MyProjectStatus.css';
+import StatCard from '../shared/ui/StatCard';
 
-interface DashboardStats {
-  completionPercent: number | null;
-  completedTasksCount: number;
-  totalTasksCount: number;
-  delayedCount: number;
-  membersCount: number;
-  nearestDeadline: { date: string; title?: string } | null;
-}
-
-interface MyProjectStatusProps {
-  stats?: DashboardStats | null;
-  loading?: boolean;
-}
-
-const formatDeadline = (date: string | null | undefined): string => {
-  if (!date) return '—';
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return '—';
-  return parsed.toLocaleString('en-US', { day: 'numeric', month: 'short' });
-};
-
-const MyProjectStatus: React.FC<MyProjectStatusProps> = ({ stats, loading }) => {
-  const hasStats = Boolean(stats);
-
-  const completionValue = loading
-    ? '—'
-    : hasStats && stats!.completionPercent !== null
-    ? `${stats!.completionPercent}%`
-    : '—';
-
-  const tasksDoneValue = loading
-    ? '—'
-    : hasStats && stats!.totalTasksCount > 0
-    ? `${stats!.completedTasksCount}/${stats!.totalTasksCount}`
-    : '—';
-
-  const delayedValue = loading ? '—' : hasStats ? String(stats!.delayedCount) : '—';
-
-  const membersValue = loading ? '—' : hasStats ? String(stats!.membersCount) : '—';
-
-  const deadlineValue = loading
-    ? '—'
-    : hasStats && stats!.nearestDeadline
-    ? formatDeadline(stats!.nearestDeadline.date)
-    : '—';
-
-  const stat = [
-    { id: 'completion', label: 'Completion', value: completionValue, icon: <FiCheckCircle />, color: '#059669', bg: '#ecfdf5' },
-    { id: 'tasks-done', label: 'Tasks Done', value: tasksDoneValue, icon: <FiClock />, color: '#2563eb', bg: '#eff6ff' },
-    { id: 'delayed', label: 'Delayed', value: delayedValue, icon: <FiAlertCircle />, color: '#dc2626', bg: '#fef2f2' },
-    { id: 'members', label: 'Members', value: membersValue, icon: <FiUsers />, color: '#d97706', bg: '#fffbeb' },
-    { id: 'deadline', label: 'Deadline', value: deadlineValue, icon: <FiCalendar />, color: '#4b5563', bg: '#f9fafb' },
+const MyProjectStatus: React.FC = () => {
+  const stats = [
+    { label: 'Completion', value: '75%', icon: <FiCheckCircle />, tone: 'success' as const },
+    { label: 'Tasks Done', value: '12/15', icon: <FiClock />, tone: 'primary' as const },
+    { label: 'Delayed', value: '1', icon: <FiAlertCircle />, tone: 'danger' as const },
+    { label: 'Members', value: '3', icon: <FiUsers />, tone: 'warning' as const },
+    { label: 'Deadline', value: '20 Dec', icon: <FiCalendar />, tone: 'neutral' as const },
   ];
 
   return (
     <div className="student-stats-grid">
-      {stat.map((s) => (
-        <div key={s.id} className="stat-card-view">
-          <div className="stat-icon-box" style={{ backgroundColor: s.bg, color: s.color }}>
-            {s.icon}
-          </div>
-          <div className="stat-text-content">
-            <span className="stat-value-text">{s.value}</span>
-            <span className="stat-label-text">{s.label}</span>
-          </div>
-        </div>
+      {stats.map((stat) => (
+        <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} tone={stat.tone} />
       ))}
     </div>
   );

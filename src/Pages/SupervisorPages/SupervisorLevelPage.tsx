@@ -742,8 +742,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   // neutral, and the percent is always shown as text alongside — color is a
   // reinforcement, never the only signal.
   const progressBandColor = (percent: number): string => {
-    if (percent >= 75) return "#0ca30c"; // good
-    if (percent >= 40) return "#fab219"; // warning
+    if (percent >= 75) return "var(--eds-color-success-solid)"; // good
+    if (percent >= 40) return "#b45309"; // warning
     return "#d03b3b"; // critical (also covers 0 / no tasks yet)
   };
 
@@ -1223,8 +1223,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 onClick={() => handleApproveRequest(item.requestId)}
                 disabled={actionBusyId === item.requestId}
                 style={{
-                  background: "#2563eb",
-                  color: "#fff",
+                  background: "var(--eds-color-primary)",
+                  color: "var(--eds-color-bg-surface)",
                   border: "none",
                   borderRadius: 8,
                   padding: "8px 16px",
@@ -1239,8 +1239,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 onClick={() => handleRejectRequest(item.requestId)}
                 disabled={actionBusyId === item.requestId}
                 style={{
-                  background: "#ef4444",
-                  color: "#fff",
+                  background: "var(--eds-color-danger-solid)",
+                  color: "var(--eds-color-bg-surface)",
                   border: "none",
                   borderRadius: 8,
                   padding: "8px 16px",

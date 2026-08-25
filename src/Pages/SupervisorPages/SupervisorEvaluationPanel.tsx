@@ -343,13 +343,13 @@ const SupervisorEvaluationPanel: React.FC = () => {
   const getStageBadgeStyle = (type?: string) => {
     const t = (type || "").toLowerCase();
     if (t.includes("proposal")) {
-      return { backgroundColor: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" };
+      return { backgroundColor: "var(--eds-color-primary-soft)", color: "var(--eds-color-primary-hover)", border: "1px solid var(--eds-color-primary-soft-border)" };
     }
     if (t.includes("interim")) {
-      return { backgroundColor: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" };
+      return { backgroundColor: "var(--eds-color-warning-bg)", color: "var(--eds-color-warning-text)", border: "1px solid var(--eds-color-warning-bg)" };
     }
     if (t.includes("final")) {
-      return { backgroundColor: "#dcfce7", color: "#166534", border: "1px solid #86efac" };
+      return { backgroundColor: "var(--eds-color-success-bg)", color: "var(--eds-color-success-text)", border: "1px solid var(--eds-color-success-solid)" };
     }
     return { backgroundColor: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" };
   };
@@ -391,11 +391,11 @@ const SupervisorEvaluationPanel: React.FC = () => {
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <h2 style={{ margin: 0, color: "#0f172a" }}>Evaluation Panel Marks Entry</h2>
+                  <h2 style={{ margin: 0, color: "var(--eds-color-text-strong)" }}>Evaluation Panel Marks Entry</h2>
                   <span
                     style={{
-                      backgroundColor: "#16a34a",
-                      color: "#fff",
+                      backgroundColor: "var(--eds-color-success-solid)",
+                      color: "var(--eds-color-bg-surface)",
                       padding: "3px 10px",
                       borderRadius: "12px",
                       fontSize: "12px",
@@ -405,7 +405,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                     Level {selectedLevel}
                   </span>
                 </div>
-                <p style={{ color: "#64748b", margin: "4px 0 0 0", fontSize: "14px" }}>
+                <p style={{ color: "var(--eds-color-text-muted)", margin: "4px 0 0 0", fontSize: "14px" }}>
                   Evaluate assigned project groups and assign individual marks & feedback for each student.
                 </p>
               </div>
@@ -417,9 +417,9 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   style={{
                     padding: "8px 16px",
                     borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: "#ffffff",
-                    color: "#475569",
+                    border: "1px solid var(--eds-color-border)",
+                    backgroundColor: "var(--eds-color-bg-surface)",
+                    color: "var(--eds-color-text-muted)",
                     fontWeight: "600",
                     cursor: "pointer",
                     fontSize: "14px",
@@ -429,12 +429,12 @@ const SupervisorEvaluationPanel: React.FC = () => {
                     transition: "all 0.2s ease",
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = "#f1f5f9";
-                    e.currentTarget.style.borderColor = "#94a3b8";
+                    e.currentTarget.style.backgroundColor = "var(--eds-color-border-soft)";
+                    e.currentTarget.style.borderColor = "var(--eds-color-text-faint)";
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = "#ffffff";
-                    e.currentTarget.style.borderColor = "#cbd5e1";
+                    e.currentTarget.style.backgroundColor = "var(--eds-color-bg-surface)";
+                    e.currentTarget.style.borderColor = "var(--eds-color-border)";
                   }}
                 >
                   ← Back to Calendar
@@ -449,9 +449,9 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   padding: "14px 18px",
                   borderRadius: "8px",
                   marginBottom: "20px",
-                  backgroundColor: message.type === "success" ? "#dcfce7" : "#fee2e2",
-                  color: message.type === "success" ? "#15803d" : "#b91c1c",
-                  border: `1px solid ${message.type === "success" ? "#86efac" : "#fca5a5"}`,
+                  backgroundColor: message.type === "success" ? "var(--eds-color-success-bg)" : "var(--eds-color-danger-bg)",
+                  color: message.type === "success" ? "var(--eds-color-success-solid-hover)" : "var(--eds-color-danger-text)",
+                  border: `1px solid ${message.type === "success" ? "var(--eds-color-success-solid)" : "var(--eds-color-danger-solid)"}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -482,13 +482,13 @@ const SupervisorEvaluationPanel: React.FC = () => {
                 style={{
                   padding: "40px",
                   textAlign: "center",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--eds-color-bg-surface)",
                   borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--eds-color-border)",
                 }}
               >
                 <div style={{ fontSize: "24px", marginBottom: "8px" }}>⏳</div>
-                <p style={{ color: "#64748b", margin: 0, fontWeight: "500" }}>
+                <p style={{ color: "var(--eds-color-text-muted)", margin: 0, fontWeight: "500" }}>
                   Loading assigned evaluation panels for Level {selectedLevel}...
                 </p>
               </div>
@@ -497,16 +497,16 @@ const SupervisorEvaluationPanel: React.FC = () => {
                 style={{
                   padding: "40px 20px",
                   textAlign: "center",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--eds-color-bg-surface)",
                   borderRadius: "12px",
-                  border: "1px dashed #cbd5e1",
+                  border: "1px dashed var(--eds-color-border)",
                 }}
               >
                 <div style={{ fontSize: "36px", marginBottom: "12px" }}>📋</div>
-                <h3 style={{ margin: "0 0 8px 0", color: "#1e293b" }}>
+                <h3 style={{ margin: "0 0 8px 0", color: "var(--eds-color-text-strong)" }}>
                   No Evaluation Panels Assigned
                 </h3>
-                <p style={{ color: "#64748b", maxWidth: "500px", margin: "0 auto 16px auto", fontSize: "14px" }}>
+                <p style={{ color: "var(--eds-color-text-muted)", maxWidth: "500px", margin: "0 auto 16px auto", fontSize: "14px" }}>
                   You are currently not listed as an active evaluator in any evaluation panel for Level {selectedLevel}.
                   Please select another level or contact the coordinator if you should be assigned.
                 </p>
@@ -516,8 +516,8 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   style={{
                     padding: "8px 16px",
                     borderRadius: "6px",
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: "#f8fafc",
+                    border: "1px solid var(--eds-color-border)",
+                    backgroundColor: "var(--eds-color-bg-surface-soft)",
                     cursor: "pointer",
                     fontSize: "13px",
                     fontWeight: "600",
@@ -533,9 +533,9 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   style={{
                     marginBottom: "20px",
                     padding: "18px 20px",
-                    backgroundColor: "#f8fafc",
+                    backgroundColor: "var(--eds-color-bg-surface-soft)",
                     borderRadius: "10px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--eds-color-border)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -544,7 +544,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                    <label htmlFor="group-select" style={{ fontWeight: "600", color: "#1e293b", fontSize: "14px" }}>
+                    <label htmlFor="group-select" style={{ fontWeight: "600", color: "var(--eds-color-text-strong)", fontSize: "14px" }}>
                       Assigned Group:
                     </label>
                     <select
@@ -565,12 +565,12 @@ const SupervisorEvaluationPanel: React.FC = () => {
                       style={{
                         padding: "10px 14px",
                         borderRadius: "8px",
-                        border: "1px solid #cbd5e1",
+                        border: "1px solid var(--eds-color-border)",
                         fontSize: "14px",
                         minWidth: "320px",
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "var(--eds-color-bg-surface)",
                         fontWeight: "500",
-                        color: "#0f172a",
+                        color: "var(--eds-color-text-strong)",
                       }}
                     >
                       {groups.map((group) => {
@@ -601,7 +601,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                       )}
 
                       {selectedGroup.panel_date && (
-                        <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>
+                        <span style={{ fontSize: "13px", color: "var(--eds-color-text-muted)", fontWeight: "500" }}>
                           📅 {new Date(selectedGroup.panel_date).toLocaleDateString()}
                           {selectedGroup.start_time ? ` at ${selectedGroup.start_time}` : ""}
                         </span>
@@ -615,10 +615,10 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   <form onSubmit={handleSubmit}>
                     <div
                       style={{
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "var(--eds-color-bg-surface)",
                         padding: "24px",
                         borderRadius: "12px",
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid var(--eds-color-border)",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                       }}
                     >
@@ -626,7 +626,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                       <div
                         style={{
                           marginBottom: "20px",
-                          borderBottom: "1px solid #f1f5f9",
+                          borderBottom: "1px solid var(--eds-color-border-soft)",
                           paddingBottom: "16px",
                           display: "flex",
                           justifyContent: "space-between",
@@ -636,10 +636,10 @@ const SupervisorEvaluationPanel: React.FC = () => {
                         }}
                       >
                         <div>
-                          <h3 style={{ margin: "0 0 6px 0", color: "#0f172a", fontSize: "18px" }}>
+                          <h3 style={{ margin: "0 0 6px 0", color: "var(--eds-color-text-strong)", fontSize: "18px" }}>
                             {selectedGroup.group_name}
                           </h3>
-                          <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>
+                          <p style={{ margin: 0, color: "var(--eds-color-text-muted)", fontSize: "14px" }}>
                             <strong>Leader:</strong> {selectedGroup.leader_name || "N/A"} •{" "}
                             <strong>Members:</strong> {selectedGroup.members?.length || 0} students
                           </p>
@@ -648,11 +648,11 @@ const SupervisorEvaluationPanel: React.FC = () => {
                         {/* Panel Evaluators pill */}
                         <div
                           style={{
-                            backgroundColor: "#f1f5f9",
+                            backgroundColor: "var(--eds-color-border-soft)",
                             padding: "8px 14px",
                             borderRadius: "8px",
                             fontSize: "13px",
-                            color: "#334155",
+                            color: "var(--eds-color-text-body)",
                           }}
                         >
                           <strong>Panel Evaluators:</strong>{" "}
@@ -665,13 +665,13 @@ const SupervisorEvaluationPanel: React.FC = () => {
                       <div style={{ overflowX: "auto" }}>
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                           <thead>
-                            <tr style={{ backgroundColor: "#f8fafc", textAlign: "left", color: "#475569", fontSize: "13px" }}>
-                              <th style={{ padding: "12px 14px", borderBottom: "2px solid #e2e8f0" }}>Student Details</th>
-                              <th style={{ padding: "12px 14px", borderBottom: "2px solid #e2e8f0" }}>Reg / Index No</th>
-                              <th style={{ padding: "12px 14px", borderBottom: "2px solid #e2e8f0", minWidth: "190px" }}>
+                            <tr style={{ backgroundColor: "var(--eds-color-bg-surface-soft)", textAlign: "left", color: "var(--eds-color-text-muted)", fontSize: "13px" }}>
+                              <th style={{ padding: "12px 14px", borderBottom: "2px solid var(--eds-color-border)" }}>Student Details</th>
+                              <th style={{ padding: "12px 14px", borderBottom: "2px solid var(--eds-color-border)" }}>Reg / Index No</th>
+                              <th style={{ padding: "12px 14px", borderBottom: "2px solid var(--eds-color-border)", minWidth: "190px" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                   <span>Your Mark</span>
-                                  <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "600" }}>(/</span>
+                                  <span style={{ fontSize: "13px", color: "var(--eds-color-text-muted)", fontWeight: "600" }}>(/</span>
                                   <input
                                     type="number"
                                     min="1"
@@ -695,22 +695,22 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                       width: "55px",
                                       padding: "3px 6px",
                                       borderRadius: "6px",
-                                      border: "1.5px solid #2563eb",
-                                      backgroundColor: "#eff6ff",
-                                      color: "#1d4ed8",
+                                      border: "1.5px solid var(--eds-color-primary)",
+                                      backgroundColor: "var(--eds-color-primary-soft)",
+                                      color: "var(--eds-color-primary-hover)",
                                       fontWeight: "700",
                                       fontSize: "13px",
                                       textAlign: "center",
                                       cursor: "pointer",
                                     }}
                                   />
-                                  <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "600" }}>)</span>
+                                  <span style={{ fontSize: "13px", color: "var(--eds-color-text-muted)", fontWeight: "600" }}>)</span>
                                 </div>
                               </th>
-                              <th style={{ padding: "12px 14px", borderBottom: "2px solid #e2e8f0", width: "180px" }}>
+                              <th style={{ padding: "12px 14px", borderBottom: "2px solid var(--eds-color-border)", width: "180px" }}>
                                 Stage Average (All Evaluators)
                               </th>
-                              <th style={{ padding: "12px 14px", borderBottom: "2px solid #e2e8f0" }}>Feedback & Remarks</th>
+                              <th style={{ padding: "12px 14px", borderBottom: "2px solid var(--eds-color-border)" }}>Feedback & Remarks</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -723,19 +723,19 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                 : null;
 
                               return (
-                                <tr key={sId} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                <tr key={sId} style={{ borderBottom: "1px solid var(--eds-color-border-soft)" }}>
                                   {/* Student Name */}
                                   <td style={{ padding: "14px", verticalAlign: "middle" }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                      <span style={{ fontWeight: "600", color: "#1e293b", fontSize: "14px" }}>
+                                      <span style={{ fontWeight: "600", color: "var(--eds-color-text-strong)", fontSize: "14px" }}>
                                         {member.student_name}
                                       </span>
                                       {member.is_leader && (
                                         <span
                                           style={{
                                             fontSize: "11px",
-                                            backgroundColor: "#2563eb",
-                                            color: "#fff",
+                                            backgroundColor: "var(--eds-color-primary)",
+                                            color: "var(--eds-color-bg-surface)",
                                             padding: "2px 8px",
                                             borderRadius: "12px",
                                             fontWeight: "600",
@@ -746,14 +746,14 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                       )}
                                     </div>
                                     {member.student_email && (
-                                      <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
+                                      <div style={{ fontSize: "12px", color: "var(--eds-color-text-faint)", marginTop: "2px" }}>
                                         {member.student_email}
                                       </div>
                                     )}
                                   </td>
 
                                   {/* Reg / University ID */}
-                                  <td style={{ padding: "14px", color: "#64748b", fontSize: "13px", verticalAlign: "middle" }}>
+                                  <td style={{ padding: "14px", color: "var(--eds-color-text-muted)", fontSize: "13px", verticalAlign: "middle" }}>
                                     {member.reg_number || "N/A"}
                                   </td>
 
@@ -772,20 +772,20 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                             width: "85px",
                                             padding: "8px 10px",
                                             borderRadius: "6px",
-                                            border: "1px solid #cbd5e1",
+                                            border: "1px solid var(--eds-color-border)",
                                             fontSize: "14px",
                                             fontWeight: "700",
-                                            color: "#0f172a",
+                                            color: "var(--eds-color-text-strong)",
                                             textAlign: "center",
                                           }}
                                         />
-                                        <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "600" }}>
+                                        <span style={{ fontSize: "13px", color: "var(--eds-color-text-muted)", fontWeight: "600" }}>
                                           /{Math.min(100, totalMaxMarks || 100)}
                                         </span>
                                       </div>
 
                                       {currentPercent !== null && (
-                                        <div style={{ fontSize: "11px", color: "#2563eb", fontWeight: "600" }}>
+                                        <div style={{ fontSize: "11px", color: "var(--eds-color-primary)", fontWeight: "600" }}>
                                           = {currentPercent}%
                                         </div>
                                       )}
@@ -800,20 +800,20 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                           style={{
                                             fontWeight: "700",
                                             fontSize: "14px",
-                                            color: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "#16a34a" : "#dc2626",
-                                            backgroundColor: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "#dcfce7" : "#fee2e2",
+                                            color: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-solid)" : "var(--eds-color-danger-solid)",
+                                            backgroundColor: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-bg)" : "var(--eds-color-danger-bg)",
                                             padding: "3px 8px",
                                             borderRadius: "6px",
                                           }}
                                         >
                                           {member.stage_avg_mark} /{totalMaxMarks} ({Math.round((member.stage_avg_mark / totalMaxMarks) * 100)}%)
                                         </span>
-                                        <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
+                                        <div style={{ fontSize: "11px", color: "var(--eds-color-text-muted)", marginTop: "3px" }}>
                                           {member.evaluator_count || 1} evaluator{(member.evaluator_count || 1) > 1 ? "s" : ""}
                                         </div>
                                       </div>
                                     ) : (
-                                      <span style={{ color: "#94a3b8", fontSize: "13px" }}>Pending evaluation</span>
+                                      <span style={{ color: "var(--eds-color-text-faint)", fontSize: "13px" }}>Pending evaluation</span>
                                     )}
                                   </td>
 
@@ -828,9 +828,9 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                         width: "96%",
                                         padding: "8px 12px",
                                         borderRadius: "6px",
-                                        border: "1px solid #cbd5e1",
+                                        border: "1px solid var(--eds-color-border)",
                                         fontSize: "13px",
-                                        color: "#1e293b",
+                                        color: "var(--eds-color-text-strong)",
                                       }}
                                     />
                                   </td>
@@ -846,7 +846,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                         style={{
                           marginTop: "24px",
                           paddingTop: "16px",
-                          borderTop: "1px solid #f1f5f9",
+                          borderTop: "1px solid var(--eds-color-border-soft)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
@@ -854,7 +854,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                           gap: "12px",
                         }}
                       >
-                        <div style={{ fontSize: "13px", color: "#64748b" }}>
+                        <div style={{ fontSize: "13px", color: "var(--eds-color-text-muted)" }}>
                           Logged in as evaluator: <strong>{currentEvaluator.name || "Supervisor"}</strong>
                         </div>
 
@@ -862,8 +862,8 @@ const SupervisorEvaluationPanel: React.FC = () => {
                           type="submit"
                           disabled={submitting}
                           style={{
-                            backgroundColor: "#16a34a",
-                            color: "#ffffff",
+                            backgroundColor: "var(--eds-color-success-solid)",
+                            color: "var(--eds-color-bg-surface)",
                             fontWeight: "600",
                             padding: "10px 28px",
                             borderRadius: "8px",
@@ -877,10 +877,10 @@ const SupervisorEvaluationPanel: React.FC = () => {
                             transition: "background-color 0.2s ease",
                           }}
                           onMouseOver={(e) => {
-                            if (!submitting) e.currentTarget.style.backgroundColor = "#15803d";
+                            if (!submitting) e.currentTarget.style.backgroundColor = "var(--eds-color-success-solid-hover)";
                           }}
                           onMouseOut={(e) => {
-                            if (!submitting) e.currentTarget.style.backgroundColor = "#16a34a";
+                            if (!submitting) e.currentTarget.style.backgroundColor = "var(--eds-color-success-solid)";
                           }}
                         >
                           {submitting ? "Saving to Database..." : "Save & Submit Marks"}

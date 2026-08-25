@@ -29,8 +29,8 @@
   top: calc(100% + 6px);
   right: 0;
   width: 280px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
   box-shadow: 0 12px 30px -10px rgba(15, 23, 42, 0.25);
   padding: 12px;
@@ -47,13 +47,13 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .supervisor-feedback-close {
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -62,18 +62,18 @@
 }
 
 .supervisor-feedback-close:hover {
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .supervisor-feedback-context {
   margin: 0;
   font-size: 11px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 .supervisor-feedback-textarea {
   width: 100%;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 8px;
   padding: 8px;
   font-size: 12.5px;
@@ -85,19 +85,19 @@
 
 .supervisor-feedback-textarea:focus {
   outline: none;
-  border-color: #93c5fd;
+  border-color: var(--eds-color-primary-soft-border);
 }
 
 .supervisor-feedback-error {
   margin: 0;
   font-size: 11px;
-  color: #b91c1c;
+  color: var(--eds-color-danger-text);
 }
 
 .supervisor-feedback-sent {
   margin: 0;
   font-size: 11px;
-  color: #059669;
+  color: var(--eds-color-success-solid);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -123,23 +123,23 @@
 }
 
 .supervisor-feedback-cancel {
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-body);
+  border: 1px solid var(--eds-color-border);
 }
 
 .supervisor-feedback-cancel:hover {
-  background: #e2e8f0;
+  background: var(--eds-color-border);
 }
 
 .supervisor-feedback-send {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
   border: none;
 }
 
 .supervisor-feedback-send:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
 }
 
 .supervisor-feedback-send:disabled,

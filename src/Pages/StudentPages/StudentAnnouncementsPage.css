@@ -9,15 +9,15 @@
 .student-ann-error {
   text-align: center;
   padding: 24px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
 }
 
 .student-ann-error {
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--eds-color-danger-solid);
+  background: var(--eds-color-danger-bg);
   border-radius: 8px;
-  border-left: 4px solid #dc2626;
+  border-left: 4px solid var(--eds-color-danger-solid);
 }
 
 .student-ann-rows {
@@ -27,8 +27,8 @@
 }
 
 .student-ann-row {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
@@ -40,23 +40,23 @@
   gap: 10px;
   padding-bottom: 14px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--eds-color-border);
 }
 
 .student-ann-row-header h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.3px;
 }
 
 .student-ann-row-icon.admin {
-  color: #dc2626;
+  color: var(--eds-color-danger-solid);
 }
 
 .student-ann-row-icon.coordinator {
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 .student-ann-row-icon.supervisor {
@@ -73,9 +73,9 @@
 .student-ann-tab {
   padding: 8px 16px;
   border-radius: 9999px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
+  color: var(--eds-color-text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -83,14 +83,14 @@
 }
 
 .student-ann-tab:hover {
-  border-color: #94a3b8;
-  background: #f1f5f9;
+  border-color: var(--eds-color-text-faint);
+  background: var(--eds-color-border-soft);
 }
 
 .student-ann-tab.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  border-color: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
 }
 
 .student-ann-list {
@@ -103,15 +103,15 @@
 }
 
 .student-ann-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--eds-color-border);
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, var(--eds-color-bg-surface) 0%, var(--eds-color-bg-surface-soft) 100%);
   padding: 16px;
   transition: all 0.2s ease;
 }
 
 .student-ann-item:hover {
-  border-color: #cbd5e1;
+  border-color: var(--eds-color-border);
   box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.05);
 }
 
@@ -125,7 +125,7 @@
 
 .student-ann-item-title {
   margin: 0;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.2px;
@@ -135,8 +135,8 @@
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
-  color: #2563eb;
-  background: #eff6ff;
+  color: var(--eds-color-primary);
+  background: var(--eds-color-primary-soft);
   padding: 4px 10px;
   border-radius: 9999px;
   white-space: nowrap;
@@ -144,7 +144,7 @@
 
 .student-ann-item-message {
   margin: 0 0 10px 0;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -160,14 +160,14 @@
 }
 
 .student-ann-item-author {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 12px;
   font-weight: 500;
 }
 
 .student-ann-item-audience {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--eds-color-border);
+  color: var(--eds-color-text-body);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 10px;
@@ -175,7 +175,7 @@
 }
 
 .student-ann-empty {
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-size: 14px;
   text-align: center;
   padding: 20px;

@@ -26,10 +26,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   padding: 12px 18px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   margin-bottom: 18px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
@@ -37,23 +37,23 @@
 .gt-selector-label {
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
+  color: var(--eds-color-text-body);
 }
 
 .gt-group-select {
   padding: 6px 12px;
   border-radius: 7px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   outline: none;
   cursor: pointer;
 }
 
 .gt-group-select:focus {
-  border-color: #2563eb;
+  border-color: var(--eds-color-primary);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
@@ -64,19 +64,19 @@
   justify-content: center;
   gap: 12px;
   padding: 20px;
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   margin-bottom: 20px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 13px;
 }
 
 .gt-spinner {
   width: 22px;
   height: 22px;
-  border: 2.5px solid #e2e8f0;
-  border-top-color: #2563eb;
+  border: 2.5px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -90,14 +90,14 @@
   align-items: center;
   gap: 14px;
   padding: 16px 20px;
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
   border-radius: 10px;
   margin-bottom: 20px;
 }
 
 .gt-error-icon {
-  color: #ef4444;
+  color: var(--eds-color-danger-solid);
   flex-shrink: 0;
 }
 
@@ -108,13 +108,13 @@
 .gt-error-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: #991b1b;
+  color: var(--eds-color-danger-text);
   margin: 0 0 2px 0;
 }
 
 .gt-error-desc {
   font-size: 12px;
-  color: #b91c1c;
+  color: var(--eds-color-danger-text);
   margin: 0;
 }
 
@@ -122,8 +122,8 @@
    SECTION 1 — OVERALL GROUP PROGRESS CARD
 ================================================================ */
 .gt-overall-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 14px;
   padding: 24px 28px;
   margin-bottom: 24px;
@@ -140,26 +140,26 @@
 .gt-overall-header h4 {
   font-size: 16px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
   margin: 0 0 4px 0;
 }
 
 .gt-group-name-sub {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 .gt-overall-pct {
   font-size: 22px;
   font-weight: 800;
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 /* The track + fill */
 .gt-progress-track {
   height: 10px;
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
   border-radius: 99px;
   overflow: hidden;
   margin-bottom: 18px;
@@ -168,7 +168,7 @@
 .gt-progress-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary-hover));
   transition: width 0.6s ease;
 }
 
@@ -190,21 +190,21 @@
 }
 
 .gt-stat-pill.completed {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-solid-hover);
+  border: 1px solid var(--eds-color-success-solid);
 }
 
 .gt-stat-pill.ongoing {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary-hover);
+  border: 1px solid var(--eds-color-primary-soft-border);
 }
 
 .gt-stat-pill.yet {
-  background: #fffbeb;
+  background: var(--eds-color-warning-bg);
   color: #b45309;
-  border: 1px solid #fde68a;
+  border: 1px solid var(--eds-color-warning-bg);
 }
 
 .gt-stat-dot {
@@ -214,8 +214,8 @@
   flex-shrink: 0;
 }
 
-.gt-stat-dot.completed { background: #22c55e; }
-.gt-stat-dot.ongoing   { background: #3b82f6; }
+.gt-stat-dot.completed { background: var(--eds-color-success-solid); }
+.gt-stat-dot.ongoing   { background: var(--eds-color-primary); }
 .gt-stat-dot.yet       { background: #f59e0b; }
 
 .gt-overall-pending {
@@ -241,7 +241,7 @@
 
 .gt-pending-text {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-style: italic;
 }
 
@@ -265,16 +265,16 @@
   gap: 7px;
   font-size: 14.5px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
 }
 
 .gt-target-icon {
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 .gt-milestones-count-hint {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-style: italic;
 }
 
@@ -294,9 +294,9 @@
   gap: 7px;
   padding: 8px 14px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -306,15 +306,15 @@
 }
 
 .gt-milestone-tab-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background: var(--eds-color-bg-surface-soft);
+  border-color: var(--eds-color-border);
+  color: var(--eds-color-text-strong);
 }
 
 .gt-milestone-tab-btn.active {
-  background: #eff6ff;
-  border-color: #3b82f6;
-  color: #1d4ed8;
+  background: var(--eds-color-primary-soft);
+  border-color: var(--eds-color-primary);
+  color: var(--eds-color-primary-hover);
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
 }
 
@@ -323,25 +323,25 @@
   font-weight: 700;
   padding: 1.5px 6px;
   border-radius: 12px;
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-faint);
 }
 
 .gt-tab-badge.has-tasks {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary-hover);
 }
 
 .gt-milestone-tab-btn.active .gt-tab-badge.has-tasks {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
 }
 
 /* ── Active Milestone Banner Card ────────────────────────────── */
 .gt-active-milestone-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-left: 4px solid #2563eb;
+  background: linear-gradient(135deg, var(--eds-color-bg-surface) 0%, var(--eds-color-bg-surface-soft) 100%);
+  border: 1px solid var(--eds-color-border);
+  border-left: 4px solid var(--eds-color-primary);
   border-radius: 12px;
   padding: 18px 22px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
@@ -373,8 +373,8 @@
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -383,7 +383,7 @@
 .gt-milestone-title {
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   margin: 0;
 }
 
@@ -396,13 +396,13 @@
   letter-spacing: 0.5px;
 }
 
-.gt-milestone-status-pill.approved { background: #dcfce7; color: #15803d; }
-.gt-milestone-status-pill.pending  { background: #fef3c7; color: #b45309; }
-.gt-milestone-status-pill.rejected { background: #fee2e2; color: #dc2626; }
+.gt-milestone-status-pill.approved { background: var(--eds-color-success-bg); color: var(--eds-color-success-solid-hover); }
+.gt-milestone-status-pill.pending  { background: var(--eds-color-warning-bg); color: #b45309; }
+.gt-milestone-status-pill.rejected { background: var(--eds-color-danger-bg); color: var(--eds-color-danger-solid); }
 
 .gt-milestone-desc {
   font-size: 12px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   margin: 3px 0 6px 0;
   line-height: 1.4;
 }
@@ -413,8 +413,8 @@
   gap: 5px;
   font-size: 11px;
   font-weight: 500;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-border-soft);
   padding: 3px 9px;
   border-radius: 6px;
 }
@@ -422,10 +422,10 @@
 /* Progress Box on Right side of Milestone Card */
 .gt-milestone-progress-box {
   width: 220px;
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
@@ -439,18 +439,18 @@
 .gt-m-prog-label {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 .gt-m-prog-pct {
   font-size: 13px;
   font-weight: 800;
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 .gt-m-prog-track {
   height: 6px;
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
   border-radius: 99px;
   overflow: hidden;
   margin-bottom: 6px;
@@ -459,13 +459,13 @@
 .gt-m-prog-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary));
   transition: width 0.5s ease;
 }
 
 .gt-m-prog-stat {
   font-size: 10.5px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-weight: 500;
   display: block;
 }
@@ -487,14 +487,14 @@
 .gt-section-title {
   font-size: 15px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
   margin: 0 0 2px 0;
   letter-spacing: -0.2px;
 }
 
 .gt-section-sub {
   font-size: 12px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   margin: 0;
 }
 
@@ -503,7 +503,7 @@
   align-items: center;
   gap: 5px;
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -514,14 +514,14 @@
   align-items: center;
   gap: 14px;
   padding: 22px 24px;
-  background: #ffffff;
-  border: 1.5px dashed #cbd5e1;
+  background: var(--eds-color-bg-surface);
+  border: 1.5px dashed var(--eds-color-border);
   border-radius: 12px;
   margin-bottom: 18px;
 }
 
 .gt-empty-icon {
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   flex-shrink: 0;
 }
 
@@ -529,19 +529,19 @@
   margin: 0 0 3px 0;
   font-size: 13.5px;
   font-weight: 700;
-  color: #334155;
+  color: var(--eds-color-text-body);
 }
 
 .gt-empty-text p {
   margin: 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 /* Individual member card */
 .gt-member-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 14px;
   padding: 22px 26px;
   margin-bottom: 20px;
@@ -550,8 +550,8 @@
 }
 
 .gt-member-card.is-leader-card {
-  border-color: #cbd5e1;
-  background: #fcfdfe;
+  border-color: var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
 }
 
 /* Card top: avatar + name + mini progress */
@@ -561,15 +561,15 @@
   gap: 14px;
   margin-bottom: 18px;
   padding-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
 .gt-member-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
   font-size: 14px;
   font-weight: 700;
   display: flex;
@@ -579,8 +579,8 @@
 }
 
 .gt-member-avatar.leader-avatar {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary-hover);
 }
 
 .gt-member-name-block { flex: 1; }
@@ -595,7 +595,7 @@
 .gt-member-name {
   font-size: 14.5px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   margin: 0;
 }
 
@@ -609,19 +609,19 @@
 }
 
 .gt-role-badge.leader {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border: 1px solid var(--eds-color-primary-soft-border);
 }
 
 .gt-role-badge.member {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
 }
 
 .gt-member-subtitle {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   margin: 0;
   font-weight: 500;
 }
@@ -640,8 +640,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   padding: 4px 10px;
   border-radius: 8px;
   cursor: help;
@@ -649,8 +649,8 @@
 }
 
 .gt-contribution-chip:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: var(--eds-color-border-soft);
+  border-color: var(--eds-color-border);
 }
 
 .gt-contrib-left {
@@ -660,13 +660,13 @@
 }
 
 .gt-contrib-icon {
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 .gt-contrib-label {
   font-size: 11px;
   font-weight: 600;
-  color: #475569;
+  color: var(--eds-color-text-muted);
 }
 
 .gt-contrib-right {
@@ -678,15 +678,15 @@
 .gt-contrib-badge {
   font-size: 11.5px;
   font-weight: 800;
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft-border);
   padding: 1px 6px;
   border-radius: 10px;
 }
 
 .gt-contrib-sub {
   font-size: 10.5px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-weight: 500;
 }
 
@@ -698,7 +698,7 @@
 
 .gt-mini-bar-track {
   height: 6px;
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
   border-radius: 99px;
   overflow: hidden;
   margin-bottom: 4px;
@@ -707,14 +707,14 @@
 .gt-mini-bar-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary-hover));
   transition: width 0.5s ease;
 }
 
 .gt-mini-pct {
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 /* ── Three columns of tasks ──────────────────────────────────── */
@@ -743,8 +743,8 @@
   margin-bottom: 2px;
 }
 
-.gt-col-label.completed { color: #15803d; border-color: #22c55e; }
-.gt-col-label.ongoing   { color: #1d4ed8; border-color: #3b82f6; }
+.gt-col-label.completed { color: var(--eds-color-success-solid-hover); border-color: var(--eds-color-success-solid); }
+.gt-col-label.ongoing   { color: var(--eds-color-primary-hover); border-color: var(--eds-color-primary); }
 .gt-col-label.yet       { color: #b45309; border-color: #f59e0b; }
 
 .gt-col-count-chip {
@@ -752,25 +752,25 @@
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 10px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
 }
 
-.gt-col-label.completed .gt-col-count-chip { background: #dcfce7; color: #15803d; }
-.gt-col-label.ongoing .gt-col-count-chip   { background: #dbeafe; color: #1d4ed8; }
-.gt-col-label.yet .gt-col-count-chip       { background: #fef3c7; color: #b45309; }
+.gt-col-label.completed .gt-col-count-chip { background: var(--eds-color-success-bg); color: var(--eds-color-success-solid-hover); }
+.gt-col-label.ongoing .gt-col-count-chip   { background: var(--eds-color-primary-soft-border); color: var(--eds-color-primary-hover); }
+.gt-col-label.yet .gt-col-count-chip       { background: var(--eds-color-warning-bg); color: #b45309; }
 
 .gt-no-tasks-box {
   padding: 12px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   border-radius: 8px;
-  border: 1px dashed #e2e8f0;
+  border: 1px dashed var(--eds-color-border);
   text-align: center;
 }
 
 .gt-no-tasks {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-style: italic;
 }
 
@@ -778,8 +778,8 @@
 .gt-task-item {
   min-height: 38px;
   border-radius: 8px;
-  border: 1.5px dashed #e2e8f0;
-  background: #f8fafc;
+  border: 1.5px dashed var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
   display: flex;
   align-items: flex-start;
   padding: 10px 12px;
@@ -794,21 +794,21 @@
   margin-top: 5px;
 }
 
-.gt-task-indicator.completed { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
-.gt-task-indicator.ongoing   { background: #3b82f6; box-shadow: 0 0 0 2px #dbeafe; }
-.gt-task-indicator.yet       { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+.gt-task-indicator.completed { background: var(--eds-color-success-solid); box-shadow: 0 0 0 2px var(--eds-color-success-bg); }
+.gt-task-indicator.ongoing   { background: var(--eds-color-primary); box-shadow: 0 0 0 2px var(--eds-color-primary-soft-border); }
+.gt-task-indicator.yet       { background: #f59e0b; box-shadow: 0 0 0 2px var(--eds-color-warning-bg); }
 
 .gt-task-placeholder-bar {
   height: 8px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: var(--eds-color-border);
   flex: 1;
 }
 
 /* ── Real Populated Task Item ────────────────────────────────── */
 .gt-task-item--real {
-  border: 1.5px solid #e2e8f0;
-  background: #ffffff;
+  border: 1.5px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
   cursor: default;
   min-height: 48px;
   height: auto;
@@ -816,8 +816,8 @@
 }
 
 .gt-task-item--real:hover {
-  border-color: #cbd5e1;
-  background: #fafbfd;
+  border-color: var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
 }
 
 .gt-task-main-content {
@@ -830,7 +830,7 @@
 .gt-task-name {
   font-size: 12.5px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
   line-height: 1.4;
 }
 
@@ -862,9 +862,9 @@
   gap: 3.5px;
   font-size: 10px;
   font-weight: 500;
-  color: #475569;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-border-soft);
+  border: 1px solid var(--eds-color-border);
   padding: 1.5px 6.5px;
   border-radius: 4px;
   white-space: nowrap;
@@ -872,7 +872,7 @@
 
 .gt-task-description {
   font-size: 11px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   line-height: 1.35;
   margin: 3px 0 0 0;
   display: -webkit-box;
@@ -888,10 +888,10 @@
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 6px;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--eds-color-bg-surface-soft);
+  color: var(--eds-color-text-muted);
   font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
@@ -902,15 +902,15 @@
 }
 
 .gt-feedback-toggle:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #2563eb;
+  background: var(--eds-color-primary-soft);
+  border-color: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary);
 }
 
 .gt-feedback-toggle.has-feedback {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background: var(--eds-color-success-bg);
+  border-color: var(--eds-color-success-solid);
+  color: var(--eds-color-success-solid-hover);
 }
 
 /* ── Task item wrapper — expands when feedback is open ───────── */
@@ -924,11 +924,11 @@
 
 .gt-task-item-wrap.expanded {
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--eds-color-primary-soft-border);
 }
 
 .gt-task-item-wrap.expanded .gt-task-item--real {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--eds-color-border);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border: none;
@@ -936,8 +936,8 @@
 
 /* ── Feedback panel (below task row) ─────────────────────────── */
 .gt-feedback-panel {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border-top: 1px solid var(--eds-color-border);
   padding: 12px;
   animation: feedbackSlide 0.2s ease;
 }
@@ -948,8 +948,8 @@
 }
 
 .gt-feedback-submitted {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--eds-color-success-bg);
+  border: 1px solid var(--eds-color-success-solid);
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 10px;
@@ -962,7 +962,7 @@
   gap: 5px;
   font-size: 10px;
   font-weight: 700;
-  color: #15803d;
+  color: var(--eds-color-success-solid-hover);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
@@ -970,7 +970,7 @@
 
 .gt-feedback-submitted-text {
   font-size: 12px;
-  color: #166534;
+  color: var(--eds-color-success-text);
   line-height: 1.5;
   margin: 0;
   padding-right: 56px;
@@ -985,10 +985,10 @@
   align-items: center;
   gap: 3px;
   padding: 3px 8px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--eds-color-success-solid);
   border-radius: 5px;
-  background: #ffffff;
-  color: #64748b;
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -996,9 +996,9 @@
 }
 
 .gt-feedback-clear-btn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
+  background: var(--eds-color-danger-bg);
+  border-color: var(--eds-color-danger-solid);
+  color: var(--eds-color-danger-solid);
 }
 
 /* ── Textarea + Send row ─────────────────────────────────────── */
@@ -1012,9 +1012,9 @@
   flex: 1;
   padding: 8px 10px;
   font-size: 12px;
-  color: #1e293b;
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
+  color: var(--eds-color-text-strong);
+  background: var(--eds-color-bg-surface);
+  border: 1.5px solid var(--eds-color-border);
   border-radius: 8px;
   resize: vertical;
   min-height: 56px;
@@ -1024,10 +1024,10 @@
   outline: none;
 }
 
-.gt-feedback-textarea::placeholder { color: #cbd5e1; }
+.gt-feedback-textarea::placeholder { color: var(--eds-color-border); }
 
 .gt-feedback-textarea:focus {
-  border-color: #93c5fd;
+  border-color: var(--eds-color-primary-soft-border);
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
 }
 
@@ -1042,8 +1042,8 @@
   min-width: 52px;
   border: none;
   border-radius: 8px;
-  background: #e2e8f0;
-  color: #94a3b8;
+  background: var(--eds-color-border);
+  color: var(--eds-color-text-faint);
   font-size: 10px;
   font-weight: 700;
   cursor: not-allowed;
@@ -1052,14 +1052,14 @@
 }
 
 .gt-feedback-send-btn.active {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .gt-feedback-send-btn.active:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
   transform: translateY(-1px);
 }
 

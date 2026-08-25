@@ -26,13 +26,7 @@
 }
 
 .approved-refresh-btn {
-  border: none;
-  border-radius: 10px;
-  background: #eef2ff;
-  color: #1d4ed8;
-  padding: 10px 14px;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 9px 14px;
 }
 
 .approved-filter-btn {
@@ -71,12 +65,12 @@
   border: 1px solid #e5e7eb;
   border-left: 5px solid #10b981;
   border-radius: 16px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.9);
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  box-shadow: none;
 }
 
 .approved-badge-row {
@@ -157,15 +151,9 @@
 }
 
 .approved-create-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 9px 14px;
 }
 
 .approved-create-btn:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
 }

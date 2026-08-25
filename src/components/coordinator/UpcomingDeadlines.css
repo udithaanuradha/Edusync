@@ -1,12 +1,18 @@
 .deadlines-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e5e7eb;
-  width: 350px; /* This locks the width so RecentProjects takes the rest of the space */
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 280px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.deadlines-card:hover {
+  border-color: #cfd6ef;
+  box-shadow: 0 8px 18px rgba(91, 103, 151, 0.06);
 }
 
 .deadlines-card .card-header {
@@ -16,11 +22,11 @@
   gap: 12px;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #edf1f6;
 }
 
 .deadlines-card .header-icon {
-  color: #2563eb;
+  color: #6370b8;
   flex-shrink: 0;
   width: 24px;
   height: 24px;
@@ -46,8 +52,8 @@
   align-items: center;
   gap: 16px;
   padding: 12px;
-  background-color: #f8fafc;
-  border-radius: 8px;
+  background-color: #f7f8fc;
+  border-radius: 12px;
   transition: transform 0.2s;
   border: 1px solid transparent;
 }
@@ -60,22 +66,21 @@
 
 /* The sleek calendar box */
 .date-box {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background-color: #eef0ff;
+  border: 1px solid #d9ddfb;
+  border-radius: 12px;
   min-width: 54px;
   height: 54px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .date-day {
   font-size: 18px;
   font-weight: 700;
-  color: #3b82f6;
+  color: #6370b8;
   line-height: 1;
 }
 

@@ -7,38 +7,49 @@
 
 .student-inner-tabs {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 6px;
+  gap: 6px;
+  border-bottom: 1px solid var(--eds-color-border);
+  padding: 0 4px;
   margin-bottom: 24px;
 }
 
 .student-inner-tab {
+  position: relative;
   flex: 1 1 0;
   background: transparent;
   border: none;
-  color: #475569;
-  border-radius: 8px;
-  padding: 14px 16px;
+  color: var(--eds-color-text-muted);
+  border-radius: var(--eds-radius-sm) var(--eds-radius-sm) 0 0;
+  padding: 13px 16px 15px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .student-inner-tab:hover {
-  background: #f1f5f9;
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft);
 }
 
 /*student inner page active tab*/
 .student-inner-tab.active {
-  background: #2563eb;
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.16);
+  background: transparent;
+  color: var(--eds-color-primary-hover);
+  font-weight: 700;
+}
+
+.student-inner-tab.active::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--eds-color-primary);
 }
 
 .student-inner-content {
@@ -68,12 +79,12 @@
 .student-inner-tab-heading h3 {
   margin: 0;
   font-size: 24px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .student-inner-tab-heading p {
   margin: 0;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   max-width: 740px;
   line-height: 1.75;
 }
@@ -91,10 +102,10 @@
 }
 
 .group-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 14px;
   padding: 12px 12px 10px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, var(--eds-color-bg-surface) 0%, var(--eds-color-bg-surface-soft) 100%);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
   min-height: 220px;
   max-width: 290px;
@@ -113,12 +124,12 @@
   align-items: center;
   gap: 8px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--eds-color-border);
 }
 
 .group-card-head h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 19px;
   font-weight: 800;
   line-height: 1.2;
@@ -128,8 +139,8 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft-border);
   border-radius: 999px;
   padding: 4px 8px;
   white-space: nowrap;
@@ -146,7 +157,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #374151;
+  color: var(--eds-color-text-body);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -157,7 +168,7 @@
   justify-content: center;
   width: 18px;
   height: 18px;
-  color: #2563eb;
+  color: var(--eds-color-primary);
   flex-shrink: 0;
 }
 
@@ -175,10 +186,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #1f2937;
+  color: var(--eds-color-text-strong);
   font-size: 14px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   border-radius: 10px;
   padding: 6px 8px;
 }
@@ -188,7 +199,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  color: #1f2937;
+  color: var(--eds-color-text-strong);
 }
 
 .group-member-name-wrap span:last-child {
@@ -206,8 +217,8 @@
 .student-group-card {
   padding: 20px;
   border-radius: 18px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
@@ -222,30 +233,30 @@
 .group-card-header h4 {
   margin: 0;
   font-size: 18px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .group-status-badge {
   padding: 8px 14px;
   border-radius: 999px;
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--eds-color-border);
+  color: var(--eds-color-text-body);
   font-size: 12px;
   font-weight: 700;
 }
 
 .group-meta {
   margin: 0;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   line-height: 1.75;
 }
 
 .student-tab-empty {
   padding: 28px;
   border-radius: 16px;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px dashed #cbd5e1;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
+  border: 1px dashed var(--eds-color-border);
   text-align: center;
   font-size: 15px;
 }
@@ -257,7 +268,7 @@
 }
 
 .manage-project-btn {
-  background: #3648e6;
+  background: var(--eds-color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -269,7 +280,7 @@
 }
 
 .manage-project-btn:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
 }
 
 .student-submission-list {
@@ -279,10 +290,10 @@
 }
 
 .student-submission-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  background: linear-gradient(135deg, var(--eds-color-bg-surface) 0%, var(--eds-color-bg-surface-soft) 100%);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
@@ -297,12 +308,12 @@
 .student-submission-card-header h4 {
   margin: 0 0 6px 0;
   font-size: 20px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .student-submission-card-header p {
   margin: 0;
-  color: #475569;
+  color: var(--eds-color-text-muted);
 }
 
 .student-submission-badge {
@@ -314,18 +325,18 @@
 }
 
 .student-submission-badge.active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
 }
 
 .student-submission-badge.soon {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--eds-color-warning-bg);
+  color: var(--eds-color-warning-text);
 }
 
 .student-submission-badge.late {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
 }
 
 .student-submission-grid {
@@ -337,8 +348,8 @@
 
 .student-submission-main-panel,
 .student-submission-side-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 16px;
   padding: 16px;
 }
@@ -347,7 +358,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
   margin-bottom: 16px;
 }
@@ -366,7 +377,7 @@
 .student-upload-label {
   display: inline-block;
   font-weight: 700;
-  color: #334155;
+  color: var(--eds-color-text-body);
   margin-bottom: 8px;
 }
 
@@ -374,10 +385,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--eds-color-border);
   border-radius: 12px;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
 }
 
 .student-upload-input-shell input {
@@ -385,12 +396,12 @@
 }
 
 .student-upload-hint {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 13px;
 }
 
 .manage-project-btn {
-  background: linear-gradient(135deg, #3648e6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--eds-color-primary) 0%, var(--eds-color-primary) 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -422,11 +433,11 @@
 .student-submission-side-header h5 {
   margin: 0;
   font-size: 15px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .student-submission-side-header span {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 13px;
 }
 
@@ -442,20 +453,20 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
 }
 
 .student-submission-file-name {
   margin: 0 0 4px 0;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .student-submission-file-meta {
   margin: 0;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 12px;
   word-break: break-all;
 }
@@ -470,7 +481,7 @@
 .student-submission-file-actions button {
   border: none;
   background: none;
-  color: #2563eb;
+  color: var(--eds-color-primary);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -478,7 +489,7 @@
 }
 
 .student-submission-file-actions button {
-  color: #dc2626;
+  color: var(--eds-color-danger-solid);
 }
 
 .student-submission-alert {
@@ -489,17 +500,17 @@
 }
 
 .student-submission-alert.success {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
 }
 
 .student-submission-alert.error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
 }
 
 .student-submission-history.empty {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
 }
 
@@ -523,9 +534,9 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
 }
 
 .student-submission-sub-row-actions {
@@ -540,7 +551,7 @@
 .student-submission-update-control {
   border: none;
   background: none;
-  color: #2563eb;
+  color: var(--eds-color-primary);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -548,7 +559,7 @@
 }
 
 .student-submission-sub-row-actions button:last-child {
-  color: #dc2626;
+  color: var(--eds-color-danger-solid);
 }
 
 @media (max-width: 850px) {

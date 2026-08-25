@@ -353,10 +353,10 @@ const AdminProjectDelaysPage: React.FC = () => {
           {actionSuccessMsg && (
             <div style={{
               padding: '14px 20px',
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
+              backgroundColor: 'var(--eds-color-success-bg)',
+              border: '1px solid var(--eds-color-success-solid)',
               borderRadius: '12px',
-              color: '#065f46',
+              color: 'var(--eds-color-success-text)',
               fontSize: '13px',
               fontWeight: '600',
               marginBottom: '24px',
@@ -365,7 +365,7 @@ const AdminProjectDelaysPage: React.FC = () => {
               gap: '10px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}>
-              <CheckCircle2 size={18} color="#059669" />
+              <CheckCircle2 size={18} color="var(--eds-color-success-solid)" />
               <span>{actionSuccessMsg}</span>
             </div>
           )}
@@ -373,7 +373,7 @@ const AdminProjectDelaysPage: React.FC = () => {
           {/* Top KPI Metrics Cards */}
           <div className="admin-delays-stats-grid">
             <div className="admin-delays-stat-card">
-              <div className="stat-icon-wrapper" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--eds-color-danger-bg)', color: 'var(--eds-color-danger-solid)' }}>
                 <AlertTriangle size={22} />
               </div>
               <div className="stat-content">
@@ -383,27 +383,27 @@ const AdminProjectDelaysPage: React.FC = () => {
             </div>
 
             <div className="admin-delays-stat-card">
-              <div className="stat-icon-wrapper" style={{ backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--eds-color-danger-bg)', color: 'var(--eds-color-danger-text)', border: '1px solid var(--eds-color-danger-solid)' }}>
                 <ShieldAlert size={22} />
               </div>
               <div className="stat-content">
-                <span className="stat-value" style={{ color: '#b91c1c' }}>{metrics.critical}</span>
+                <span className="stat-value" style={{ color: 'var(--eds-color-danger-text)' }}>{metrics.critical}</span>
                 <span className="stat-label">Critical Delays (&gt;14d)</span>
               </div>
             </div>
 
             <div className="admin-delays-stat-card">
-              <div className="stat-icon-wrapper" style={{ backgroundColor: '#fffbeb', color: '#d97706' }}>
+              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--eds-color-warning-bg)', color: 'var(--eds-color-warning-text)' }}>
                 <Clock size={22} />
               </div>
               <div className="stat-content">
-                <span className="stat-value" style={{ color: '#d97706' }}>{metrics.moderate}</span>
+                <span className="stat-value" style={{ color: 'var(--eds-color-warning-text)' }}>{metrics.moderate}</span>
                 <span className="stat-label">Moderate Delays (3–14d)</span>
               </div>
             </div>
 
             <div className="admin-delays-stat-card">
-              <div className="stat-icon-wrapper" style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
+              <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--eds-color-primary-soft)', color: 'var(--eds-color-primary)' }}>
                 <Users size={22} />
               </div>
               <div className="stat-content">
@@ -457,7 +457,7 @@ const AdminProjectDelaysPage: React.FC = () => {
 
             {/* Live Search */}
             <div className="search-input-wrap">
-              <Search size={15} color="#94a3b8" />
+              <Search size={15} color="var(--eds-color-text-faint)" />
               <input
                 type="text"
                 placeholder="Search group, student, supervisor..."
@@ -473,7 +473,7 @@ const AdminProjectDelaysPage: React.FC = () => {
               <h3 className="admin-delays-table-title">
                 Delayed Milestones Log ({filteredDelays.length})
               </h3>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+              <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)', fontWeight: '500' }}>
                 Showing active overdue stages requiring administrative attention
               </div>
             </div>
@@ -493,19 +493,19 @@ const AdminProjectDelaysPage: React.FC = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--eds-color-text-faint)' }}>
                         Loading overdue projects...
                       </td>
                     </tr>
                   ) : filteredDelays.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: 'var(--eds-color-text-muted)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                          <CheckCircle2 size={32} color="#10b981" />
-                          <span style={{ fontWeight: '600', color: '#0f172a', fontSize: '15px' }}>
+                          <CheckCircle2 size={32} color="var(--eds-color-success-solid)" />
+                          <span style={{ fontWeight: '600', color: 'var(--eds-color-text-strong)', fontSize: '15px' }}>
                             All projects on track for this selection!
                           </span>
-                          <span style={{ fontSize: '13px', color: '#64748b' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--eds-color-text-muted)' }}>
                             No pending overdue milestones found.
                           </span>
                         </div>
@@ -523,11 +523,11 @@ const AdminProjectDelaysPage: React.FC = () => {
                           <td>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
+                                <span style={{ fontWeight: '700', color: 'var(--eds-color-text-strong)', fontSize: '14px' }}>
                                   {item.group_name}
                                 </span>
                                 {item.is_flagged && (
-                                  <span title="Flagged High Risk" style={{ color: '#dc2626' }}>
+                                  <span title="Flagged High Risk" style={{ color: 'var(--eds-color-danger-solid)' }}>
                                     🚩
                                   </span>
                                 )}
@@ -538,7 +538,7 @@ const AdminProjectDelaysPage: React.FC = () => {
                                   {item.degree}
                                 </span>
                                 {item.leader_name && (
-                                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  <span style={{ fontSize: '11px', color: 'var(--eds-color-text-muted)' }}>
                                     • Lead: {item.leader_name}
                                   </span>
                                 )}
@@ -549,11 +549,11 @@ const AdminProjectDelaysPage: React.FC = () => {
                           {/* Overdue Milestone */}
                           <td>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '13px' }}>
+                              <span style={{ fontWeight: '600', color: 'var(--eds-color-text-strong)', fontSize: '13px' }}>
                                 {item.milestone_title}
                               </span>
                               {item.task_name && (
-                                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
                                   {item.task_name}
                                 </span>
                               )}
@@ -563,7 +563,7 @@ const AdminProjectDelaysPage: React.FC = () => {
                           {/* Deadline & Overdue Duration */}
                           <td>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)', fontWeight: '500' }}>
                                 Due: {new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </span>
                               <span className={`badge-overdue ${item.status.toLowerCase()}`}>
@@ -576,11 +576,11 @@ const AdminProjectDelaysPage: React.FC = () => {
                           {/* Supervisor & Mentor */}
                           <td>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
-                                <User size={13} color="#64748b" />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-strong)' }}>
+                                <User size={13} color="var(--eds-color-text-muted)" />
                                 {item.supervisor_name}
                               </div>
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--eds-color-text-muted)' }}>
                                 Mentor: {item.mentor_name || 'None'}
                               </span>
                             </div>
@@ -588,7 +588,7 @@ const AdminProjectDelaysPage: React.FC = () => {
 
                           {/* Notes */}
                           <td>
-                            <div style={{ maxWidth: '240px', fontSize: '12px', color: '#475569', lineHeight: '1.4' }}>
+                            <div style={{ maxWidth: '240px', fontSize: '12px', color: 'var(--eds-color-text-muted)', lineHeight: '1.4' }}>
                               {item.notes || 'No blocker notes reported.'}
                             </div>
                           </td>
@@ -621,9 +621,9 @@ const AdminProjectDelaysPage: React.FC = () => {
                                 onClick={() => handleToggleFlag(item.id)}
                                 title={item.is_flagged ? 'Unflag Risk' : 'Flag High Academic Risk'}
                                 style={{
-                                  background: item.is_flagged ? '#fee2e2' : '#f8fafc',
-                                  border: `1px solid ${item.is_flagged ? '#fca5a5' : '#cbd5e1'}`,
-                                  color: item.is_flagged ? '#dc2626' : '#64748b',
+                                  background: item.is_flagged ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface-soft)',
+                                  border: `1px solid ${item.is_flagged ? 'var(--eds-color-danger-solid)' : 'var(--eds-color-border)'}`,
+                                  color: item.is_flagged ? 'var(--eds-color-danger-solid)' : 'var(--eds-color-text-muted)',
                                   padding: '6px 8px',
                                   borderRadius: '8px',
                                   cursor: 'pointer',
@@ -648,38 +648,38 @@ const AdminProjectDelaysPage: React.FC = () => {
               <div className="modal-card-delays">
                 <div style={{
                   padding: '18px 24px',
-                  borderBottom: '1px solid #f1f5f9',
+                  borderBottom: '1px solid var(--eds-color-border-soft)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  backgroundColor: '#fafbfc',
+                  backgroundColor: 'var(--eds-color-bg-surface-soft)',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{
                       width: '36px',
                       height: '36px',
                       borderRadius: '10px',
-                      backgroundColor: '#eff6ff',
-                      color: '#2563eb',
+                      backgroundColor: 'var(--eds-color-primary-soft)',
+                      color: 'var(--eds-color-primary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid #dbeafe',
+                      border: '1px solid var(--eds-color-primary-soft-border)',
                     }}>
                       <CalendarPlus size={18} />
                     </div>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                         Grant Deadline Extension
                       </h3>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
                         {extendingItem.group_name} (Level {extendingItem.level})
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setExtendingItem(null)}
-                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--eds-color-text-faint)', cursor: 'pointer' }}
                   >
                     <X size={18} />
                   </button>
@@ -687,16 +687,16 @@ const AdminProjectDelaysPage: React.FC = () => {
 
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-strong)', marginBottom: '6px' }}>
                       Milestone / Deliverable:
                     </label>
-                    <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
+                    <div style={{ padding: '10px 14px', background: 'var(--eds-color-bg-surface-soft)', borderRadius: '8px', border: '1px solid var(--eds-color-border)', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-strong)' }}>
                       {extendingItem.milestone_title}
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-strong)', marginBottom: '6px' }}>
                       New Extended Deadline:
                     </label>
                     <input
@@ -707,17 +707,17 @@ const AdminProjectDelaysPage: React.FC = () => {
                         width: '100%',
                         padding: '10px 14px',
                         borderRadius: '8px',
-                        border: '1px solid #cbd5e1',
+                        border: '1px solid var(--eds-color-border)',
                         fontSize: '13px',
                         fontWeight: '600',
-                        color: '#0f172a',
+                        color: 'var(--eds-color-text-strong)',
                         outline: 'none',
                       }}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-strong)', marginBottom: '6px' }}>
                       Administrative Approval Reason / Remark:
                     </label>
                     <textarea
@@ -729,9 +729,9 @@ const AdminProjectDelaysPage: React.FC = () => {
                         width: '100%',
                         padding: '10px 14px',
                         borderRadius: '8px',
-                        border: '1px solid #cbd5e1',
+                        border: '1px solid var(--eds-color-border)',
                         fontSize: '13px',
-                        color: '#0f172a',
+                        color: 'var(--eds-color-text-strong)',
                         outline: 'none',
                         resize: 'none',
                       }}
@@ -741,8 +741,8 @@ const AdminProjectDelaysPage: React.FC = () => {
 
                 <div style={{
                   padding: '16px 24px',
-                  backgroundColor: '#f8fafc',
-                  borderTop: '1px solid #f1f5f9',
+                  backgroundColor: 'var(--eds-color-bg-surface-soft)',
+                  borderTop: '1px solid var(--eds-color-border-soft)',
                   display: 'flex',
                   justifyContent: 'flex-end',
                   gap: '10px',

@@ -10,6 +10,7 @@ import {
   TrendingUp, 
   Users 
 } from 'lucide-react';
+import './SupervisorReportPanel.css';
 
 interface SupervisorReportPanelProps {
   levelNumber?: number;
@@ -38,6 +39,20 @@ const GRADING_SCALE: GradeDefinition[] = [
   { min: 35, max: 39.99, letter: 'D', badgeBg: '#f1f5f9', badgeColor: '#475569', borderColor: '#cbd5e1' },
   { min: 0, max: 34.99, letter: 'I', badgeBg: '#fee2e2', badgeColor: '#b91c1c', borderColor: '#fca5a5' },
 ];
+
+const DISTRIBUTION_COLORS: Record<string, string> = {
+  'A+': '#8bc9b0',
+  A: '#a6d6c0',
+  'A-': '#b9dfca',
+  'B+': '#9eb8dc',
+  B: '#b2c8e3',
+  'B-': '#c3d5e9',
+  'C+': '#e6c98f',
+  C: '#ead7a9',
+  'C-': '#e8c5a2',
+  D: '#c8d0dc',
+  I: '#d8b7bd',
+};
 
 const calculateGrade = (finalScore: number): GradeDefinition => {
   const score = Math.max(0, Math.min(100, Math.round(finalScore * 100) / 100));
@@ -904,17 +919,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
         {/* Visual Stacked Progress Bar */}
         {degreeStats.total > 0 && (
-          <div
-            style={{
-              height: '14px',
-              borderRadius: '7px',
-              backgroundColor: '#f1f5f9',
-              overflow: 'hidden',
-              display: 'flex',
-              marginBottom: '20px',
-              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
-            }}
-          >
+          <div className="report-distribution-bar">
             {GRADING_SCALE.map((g) => {
               const pct = degreeStats.gradePercentages[g.letter] || 0;
               if (pct === 0) return null;
@@ -922,11 +927,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                 <div
                   key={g.letter}
                   title={`${g.letter}: ${pct}% (${degreeStats.gradeCounts[g.letter]} students)`}
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: g.badgeColor,
-                    transition: 'width 0.3s ease',
-                  }}
+                  className="report-distribution-segment"
+                  style={{ width: `${pct}%`, backgroundColor: DISTRIBUTION_COLORS[g.letter] }}
                 />
               );
             })}
@@ -1091,8 +1093,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
+            <table className="report-marks-table">
+              <thead className="report-marks-head">
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
                   <th style={{ padding: '12px 16px', minWidth: '190px' }}>Student Details</th>
                   <th style={{ padding: '12px 14px', minWidth: '110px' }}>Reg / Index No</th>
@@ -1156,9 +1158,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                         </td>
                       </tr>
                     )}
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr className="report-marks-row">
                       {/* Student Details */}
-                      <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                      <td className="report-marks-cell report-student-cell">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
                             {student.student_name}
@@ -1186,7 +1188,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       </td>
 
                       {/* Reg No */}
-                      <td style={{ padding: '14px', color: '#475569', fontWeight: '500', verticalAlign: 'middle' }}>
+                      <td className="report-marks-cell report-index-cell">
                         {student.university_id}
                       </td>
 
@@ -1194,7 +1196,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       {stages.map((st) => {
                         const stgData = student.stages[st.stage_id];
                         return (
-                          <td key={st.stage_id} style={{ padding: '14px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <td key={st.stage_id} className="report-marks-cell report-stage-cell">
                             {stgData && stgData.average_mark !== null && stgData.average_mark !== undefined ? (
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                 {/* Evaluator-wise individual marks */}
@@ -1267,7 +1269,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       })}
 
                       {/* Final Mark */}
-                      <td style={{ padding: '14px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
+                      <td className="report-marks-cell report-final-cell">
                         <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>
                           {student.final_mark}%
                         </div>
@@ -1279,7 +1281,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       </td>
 
                       {/* Letter Grade */}
-                      <td style={{ padding: '14px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <td className="report-marks-cell report-grade-cell">
                         <span
                           style={{
                             display: 'inline-block',

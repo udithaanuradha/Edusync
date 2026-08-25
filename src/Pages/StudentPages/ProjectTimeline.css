@@ -1,19 +1,19 @@
  /* ProjectTimeline.css */
 
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-tint: #eff6ff;
-  --bg-main: #f8fafc;
-  --text-dark: #0f172a;
-  --text-muted: #64748b;
+  --primary: var(--eds-color-primary);
+  --primary-hover: var(--eds-color-primary-hover);
+  --primary-tint: var(--eds-color-primary-soft);
+  --bg-main: var(--eds-color-bg-surface-soft);
+  --text-dark: var(--eds-color-text-strong);
+  --text-muted: var(--eds-color-text-muted);
   --text-label: #475569;
-  --border: #e2e8f0;
-  --white: #ffffff;
+  --border: var(--eds-color-border);
+  --white: var(--eds-color-bg-surface);
   --success: #047857;
   --success-tint: #ecfdf5;
-  --danger: #b91c1c;
-  --danger-tint: #fef2f2;
+  --danger: var(--eds-color-danger-solid);
+  --danger-tint: var(--eds-color-danger-bg);
   --radius-card: 20px;
   --radius-control: 12px;
   --shadow-card: 0 14px 36px rgba(15, 23, 42, 0.06);
@@ -42,7 +42,7 @@
 
 .student-inner-tab-heading p {
   margin: 0;
-  color: var(--text-label);
+  color: var(--text-muted);
   max-width: 740px;
   line-height: 1.75;
   font-size: 14px;
@@ -276,7 +276,7 @@
 
 .submit-btn {
   background: var(--primary);
-  color: #ffffff;
+  color: var(--white);
   padding: 14px 28px;
   border-radius: var(--radius-control);
   font-size: 14px;
@@ -293,7 +293,7 @@
 }
 
 .submit-btn:disabled {
-  background: #cbd5e1;
+  background: var(--border);
   box-shadow: none;
   cursor: not-allowed;
 }
