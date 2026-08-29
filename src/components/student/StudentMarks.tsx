@@ -154,7 +154,7 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
         <div className="student-marks-hero">
           <div className="student-marks-ring-wrap">
             <svg width="140" height="140" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="#e2e8f0" strokeWidth="10" />
+              <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="var(--eds-color-border)" strokeWidth="10" />
               <circle
                 cx="70"
                 cy="70"

@@ -126,8 +126,8 @@ const Dashboard: React.FC = () => {
             width: '100%',
             margin: '24px 0',
             padding: '24px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
+            backgroundColor: 'var(--eds-color-bg-surface)',
+            border: '1px solid var(--eds-color-border)',
             borderRadius: '14px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             display: 'flex',
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
             <div style={{ textAlign: 'left' }}>
               <h3 style={{
                 margin: '0 0 4px 0',
-                color: '#0f172a',
+                color: 'var(--eds-color-text-strong)',
                 fontSize: '16px',
                 fontWeight: '700'
               }}>
@@ -146,7 +146,7 @@ const Dashboard: React.FC = () => {
               </h3>
               <p style={{
                 margin: 0,
-                color: '#64748b',
+                color: 'var(--eds-color-text-muted)',
                 fontSize: '14px'
               }}>
                 Promote all eligible students to the next academic level
@@ -155,9 +155,9 @@ const Dashboard: React.FC = () => {
             <button
               onClick={handleBatchPromotion}
               style={{
-                backgroundColor: '#f1f5f9',
-                color: '#0f172a',
-                border: '1px solid #cbd5e1',
+                backgroundColor: 'var(--eds-color-border-soft)',
+                color: 'var(--eds-color-text-strong)',
+                border: '1px solid var(--eds-color-border)',
                 padding: '12px 24px',
                 borderRadius: '8px',
                 fontSize: '14px',
@@ -168,12 +168,12 @@ const Dashboard: React.FC = () => {
                 transition: 'all 0.2s ease',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#e2e8f0';
-                e.currentTarget.style.borderColor = '#94a3b8';
+                e.currentTarget.style.backgroundColor = 'var(--eds-color-border)';
+                e.currentTarget.style.borderColor = 'var(--eds-color-text-faint)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#f1f5f9';
-                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.backgroundColor = 'var(--eds-color-border-soft)';
+                e.currentTarget.style.borderColor = 'var(--eds-color-border)';
               }}
             >
               Promote All Students

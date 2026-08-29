@@ -18,13 +18,13 @@
 
 .request-header h3 {
   margin: 0 0 0.5rem 0;
-  color: #1e1e2f;
+  color: var(--eds-color-text-strong);
   font-size: 1.5rem;
 }
 
 .request-header p {
   margin: 0;
-  color: #6b7280;
+  color: var(--eds-color-text-muted);
   font-size: 0.95rem;
 }
 
@@ -37,15 +37,15 @@
 }
 
 .success-alert {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
+  border: 1px solid var(--eds-color-success-solid);
 }
 
 .error-alert {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
+  border: 1px solid var(--eds-color-danger-bg);
 }
 
 .meeting-request-form {
@@ -62,14 +62,14 @@
 
 .form-group label {
   font-weight: 600;
-  color: #374151;
+  color: var(--eds-color-text-body);
   font-size: 0.9rem;
 }
 
 .form-group input,
 .form-group textarea {
   padding: 0.8rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--eds-color-border);
   border-radius: 8px;
   font-size: 1rem;
   font-family: inherit;
@@ -80,7 +80,7 @@
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4f46e5;
+  border-color: var(--eds-color-primary);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
@@ -94,7 +94,7 @@
 }
 
 .submit-request-btn {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--eds-color-primary) 0%, #7c3aed 100%);
   color: white;
   border: none;
   padding: 1rem;
@@ -113,7 +113,7 @@
 }
 
 .submit-request-btn:disabled {
-  background: #9ca3af;
+  background: var(--eds-color-text-faint);
   cursor: not-allowed;
   box-shadow: none;
 }

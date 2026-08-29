@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
-import Sidebar from '../../components/shared/Sidebar';
-import Header from '../../components/shared/Header';
+import AppShell from '../../components/shared/layout/AppShell';
+import PrimaryButton from '../../components/shared/ui/PrimaryButton';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
@@ -47,18 +47,11 @@ const StudentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="app-layout">
-      {/* 1. SIDEBAR: Stays on the left */}
-      <Sidebar />
-      
-      <div className="main-viewport">
-        {/* 2. HEADER: Stays at the top */}
-        <Header />
-        
-        <main className="content-container">
-          <div className="dashboard-content">
+    <AppShell>
+      <div className="student-dashboard-shell">
+        <div className="dashboard-content">
             
-            <div className="dashboard-header-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+            <div className="dashboard-header-section student-dashboard-header">
               <div>
                 <h2 className="overview-title">
                   Dashboard Overview
@@ -67,19 +60,14 @@ const StudentDashboard: React.FC = () => {
                   Welcome back! Here's what's happening.
                 </p>
               </div>
-              <button
+              <PrimaryButton
                 type="button"
                 onClick={() => setShowAssignedGroup(true)}
                 disabled={!studentId}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600,
-                  color: '#fff', background: '#4f46e5', border: 'none', borderRadius: 8,
-                  padding: '9px 16px', cursor: studentId ? 'pointer' : 'not-allowed', opacity: studentId ? 1 : 0.6,
-                }}
+                icon={<Users size={15} />}
               >
-                <Users size={15} />
                 Assigned Group
-              </button>
+              </PrimaryButton>
             </div>
 
             {showAssignedGroup && studentId && (
@@ -104,10 +92,9 @@ const StudentDashboard: React.FC = () => {
               <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines || []} />
             </div>
 
-          </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

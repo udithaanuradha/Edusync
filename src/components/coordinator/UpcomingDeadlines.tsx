@@ -32,13 +32,13 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] })
     <div className="deadlines-card">
       <div className="card-header">
         <Calendar size={20} className="header-icon" />
-        <h3 className="card-title">Upcoming Deadlines</h3>
+        <h3 className="card-title">Upcoming Panels</h3>
       </div>
 
       <div className="deadlines-list">
         {deadlines.length === 0 ? (
           <div style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
-            No upcoming deadlines found.
+            No upcoming panels found.
           </div>
         ) : (
           deadlines.map((deadline, index) => {

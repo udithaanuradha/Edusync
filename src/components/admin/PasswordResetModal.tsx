@@ -229,10 +229,10 @@ EduSync Academic Administration`
   const roleColor = (() => {
     switch (user.role.toLowerCase()) {
       case 'admin': return { bg: '#ffe4e6', text: '#e11d48' };
-      case 'student': return { bg: '#eff6ff', text: '#2563eb' };
-      case 'coordinator': return { bg: '#ecfdf5', text: '#059669' };
+      case 'student': return { bg: 'var(--eds-color-primary-soft)', text: 'var(--eds-color-primary)' };
+      case 'coordinator': return { bg: 'var(--eds-color-success-bg)', text: 'var(--eds-color-success-solid)' };
       case 'supervisor': return { bg: '#f5f3ff', text: '#7c3aed' };
-      default: return { bg: '#f1f5f9', text: '#475569' };
+      default: return { bg: 'var(--eds-color-border-soft)', text: 'var(--eds-color-text-muted)' };
     }
   })();
 
@@ -249,12 +249,12 @@ EduSync Academic Administration`
       padding: '16px',
     }}>
       <div style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: 'var(--eds-color-bg-surface)',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '540px',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        border: '1px solid #e2e8f0',
+        border: '1px solid var(--eds-color-border)',
         overflow: 'hidden',
         animation: 'modalSlideIn 0.2s ease-out',
       }}>
@@ -262,31 +262,31 @@ EduSync Academic Administration`
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #f1f5f9',
+          borderBottom: '1px solid var(--eds-color-border-soft)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: '#fafbfc',
+          backgroundColor: 'var(--eds-color-bg-surface-soft)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '36px',
               height: '36px',
               borderRadius: '10px',
-              backgroundColor: '#eff6ff',
-              color: '#2563eb',
+              backgroundColor: 'var(--eds-color-primary-soft)',
+              color: 'var(--eds-color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '1px solid #dbeafe',
+              border: '1px solid var(--eds-color-primary-soft-border)',
             }}>
               <KeyRound size={18} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                 Reset User Password
               </h3>
-              <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
                 Administrative security action
               </p>
             </div>
@@ -296,7 +296,7 @@ EduSync Academic Administration`
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#94a3b8',
+              color: 'var(--eds-color-text-faint)',
               cursor: 'pointer',
               padding: '6px',
               borderRadius: '8px',
@@ -315,9 +315,9 @@ EduSync Academic Administration`
           {/* Target User Info & Target Email Input Card */}
           <div style={{
             padding: '14px 18px',
-            backgroundColor: '#f8fafc',
+            backgroundColor: 'var(--eds-color-bg-surface-soft)',
             borderRadius: '12px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--eds-color-border)',
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
@@ -401,8 +401,8 @@ EduSync Academic Administration`
           {/* Privacy & Security Notice */}
           <div style={{
             padding: '12px 14px',
-            backgroundColor: '#fffbeb',
-            border: '1px solid #fef3c7',
+            backgroundColor: 'var(--eds-color-warning-bg)',
+            border: '1px solid var(--eds-color-warning-bg)',
             borderRadius: '10px',
             display: 'flex',
             gap: '10px',
@@ -423,9 +423,9 @@ EduSync Academic Administration`
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              backgroundColor: statusMessage.type === 'success' ? '#ecfdf5' : '#fee2e2',
-              color: statusMessage.type === 'success' ? '#065f46' : '#991b1b',
-              border: statusMessage.type === 'success' ? '1px solid #a7f3d0' : '1px solid #fecaca',
+              backgroundColor: statusMessage.type === 'success' ? 'var(--eds-color-success-bg)' : 'var(--eds-color-danger-bg)',
+              color: statusMessage.type === 'success' ? 'var(--eds-color-success-text)' : 'var(--eds-color-danger-text)',
+              border: statusMessage.type === 'success' ? '1px solid var(--eds-color-success-solid)' : '1px solid var(--eds-color-danger-solid)',
             }}>
               <UserCheck size={16} />
               <span>{statusMessage.text}</span>
@@ -436,18 +436,18 @@ EduSync Academic Administration`
           {temporaryPassword && (
             <div style={{
               padding: '16px',
-              backgroundColor: '#f0fdf4',
+              backgroundColor: 'var(--eds-color-success-bg)',
               borderRadius: '12px',
-              border: '1px solid #bbf7d0',
+              border: '1px solid var(--eds-color-success-solid)',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', fontWeight: '700', color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--eds-color-success-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Temporary Password Generated
                 </span>
-                <span style={{ fontSize: '11px', color: '#15803d' }}>
+                <span style={{ fontSize: '11px', color: 'var(--eds-color-success-solid-hover)' }}>
                   Expires in 24 hours
                 </span>
               </div>
@@ -461,12 +461,12 @@ EduSync Academic Administration`
                     flex: 1,
                     padding: '10px 14px',
                     borderRadius: '8px',
-                    border: '1px solid #86efac',
-                    backgroundColor: '#ffffff',
+                    border: '1px solid var(--eds-color-success-solid)',
+                    backgroundColor: 'var(--eds-color-bg-surface)',
                     fontFamily: 'monospace',
                     fontSize: '15px',
                     fontWeight: '700',
-                    color: '#0f172a',
+                    color: 'var(--eds-color-text-strong)',
                     letterSpacing: '0.05em',
                   }}
                 />
@@ -474,8 +474,8 @@ EduSync Academic Administration`
                   type="button"
                   onClick={handleCopyPassword}
                   style={{
-                    backgroundColor: copied ? '#15803d' : '#16a34a',
-                    color: '#ffffff',
+                    backgroundColor: copied ? 'var(--eds-color-success-solid-hover)' : 'var(--eds-color-success-solid)',
+                    color: 'var(--eds-color-bg-surface)',
                     border: 'none',
                     borderRadius: '8px',
                     padding: '0 16px',
@@ -507,8 +507,8 @@ EduSync Academic Administration`
               style={{
                 width: '100%',
                 padding: '12px 18px',
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
+                backgroundColor: 'var(--eds-color-primary)',
+                color: 'var(--eds-color-bg-surface)',
                 border: 'none',
                 borderRadius: '10px',
                 fontWeight: '600',
@@ -521,8 +521,8 @@ EduSync Academic Administration`
                 transition: 'background-color 0.2s',
                 boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
               }}
-              onMouseOver={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = '#1d4ed8')}
-              onMouseOut={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = '#2563eb')}
+              onMouseOver={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = 'var(--eds-color-primary-hover)')}
+              onMouseOut={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = 'var(--eds-color-primary)')}
             >
               <RefreshCw size={16} className={isSubmitting ? 'animate-spin' : ''} />
               {temporaryPassword ? 'Regenerate New Temporary Password' : 'Generate Temporary Password'}
@@ -591,8 +591,8 @@ EduSync Academic Administration`
         {/* Footer */}
         <div style={{
           padding: '14px 24px',
-          backgroundColor: '#f8fafc',
-          borderTop: '1px solid #f1f5f9',
+          backgroundColor: 'var(--eds-color-bg-surface-soft)',
+          borderTop: '1px solid var(--eds-color-border-soft)',
           display: 'flex',
           justifyContent: 'flex-end',
         }}>
@@ -601,12 +601,12 @@ EduSync Academic Administration`
             onClick={resetModalState}
             style={{
               padding: '8px 18px',
-              backgroundColor: '#ffffff',
-              border: '1px solid #cbd5e1',
+              backgroundColor: 'var(--eds-color-bg-surface)',
+              border: '1px solid var(--eds-color-border)',
               borderRadius: '8px',
               fontSize: '13px',
               fontWeight: '600',
-              color: '#475569',
+              color: 'var(--eds-color-text-muted)',
               cursor: 'pointer',
             }}
           >

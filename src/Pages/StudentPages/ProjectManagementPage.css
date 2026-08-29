@@ -18,40 +18,43 @@
    higher-specificity trick, applied to the one rule that has no ancestor
    of its own to hang a descendant selector off of. */
 .student-inner-pages.pm-inner-workspace {
-  background: linear-gradient(180deg, #eef2f9 0%, #eef2f7 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, var(--eds-color-bg-page) 0%, var(--eds-color-bg-page) 100%);
+  border: 1px solid var(--eds-color-border);
   border-radius: 24px;
   padding: 20px;
   margin-top: 24px;
   width: auto;
 }
 
-/* Segmented-control style switcher: a muted track with a floating white
-   "pill" for the active tab, rather than a flat solid-fill block. */
+/* Underline-style switcher, matching Coordinator's .level-tabs-wrap /
+   .level-tab-btn (see CoordinatorLevelPage.css). */
 .pm-inner-workspace .student-inner-tabs {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
-  background: #e2e8f0;
+  gap: 6px;
+  background: transparent;
   border: none;
-  border-radius: 16px;
-  padding: 5px;
+  border-bottom: 1px solid var(--eds-color-border);
+  border-radius: 0;
+  padding: 0 4px;
   margin-bottom: 20px;
 }
 
 .pm-inner-workspace .student-inner-tab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   background: transparent;
   border: none;
-  color: #475569;
-  border-radius: 12px;
-  padding: 11px 20px;
+  color: var(--eds-color-text-muted);
+  border-radius: var(--eds-radius-sm) var(--eds-radius-sm) 0 0;
+  padding: 13px 16px 15px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .pm-inner-workspace .student-inner-tab-icon {
@@ -61,16 +64,27 @@
 }
 
 .pm-inner-workspace .student-inner-tab:hover {
-  background: rgba(255, 255, 255, 0.6);
-  color: #1e293b;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary-hover);
 }
 
 /*active tab in inner page*/
 .pm-inner-workspace .student-inner-tab.active {
-  background: #ffffff;
-  color: #2563eb;
+  background: transparent;
+  color: var(--eds-color-primary-hover);
   font-weight: 700;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+  box-shadow: none;
+}
+
+.pm-inner-workspace .student-inner-tab.active::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--eds-color-primary);
 }
 
 .pm-inner-workspace .student-inner-tab.active .student-inner-tab-icon {
@@ -82,9 +96,9 @@
 }
 
 .pm-inner-workspace .student-inner-panel {
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   padding: 28px;
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.07);
 }
@@ -124,7 +138,7 @@
   align-items: flex-start;
   gap: 14px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
   margin-bottom: 0;
 }
 
@@ -133,8 +147,8 @@
   height: 44px;
   flex-shrink: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  color: #2563eb;
+  background: linear-gradient(135deg, var(--eds-color-primary-soft) 0%, var(--eds-color-primary-soft-border) 100%);
+  color: var(--eds-color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -156,7 +170,7 @@
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.01em;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .pm-inner-workspace .student-inner-tab-heading-tag {
@@ -165,16 +179,16 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: var(--eds-color-primary);
+  background: var(--eds-color-primary-soft);
+  border: 1px solid var(--eds-color-primary-soft-border);
   border-radius: 999px;
   padding: 3px 10px;
 }
 
 .pm-inner-workspace .student-inner-tab-heading p {
   margin: 0;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   max-width: 740px;
   line-height: 1.7;
   font-size: 14px;
@@ -218,21 +232,21 @@
 }
 /*LEADER ROLE BADGE*/
 .role-badge-leader {
-  background: #0f172a;
-  color: #ffffff;
+  background: var(--eds-color-text-strong);
+  color: var(--eds-color-bg-surface);
 }
 
 
 .role-badge-member {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border: 1px solid var(--eds-color-primary-soft-border);
 }
 
 .role-warning {
-  color: #ef4444; /* Red color for restricted access */
+  color: var(--eds-color-danger-solid); /* Red color for restricted access */
   font-weight: 600;
-  background: #fef2f2;
+  background: var(--eds-color-danger-bg);
   padding: 8px 12px;
   border-radius: 6px;
   display: inline-block;
@@ -248,9 +262,9 @@
 .task-form-card,
 .task-table-card,
 .my-tasks-table-card {
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   border-radius: 24px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   padding: 24px;
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
@@ -266,7 +280,7 @@
 .task-card-header h4 {
   margin: 0;
   font-size: 20px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .inline-filter-row,
@@ -275,7 +289,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
 }
 
@@ -292,7 +306,7 @@
 
 .task-form-row label {
   font-size: 14px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-weight: 600;
 }
 
@@ -300,11 +314,11 @@
 .task-form-row select,
 .task-form-row textarea {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   padding: 12px 14px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 14px;
 }
 
@@ -330,24 +344,24 @@
 }
 
 .primary-btn {
-  background: #2563eb;
+  background: var(--eds-color-primary);
   color: white;
   padding: 14px 22px;
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
 }
 
 .primary-btn:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
 }
 
 .secondary-btn {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--eds-color-bg-surface-soft);
+  color: var(--eds-color-text-strong);
   padding: 10px 14px;
 }
 
 .danger-btn {
-  background: #ef4444;
+  background: var(--eds-color-danger-solid);
   color: white;
   padding: 10px 14px;
 }
@@ -372,19 +386,19 @@
 .task-table td {
   text-align: left;
   padding: 16px 14px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--eds-color-border);
   vertical-align: top;
 }
 
 .task-title-cell {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   min-width: 140px;
 }
 
 .task-desc-cell {
   font-size: 13px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   line-height: 1.5;
   white-space: pre-wrap;
   max-width: 250px;
@@ -392,14 +406,14 @@
 }
 
 .task-table th {
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .task-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
 }
 
 .status-pill {
@@ -416,33 +430,33 @@
 
 .status-pill.todo {
   background: rgba(37, 99, 235, 0.12);
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 .status-pill.in_progress {
   background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
+  color: var(--eds-color-warning-text);
 }
 
 .status-pill.completed {
   background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  color: var(--eds-color-success-solid);
 }
 
 /* Milestone approval statuses (used by the Supervisor Feedback section) */
 .status-pill.pending {
   background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
+  color: var(--eds-color-warning-text);
 }
 
 .status-pill.approved {
   background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  color: var(--eds-color-success-solid);
 }
 
 .status-pill.rejected {
   background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
+  color: var(--eds-color-danger-text);
 }
 
 /* Project Timeline / Task Creation / My Tasks differ in content height, so
@@ -484,8 +498,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--eds-color-primary) 0%, var(--eds-color-primary-hover) 100%);
+  color: var(--eds-color-bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -502,8 +516,8 @@
 
 /* Supervisor — amber border, distinct from plain student members */
 .team-avatar-circle.role-supervisor {
-  background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
-  border-color: #fde68a;
+  background: linear-gradient(135deg, #f59e0b 0%, var(--eds-color-warning-text) 100%);
+  border-color: var(--eds-color-warning-bg);
 }
 
 /* Mentor — violet border, distinct from both members and supervisor */
@@ -522,8 +536,8 @@
 }
 
 .team-avatar-tag.role-supervisor {
-  background: #fef3c7;
-  color: #b45309;
+  background: var(--eds-color-warning-bg);
+  color: var(--eds-color-warning-text);
 }
 
 .team-avatar-tag.role-mentor {
@@ -533,7 +547,7 @@
 
 .team-avatar-name {
   font-size: 12px;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-weight: 600;
   text-align: center;
   max-width: 84px;
@@ -551,12 +565,12 @@
   margin: 0 0 10px 0;
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .feedback-card {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
   border-radius: 16px;
   padding: 16px 18px;
   margin-bottom: 10px;
@@ -576,23 +590,23 @@
 
 .feedback-milestone-title {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 14px;
 }
 
 .feedback-text {
   margin: 0;
-  color: #7f1d1d;
+  color: var(--eds-color-danger-text);
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
 }
 
 .empty-state-card {
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   border-radius: 18px;
   padding: 26px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   text-align: center;
 }
 
@@ -608,19 +622,19 @@
 .status-count {
   font-size: 34px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .available-card {
-  background: #eff6ff;
+  background: var(--eds-color-primary-soft);
 }
 
 .ongoing-card {
-  background: #fffbeb;
+  background: var(--eds-color-warning-bg);
 }
 
 .finished-card {
-  background: #ecfdf5;
+  background: var(--eds-color-success-bg);
 }
 
 .member-filter-row {
@@ -629,7 +643,7 @@
   gap: 12px;
   align-items: center;
   margin-bottom: 20px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
 }
 
 .member-filter-row label {
@@ -645,25 +659,25 @@
 .task-table-card select,
 .member-filter-row select {
   min-width: 160px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
   padding: 10px 14px;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
 }
 
 .task-error-msg {
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--eds-color-danger-solid);
+  background: var(--eds-color-danger-bg);
   border-radius: 12px;
   padding: 10px 12px;
   margin-top: -6px;
 }
 
 .member-task-note {
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   border-radius: 18px;
   padding: 24px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   line-height: 1.75;
 }
 
@@ -673,8 +687,8 @@
 }
 
 .task-start-btn {
-  background: #2563eb;
-  color: #fff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
@@ -685,13 +699,13 @@
 }
 
 .task-start-btn:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
   transform: translateY(-1px);
 }
 
 .task-end-btn {
-  background: #16a34a;
-  color: #fff;
+  background: var(--eds-color-success-solid);
+  color: var(--eds-color-bg-surface);
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
@@ -702,7 +716,7 @@
 }
 
 .task-end-btn:hover {
-  background: #15803d;
+  background: var(--eds-color-success-solid-hover);
   transform: translateY(-1px);
 }
 
@@ -716,7 +730,7 @@
 .task-done-badge {
   display: inline-block;
   background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  color: var(--eds-color-success-solid);
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 12px;
@@ -732,8 +746,8 @@
 }
 
 .task-board-column {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   border-radius: 20px;
   padding: 14px;
   display: flex;
@@ -744,15 +758,15 @@
 }
 
 .task-board-column.drag-over {
-  background: #eff6ff;
-  border-color: #93c5fd;
+  background: var(--eds-color-primary-soft);
+  border-color: var(--eds-color-primary-soft-border);
   box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
 .task-board-empty.is-drop-target {
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px dashed #93c5fd;
+  color: var(--eds-color-primary);
+  background: var(--eds-color-primary-soft);
+  border: 1px dashed var(--eds-color-primary-soft-border);
 }
 
 .task-board-column-header {
@@ -769,7 +783,7 @@
 .task-board-column-header p {
   margin: 0;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .task-board-column-body {
@@ -784,9 +798,9 @@
 }
 
 .task-board-card {
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   border-radius: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
   padding: 16px;
   display: flex;
@@ -803,7 +817,7 @@
 }
 
 .task-board-card:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--eds-color-primary);
   outline-offset: 2px;
 }
 
@@ -811,7 +825,7 @@
    the moving visual is the DragOverlay copy below */
 .task-board-card.dragging {
   opacity: 0.4;
-  border: 1px dashed #93c5fd;
+  border: 1px dashed var(--eds-color-primary-soft-border);
   box-shadow: none;
   cursor: grabbing;
 }
@@ -829,7 +843,7 @@
 }
 
 .task-board-card.has-error {
-  border-color: #fecaca;
+  border-color: var(--eds-color-danger-bg);
   box-shadow: 0 14px 36px rgba(220, 38, 38, 0.1);
 }
 
@@ -841,20 +855,20 @@
 }
 
 .task-board-card-grip {
-  color: #cbd5e1;
+  color: var(--eds-color-border);
   flex-shrink: 0;
   transition: color 0.2s ease;
 }
 
 .task-board-card:hover .task-board-card-grip,
 .task-board-card:focus-visible .task-board-card-grip {
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 .task-board-card-milestone {
   font-size: 12px;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--eds-color-primary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -863,13 +877,13 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
 }
 
 .task-board-card-desc {
   margin: 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -878,7 +892,7 @@
 .task-board-card-assignee {
   margin: 0;
   font-size: 12px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-weight: 600;
 }
 
@@ -886,7 +900,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #475569;
+  color: var(--eds-color-text-muted);
   font-size: 12px;
   font-weight: 600;
 }
@@ -895,8 +909,8 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
-  border-top-color: #2563eb;
+  border: 2px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
   animation: task-board-spin 0.7s linear infinite;
 }
 
@@ -910,8 +924,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #dc2626;
-  background: #fef2f2;
+  color: var(--eds-color-danger-solid);
+  background: var(--eds-color-danger-bg);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
@@ -925,7 +939,7 @@
 .task-board-card-retry {
   background: none;
   border: none;
-  color: #dc2626;
+  color: var(--eds-color-danger-solid);
   font-weight: 700;
   font-size: 12px;
   text-decoration: underline;
@@ -964,17 +978,17 @@
 .loading-container {
   padding: 40px;
   text-align: center;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-weight: 500;
-  background: #f8fafc;
+  background: var(--eds-color-bg-surface-soft);
   border-radius: 18px;
 }
 
 .error-container {
   padding: 24px;
-  color: #dc2626;
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
+  color: var(--eds-color-danger-solid);
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
   border-radius: 12px;
   margin-bottom: 24px;
   font-size: 14px;

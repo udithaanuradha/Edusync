@@ -298,8 +298,8 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: '#e0f2fe',
-            color: '#0284c7',
+            backgroundColor: '#eff6ff',
+            color: '#2563eb',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -308,35 +308,33 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
           </div>
 
           <div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
-              Choose a CSV file or drag & drop here
+            <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>
+              Click to select or drag & drop CSV file
             </div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
-              Required CSV column headers: <span style={{ fontWeight: '600', color: '#334155' }}>Group Name</span>, <span style={{ fontWeight: '600', color: '#334155' }}>Mentor Name</span>, <span style={{ fontWeight: '600', color: '#334155' }}>Email</span>
+            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+              Supports .csv format with Group Name, Mentor Name, Email, and Company
             </div>
           </div>
         </div>
       ) : (
-        /* Active File Selected State */
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 18px',
           backgroundColor: '#eff6ff',
           border: '1px solid #bfdbfe',
           borderRadius: '10px',
-          marginBottom: '16px'
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <FileSpreadsheet size={20} color="#2563eb" />
             <div>
-              <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#1e40af' }}>
-                {fileName || 'Uploaded CSV File'}
-              </span>
-              <span style={{ fontSize: '12px', color: '#3b82f6', marginLeft: '8px' }}>
-                ({mentors.length} records loaded)
-              </span>
+              <div style={{ fontWeight: '600', color: '#1e40af', fontSize: '13.5px' }}>
+                {fileName}
+              </div>
+              <div style={{ fontSize: '12px', color: '#3b82f6' }}>
+                {mentors.length} mentor assignment records loaded
+              </div>
             </div>
           </div>
 
@@ -344,9 +342,11 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             type="button"
             onClick={handleReset}
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#64748b',
+              background: '#ffffff',
+              border: '1px solid #cbd5e1',
+              color: '#dc2626',
+              padding: '6px 12px',
+              borderRadius: '6px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -354,10 +354,8 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
               fontSize: '12px',
               fontWeight: '600'
             }}
-            onMouseOver={(e) => (e.currentTarget.style.color = '#ef4444')}
-            onMouseOut={(e) => (e.currentTarget.style.color = '#64748b')}
           >
-            <Trash2 size={14} /> Remove File
+            <Trash2 size={13} /> Change File
           </button>
         </div>
       )}

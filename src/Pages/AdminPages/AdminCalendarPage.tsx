@@ -61,11 +61,11 @@ const getDegreeNameFromAcademicUnit = (unit?: string): string => {
 const getLevelColor = (level: number) => {
   switch (level) {
     case 1:
-      return { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', solid: '#2563eb', badge: '#dbeafe' };
+      return { bg: 'var(--eds-color-primary-soft)', border: 'var(--eds-color-primary-soft-border)', text: 'var(--eds-color-primary-hover)', solid: 'var(--eds-color-primary)', badge: 'var(--eds-color-primary-soft-border)' };
     case 2:
       return { bg: '#f5f3ff', border: '#ddd6fe', text: '#6d28d9', solid: '#7c3aed', badge: '#ede9fe' };
     case 3:
-      return { bg: '#fffbeb', border: '#fde68a', text: '#b45309', solid: '#d97706', badge: '#fef3c7' };
+      return { bg: '#fffbeb', border: '#fde68a', text: 'var(--eds-color-warning-text)', solid: '#d97706', badge: 'var(--eds-color-warning-bg)' };
     case 4:
       return { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857', solid: '#059669', badge: '#d1fae5' };
     default:
@@ -431,7 +431,7 @@ const AdminCalendarPage: React.FC = () => {
   const frozenCount = frozenDates.length;
 
   return (
-    <div className="app-layout" style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+    <div className="app-layout" style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: 'var(--eds-color-bg-surface-soft, #f8fafc)' }}>
       <Sidebar />
       <div className="main-viewport" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto', position: 'relative' }}>
         <Header />
@@ -442,11 +442,11 @@ const AdminCalendarPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'var(--eds-color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                   <CalendarDays size={22} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--eds-color-text-strong)', margin: 0 }}>
                     Academic Master Calendar
                   </h2>
                 </div>
@@ -459,9 +459,9 @@ const AdminCalendarPage: React.FC = () => {
                 onClick={() => setShowFreezeModal(true)}
                 style={{
                   padding: '9px 16px',
-                  backgroundColor: '#fee2e2',
-                  color: '#991b1b',
-                  border: '1px solid #fecaca',
+                  backgroundColor: 'var(--eds-color-danger-bg)',
+                  color: 'var(--eds-color-danger-text)',
+                  border: '1px solid var(--eds-color-danger-bg)',
                   borderRadius: '8px',
                   fontWeight: '600',
                   fontSize: '13.5px',
@@ -471,8 +471,8 @@ const AdminCalendarPage: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'all 0.15s'
                 }}
-                onMouseOver={e => e.currentTarget.style.backgroundColor = '#fecaca'}
-                onMouseOut={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--eds-color-danger-bg)'}
+                onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--eds-color-danger-bg)'}
               >
                 <Plus size={16} />
                 Freeze Faculty Date
@@ -482,61 +482,61 @@ const AdminCalendarPage: React.FC = () => {
 
           {/* Metric Overview Bar */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+            <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', borderRadius: '12px', padding: '16px 20px', border: '1px solid var(--eds-color-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: 'var(--eds-color-primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--eds-color-primary)' }}>
                 <Layers size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>{activeStageCount}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Active Project Stages</div>
+                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>{activeStageCount}</div>
+                <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)', fontWeight: '500' }}>Active Project Stages</div>
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', borderRadius: '12px', padding: '16px 20px', border: '1px solid var(--eds-color-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c' }}>
                 <Clock size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>{upcomingDeadlineCount}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Deadlines in 30 Days</div>
+                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>{upcomingDeadlineCount}</div>
+                <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)', fontWeight: '500' }}>Deadlines in 30 Days</div>
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', borderRadius: '12px', padding: '16px 20px', border: '1px solid var(--eds-color-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5' }}>
                 <Users size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>{panelCount}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Evaluation Panels</div>
+                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>{panelCount}</div>
+                <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)', fontWeight: '500' }}>Evaluation Panels</div>
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
+            <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', borderRadius: '12px', padding: '16px 20px', border: '1px solid var(--eds-color-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', backgroundColor: 'var(--eds-color-danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--eds-color-danger-solid)' }}>
                 <AlertCircle size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>{frozenCount}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Faculty Frozen Dates</div>
+                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>{frozenCount}</div>
+                <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)', fontWeight: '500' }}>Faculty Frozen Dates</div>
               </div>
             </div>
           </div>
 
           {/* Filter Bar */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border)', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#475569', marginRight: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-muted)', marginRight: '4px' }}>
                 <Filter size={16} /> Filters:
               </div>
 
               {/* Level Filter */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', color: '#64748b' }}>Level:</span>
+                <span style={{ fontSize: '12.5px', color: 'var(--eds-color-text-muted)' }}>Level:</span>
                 <select
                   value={levelFilter}
                   onChange={e => setLevelFilter(e.target.value)}
-                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#f8fafc', fontWeight: '500', cursor: 'pointer', outline: 'none' }}
+                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', fontSize: '13px', backgroundColor: 'var(--eds-color-bg-surface-soft)', fontWeight: '500', cursor: 'pointer', outline: 'none' }}
                 >
                   <option value="all">All Levels (1-4)</option>
                   <option value="1">Level 1</option>
@@ -548,11 +548,11 @@ const AdminCalendarPage: React.FC = () => {
 
               {/* Degree Filter */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', color: '#64748b' }}>Degree:</span>
+                <span style={{ fontSize: '12.5px', color: 'var(--eds-color-text-muted)' }}>Degree:</span>
                 <select
                   value={degreeFilter}
                   onChange={e => setDegreeFilter(e.target.value)}
-                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#f8fafc', fontWeight: '500', cursor: 'pointer', outline: 'none' }}
+                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', fontSize: '13px', backgroundColor: 'var(--eds-color-bg-surface-soft)', fontWeight: '500', cursor: 'pointer', outline: 'none' }}
                 >
                   <option value="all">All Degrees</option>
                   <option value="IT">IT</option>
@@ -563,11 +563,11 @@ const AdminCalendarPage: React.FC = () => {
 
               {/* Event Type Filter */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', color: '#64748b' }}>Type:</span>
+                <span style={{ fontSize: '12.5px', color: 'var(--eds-color-text-muted)' }}>Type:</span>
                 <select
                   value={typeFilter}
                   onChange={e => setTypeFilter(e.target.value)}
-                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#f8fafc', fontWeight: '500', cursor: 'pointer', outline: 'none' }}
+                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', fontSize: '13px', backgroundColor: 'var(--eds-color-bg-surface-soft)', fontWeight: '500', cursor: 'pointer', outline: 'none' }}
                 >
                   <option value="all">All Events</option>
                   <option value="stages">Stage Deadlines Only</option>
@@ -579,13 +579,13 @@ const AdminCalendarPage: React.FC = () => {
 
             {/* Search Input */}
             <div style={{ position: 'relative', minWidth: '240px' }}>
-              <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--eds-color-text-faint)' }} />
               <input
                 type="text"
                 placeholder="Search milestone or group..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '7px 12px 7px 32px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                style={{ width: '100%', padding: '7px 12px 7px 32px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
               />
             </div>
           </div>
@@ -594,42 +594,42 @@ const AdminCalendarPage: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '24px', alignItems: 'start' }}>
             
             {/* Calendar Box */}
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+            <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border)', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               
               {/* Calendar Controls */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
                     onClick={() => changeMonth(-1)}
-                    style={{ border: '1px solid #e2e8f0', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#475569' }}
+                    style={{ border: '1px solid var(--eds-color-border)', background: 'var(--eds-color-bg-surface-soft)', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--eds-color-text-muted)' }}
                     title="Previous Month"
                   >
                     <ChevronLeft size={18} />
                   </button>
                   <button
                     onClick={() => changeMonth(1)}
-                    style={{ border: '1px solid #e2e8f0', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#475569' }}
+                    style={{ border: '1px solid var(--eds-color-border)', background: 'var(--eds-color-bg-surface-soft)', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--eds-color-text-muted)' }}
                     title="Next Month"
                   >
                     <ChevronRight size={18} />
                   </button>
                   <button
                     onClick={jumpToToday}
-                    style={{ border: '1px solid #cbd5e1', background: '#ffffff', padding: '7px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: '600', color: '#2563eb' }}
+                    style={{ border: '1px solid var(--eds-color-border)', background: 'var(--eds-color-bg-surface)', padding: '7px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: '600', color: 'var(--eds-color-primary)' }}
                   >
                     Today
                   </button>
                 </div>
 
-                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#0f172a' }}>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                   {viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}
                 </h3>
 
                 {/* Level Color Legend */}
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#1d4ed8', fontWeight: '600', backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px' }}>L1</span>
+                  <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--eds-color-primary-hover)', fontWeight: '600', backgroundColor: 'var(--eds-color-primary-soft)', padding: '2px 8px', borderRadius: '4px' }}>L1</span>
                   <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#6d28d9', fontWeight: '600', backgroundColor: '#f5f3ff', padding: '2px 8px', borderRadius: '4px' }}>L2</span>
-                  <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#b45309', fontWeight: '600', backgroundColor: '#fffbeb', padding: '2px 8px', borderRadius: '4px' }}>L3</span>
+                  <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--eds-color-warning-text)', fontWeight: '600', backgroundColor: '#fffbeb', padding: '2px 8px', borderRadius: '4px' }}>L3</span>
                   <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#047857', fontWeight: '600', backgroundColor: '#ecfdf5', padding: '2px 8px', borderRadius: '4px' }}>L4</span>
                 </div>
               </div>
@@ -637,7 +637,7 @@ const AdminCalendarPage: React.FC = () => {
               {/* Grid Weekday Headers */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d} style={{ textAlign: 'center', fontWeight: '600', color: '#64748b', fontSize: '12px', padding: '6px 0' }}>
+                  <div key={d} style={{ textAlign: 'center', fontWeight: '600', color: 'var(--eds-color-text-muted)', fontSize: '12px', padding: '6px 0' }}>
                     {d}
                   </div>
                 ))}
@@ -646,7 +646,7 @@ const AdminCalendarPage: React.FC = () => {
               {/* Calendar Days */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} style={{ minHeight: '90px', backgroundColor: '#fcfdfe', borderRadius: '10px', opacity: 0.3 }} />
+                  <div key={`empty-${i}`} style={{ minHeight: '90px', backgroundColor: 'var(--eds-color-bg-surface-soft)', borderRadius: '10px', opacity: 0.3 }} />
                 ))}
 
                 {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -667,19 +667,19 @@ const AdminCalendarPage: React.FC = () => {
                       onClick={() => setSelectedDateStr(isSelected ? null : curDateStr)}
                       style={{
                         border: isSelected
-                          ? '2px solid #2563eb'
+                          ? '2px solid var(--eds-color-primary)'
                           : isToday
-                          ? '2px solid #93c5fd'
-                          : '1px solid #f1f5f9',
+                          ? '2px solid var(--eds-color-primary-soft-border)'
+                          : '1px solid var(--eds-color-border-soft)',
                         borderRadius: '10px',
                         minHeight: '95px',
                         padding: '6px',
                         cursor: 'pointer',
                         backgroundColor: isSelected
-                          ? '#eff6ff'
+                          ? 'var(--eds-color-primary-soft)'
                           : hasFrozen
                           ? '#fff5f5'
-                          : '#ffffff',
+                          : 'var(--eds-color-bg-surface)',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
@@ -687,10 +687,10 @@ const AdminCalendarPage: React.FC = () => {
                         boxShadow: isSelected ? '0 0 0 2px rgba(37,99,235,0.15)' : 'none'
                       }}
                       onMouseOver={e => {
-                        if (!isSelected) e.currentTarget.style.backgroundColor = hasFrozen ? '#fee2e2' : '#f8fafc';
+                        if (!isSelected) e.currentTarget.style.backgroundColor = hasFrozen ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface-soft)';
                       }}
                       onMouseOut={e => {
-                        if (!isSelected) e.currentTarget.style.backgroundColor = hasFrozen ? '#fff5f5' : '#ffffff';
+                        if (!isSelected) e.currentTarget.style.backgroundColor = hasFrozen ? '#fff5f5' : 'var(--eds-color-bg-surface)';
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -698,21 +698,21 @@ const AdminCalendarPage: React.FC = () => {
                           style={{
                             fontWeight: isToday || isSelected ? '700' : '600',
                             fontSize: '13px',
-                            color: isToday ? '#2563eb' : '#334155',
+                            color: isToday ? 'var(--eds-color-primary)' : 'var(--eds-color-text-body)',
                             width: '24px',
                             height: '24px',
                             borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: isToday ? '#dbeafe' : 'transparent'
+                            backgroundColor: isToday ? 'var(--eds-color-primary-soft-border)' : 'transparent'
                           }}
                         >
                           {dayNum}
                         </span>
 
                         {hasFrozen && (
-                          <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: '700' }} title="Frozen Date">
+                          <span style={{ fontSize: '10px', color: 'var(--eds-color-danger-solid)', fontWeight: '700' }} title="Frozen Date">
                             ❄️
                           </span>
                         )}
@@ -724,8 +724,8 @@ const AdminCalendarPage: React.FC = () => {
                           <div
                             key={`fr-${idx}`}
                             style={{
-                              backgroundColor: '#fee2e2',
-                              color: '#991b1b',
+                              backgroundColor: 'var(--eds-color-danger-bg)',
+                              color: 'var(--eds-color-danger-text)',
                               fontSize: '10px',
                               fontWeight: '600',
                               padding: '2px 5px',
@@ -770,7 +770,7 @@ const AdminCalendarPage: React.FC = () => {
                         })}
 
                         {dayEvents && dayEvents.stages.length > 2 && (
-                          <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textAlign: 'center' }}>
+                          <div style={{ fontSize: '9.5px', color: 'var(--eds-color-text-muted)', fontWeight: '700', textAlign: 'center' }}>
                             +{dayEvents.stages.length - 2} more
                           </div>
                         )}
@@ -800,13 +800,13 @@ const AdminCalendarPage: React.FC = () => {
             {/* Right Side Panel: Academic Milestones & Event Hub */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border)', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: '700', color: '#0f172a' }}>
+                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                       {selectedDateStr ? `Events for ${formatReadableDate(selectedDateStr)}` : 'Upcoming Milestones & Deadlines'}
                     </h3>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
                       {selectedDateStr ? 'Filtered by selected calendar date' : 'Sorted chronologically across levels'}
                     </p>
                   </div>
@@ -817,12 +817,12 @@ const AdminCalendarPage: React.FC = () => {
                       onClick={() => setSelectedDateStr(null)}
                       style={{
                         padding: '4px 10px',
-                        backgroundColor: '#f1f5f9',
-                        border: '1px solid #cbd5e1',
+                        backgroundColor: 'var(--eds-color-border-soft)',
+                        border: '1px solid var(--eds-color-border)',
                         borderRadius: '6px',
                         fontSize: '12px',
                         fontWeight: '600',
-                        color: '#475569',
+                        color: 'var(--eds-color-text-muted)',
                         cursor: 'pointer'
                       }}
                     >
@@ -835,20 +835,20 @@ const AdminCalendarPage: React.FC = () => {
                 {selectedDateStr ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {(!selectedDayData || (selectedDayData.stages.length === 0 && selectedDayData.panels.length === 0 && selectedDayData.frozen.length === 0)) ? (
-                      <div style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
+                      <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--eds-color-text-faint)' }}>
                         <CalendarIcon size={32} style={{ opacity: 0.4, margin: '0 auto 8px auto' }} />
-                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#64748b' }}>No events on this day</div>
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--eds-color-text-muted)' }}>No events on this day</div>
                         <div style={{ fontSize: '12px', marginTop: '4px' }}>Click another date or click "Show All".</div>
                       </div>
                     ) : (
                       <>
                         {/* Frozen Dates for Day */}
                         {selectedDayData.frozen.map((fr, i) => (
-                          <div key={i} style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '10px', padding: '12px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <div key={i} style={{ backgroundColor: 'var(--eds-color-danger-bg)', border: '1px solid var(--eds-color-danger-solid)', borderRadius: '10px', padding: '12px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                             <div style={{ fontSize: '18px' }}>❄️</div>
                             <div>
-                              <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#991b1b' }}>Faculty Frozen Day</div>
-                              <div style={{ fontSize: '12.5px', color: '#b91c1c', marginTop: '2px' }}>{fr.reason}</div>
+                              <div style={{ fontWeight: '700', fontSize: '13.5px', color: 'var(--eds-color-danger-text)' }}>Faculty Frozen Day</div>
+                              <div style={{ fontSize: '12.5px', color: 'var(--eds-color-danger-text)', marginTop: '2px' }}>{fr.reason}</div>
                             </div>
                           </div>
                         ))}
@@ -861,7 +861,7 @@ const AdminCalendarPage: React.FC = () => {
                             <div
                               key={st.stage_id}
                               style={{
-                                backgroundColor: '#ffffff',
+                                backgroundColor: 'var(--eds-color-bg-surface)',
                                 border: `1px solid ${clr.border}`,
                                 borderLeft: `4px solid ${clr.solid}`,
                                 borderRadius: '10px',
@@ -874,27 +874,27 @@ const AdminCalendarPage: React.FC = () => {
                                   <span style={{ backgroundColor: clr.badge, color: clr.text, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                                     Level {st.academic_level}
                                   </span>
-                                  <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
+                                  <span style={{ backgroundColor: 'var(--eds-color-border-soft)', color: 'var(--eds-color-text-muted)', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                                     {deg}
                                   </span>
                                 </div>
-                                <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#dc2626', backgroundColor: '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--eds-color-danger-solid)', backgroundColor: 'var(--eds-color-danger-bg)', padding: '2px 8px', borderRadius: '4px' }}>
                                   Deadline Today
                                 </span>
                               </div>
 
-                              <h4 style={{ margin: '0 0 6px 0', fontSize: '14.5px', fontWeight: '700', color: '#0f172a' }}>
+                              <h4 style={{ margin: '0 0 6px 0', fontSize: '14.5px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                                 {st.stage_name}
                               </h4>
 
                               {st.description && (
-                                <p style={{ margin: '0 0 10px 0', fontSize: '12.5px', color: '#64748b', lineHeight: 1.4 }}>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '12.5px', color: 'var(--eds-color-text-muted)', lineHeight: 1.4 }}>
                                   {st.description}
                                 </p>
                               )}
 
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--eds-color-border-soft)' }}>
+                                <span style={{ fontSize: '11.5px', color: 'var(--eds-color-text-muted)' }}>
                                   {st.creator_name ? `Coordinator: ${st.creator_name}` : 'Coordinator Stage'}
                                 </span>
                                 <button
@@ -902,7 +902,7 @@ const AdminCalendarPage: React.FC = () => {
                                   style={{
                                     border: 'none',
                                     background: 'transparent',
-                                    color: '#2563eb',
+                                    color: 'var(--eds-color-primary)',
                                     fontSize: '12px',
                                     fontWeight: '600',
                                     cursor: 'pointer',
@@ -923,7 +923,7 @@ const AdminCalendarPage: React.FC = () => {
                           <div
                             key={p.id}
                             style={{
-                              backgroundColor: '#ffffff',
+                              backgroundColor: 'var(--eds-color-bg-surface)',
                               border: '1px solid #c7d2fe',
                               borderLeft: '4px solid #4f46e5',
                               borderRadius: '10px',
@@ -941,11 +941,11 @@ const AdminCalendarPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <h4 style={{ margin: '0 0 6px 0', fontSize: '14.5px', fontWeight: '700', color: '#0f172a' }}>
+                            <h4 style={{ margin: '0 0 6px 0', fontSize: '14.5px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                               Group: {p.group_name}
                             </h4>
                             {p.location && (
-                              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                              <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
                                 📍 Location: {p.location}
                               </div>
                             )}
@@ -958,11 +958,11 @@ const AdminCalendarPage: React.FC = () => {
                   /* Chronological Upcoming List */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '550px', overflowY: 'auto' }}>
                     {loading ? (
-                      <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                      <div style={{ textAlign: 'center', padding: '30px', color: 'var(--eds-color-text-faint)' }}>
                         Loading academic deadlines...
                       </div>
                     ) : upcomingStagesSorted.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                      <div style={{ textAlign: 'center', padding: '30px', color: 'var(--eds-color-text-faint)' }}>
                         No upcoming deadlines match your filters.
                       </div>
                     ) : (
@@ -976,8 +976,8 @@ const AdminCalendarPage: React.FC = () => {
                             key={st.stage_id}
                             onClick={() => setSelectedStageDetail(st)}
                             style={{
-                              backgroundColor: '#ffffff',
-                              border: `1px solid #e2e8f0`,
+                              backgroundColor: 'var(--eds-color-bg-surface)',
+                              border: `1px solid var(--eds-color-border)`,
                               borderLeft: `4px solid ${clr.solid}`,
                               borderRadius: '10px',
                               padding: '12px 14px',
@@ -993,7 +993,7 @@ const AdminCalendarPage: React.FC = () => {
                                 <span style={{ backgroundColor: clr.badge, color: clr.text, fontSize: '10.5px', fontWeight: '700', padding: '1px 6px', borderRadius: '4px' }}>
                                   L{st.academic_level}
                                 </span>
-                                <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '10.5px', fontWeight: '700', padding: '1px 6px', borderRadius: '4px' }}>
+                                <span style={{ backgroundColor: 'var(--eds-color-border-soft)', color: 'var(--eds-color-text-muted)', fontSize: '10.5px', fontWeight: '700', padding: '1px 6px', borderRadius: '4px' }}>
                                   {deg}
                                 </span>
                               </div>
@@ -1003,8 +1003,8 @@ const AdminCalendarPage: React.FC = () => {
                                   style={{
                                     fontSize: '11px',
                                     fontWeight: '600',
-                                    color: daysInfo.isPast ? '#991b1b' : daysInfo.isUrgent ? '#b45309' : '#166534',
-                                    backgroundColor: daysInfo.isPast ? '#fee2e2' : daysInfo.isUrgent ? '#fef3c7' : '#dcfce7',
+                                    color: daysInfo.isPast ? 'var(--eds-color-danger-text)' : daysInfo.isUrgent ? 'var(--eds-color-warning-text)' : 'var(--eds-color-success-text)',
+                                    backgroundColor: daysInfo.isPast ? 'var(--eds-color-danger-bg)' : daysInfo.isUrgent ? 'var(--eds-color-warning-bg)' : 'var(--eds-color-success-bg)',
                                     padding: '2px 6px',
                                     borderRadius: '4px'
                                   }}
@@ -1014,16 +1014,16 @@ const AdminCalendarPage: React.FC = () => {
                               )}
                             </div>
 
-                            <h4 style={{ margin: '4px 0 6px 0', fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
+                            <h4 style={{ margin: '4px 0 6px 0', fontSize: '13.5px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                               {st.stage_name}
                             </h4>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', color: '#64748b' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', color: 'var(--eds-color-text-muted)' }}>
                               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <Clock size={12} /> {formatReadableDate(st.deadline)}
                               </span>
                               {st.file_count && st.file_count > 0 ? (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#2563eb' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--eds-color-primary)' }}>
                                   <FileText size={12} /> {st.file_count} doc{st.file_count > 1 ? 's' : ''}
                                 </span>
                               ) : null}
@@ -1046,15 +1046,15 @@ const AdminCalendarPage: React.FC = () => {
             <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '28px', width: '440px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--eds-color-danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--eds-color-danger-solid)' }}>
                     <CalendarDays size={18} />
                   </div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>Freeze Faculty Date</h3>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>Freeze Faculty Date</h3>
                 </div>
-                <X size={20} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setShowFreezeModal(false)} />
+                <X size={20} style={{ cursor: 'pointer', color: 'var(--eds-color-text-muted)' }} onClick={() => setShowFreezeModal(false)} />
               </div>
 
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: 'var(--eds-color-text-muted)', margin: '0 0 16px 0', lineHeight: 1.4 }}>
                 Freezing a date marks it university-wide (e.g. for study leave, public holiday, sports meet). Coordinators cannot schedule evaluation panels on frozen dates.
               </p>
 
@@ -1074,37 +1074,37 @@ const AdminCalendarPage: React.FC = () => {
               )}
 
               <form onSubmit={handleCreateFreeze}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Date to Freeze</label>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-body)', marginBottom: '6px' }}>Date to Freeze</label>
                 <input
                   type="date"
                   required
                   value={freezeDateInput}
                   onChange={e => setFreezeDateInput(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '16px', boxSizing: 'border-box', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', marginBottom: '16px', boxSizing: 'border-box', outline: 'none' }}
                 />
 
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Reason / Occasion</label>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--eds-color-text-body)', marginBottom: '6px' }}>Reason / Occasion</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g., Faculty Sports Meet, Study Holiday, Semester Exam"
                   value={freezeReasonInput}
                   onChange={e => setFreezeReasonInput(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '22px', boxSizing: 'border-box', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', marginBottom: '22px', boxSizing: 'border-box', outline: 'none' }}
                 />
 
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     type="button"
                     onClick={() => setShowFreezeModal(false)}
-                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: '600', cursor: 'pointer' }}
+                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', backgroundColor: 'var(--eds-color-bg-surface)', color: 'var(--eds-color-text-muted)', fontWeight: '600', cursor: 'pointer' }}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmittingFreeze}
-                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#dc2626', color: '#ffffff', fontWeight: '600', cursor: isSubmittingFreeze ? 'not-allowed' : 'pointer' }}
+                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--eds-color-danger-solid)', color: 'var(--eds-color-bg-surface)', fontWeight: '600', cursor: isSubmittingFreeze ? 'not-allowed' : 'pointer' }}
                   >
                     {isSubmittingFreeze ? 'Saving...' : 'Confirm Freeze'}
                   </button>
@@ -1125,35 +1125,35 @@ const AdminCalendarPage: React.FC = () => {
                     <span style={{ backgroundColor: getLevelColor(selectedStageDetail.academic_level).badge, color: getLevelColor(selectedStageDetail.academic_level).text, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                       Level {selectedStageDetail.academic_level}
                     </span>
-                    <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
+                    <span style={{ backgroundColor: 'var(--eds-color-border-soft)', color: 'var(--eds-color-text-muted)', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                       {getDegreeNameFromAcademicUnit(selectedStageDetail.academic_unit)}
                     </span>
                   </div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
                     {selectedStageDetail.stage_name}
                   </h3>
                 </div>
-                <X size={20} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setSelectedStageDetail(null)} />
+                <X size={20} style={{ cursor: 'pointer', color: 'var(--eds-color-text-muted)' }} onClick={() => setSelectedStageDetail(null)} />
               </div>
 
-              <div style={{ backgroundColor: '#f8fafc', borderRadius: '10px', padding: '14px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontSize: '13px', fontWeight: '600' }}>
-                  <Clock size={16} color="#2563eb" />
-                  Deadline: <span style={{ color: '#0f172a' }}>{formatReadableDate(selectedStageDetail.deadline)}</span>
+              <div style={{ backgroundColor: 'var(--eds-color-bg-surface-soft)', borderRadius: '10px', padding: '14px', border: '1px solid var(--eds-color-border)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--eds-color-text-body)', fontSize: '13px', fontWeight: '600' }}>
+                  <Clock size={16} color="var(--eds-color-primary)" />
+                  Deadline: <span style={{ color: 'var(--eds-color-text-strong)' }}>{formatReadableDate(selectedStageDetail.deadline)}</span>
                 </div>
               </div>
 
               {selectedStageDetail.description && (
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Description / Guidelines</label>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#334155', lineHeight: 1.5, backgroundColor: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '8px', padding: '10px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--eds-color-text-muted)', textTransform: 'uppercase' }}>Description / Guidelines</label>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--eds-color-text-body)', lineHeight: 1.5, backgroundColor: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border-soft)', borderRadius: '8px', padding: '10px' }}>
                     {selectedStageDetail.description}
                   </p>
                 </div>
               )}
 
               {selectedStageDetail.creator_name && (
-                <div style={{ fontSize: '12.5px', color: '#64748b', marginBottom: '20px' }}>
+                <div style={{ fontSize: '12.5px', color: 'var(--eds-color-text-muted)', marginBottom: '20px' }}>
                   <strong>Created by Coordinator:</strong> {selectedStageDetail.creator_name}
                 </div>
               )}
@@ -1162,7 +1162,7 @@ const AdminCalendarPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSelectedStageDetail(null)}
-                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: '600', cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', backgroundColor: 'var(--eds-color-bg-surface)', color: 'var(--eds-color-text-muted)', fontWeight: '600', cursor: 'pointer' }}
                 >
                   Close
                 </button>
@@ -1173,7 +1173,7 @@ const AdminCalendarPage: React.FC = () => {
                     setSelectedStageDetail(null);
                     navigate(`/dashboard/level-${lvl}`);
                   }}
-                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#2563eb', color: '#ffffff', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--eds-color-primary)', color: 'var(--eds-color-bg-surface)', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
                   Manage Level {selectedStageDetail.academic_level} <ExternalLink size={14} />
                 </button>

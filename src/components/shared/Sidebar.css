@@ -125,7 +125,7 @@
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--eds-color-primary);
   color: white;
 }
 
@@ -168,9 +168,9 @@
 }
 
 .submenu-item.active {
-  background: rgba(102, 126, 234, 0.2);
-  color: #a5b4fc;
-  border-left: 3px solid #667eea;
+  background: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+  border-left: 3px solid var(--eds-color-primary);
 }
 
 /* Evaluation Nested Submenu */
@@ -198,9 +198,9 @@
 }
 
 .nav-item.active {
-  background: rgba(102, 126, 234, 0.2);
+  background: var(--eds-color-primary);
   color: white;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--eds-color-primary);
 }
 
 .nav-item.active::before {
@@ -210,7 +210,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #667eea;
+  background: var(--eds-color-primary);
 }
 
 .sidebar.collapsed .nav-item.active::before {

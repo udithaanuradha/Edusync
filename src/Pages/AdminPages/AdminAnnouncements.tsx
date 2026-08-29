@@ -242,8 +242,6 @@ const AdminAnnouncements: React.FC = () => {
               color: statusFeedback.type === 'success' ? '#15803d' : '#b91c1c',
               border: `1px solid ${statusFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
             }}>
-              {statusFeedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-              {statusFeedback.message}
             </div>
           )}
 
@@ -316,7 +314,7 @@ const AdminAnnouncements: React.FC = () => {
                   padding: '12px',
                   backgroundColor: '#f8fafc',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0'
+                  border: '1px solid #e2e8f0' 
                 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>

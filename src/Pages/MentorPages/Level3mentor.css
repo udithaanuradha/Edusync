@@ -25,14 +25,14 @@
   margin-bottom: 24px;
   width: 100%;
   padding-bottom: 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
 /* "Level X Projects" main title */
 .mentor-page-title {
   font-size: 26px;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
   margin: 0 0 4px 0;
   letter-spacing: -0.5px;
 }
@@ -40,7 +40,7 @@
 /* Subtitle below the title */
 .mentor-page-subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   margin: 0;
 }
 
@@ -55,43 +55,58 @@
   margin-bottom: 24px;
 }
 
-/* The inner group of tab buttons — pill-shaped container */
+/* The inner group of tab buttons — underline style, matching Coordinator's
+   .level-tabs-wrap / .level-tab-btn (see CoordinatorLevelPage.css) */
 .tab-buttons-mentor {
   display: flex;
-  gap: 0;                        /* No gap — buttons touch each other */
-  background: #f1f5f9;           /* Light grey pill background */
-  padding: 5px;
-  border-radius: 10px;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--eds-color-border);
+  padding: 0 4px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
-/* ── Individual Tab Button ───────────────────────────────────── 
+/* ── Individual Tab Button ─────────────────────────────────────
    Default (inactive) state
 */
 .tab-btn-mentor {
-  padding: 9px 22px;
+  position: relative;
+  padding: 13px 16px 15px;
   border: none;
   background: transparent;       /* Transparent when inactive */
   font-size: 14px;
   font-weight: 600;
-  color: #64748b;                /* Grey text when inactive */
+  color: var(--eds-color-text-muted);                /* Grey text when inactive */
   cursor: pointer;
-  border-radius: 7px;
-  transition: all 0.2s ease;
+  border-radius: var(--eds-radius-sm) var(--eds-radius-sm) 0 0;
+  transition: color 0.2s ease, background-color 0.2s ease;
   white-space: nowrap;
 }
 
 /* ── Active Tab Button ────────────────────────────────────────
 */
 .tab-btn-mentor.active {
-  background: #2563eb;           
-  color: #ffffff;                /* White text when active */
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  background: transparent;
+  color: var(--eds-color-primary-hover);
+  font-weight: 700;
+}
+
+.tab-btn-mentor.active::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--eds-color-primary);
 }
 
 /* Hover effect for inactive tabs */
 .tab-btn-mentor:not(.active):hover {
-  background: #e2e8f0;
-  color: #334155;
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft);
 }
 
 /* ── Tab Content Area ────────────────────────────────────────── */
@@ -102,8 +117,8 @@
 
 /* ── Unassigned Level Restriction Card ───────────────────────── */
 .mentor-unassigned-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 16px;
   padding: 48px 32px;
   text-align: center;
@@ -124,9 +139,9 @@
 .mentor-unassigned-icon-wrap {
   width: 64px;
   height: 64px;
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: #dc2626;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-solid);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -139,8 +154,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--eds-color-danger-text);
+  background: var(--eds-color-danger-bg);
   padding: 3px 10px;
   border-radius: 20px;
   margin-bottom: 12px;
@@ -149,14 +164,14 @@
 .mentor-unassigned-title {
   font-size: 20px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   margin: 0 0 10px 0;
   letter-spacing: -0.3px;
 }
 
 .mentor-unassigned-desc {
   font-size: 13.5px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   line-height: 1.6;
   margin: 0 0 24px 0;
   max-width: 480px;
@@ -166,8 +181,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
   border: none;
   padding: 10px 22px;
   border-radius: 10px;
@@ -179,7 +194,7 @@
 }
 
 .mentor-unassigned-btn:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 5px 14px rgba(37, 99, 235, 0.35);
 }
@@ -190,7 +205,7 @@
   justify-content: center;
   gap: 12px;
   padding: 60px 20px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
   font-weight: 600;
 }
@@ -198,8 +213,8 @@
 .mentor-level-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #2563eb;
+  border: 3px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
   border-radius: 50%;
   animation: levelSpin 0.8s linear infinite;
 }

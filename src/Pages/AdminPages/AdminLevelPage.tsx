@@ -194,8 +194,8 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   };
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e5e7eb',
+    backgroundColor: 'var(--eds-color-bg-surface)',
+    border: '1px solid var(--eds-color-border)',
     borderRadius: '12px',
     padding: '20px 24px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
@@ -204,15 +204,15 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
   const badgeStyle: React.CSSProperties = {
     width: '40px', height: '40px', borderRadius: '50%',
-    backgroundColor: '#2563eb', color: 'white',
+    backgroundColor: 'var(--eds-color-primary)', color: 'white',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontWeight: '700', fontSize: '16px', flexShrink: 0,
   };
 
   const fileLinkStyle: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', gap: '8px',
-    padding: '8px 12px', backgroundColor: '#eff6ff', borderRadius: '8px',
-    color: '#2563eb', textDecoration: 'none', fontSize: '14px', marginTop: '4px'
+    padding: '8px 12px', backgroundColor: 'var(--eds-color-primary-soft)', borderRadius: '8px',
+    color: 'var(--eds-color-primary)', textDecoration: 'none', fontSize: '14px', marginTop: '4px'
   };
 
   const mentorLinkStyle: React.CSSProperties = {
@@ -232,7 +232,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    color: '#2563eb',
+    color: 'var(--eds-color-primary)',
     textDecoration: 'none',
     fontWeight: '500',
     fontSize: '14px',
@@ -262,10 +262,10 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
               {toastMessage && (
                 <div style={{
                   padding: '12px 18px',
-                  backgroundColor: '#ecfdf5',
-                  border: '1px solid #a7f3d0',
+                  backgroundColor: 'var(--eds-color-success-bg)',
+                  border: '1px solid var(--eds-color-success-solid)',
                   borderRadius: '10px',
-                  color: '#065f46',
+                  color: 'var(--eds-color-success-text)',
                   fontSize: '13px',
                   fontWeight: '600',
                   marginBottom: '20px',
@@ -273,7 +273,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                   alignItems: 'center',
                   gap: '8px',
                 }}>
-                  <CheckCircle2 size={16} color="#059669" />
+                  <CheckCircle2 size={16} color="var(--eds-color-success-solid)" />
                   <span>{toastMessage}</span>
                 </div>
               )}
@@ -330,9 +330,9 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       alignItems: 'center',
                       gap: '6px',
                       padding: '9px 14px',
-                      backgroundColor: '#ffffff',
-                      color: '#334155',
-                      border: '1px solid #cbd5e1',
+                      backgroundColor: 'var(--eds-color-bg-surface)',
+                      color: 'var(--eds-color-text-body)',
+                      border: '1px solid var(--eds-color-border)',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600',
@@ -340,15 +340,15 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       transition: 'all 0.15s ease',
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#94a3b8';
+                      e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface-soft)';
+                      e.currentTarget.style.borderColor = 'var(--eds-color-text-faint)';
                     }}
                     onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = '#ffffff';
-                      e.currentTarget.style.borderColor = '#cbd5e1';
+                      e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface)';
+                      e.currentTarget.style.borderColor = 'var(--eds-color-border)';
                     }}
                   >
-                    <Download size={15} color="#2563eb" />
+                    <Download size={15} color="var(--eds-color-primary)" />
                     Export Level Report
                   </button>
 
@@ -360,7 +360,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       alignItems: 'center',
                       gap: '6px',
                       padding: '9px 16px',
-                      backgroundColor: '#2563eb',
+                      backgroundColor: 'var(--eds-color-primary)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '8px',
@@ -370,10 +370,10 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                       boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#1d4ed8';
+                      e.currentTarget.style.backgroundColor = 'var(--eds-color-primary-hover)';
                     }}
                     onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = '#2563eb';
+                      e.currentTarget.style.backgroundColor = 'var(--eds-color-primary)';
                     }}
                   >
                     <UserPlus size={15} />
@@ -382,36 +382,43 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                 </div>
               </div>
 
-              {/* Tabs buttons */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
+              {/* Tabs buttons — underline style, matching Coordinator's
+                  .level-tabs-wrap / .level-tab-btn (see CoordinatorLevelPage.css) */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '24px', flexWrap: 'wrap', borderBottom: '1px solid var(--eds-color-border)', padding: '0 4px' }}>
                 <button onClick={() => setActiveTab('stages')}
-                  style={{ 
+                  style={{
                     display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
-                    backgroundColor: activeTab === 'stages' ? '#2563eb' : '#f1f5f9',
-                    color: activeTab === 'stages' ? 'white' : '#475569' 
+                    padding: '13px 16px 12px', borderRadius: '8px 8px 0 0', border: 'none',
+                    borderBottom: activeTab === 'stages' ? '3px solid var(--eds-color-primary)' : '3px solid transparent',
+                    cursor: 'pointer', fontWeight: activeTab === 'stages' ? 700 : 600, fontSize: '13px',
+                    backgroundColor: 'transparent',
+                    color: activeTab === 'stages' ? 'var(--eds-color-primary-hover)' : 'var(--eds-color-text-muted)'
                   }}>
                   <Layers size={16} />
                   Project Stages ({stages.length})
                 </button>
-                
+
                 <button onClick={() => setActiveTab('groups')}
-                  style={{ 
+                  style={{
                     display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
-                    backgroundColor: activeTab === 'groups' ? '#2563eb' : '#f1f5f9',
-                    color: activeTab === 'groups' ? 'white' : '#475569' 
+                    padding: '13px 16px 12px', borderRadius: '8px 8px 0 0', border: 'none',
+                    borderBottom: activeTab === 'groups' ? '3px solid var(--eds-color-primary)' : '3px solid transparent',
+                    cursor: 'pointer', fontWeight: activeTab === 'groups' ? 700 : 600, fontSize: '13px',
+                    backgroundColor: 'transparent',
+                    color: activeTab === 'groups' ? 'var(--eds-color-primary-hover)' : 'var(--eds-color-text-muted)'
                   }}>
                   <Users size={16} />
                   Project Groups ({groups.length})
                 </button>
 
                 <button onClick={() => setActiveTab('marks')}
-                  style={{ 
+                  style={{
                     display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
-                    backgroundColor: activeTab === 'marks' ? '#2563eb' : '#f1f5f9',
-                    color: activeTab === 'marks' ? 'white' : '#475569' 
+                    padding: '13px 16px 12px', borderRadius: '8px 8px 0 0', border: 'none',
+                    borderBottom: activeTab === 'marks' ? '3px solid var(--eds-color-primary)' : '3px solid transparent',
+                    cursor: 'pointer', fontWeight: activeTab === 'marks' ? 700 : 600, fontSize: '13px',
+                    backgroundColor: 'transparent',
+                    color: activeTab === 'marks' ? 'var(--eds-color-primary-hover)' : 'var(--eds-color-text-muted)'
                   }}>
                   <BarChart3 size={16} />
                   Student Marksheet & Results
@@ -436,9 +443,9 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 {stageDegree && (
                                   <span
                                     style={{
-                                      backgroundColor: stageDegree === 'ITM' ? '#dbeafe' : stageDegree === 'AI' ? '#f3e8ff' : '#e0f2fe',
+                                      backgroundColor: stageDegree === 'ITM' ? 'var(--eds-color-primary-soft-border)' : stageDegree === 'AI' ? '#f3e8ff' : '#e0f2fe',
                                       color: stageDegree === 'ITM' ? '#1e40af' : stageDegree === 'AI' ? '#6b21a8' : '#0369a1',
-                                      border: `1px solid ${stageDegree === 'ITM' ? '#93c5fd' : stageDegree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
+                                      border: `1px solid ${stageDegree === 'ITM' ? 'var(--eds-color-primary-soft-border)' : stageDegree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
                                       fontSize: '12px',
                                       fontWeight: '700',
                                       padding: '2px 8px',
@@ -451,25 +458,25 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 )}
                               </div>
                               <div style={{ fontSize: '14px', marginBottom: '4px' }}>
-                                <span style={{ color: '#374151', fontWeight: '500' }}>Description: </span>
-                                <span style={{ color: '#6b7280' }}>{stage.description || 'No description'}</span>
+                                <span style={{ color: 'var(--eds-color-text-body)', fontWeight: '500' }}>Description: </span>
+                                <span style={{ color: 'var(--eds-color-text-muted)' }}>{stage.description || 'No description'}</span>
                               </div>
                               <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
-                                <span style={{ fontWeight: '500', color: '#374151' }}>Deadline:</span>
-                                <span style={{ color: stage.deadline ? '#dc2626' : '#9ca3af' }}>
+                                <span style={{ fontWeight: '500', color: 'var(--eds-color-text-body)' }}>Deadline:</span>
+                                <span style={{ color: stage.deadline ? 'var(--eds-color-danger-solid)' : 'var(--eds-color-text-faint)' }}>
                                   {formatDate(stage.deadline)}
                                 </span>
                               </div>
 
                               <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '14px' }}>
-                                <span style={{ fontWeight: '500', color: '#374151' }}>Created:</span>
-                                <span style={{ color: '#6b7280' }}>{formatDate(stage.created_at)}</span>
+                                <span style={{ fontWeight: '500', color: 'var(--eds-color-text-body)' }}>Created:</span>
+                                <span style={{ color: 'var(--eds-color-text-muted)' }}>{formatDate(stage.created_at)}</span>
                               </div>
 
                               {/* 💡 මෙන්න මේ හරියෙන් තමයි Resource Link එක පෙන්වන්නේ */}
                               {stage.resource_links && (
                                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px', alignItems: 'center' }}>
-                                  <span style={{ fontWeight: '500', color: '#374151', minWidth: '100px' }}>Resource Link:</span>
+                                  <span style={{ fontWeight: '500', color: 'var(--eds-color-text-body)', minWidth: '100px' }}>Resource Link:</span>
                                   <a
                                     href={stage.resource_links}
                                     target="_blank"
@@ -485,7 +492,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
                               {stage.mentor_details_url && (
                                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', fontSize: '14px', alignItems: 'center' }}>
-                                  <span style={{ fontWeight: '500', color: '#374151', minWidth: '100px' }}>Mentor Sheet:</span>
+                                  <span style={{ fontWeight: '500', color: 'var(--eds-color-text-body)', minWidth: '100px' }}>Mentor Sheet:</span>
                                   <a
                                     href={stage.mentor_details_url}
                                     target="_blank"
@@ -499,81 +506,103 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
                               {stage.files && stage.files.length > 0 ? (
                                 <div style={{ marginTop: '12px' }}>
-                                  <p style={{ fontWeight: '500', color: '#374151', fontSize: '14px', marginBottom: '8px' }}>
+                                  <p style={{ fontWeight: '500', color: 'var(--eds-color-text-body)', fontSize: '14px', marginBottom: '8px' }}>
                                     Documents ({stage.files.length}):
                                   </p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {stage.files.map((file) => (
-                                      <div
-                                        key={file.file_id}
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'space-between',
-                                          gap: '12px',
-                                          padding: '10px 16px',
-                                          backgroundColor: '#eff6ff',
-                                          borderRadius: '8px',
-                                          border: '1px solid #dbeafe',
-                                          width: '100%',
-                                          boxSizing: 'border-box',
-                                        }}
-                                      >
-                                        <a
-                                          href={file.file_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                    {stage.files.map((file) => {
+                                      const badgeLabel = getDegreeNameFromAcademicUnit(stage.academic_unit);
+                                      const degree = badgeLabel;
+                                      return (
+                                        <div
+                                          key={file.file_id}
                                           style={{
-                                            display: 'inline-flex',
+                                            display: 'flex',
                                             alignItems: 'center',
-                                            gap: '8px',
-                                            color: '#2563eb',
-                                            textDecoration: 'none',
-                                            fontSize: '14px',
-                                            fontWeight: '500',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
+                                            justifyContent: 'space-between',
+                                            gap: '12px',
+                                            padding: '10px 16px',
+                                            backgroundColor: '#eff6ff',
+                                            borderRadius: '8px',
+                                            border: '1px solid #dbeafe',
+                                            width: '100%',
+                                            boxSizing: 'border-box',
                                           }}
                                         >
-                                          📄 {file.file_name}
-                                        </a>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                            <a
+                                              href={file.file_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                color: '#2563eb',
+                                                textDecoration: 'none',
+                                                fontSize: '14px',
+                                                fontWeight: '500',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                              }}
+                                            >
+                                              📄 {file.file_name}
+                                            </a>
+                                            {badgeLabel && (
+                                              <span
+                                                style={{
+                                                  backgroundColor: degree === 'ITM' ? '#fef3c7' : degree === 'AI' ? '#f3e8ff' : '#e0f2fe',
+                                                  color: degree === 'ITM' ? '#b45309' : degree === 'AI' ? '#6b21a8' : '#0369a1',
+                                                  border: `1px solid ${degree === 'ITM' ? '#fde68a' : degree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
+                                                  fontSize: '11px',
+                                                  fontWeight: '700',
+                                                  padding: '2px 8px',
+                                                  borderRadius: '4px',
+                                                  whiteSpace: 'nowrap',
+                                                }}
+                                              >
+                                                {badgeLabel}
+                                              </span>
+                                            )}
+                                          </div>
 
-                                        {/* Green Download Button */}
-                                        <a
-                                          href={file.file_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          download={file.file_name}
-                                          style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            backgroundColor: '#16a34a',
-                                            color: '#ffffff',
-                                            padding: '6px 14px',
-                                            borderRadius: '6px',
-                                            fontSize: '12px',
-                                            fontWeight: '600',
-                                            textDecoration: 'none',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                            transition: 'background-color 0.15s ease',
-                                            whiteSpace: 'nowrap',
-                                            flexShrink: 0,
-                                          }}
-                                          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
-                                          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#16a34a')}
-                                          title={`Download ${file.file_name}`}
-                                        >
-                                          <Download size={13} />
-                                          Download
-                                        </a>
-                                      </div>
-                                    ))}
+                                          {/* Green Download Button */}
+                                          <a
+                                            href={file.file_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download={file.file_name}
+                                            style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '6px',
+                                              backgroundColor: '#16a34a',
+                                              color: '#ffffff',
+                                              padding: '6px 14px',
+                                              borderRadius: '6px',
+                                              fontSize: '12px',
+                                              fontWeight: '600',
+                                              textDecoration: 'none',
+                                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                              transition: 'background-color 0.15s ease',
+                                              whiteSpace: 'nowrap',
+                                              flexShrink: 0,
+                                            }}
+                                            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
+                                            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#16a34a')}
+                                            title={`Download ${file.file_name}`}
+                                          >
+                                            <Download size={13} />
+                                            Download
+                                          </a>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               ) : (
-                                <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '12px' }}>No documents uploaded</p>
+                                <p style={{ color: 'var(--eds-color-text-faint)', fontSize: '14px', marginTop: '12px' }}>No documents uploaded</p>
                               )}
                             </div>
 

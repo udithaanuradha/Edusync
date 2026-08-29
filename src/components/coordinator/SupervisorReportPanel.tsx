@@ -10,6 +10,7 @@ import {
   TrendingUp, 
   Users 
 } from 'lucide-react';
+import './SupervisorReportPanel.css';
 
 interface SupervisorReportPanelProps {
   levelNumber?: number;
@@ -38,6 +39,20 @@ const GRADING_SCALE: GradeDefinition[] = [
   { min: 35, max: 39.99, letter: 'D', badgeBg: '#f1f5f9', badgeColor: '#475569', borderColor: '#cbd5e1' },
   { min: 0, max: 34.99, letter: 'I', badgeBg: '#fee2e2', badgeColor: '#b91c1c', borderColor: '#fca5a5' },
 ];
+
+const DISTRIBUTION_COLORS: Record<string, string> = {
+  'A+': '#8bc9b0',
+  A: '#a6d6c0',
+  'A-': '#b9dfca',
+  'B+': '#9eb8dc',
+  B: '#b2c8e3',
+  'B-': '#c3d5e9',
+  'C+': '#e6c98f',
+  C: '#ead7a9',
+  'C-': '#e8c5a2',
+  D: '#c8d0dc',
+  I: '#d8b7bd',
+};
 
 const calculateGrade = (finalScore: number): GradeDefinition => {
   const score = Math.max(0, Math.min(100, Math.round(finalScore * 100) / 100));
@@ -306,6 +321,22 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
       return matchDegree && matchSearch && matchGrade;
     });
   }, [students, selectedDegree, searchQuery, selectedGradeFilter]);
+
+  // Member count per group, for the group section header (avoids repeating
+  // "N members" logic inline and re-scanning the array per row).
+  const groupMemberCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    filteredStudents.forEach((s) => {
+      counts.set(s.group_name, (counts.get(s.group_name) ?? 0) + 1);
+    });
+    return counts;
+  }, [filteredStudents]);
+
+  const degreeBadgeStyle = (degree: string) => ({
+    backgroundColor: degree === 'IT' ? '#e0f2fe' : degree === 'AI' ? '#f3e8ff' : '#fef3c7',
+    color: degree === 'IT' ? '#0369a1' : degree === 'AI' ? '#6b21a8' : '#92400e',
+    border: `1px solid ${degree === 'IT' ? '#bae6fd' : degree === 'AI' ? '#e9d5ff' : '#fde68a'}`,
+  });
 
   // Degree-specific students subset for calculating statistics
   const degreeStudents = useMemo(() => {
@@ -885,17 +916,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
         {/* Visual Stacked Progress Bar */}
         {degreeStats.total > 0 && (
-          <div
-            style={{
-              height: '14px',
-              borderRadius: '7px',
-              backgroundColor: '#f1f5f9',
-              overflow: 'hidden',
-              display: 'flex',
-              marginBottom: '20px',
-              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
-            }}
-          >
+          <div className="report-distribution-bar">
             {GRADING_SCALE.map((g) => {
               const pct = degreeStats.gradePercentages[g.letter] || 0;
               if (pct === 0) return null;
@@ -903,11 +924,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                 <div
                   key={g.letter}
                   title={`${g.letter}: ${pct}% (${degreeStats.gradeCounts[g.letter]} students)`}
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: g.badgeColor,
-                    transition: 'width 0.3s ease',
-                  }}
+                  className="report-distribution-segment"
+                  style={{ width: `${pct}%`, backgroundColor: DISTRIBUTION_COLORS[g.letter] }}
                 />
               );
             })}

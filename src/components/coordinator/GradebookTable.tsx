@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Check, Clock3, Edit2, Save, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import DataTable, { type DataTableColumn } from '../shared/ui/DataTable';
 import './GradebookTable.css';
 
 type SubmissionStatus = 'all' | 'on_time' | 'late';
@@ -366,6 +367,59 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     }
   };
 
+  const submissionColumns: DataTableColumn<GroupMark>[] = [
+    { key: 'group', header: 'Group', render: (mark) => mark.group_name },
+    { key: 'submittedBy', header: 'Submitted By', render: (mark) => mark.student_name || mark.group_name },
+    {
+      key: 'submissionDate',
+      header: 'Submission Date',
+      render: (mark) => formatDateTime(mark.submission_date || mark.submitted_at),
+    },
+    { key: 'deadline', header: 'Deadline', render: (mark) => formatDateTime(mark.deadline) },
+    {
+      key: 'fileName',
+      header: 'File Name',
+      render: (mark) => {
+        const fileList = mark.file_paths ?? [];
+        return fileList.length > 0 ? <span>{fileList.map((f) => getFileLabel(f)).join(', ')}</span> : <span>—</span>;
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (mark) =>
+        normalizeStatus(mark) === 'late' ? (
+          <span className="status-badge late">
+            <AlertTriangle size={14} /> Late Submission
+          </span>
+        ) : (
+          <span className="status-badge submitted">
+            <Check size={14} /> On Time
+          </span>
+        ),
+    },
+    {
+      key: 'download',
+      header: 'Download',
+      render: (mark) => {
+        const primaryFile = (mark.file_paths ?? [])[0] ?? '';
+        return primaryFile ? (
+          <a
+            href={getFileUrl(primaryFile)}
+            target="_blank"
+            rel="noreferrer"
+            className="status-badge submitted"
+            style={{ display: 'inline-flex', textDecoration: 'none' }}
+          >
+            Download
+          </a>
+        ) : (
+          <span>—</span>
+        );
+      },
+    },
+  ];
+
   if (loading) {
     return (
       <div className="gradebook-loading">
@@ -452,74 +506,12 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
             return (
               <div key={stageName} className="stage-section">
                 <h4 className="stage-title">{stageName}</h4>
-                <div className="stage-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Group</th>
-                        <th>Submitted By</th>
-                        <th>Submission Date</th>
-                        <th>Deadline</th>
-                        <th>File Name</th>
-                        <th>Status</th>
-                        <th>Download</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stageMark.map((mark, idx) => {
-                        const fileList = mark.file_paths && mark.file_paths.length > 0 ? mark.file_paths : [];
-                        const primaryFile = fileList[0] ?? '';
-                        const currentStatus = normalizeStatus(mark);
-
-                        return (
-                          <tr key={idx} className={currentStatus === 'late' ? 'late-row' : 'on-time-row'}>
-                            <td className="group-col">{mark.group_name}</td>
-                            <td className="evaluator-col">{mark.student_name || mark.group_name}</td>
-                            <td className="date-col">
-                              {formatDateTime(mark.submission_date || mark.submitted_at)}
-                            </td>
-                            <td className="date-col">
-                              {formatDateTime(mark.deadline)}
-                            </td>
-                            <td className="group-col">
-                              {fileList.length > 0 ? (
-                                <span>{fileList.map((fileUrl) => getFileLabel(fileUrl)).join(', ')}</span>
-                              ) : (
-                                <span>—</span>
-                              )}
-                            </td>
-                            <td className="status-col">
-                              {currentStatus === 'late' ? (
-                                <span className="status-badge late">
-                                  <AlertTriangle size={14} /> Late Submission
-                                </span>
-                              ) : (
-                                <span className="status-badge submitted">
-                                  <Check size={14} /> On Time
-                                </span>
-                              )}
-                            </td>
-                            <td className="mark-col">
-                              {primaryFile ? (
-                                <a
-                                  href={getFileUrl(primaryFile)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="status-badge submitted"
-                                  style={{ display: 'inline-flex', textDecoration: 'none' }}
-                                >
-                                  Download
-                                </a>
-                              ) : (
-                                <span>—</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  columns={submissionColumns}
+                  rows={stageMark}
+                  rowKey={(mark, idx) => `${mark.group_id}-${mark.stage_id}-${idx}`}
+                  emptyMessage="No submissions for this stage."
+                />
               </div>
             );
           })}

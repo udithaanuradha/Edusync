@@ -23,44 +23,33 @@
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
 }
 
-.groups-list-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-}
-
 .groups-empty-state {
   text-align: center;
   color: #475569;
   padding: 24px 8px;
 }
 
-.groups-grid {
+.coordinator-groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  /* Fixed-size tracks (not 1fr) so a handful of cards in a wide container
+     sit together at their natural width instead of each being stretched
+     into an oversized cell with a huge gap between them. */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+  gap: 18px;
+  align-items: start;
 }
 
-.group-card {
+.coordinator-group-card {
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 12px 12px 10px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+  border-radius: var(--eds-radius-xl);
+  padding: 26px;
+  background: #ffffff;
+  box-shadow: none;
   min-height: 220px;
-  max-width: 290px;
   width: 100%;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.group-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
-}
-
-.group-card-head {
+.coordinator-group-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -69,15 +58,19 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.group-card-head h3 {
+.coordinator-group-card-head h3 {
   margin: 0;
+  min-width: 0;
   color: #0f172a;
   font-size: 19px;
   font-weight: 800;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.group-meta-pill {
+.coordinator-group-meta-pill {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -88,23 +81,51 @@
   white-space: nowrap;
 }
 
-.group-meta-list {
+.coordinator-group-meta-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
 }
 
-.group-meta-row {
+.coordinator-group-meta-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  color: #374151;
+  color: var(--eds-color-text-body);
   font-size: 13px;
   line-height: 1.4;
 }
 
-.group-meta-icon {
+.coordinator-group-meta-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coordinator-group-meta-label {
+  color: var(--eds-color-text-muted);
+  font-size: 11px;
+  font-weight: var(--eds-font-weight-bold);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.coordinator-group-meta-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--eds-color-text-strong);
+  font-size: 13px;
+  font-weight: var(--eds-font-weight-semibold);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coordinator-group-meta-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -114,7 +135,7 @@
   flex-shrink: 0;
 }
 
-.group-members-preview {
+.coordinator-group-members-preview {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
@@ -123,20 +144,23 @@
   gap: 7px;
 }
 
-.group-member-row {
+.coordinator-group-member-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   color: #1f2937;
   font-size: 14px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 6px 8px;
+  color: var(--eds-color-text-body);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
-.group-member-name-wrap {
+.coordinator-group-member-row:last-child {
+  border-bottom: none;
+}
+
+.coordinator-group-member-name-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -144,7 +168,7 @@
   color: #1f2937;
 }
 
-.group-member-name-wrap span:last-child {
+.coordinator-group-member-name-wrap span:last-child {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -165,7 +189,7 @@
   text-decoration: underline;
 }
 
-.group-card-actions {
+.coordinator-group-card-actions {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
@@ -187,13 +211,12 @@
 }
 
 .group-edit-btn {
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .group-edit-btn:hover {
-  background: #dbeafe;
+  background: var(--eds-color-primary-soft);
 }
 
 .group-delete-btn {

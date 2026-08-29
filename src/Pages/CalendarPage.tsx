@@ -778,6 +778,11 @@ const CalendarPage: React.FC = () => {
       return;
     }
 
+    if (scheduleDate < toDateValue(today)) {
+      alert("Please choose today or a future date.");
+      return;
+    }
+
     if (frozenDates.some((item) => item.date === scheduleDate)) {
       alert("That date is frozen. Please choose another day.");
       return;
@@ -1434,6 +1439,7 @@ const CalendarPage: React.FC = () => {
                     <input
                       type="date"
                       value={scheduleDate}
+                      min={toDateValue(today)}
                       onChange={(event) => setScheduleDate(event.target.value)}
                     />
                   </label>

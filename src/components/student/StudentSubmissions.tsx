@@ -286,7 +286,7 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
                           href={submission.submission_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#2563eb', textDecoration: 'none', wordBreak: 'break-word' }}
+                          style={{ color: 'var(--eds-color-primary)', textDecoration: 'none', wordBreak: 'break-word' }}
                         >
                           🔗 View submitted link
                         </a>

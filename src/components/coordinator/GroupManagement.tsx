@@ -3,7 +3,8 @@ import { Building2, Crown, Pencil, Plus, ShieldCheck, Trash2, Users, X } from 'l
 import { useAuth } from '../../context/AuthContext';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
-import MemberProfileModal from '../shared/MemberProfileModal';
+import PrimaryButton from '../shared/ui/PrimaryButton';
+import BaseCard from '../shared/ui/BaseCard';
 
 type GroupApiRecord = Record<string, unknown>;
 
@@ -159,7 +160,6 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [editingGroup, setEditingGroup] = useState<GroupView | null>(null);
   const [saving, setSaving] = useState(false);
   const [department, setDepartment] = useState<string>('');
-  const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
 
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
@@ -784,8 +784,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
   return (
     <div className="group-management-container">
-      <div className="groups-list-card">
-        {loading ? (
+      {loading ? (
           <div className="groups-empty-state">
             <h4>Loading groups...</h4>
           </div>
@@ -800,71 +799,72 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
             <p>Create the first group to get started.</p>
           </div>
         ) : (
-          <div className="groups-grid">
+          <div className="coordinator-groups-grid">
             {groups.map((group) => (
-              <article key={group.id} className="group-card">
-                <div className="group-card-head">
+              <BaseCard key={group.id} className="coordinator-group-card" padding="lg" hoverable>
+                <div className="coordinator-group-card-head">
                   <h3>{group.name}</h3>
-                  <span className="group-meta-pill">{group.memberCount} members</span>
+                  <span className="coordinator-group-meta-pill">{group.memberCount} members</span>
                 </div>
 
-                <div className="group-meta-list">
-                  <div className="group-meta-row">
-                    <span className="group-meta-icon"><Crown size={13} /></span>
-                    <span>{group.leaderName}</span>
+                <div className="coordinator-group-meta-list">
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-heading">
+                      <span className="coordinator-group-meta-icon"><Crown size={13} /></span>
+                      <span className="coordinator-group-meta-label">Leader</span>
+                    </span>
+                    <span className="coordinator-group-meta-value">{group.leaderName}</span>
                   </div>
-                  <div className="group-meta-row">
-                    <span className="group-meta-icon"><ShieldCheck size={13} /></span>
-                    <span>{group.supervisor}</span>
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-heading">
+                      <span className="coordinator-group-meta-icon"><ShieldCheck size={13} /></span>
+                      <span className="coordinator-group-meta-label">Supervisor</span>
+                    </span>
+                    <span className="coordinator-group-meta-value">{group.supervisor}</span>
                   </div>
                   {group.supervisor2 && (
-                    <div className="group-meta-row">
-                      <span className="group-meta-icon"><ShieldCheck size={13} /></span>
-                      <span>{group.supervisor2}</span>
+                    <div className="coordinator-group-meta-row">
+                      <span className="coordinator-group-meta-heading">
+                        <span className="coordinator-group-meta-icon"><ShieldCheck size={13} /></span>
+                        <span className="coordinator-group-meta-label">Second Supervisor</span>
+                      </span>
+                      <span className="coordinator-group-meta-value">{group.supervisor2}</span>
                     </div>
                   )}
-                  <div className="group-meta-row">
-                    <span className="group-meta-icon"><Building2 size={13} /></span>
-                    <span>{group.department || 'Not set'}</span>
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-heading">
+                      <span className="coordinator-group-meta-icon"><Building2 size={13} /></span>
+                      <span className="coordinator-group-meta-label">Degree</span>
+                    </span>
+                    <span className="coordinator-group-meta-value">{group.department || 'Not set'}</span>
                   </div>
                 </div>
 
                 {group.members.length > 0 && (
-                  <ul className="group-members-preview">
+                  <ul className="coordinator-group-members-preview">
                     {group.members.map((member) => (
-                      <li key={`${group.id}-${member.id ?? member.name}`} className="group-member-row">
-                        <span className="group-member-name-wrap">
+                      <li key={`${group.id}-${member.id ?? member.name}`} className="coordinator-group-member-row">
+                        <span className="coordinator-group-member-name-wrap">
                           <Users size={12} />
                           <span>{member.name}</span>
                         </span>
-                        {typeof member.id === 'number' && (
-                          <button
-                            type="button"
-                            className="group-profile-btn"
-                            onClick={() => setViewingProfileId(member.id as number)}
-                          >
-                            View Profile
-                          </button>
-                        )}
                       </li>
                     ))}
                   </ul>
                 )}
-                <div className="group-card-actions">
-                  <button type="button" className="group-edit-btn" onClick={() => void openEditModal(group)}>
-                    <Pencil size={13} />
+                <div className="coordinator-group-card-actions">
+                  <PrimaryButton type="button" variant="secondary" className="group-edit-btn" icon={<Pencil size={13} />} onClick={() => void openEditModal(group)}>
                     Edit
-                  </button>
+                  </PrimaryButton>
                   <button type="button" className="group-delete-btn" onClick={() => void handleDeleteGroup(group)}>
                     <Trash2 size={13} />
                     Delete
                   </button>
                 </div>
-              </article>
+              </BaseCard>
             ))}
           </div>
         )}
-      </div>
 
       {isModalOpen && (
         <div className="group-modal-overlay" role="dialog" aria-modal="true" aria-label="Create Group Modal">
@@ -1099,17 +1099,14 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               >
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleCreateGroup} disabled={saving || !canSubmit}>
+              <PrimaryButton onClick={handleCreateGroup} disabled={saving || !canSubmit}>
                 {saving ? (isEditMode ? 'Saving...' : 'Creating...') : isEditMode ? 'Save Changes' : 'Create Group'}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
       )}
 
-      {viewingProfileId !== null && (
-        <MemberProfileModal memberId={viewingProfileId} onClose={() => setViewingProfileId(null)} />
-      )}
     </div>
   );
 };

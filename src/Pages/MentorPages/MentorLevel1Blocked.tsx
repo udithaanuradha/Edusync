@@ -10,7 +10,7 @@ const MentorLevel1Blocked: React.FC = () => (
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f8fafc',
+        background: 'var(--eds-color-bg-surface-soft)',
       }}
     >
       <div
@@ -20,7 +20,7 @@ const MentorLevel1Blocked: React.FC = () => (
           padding: '48px 40px',
           borderRadius: '16px',
           boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--eds-color-border)',
           maxWidth: 420,
         }}
       >
@@ -28,7 +28,7 @@ const MentorLevel1Blocked: React.FC = () => (
         <h2
           style={{
             margin: '0 0 12px',
-            color: '#0f172a',
+            color: 'var(--eds-color-text-strong)',
             fontSize: 22,
             fontWeight: 700,
           }}
@@ -37,7 +37,7 @@ const MentorLevel1Blocked: React.FC = () => (
         </h2>
         <p
           style={{
-            color: '#64748b',
+            color: 'var(--eds-color-text-muted)',
             fontSize: 14,
             lineHeight: 1.6,
             margin: 0,

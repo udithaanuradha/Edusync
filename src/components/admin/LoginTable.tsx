@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  KeyRound, 
   Search, 
   Shield, 
   User, 
@@ -15,7 +14,6 @@ import {
   UserX,
   Sparkles
 } from 'lucide-react';
-import PasswordResetModal, { TargetUser } from './PasswordResetModal';
 
 export interface LoginRow {
   id?: number | string;
@@ -29,13 +27,13 @@ export interface LoginRow {
 
 const columnHeaderStyle: React.CSSProperties = {
   padding: '12px 24px',
-  color: '#64748b',
+  color: 'var(--eds-color-text-muted)',
   fontWeight: '600',
   fontSize: '12px',
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
-  borderBottom: '1px solid #e2e8f0',
-  backgroundColor: '#f8fafc',
+  borderBottom: '1px solid var(--eds-color-border)',
+  backgroundColor: 'var(--eds-color-bg-surface-soft)',
 };
 
 const LoginTable: React.FC = () => {
@@ -44,19 +42,17 @@ const LoginTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'recent' | 'all' | 'student' | 'lecturer' | 'mentor' | 'unverified'>('recent');
-  const [selectedUser, setSelectedUser] = useState<TargetUser | null>(null);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [verifiedUserIds, setVerifiedUserIds] = useState<Set<string>>(new Set());
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin': return '#e11d48'; 
-      case 'student': return '#2563eb'; 
-      case 'coordinator': return '#059669'; 
+      case 'student': return 'var(--eds-color-primary)'; 
+      case 'coordinator': return 'var(--eds-color-success-solid)'; 
       case 'supervisor': return '#7c3aed'; 
       case 'lecturer': return '#0284c7';
       case 'mentor': return '#d97706';
-      default: return '#64748b';
+      default: return 'var(--eds-color-text-muted)';
     }
   };
 
@@ -172,24 +168,6 @@ const LoginTable: React.FC = () => {
     loadAllDirectoryData();
   }, []);
 
-  const handleManualVerify = (login: LoginRow) => {
-    const key = String(login.id || login.username);
-    setVerifiedUserIds((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-
-    setAllUsers((prev) =>
-      prev.map((u) => {
-        if ((login.id && u.id === login.id) || u.username === login.username) {
-          return { ...u, isVerified: true, email: u.email || `${u.username.toLowerCase().replace(/\s+/g, '')}@uom.lk` };
-        }
-        return u;
-      })
-    );
-  };
-
   const isUserVerified = (login: LoginRow): boolean => {
     const key = String(login.id || login.username);
     if (verifiedUserIds.has(key)) return true;
@@ -235,22 +213,12 @@ const LoginTable: React.FC = () => {
     return allUsers;
   }, [allUsers, recentLogins, searchQuery, activeFilter, verifiedUserIds]);
 
-  const handleOpenReset = (login: LoginRow) => {
-    setSelectedUser({
-      id: login.id,
-      username: login.username,
-      email: login.email,
-      role: login.role,
-    });
-    setIsResetModalOpen(true);
-  };
-
   return (
     <div style={{
-      backgroundColor: '#ffffff',
+      backgroundColor: 'var(--eds-color-bg-surface)',
       marginTop: '32px',
       borderRadius: '14px',
-      border: '1px solid #e2e8f0',
+      border: '1px solid var(--eds-color-border)',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
       width: '100%',
@@ -259,17 +227,17 @@ const LoginTable: React.FC = () => {
       {/* Title Header: Clean White with Search Box */}
       <div style={{ 
         padding: '18px 24px', 
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: '1px solid var(--eds-color-border-soft)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: '14px',
-        backgroundColor: '#ffffff'
+        backgroundColor: 'var(--eds-color-bg-surface)'
       }}>
         <div>
-          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={18} color="#2563eb" />
+          <h2 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--eds-color-text-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={18} color="var(--eds-color-primary)" />
             System Users Directory & Security Management
           </h2>
         </div>
@@ -280,14 +248,14 @@ const LoginTable: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #cbd5e1',
+            backgroundColor: 'var(--eds-color-bg-surface-soft)',
+            border: '1px solid var(--eds-color-border)',
             borderRadius: '8px',
             padding: '7px 12px',
             width: '280px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
           }}>
-            <Search size={14} color="#64748b" />
+            <Search size={14} color="var(--eds-color-text-muted)" />
             <input
               type="text"
               placeholder="Search all users by name, email, role..."
@@ -299,7 +267,7 @@ const LoginTable: React.FC = () => {
                 outline: 'none',
                 fontSize: '12px',
                 width: '100%',
-                color: '#0f172a',
+                color: 'var(--eds-color-text-strong)',
               }}
             />
             {searchQuery && (
@@ -309,7 +277,7 @@ const LoginTable: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: 'var(--eds-color-text-faint)',
                   fontSize: '13px',
                   cursor: 'pointer',
                   padding: 0,
@@ -322,7 +290,7 @@ const LoginTable: React.FC = () => {
         </div>
       </div>
 
-      {/* Method 4: Security Audit Overview Bar (KPI Summary Strip) */}
+      {/* Security Audit Overview Bar (KPI Summary Strip) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -341,28 +309,25 @@ const LoginTable: React.FC = () => {
             border: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '10px',
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+            transition: 'all 0.15s ease'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#93c5fd')}
-          onMouseOut={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
         >
           <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
+            width: '32px', height: '32px', borderRadius: '8px',
             backgroundColor: '#eff6ff', color: '#2563eb',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <Users size={16} />
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Total Enrolled</div>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{allUsers.length} <span style={{ fontSize: '11px', fontWeight: '500', color: '#64748b' }}>Accounts</span></div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Total Registered</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{allUsers.length} <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>Accounts</span></div>
           </div>
         </div>
 
-        {/* Online / Active Sessions KPI */}
+        {/* Online Active KPI */}
         <div 
           onClick={() => setActiveFilter('recent')}
           style={{
@@ -372,32 +337,25 @@ const LoginTable: React.FC = () => {
             border: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '10px',
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+            transition: 'all 0.15s ease'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#86efac')}
-          onMouseOut={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
         >
           <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
+            width: '32px', height: '32px', borderRadius: '8px',
             backgroundColor: '#ecfdf5', color: '#059669',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <Activity size={16} />
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Active Online</div>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#059669', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {recentLogins.length} 
-              <span className="pulse-dot"></span>
-              <span style={{ fontSize: '11px', fontWeight: '500', color: '#059669' }}>Sessions</span>
-            </div>
+            <div style={{ fontSize: '11px', color: '#047857', fontWeight: '700', textTransform: 'uppercase' }}>Active / Recent</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#059669' }}>{recentLogins.length} <span style={{ fontSize: '11px', fontWeight: '600', color: '#047857' }}>Online</span></div>
           </div>
         </div>
 
-        {/* Verified Accounts KPI */}
+        {/* Verified KPI */}
         <div 
           onClick={() => setActiveFilter('all')}
           style={{
@@ -407,49 +365,43 @@ const LoginTable: React.FC = () => {
             border: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '10px',
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+            transition: 'all 0.15s ease'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#a7f3d0')}
-          onMouseOut={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
         >
           <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
+            width: '32px', height: '32px', borderRadius: '8px',
             backgroundColor: '#f0fdf4', color: '#16a34a',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <ShieldCheck size={16} />
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Verified Access</div>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#166534' }}>{verifiedCount} <span style={{ fontSize: '11px', fontWeight: '500', color: '#16a34a' }}>Users</span></div>
+            <div style={{ fontSize: '11px', color: '#15803d', fontWeight: '700', textTransform: 'uppercase' }}>Verified Users</div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#16a34a' }}>{verifiedCount} <span style={{ fontSize: '11px', fontWeight: '600', color: '#15803d' }}>Secure</span></div>
           </div>
         </div>
 
-        {/* Unverified / Failed Logins KPI (Method 4) */}
+        {/* Unverified / Needs Review KPI */}
         <div 
           onClick={() => setActiveFilter('unverified')}
           style={{
-            backgroundColor: activeFilter === 'unverified' ? '#fef3c7' : '#ffffff',
+            backgroundColor: unverifiedCount > 0 ? '#fff7ed' : '#ffffff',
             padding: '10px 14px',
             borderRadius: '10px',
-            border: activeFilter === 'unverified' ? '1px solid #f59e0b' : '1px solid #fed7aa',
+            border: unverifiedCount > 0 ? '1px solid #fed7aa' : '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '10px',
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+            transition: 'all 0.15s ease'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.borderColor = '#f59e0b')}
-          onMouseOut={(e) => (e.currentTarget.style.borderColor = activeFilter === 'unverified' ? '#f59e0b' : '#fed7aa')}
         >
           <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
-            backgroundColor: '#fff7ed', color: '#ea580c',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '32px', height: '32px', borderRadius: '8px',
+            backgroundColor: '#ffedd5', color: '#ea580c',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <ShieldAlert size={16} />
           </div>
@@ -466,8 +418,8 @@ const LoginTable: React.FC = () => {
           display: 'flex',
           gap: '8px',
           padding: '10px 24px',
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #f1f5f9',
+          backgroundColor: 'var(--eds-color-bg-surface-soft)',
+          borderBottom: '1px solid var(--eds-color-border-soft)',
           overflowX: 'auto',
         }}>
           <button
@@ -483,8 +435,8 @@ const LoginTable: React.FC = () => {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: activeFilter === 'recent' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'recent' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'recent' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'recent' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -505,8 +457,8 @@ const LoginTable: React.FC = () => {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: activeFilter === 'all' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'all' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'all' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'all' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -524,8 +476,8 @@ const LoginTable: React.FC = () => {
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
-              backgroundColor: activeFilter === 'student' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'student' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'student' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'student' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -542,8 +494,8 @@ const LoginTable: React.FC = () => {
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
-              backgroundColor: activeFilter === 'lecturer' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'lecturer' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'lecturer' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'lecturer' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -560,8 +512,8 @@ const LoginTable: React.FC = () => {
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
-              backgroundColor: activeFilter === 'mentor' ? '#2563eb' : '#f1f5f9',
-              color: activeFilter === 'mentor' ? '#ffffff' : '#475569',
+              backgroundColor: activeFilter === 'mentor' ? 'var(--eds-color-primary)' : 'var(--eds-color-border-soft)',
+              color: activeFilter === 'mentor' ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-text-muted)',
               transition: 'all 0.15s ease',
             }}
           >
@@ -596,7 +548,7 @@ const LoginTable: React.FC = () => {
 
       {/* Search Result Counter */}
       {searchQuery && (
-        <div style={{ padding: '8px 24px', backgroundColor: '#eff6ff', borderBottom: '1px solid #dbeafe', fontSize: '12px', color: '#1e40af', fontWeight: '600' }}>
+        <div style={{ padding: '8px 24px', backgroundColor: 'var(--eds-color-primary-soft)', borderBottom: '1px solid var(--eds-color-primary-soft-border)', fontSize: '12px', color: 'var(--eds-color-primary-hover)', fontWeight: '600' }}>
           Showing {displayedLogins.length} user{displayedLogins.length !== 1 ? 's' : ''} matching "{searchQuery}" across entire university database:
         </div>
       )}
@@ -726,24 +678,14 @@ const LoginTable: React.FC = () => {
         </table>
       </div>
 
-      {/* Password Reset Modal */}
-      <PasswordResetModal
-        isOpen={isResetModalOpen}
-        onClose={() => {
-          setIsResetModalOpen(false);
-          setSelectedUser(null);
-        }}
-        user={selectedUser}
-      />
-      
       <style>{`
         .pro-table-row { transition: background-color 0.1s ease; }
-        .pro-table-row:hover { background-color: #f0f7ff !important; }
+        .pro-table-row:hover { background-color: var(--eds-color-primary-soft) !important; }
         
         .pulse-dot {
           width: 6px;
           height: 6px;
-          background-color: #10b981;
+          background-color: var(--eds-color-success-solid);
           border-radius: 50%;
           position: relative;
         }
@@ -753,7 +695,7 @@ const LoginTable: React.FC = () => {
           position: absolute;
           width: 100%;
           height: 100%;
-          background-color: #10b981;
+          background-color: var(--eds-color-success-solid);
           border-radius: 50%;
           animation: pulse 2s infinite;
         }

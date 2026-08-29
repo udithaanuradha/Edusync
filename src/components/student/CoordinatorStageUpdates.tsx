@@ -93,7 +93,7 @@ const StudentStageView: React.FC<StudentStageViewProps> = ({ levelNumber }) => {
                       href={stage.resource_links}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: '#2563eb', textDecoration: 'none', wordBreak: 'break-word' }}
+                      style={{ color: 'var(--eds-color-primary)', textDecoration: 'none', wordBreak: 'break-word' }}
                     >
                       🔗 View attached resource
                     </a>
