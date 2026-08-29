@@ -41,6 +41,44 @@ interface SidebarProps {
   navItems?: MenuItem[];
 }
 
+// Coordinator-only nav list: same as the default sidebar but without
+// "Project Delays" — that route isn't implemented for the coordinator role
+// (it redirects straight back to /dashboard), so the link was dead weight.
+// Kept separate from `defaultMenuItems` so Student and any other role still
+// falling back to the default list are completely unaffected.
+export const coordinatorMenuItems: MenuItem[] = [
+  { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  {
+    key: "academicLevel",
+    icon: UsersGroup,
+    label: "Academic Level",
+    hasSubmenu: true,
+    submenu: [
+      { label: "Level 1", path: "/dashboard/level-1" },
+      { label: "Level 2", path: "/dashboard/level-2" },
+      { label: "Level 3", path: "/dashboard/level-3" },
+      { label: "Level 4", path: "/dashboard/level-4" },
+    ],
+  },
+  { path: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
+  {
+    path: "/dashboard/communication",
+    icon: MessageSquare,
+    label: "Communication",
+  },
+  { path: "/dashboard/announcements", icon: ClipboardList, label: "Announcements" },
+];
+
+// Shared with pages outside CoordinatorPages/ (CalendarPage, CommunicationPageV2)
+// that render Sidebar/AppShell for every role from one place — lets them opt a
+// coordinator into coordinatorMenuItems without affecting any other role.
+export const isCoordinatorUser = (userObj: any): boolean => {
+  const effectiveRole = String(
+    userObj?.effectiveRole || userObj?.designation || userObj?.role || ""
+  ).toLowerCase();
+  return userObj?.role === "lecturer" && effectiveRole === "coordinator";
+};
+
 const Sidebar: FC<SidebarProps> = ({ navItems }) => {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const { user } = useAuth();

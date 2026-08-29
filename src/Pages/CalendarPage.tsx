@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Pencil, Plus, Trash2, Users, X } from "lucide-react";
-import Sidebar from "../components/shared/Sidebar";
+import Sidebar, { coordinatorMenuItems, isCoordinatorUser } from "../components/shared/Sidebar";
 import CalendarGrid, {
   type CalendarGridMarker,
 } from "../components/shared/CalendarGrid";
@@ -960,7 +960,7 @@ const CalendarPage: React.FC = () => {
         minHeight: "100vh",
       }}
     >
-      <Sidebar />
+      <Sidebar navItems={isCoordinatorUser(user) ? coordinatorMenuItems : undefined} />
 
       <div
         className="main-viewport"

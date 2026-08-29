@@ -343,9 +343,11 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                 {request.createdAt && <span className="approved-meta">Submitted: {request.createdAt}</span>}
               </div>
 
-              <p><strong>Project Name:</strong> {request.projectName}</p>
-              <p><strong>Supervisor:</strong> {request.supervisorName}</p>
-              <p><strong>Group Leader:</strong> {request.groupLeader}</p>
+              <div className="approved-info-list">
+                <p><strong>Project Name:</strong> {request.projectName}</p>
+                <p><strong>Supervisor:</strong> {request.supervisorName}</p>
+                <p><strong>Group Leader:</strong> {request.groupLeader}</p>
+              </div>
 
               <div className="approved-members-box">
                 <p className="approved-members-title">Submitted Members List:</p>

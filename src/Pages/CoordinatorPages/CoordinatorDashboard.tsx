@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FolderKanban, Users, AlertCircle, CheckCircle2 } from 'lucide-react';
 import AppShell from '../../components/shared/layout/AppShell';
+import { coordinatorMenuItems } from '../../components/shared/Sidebar';
 import StatCard from '../../components/shared/ui/StatCard';
 import { useAuth } from '../../context/AuthContext';
 import RecentProjects from '../../components/coordinator/RecentProjects';
@@ -123,7 +124,7 @@ const CoordinatorDashboard: React.FC = () => {
     stats && stats.totalProjects > 0 ? Math.round((stats.completedProjects / stats.totalProjects) * 100) : 0;
 
   return (
-    <AppShell>
+    <AppShell navItems={coordinatorMenuItems}>
       <div className="dashboard-content">
 
         <div className="dashboard-header-section">
