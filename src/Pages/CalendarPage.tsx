@@ -912,28 +912,38 @@ const CalendarPage: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`${CALENDAR_API_BASE}/panels`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+      // Editing an existing panel must PUT to that panel's own id — POSTing
+      // here (as this used to, unconditionally) only ever INSERTs, so an
+      // "edit" silently left the original row in place and created a second,
+      // near-duplicate one instead of replacing it.
+      const isEditing = Boolean(editingPanelId);
+      const response = await fetch(
+        isEditing
+          ? `${CALENDAR_API_BASE}/panels/${encodeURIComponent(editingPanelId!)}`
+          : `${CALENDAR_API_BASE}/panels`,
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+          body: JSON.stringify({
+            evaluationType: nextPanel.title,
+            academicLevel: nextPanel.level,
+            targetGroup: nextPanel.groupName,
+            evaluators: nextPanel.evaluators,
+            supervisors: nextPanel.supervisors,
+            panelDate: nextPanel.date,
+            startTime: nextPanel.time,
+            duration: nextPanel.duration,
+            location: nextPanel.location,
+            meetingLink: nextPanel.meetingLink,
+            notes: nextPanel.notes,
+            kind: nextPanel.kind,
+            created_by: user?.id ?? JSON.parse(localStorage.getItem("user") || "{}").id,
+          }),
         },
-        body: JSON.stringify({
-          evaluationType: nextPanel.title,
-          academicLevel: nextPanel.level,
-          targetGroup: nextPanel.groupName,
-          evaluators: nextPanel.evaluators,
-          supervisors: nextPanel.supervisors,
-          panelDate: nextPanel.date,
-          startTime: nextPanel.time,
-          duration: nextPanel.duration,
-          location: nextPanel.location,
-          meetingLink: nextPanel.meetingLink,
-          notes: nextPanel.notes,
-          kind: nextPanel.kind,
-          created_by: user?.id ?? JSON.parse(localStorage.getItem("user") || "{}").id,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to store panel in database (${response.status})`);
