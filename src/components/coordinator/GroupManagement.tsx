@@ -32,6 +32,7 @@ interface GroupView {
   name: string;
   department?: string;
   supervisor: string;
+  supervisor2?: string;
   memberCount: number;
   members: GroupMember[];
   leaderName: string;
@@ -100,6 +101,12 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
     (raw.supervisor as string | undefined) ??
     'Not assigned';
 
+  const supervisor2 =
+    (raw.supervisor2_name as string | undefined) ??
+    (raw.supervisorName2 as string | undefined) ??
+    (raw.supervisor2 as string | undefined) ??
+    undefined;
+
   const membersRaw = Array.isArray(raw.members) ? (raw.members as GroupApiRecord[]) : [];
   const members: GroupMember[] = membersRaw.map((m) => ({
     id: typeof m.id === 'number' ? m.id : undefined,
@@ -120,7 +127,7 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
 
   const department = (raw.department as string | undefined) ?? undefined;
 
-  return { id, name, department, supervisor, memberCount, members, leaderName };
+  return { id, name, department, supervisor, supervisor2, memberCount, members, leaderName };
 };
 
 const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialRequest = null, onPrefillHandled }) => {
@@ -136,6 +143,14 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [supervisorOptions, setSupervisorOptions] = useState<SupervisorOption[]>([]);
   const [supervisorSearching, setSupervisorSearching] = useState(false);
   const [supervisorSearchError, setSupervisorSearchError] = useState<string | null>(null);
+  // Second, optional supervisor — project_groups.supervisor_id_2 (see the
+  // backend fix: dual-supervisor group requests were silently dropping
+  // whichever approver didn't end up in supervisorQuery above).
+  const [supervisorQuery2, setSupervisorQuery2] = useState('');
+  const [selectedSupervisor2, setSelectedSupervisor2] = useState<SupervisorOption | null>(null);
+  const [supervisorOptions2, setSupervisorOptions2] = useState<SupervisorOption[]>([]);
+  const [supervisorSearching2, setSupervisorSearching2] = useState(false);
+  const [supervisorSearchError2, setSupervisorSearchError2] = useState<string | null>(null);
   const [leaderId, setLeaderId] = useState<string>('');
   const [searchIndex, setSearchIndex] = useState('');
   const [members, setMembers] = useState<Student[]>([]);
@@ -148,7 +163,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
-    if (members.length !== 5) return false;
+    if (members.length === 0) return false;
     return members.some((m) => String(m.id) === leaderId);
   }, [groupName, members, leaderId]);
 
@@ -250,6 +265,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setGroupName('');
     setSupervisorQuery('');
     setSelectedSupervisor(null);
+    setSupervisorQuery2('');
+    setSelectedSupervisor2(null);
+    setSupervisorOptions2([]);
+    setSupervisorSearchError2(null);
     setSupervisorOptions([]);
     setSupervisorSearchError(null);
     setLeaderId('');
@@ -266,6 +285,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setSelectedSupervisor(null);
     setSupervisorOptions([]);
     setSupervisorSearchError(null);
+    setSupervisorQuery2(group.supervisor2 || '');
+    setSelectedSupervisor2(null);
+    setSupervisorOptions2([]);
+    setSupervisorSearchError2(null);
     setLeaderId('');
     setSearchIndex('');
     setMembers([]);
@@ -342,11 +365,19 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       .filter((item): item is SupervisorOption => item !== null);
   };
 
-  const fetchSupervisors = async (query: string): Promise<SupervisorOption[]> => {
+  const fetchSupervisors = async (
+    query: string,
+    setters: {
+      setOptions: (options: SupervisorOption[]) => void;
+      setSearching: (value: boolean) => void;
+      setError: (value: string | null) => void;
+    } = { setOptions: setSupervisorOptions, setSearching: setSupervisorSearching, setError: setSupervisorSearchError },
+  ): Promise<SupervisorOption[]> => {
+    const { setOptions, setSearching, setError } = setters;
     const q = query.trim();
     if (!q) {
-      setSupervisorOptions([]);
-      setSupervisorSearchError(null);
+      setOptions([]);
+      setError(null);
       return [];
     }
 
@@ -368,8 +399,8 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       `http://localhost:5000/api/admin/users?role=supervisor&search=${encodeURIComponent(q)}`,
     ];
 
-    setSupervisorSearching(true);
-    setSupervisorSearchError(null);
+    setSearching(true);
+    setError(null);
     try {
       let hadRouteError = false;
       for (const url of endpoints) {
@@ -385,8 +416,8 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           const data = await response.json();
           const mapped = mapSupervisors(data);
           if (mapped.length > 0) {
-            setSupervisorOptions(mapped);
-            setSupervisorSearchError(null);
+            setOptions(mapped);
+            setError(null);
             return mapped;
           }
         } catch {
@@ -394,15 +425,15 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         }
       }
 
-      setSupervisorOptions([]);
+      setOptions([]);
       if (hadRouteError) {
-        setSupervisorSearchError(
+        setError(
           'Supervisor list API is not available. Please add a backend endpoint for supervisor search or set VITE_SUPERVISOR_SEARCH_ENDPOINT.'
         );
       }
       return [];
     } finally {
-      setSupervisorSearching(false);
+      setSearching(false);
     }
   };
 
@@ -430,18 +461,34 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setSearchIndex('');
     setDepartment(request.department || '');
 
-    const supervisorName = request.supervisorName?.trim() || '';
-    setSupervisorQuery(supervisorName);
-    if (supervisorName) {
-      const supervisorCandidates = await fetchSupervisors(supervisorName);
-      const normalizedTarget = supervisorName.toLowerCase();
-      const exact = supervisorCandidates.find(
-        (candidate) => candidate.name.toLowerCase() === normalizedTarget
-      );
+    const [firstName, secondName] = (request.supervisorName || '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
+
+    setSupervisorQuery(firstName || '');
+    if (firstName) {
+      const candidates = await fetchSupervisors(firstName);
+      const exact = candidates.find((c) => c.name.toLowerCase() === firstName.toLowerCase());
       if (exact) {
         setSelectedSupervisor(exact);
         setSupervisorQuery(exact.name);
         setSupervisorOptions([]);
+      }
+    }
+
+    setSupervisorQuery2(secondName || '');
+    if (secondName) {
+      const candidates2 = await fetchSupervisors(secondName, {
+        setOptions: setSupervisorOptions2,
+        setSearching: setSupervisorSearching2,
+        setError: setSupervisorSearchError2,
+      });
+      const exact2 = candidates2.find((c) => c.name.toLowerCase() === secondName.toLowerCase());
+      if (exact2) {
+        setSelectedSupervisor2(exact2);
+        setSupervisorQuery2(exact2.name);
+        setSupervisorOptions2([]);
       }
     }
 
@@ -509,6 +556,20 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     return () => window.clearTimeout(timer);
   }, [supervisorQuery, isModalOpen]);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const timer = window.setTimeout(() => {
+      fetchSupervisors(supervisorQuery2, {
+        setOptions: setSupervisorOptions2,
+        setSearching: setSupervisorSearching2,
+        setError: setSupervisorSearchError2,
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [supervisorQuery2, isModalOpen]);
+
 
   const handleRemoveMember = (studentId: number) => {
     setMembers((prev) => prev.filter((m) => m.id !== studentId));
@@ -563,7 +624,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
     if (isEditMode) {
       if (!canCreate) {
-        alert('Enter a group name, keep exactly 5 members, and select a group leader.');
+        alert('Enter a group name, add at least one member, and select a group leader.');
         return;
       }
 
@@ -597,6 +658,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           level: levelNumber,
           supervisorName: selectedSupervisor?.name ?? (supervisorQuery.trim() || null),
           supervisorId: selectedSupervisor?.id ?? null,
+          supervisorId2: selectedSupervisor2?.id ?? null,
           leaderId: leader.id,
           memberIds: members.map((m) => m.id),
           createdBy: user?.id,
@@ -648,7 +710,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     }
 
     if (!canCreate) {
-      alert('Enter a group name, add exactly 5 members, and select a group leader.');
+      alert('Enter a group name, add at least one member, and select a group leader.');
       return;
     }
 
@@ -683,6 +745,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         level: levelNumber,
         supervisorName: selectedSupervisor?.name ?? null,
         supervisorId: selectedSupervisor?.id ?? null,
+        supervisorId2: selectedSupervisor2?.id ?? null,
         leaderId: leader.id,
         memberIds: members.map((m) => m.id),
         createdBy: user?.id,
@@ -754,6 +817,12 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                     <span className="group-meta-icon"><ShieldCheck size={13} /></span>
                     <span>{group.supervisor}</span>
                   </div>
+                  {group.supervisor2 && (
+                    <div className="group-meta-row">
+                      <span className="group-meta-icon"><ShieldCheck size={13} /></span>
+                      <span>{group.supervisor2}</span>
+                    </div>
+                  )}
                   <div className="group-meta-row">
                     <span className="group-meta-icon"><Building2 size={13} /></span>
                     <span>{group.department || 'Not set'}</span>
@@ -880,6 +949,61 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               </label>
 
               <label>
+                Supervisor 2 (optional)
+                <div className="supervisor-picker-wrap">
+                  <input
+                    type="text"
+                    value={supervisorQuery2}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setSupervisorQuery2(next);
+                      setSupervisorSearchError2(null);
+                      if (selectedSupervisor2 && selectedSupervisor2.name !== next) {
+                        setSelectedSupervisor2(null);
+                      }
+                    }}
+                    placeholder="Search supervisor by name or email"
+                  />
+
+                  {supervisorQuery2.trim() && (
+                    <div className="supervisor-options-box">
+                      {supervisorSearching2 ? (
+                        <p>Searching supervisors...</p>
+                      ) : supervisorSearchError2 ? (
+                        <p>{supervisorSearchError2}</p>
+                      ) : supervisorOptions2.length === 0 ? (
+                        <p>No supervisors found.</p>
+                      ) : (
+                        <ul>
+                          {supervisorOptions2.map((supervisor) => (
+                            <li key={supervisor.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSupervisor2(supervisor);
+                                  setSupervisorQuery2(supervisor.name);
+                                  setSupervisorOptions2([]);
+                                }}
+                              >
+                                <span>{supervisor.name}</span>
+                                <small>{supervisor.email}</small>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedSupervisor2 && (
+                    <p className="supervisor-selected-text">
+                      Selected: {selectedSupervisor2.name}
+                    </p>
+                  )}
+                </div>
+              </label>
+
+              <label>
                 Department
                 <select
                   value={department}
@@ -913,7 +1037,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                 <select
                   value={searchIndex}
                   onChange={(e) => setSearchIndex(e.target.value)}
-                  disabled={studentSearchLoading || members.length >= 5}
+                  disabled={studentSearchLoading}
                   style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
                 >
                   <option value="">{studentSearchLoading ? 'Loading students...' : 'Choose a student...'}</option>
@@ -937,7 +1061,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                       setSearchIndex('');
                     }
                   }} 
-                  disabled={!searchIndex || members.length >= 5}
+                  disabled={!searchIndex}
                 >
                   <Plus size={14} />
                   Add
@@ -945,7 +1069,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               </div>
 
               <div className="selected-members-box">
-                <h4>Selected Members ({members.length}/5)</h4>
+                <h4>Selected Members ({members.length})</h4>
                 {members.length === 0 ? (
                   <p>No members added yet.</p>
                 ) : (

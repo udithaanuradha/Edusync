@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
 import {
@@ -20,6 +20,8 @@ import {
   Flag,
   FileSpreadsheet,
   X,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import './AdminProjectDelaysPage.css';
 
@@ -42,99 +44,10 @@ export interface ProjectDelayItem {
   notes?: string;
 }
 
-const INITIAL_SAMPLE_DELAYS: ProjectDelayItem[] = [
-  {
-    id: 101,
-    group_id: 280000,
-    group_name: 'Bug fixers',
-    level: 2,
-    degree: 'ITM',
-    milestone_title: 'Proposal SRS & Architecture Sign-off',
-    task_name: 'Database ERD and Schema Approval',
-    due_date: '2026-08-10',
-    days_overdue: 11,
-    supervisor_name: 'kasun bandara',
-    mentor_name: 'External Industry Mentor',
-    leader_name: 'RDUA Gurubawila',
-    leader_email: 'udithaanuradha276@gmail.com',
-    status: 'Moderate',
-    notes: 'Awaiting revised schema diagram submission from group leader.',
-  },
-  {
-    id: 102,
-    group_id: 290001,
-    group_name: 'VisionAI Innovators',
-    level: 4,
-    degree: 'AI',
-    milestone_title: 'Model Training & Baseline Evaluation',
-    task_name: 'PyTorch Model Checkpoint Verification',
-    due_date: '2026-08-04',
-    days_overdue: 17,
-    supervisor_name: 'Ama Prasad',
-    mentor_name: 'Dr. Chathura Silva',
-    leader_name: 'Kavindu Perera',
-    leader_email: 'kavindu.ai@uom.lk',
-    status: 'Critical',
-    is_flagged: true,
-    notes: 'GPU compute resource delay during training phase.',
-  },
-  {
-    id: 103,
-    group_id: 10001,
-    group_name: 'CodeCrafters',
-    level: 3,
-    degree: 'IT',
-    milestone_title: 'Mid-term Prototype Deployment',
-    task_name: 'Docker Swarm Deployment',
-    due_date: '2026-08-17',
-    days_overdue: 4,
-    supervisor_name: 'kasun bandara',
-    mentor_name: 'Saman Kumara',
-    leader_name: 'Nimasha Fernando',
-    leader_email: 'nimasha.f@uom.lk',
-    status: 'Minor',
-    notes: 'Frontend API integration in progress.',
-  },
-  {
-    id: 104,
-    group_id: 50001,
-    group_name: 'CloudScale Squad',
-    level: 1,
-    degree: 'IT',
-    milestone_title: 'Project Inception & Topic Proposal',
-    task_name: 'Topic Selection & Problem Statement',
-    due_date: '2026-08-01',
-    days_overdue: 20,
-    supervisor_name: 'Thilak Perera',
-    mentor_name: 'Not Assigned',
-    leader_name: 'Sanuja Dissanayake',
-    leader_email: 'sanuja.d@uom.lk',
-    status: 'Critical',
-    is_flagged: true,
-    notes: 'Student group leader unresponsive for 2 weeks.',
-  },
-  {
-    id: 105,
-    group_id: 60002,
-    group_name: 'CyShield ITM',
-    level: 3,
-    degree: 'ITM',
-    milestone_title: 'Security Audit & Compliance Report',
-    task_name: 'ISO 27001 Checklist Submission',
-    due_date: '2026-08-14',
-    days_overdue: 7,
-    supervisor_name: 'Ama Prasad',
-    mentor_name: 'Priyantha De Silva',
-    leader_name: 'Hasitha Ranasinghe',
-    leader_email: 'hasitha.r@uom.lk',
-    status: 'Moderate',
-    notes: 'Pending industry client NDA sign-off.',
-  },
-];
-
 const AdminProjectDelaysPage: React.FC = () => {
-  const [delays, setDelays] = useState<ProjectDelayItem[]>(INITIAL_SAMPLE_DELAYS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [delays, setDelays] = useState<ProjectDelayItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedLevel, setSelectedLevel] = useState<number | 'ALL'>('ALL');
   const [selectedDegree, setSelectedDegree] = useState<string>('ALL');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
@@ -146,65 +59,168 @@ const AdminProjectDelaysPage: React.FC = () => {
   const [extensionReason, setExtensionReason] = useState<string>('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
-  // Fetch real delays from backend if available
-  useEffect(() => {
-    const fetchRealDelays = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/api/mentor/project-delays', {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-          },
-        });
+  const fetchRealDelays = useCallback(async (isManualRefresh = false) => {
+    try {
+      if (isManualRefresh) setRefreshing(true);
+      else setLoading(true);
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      const token = localStorage.getItem('token');
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) authHeaders['Authorization'] = `Bearer ${token}`;
+
+      const collectedDelays: ProjectDelayItem[] = [];
+      const seenDelayIds = new Set<string | number>();
+
+      // 1. Fetch from Mentor Project Delays endpoint
+      try {
+        const resMentor = await fetch('http://localhost:5000/api/mentor/project-delays', { headers: authHeaders });
+        if (resMentor.ok) {
+          const dataMentor = await resMentor.json();
+          if (dataMentor.success && Array.isArray(dataMentor.data)) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            const mapped: ProjectDelayItem[] = data.data.map((item: any, idx: number) => {
+            dataMentor.data.forEach((item: any, idx: number) => {
               const due = new Date(item.due_date || item.deadline || '2026-08-15');
               due.setHours(0, 0, 0, 0);
               const diffDays = Math.max(1, Math.ceil((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)));
-              
+
               let status: 'Critical' | 'Moderate' | 'Minor' = 'Minor';
               if (diffDays > 14) status = 'Critical';
               else if (diffDays >= 7) status = 'Moderate';
 
-              return {
-                id: item.task_id || item.id || idx + 100,
-                group_id: item.group_id,
-                group_name: item.group_name || 'Unnamed Group',
-                level: Number(item.level || item.academic_level || 2),
-                degree: (item.degree || 'ITM') as 'IT' | 'ITM' | 'AI',
-                milestone_title: item.milestone_title || item.task_name || 'Scheduled Milestone',
-                task_name: item.description || item.task_name,
-                due_date: item.due_date || '2026-08-15',
-                days_overdue: diffDays,
-                supervisor_name: item.supervisor_name || 'Assigned Supervisor',
-                mentor_name: item.mentor_name || 'Assigned Mentor',
-                leader_name: item.assigned_to_name || item.leader_name || 'Group Leader',
-                status,
-                is_flagged: diffDays > 14,
-                notes: item.notes || '',
-              };
+              const itemKey = `mentor-${item.task_id || item.id || idx}`;
+              if (!seenDelayIds.has(itemKey)) {
+                seenDelayIds.add(itemKey);
+                collectedDelays.push({
+                  id: item.task_id || item.id || idx + 100,
+                  group_id: item.group_id,
+                  group_name: item.group_name || 'Unnamed Group',
+                  level: Number(item.level || item.academic_level || 2),
+                  degree: (item.degree || 'ITM') as 'IT' | 'ITM' | 'AI',
+                  milestone_title: item.milestone_title || item.task_name || 'Scheduled Milestone',
+                  task_name: item.description || item.task_name,
+                  due_date: item.due_date ? String(item.due_date).split('T')[0] : '2026-08-15',
+                  days_overdue: diffDays,
+                  supervisor_name: item.supervisor_name || 'Assigned Supervisor',
+                  mentor_name: item.mentor_name || 'Assigned Mentor',
+                  leader_name: item.assigned_to_name || item.leader_name || 'Group Leader',
+                  status,
+                  is_flagged: diffDays > 14,
+                  notes: item.notes || '',
+                });
+              }
             });
-
-            // Combine backend items with existing sample items so Admin has full visibility
-            setDelays(mapped);
           }
         }
       } catch (err) {
-        console.warn('Backend project delays query, using loaded overview items:', err);
-      } finally {
-        setLoading(false);
+        console.warn('Mentor delays query notice:', err);
       }
-    };
 
-    fetchRealDelays();
+      // 2. Fetch all registered Groups across Level 1, 2, 3, 4 from database
+      const groupMap = new Map<number | string, any>();
+      for (const lvl of [1, 2, 3, 4]) {
+        try {
+          const resGroups = await fetch(`http://localhost:5000/api/groups/level/${lvl}`, { headers: authHeaders });
+          if (resGroups.ok) {
+            const raw = await resGroups.json();
+            const groupList = Array.isArray(raw) ? raw : (raw.data || raw.groups || []);
+            groupList.forEach((g: any) => {
+              const gId = g.id || g.group_id || g.groupId;
+              if (gId) {
+                groupMap.set(gId, { ...g, level: lvl });
+              }
+            });
+          }
+        } catch {
+          // continue
+        }
+      }
+
+      // Collect known group IDs to probe (including default database group IDs like 1, 30001, 400000)
+      const allGroupIds = Array.from(new Set([
+        ...Array.from(groupMap.keys()),
+        1, 30001, 400000
+      ]));
+
+      // 3. For each group, fetch live milestones from database (/api/milestones/group/:gId)
+      for (const gId of allGroupIds) {
+        try {
+          const resMilestones = await fetch(`http://localhost:5000/api/milestones/group/${gId}`, { headers: authHeaders });
+          if (resMilestones.ok) {
+            const mData = await resMilestones.json();
+            const mList = Array.isArray(mData) ? mData : (mData.data || []);
+
+            if (Array.isArray(mList)) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+
+              mList.forEach((m: any) => {
+                const statusStr = String(m.status || '').toUpperCase();
+                if (statusStr !== 'COMPLETED' && statusStr !== 'DONE' && m.due_date) {
+                  const dueDate = new Date(m.due_date);
+                  dueDate.setHours(0, 0, 0, 0);
+
+                  if (dueDate.getTime() < today.getTime()) {
+                    const diffDays = Math.max(1, Math.ceil((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+                    
+                    let severity: 'Critical' | 'Moderate' | 'Minor' = 'Minor';
+                    if (diffDays > 14) severity = 'Critical';
+                    else if (diffDays >= 7) severity = 'Moderate';
+
+                    const groupInfo = groupMap.get(gId) || {};
+                    const milestoneKey = `milestone-${m.id || m.title}-${gId}`;
+
+                    if (!seenDelayIds.has(milestoneKey)) {
+                      seenDelayIds.add(milestoneKey);
+                      
+                      let degree: 'IT' | 'ITM' | 'AI' = 'IT';
+                      const rawDeg = groupInfo.department || groupInfo.degree || (gId === 30001 ? 'AI' : gId === 400000 ? 'ITM' : 'IT');
+                      if (rawDeg === 'ITM' || rawDeg === 'IDS') degree = 'ITM';
+                      else if (rawDeg === 'AI' || rawDeg === 'CM') degree = 'AI';
+
+                      collectedDelays.push({
+                        id: m.id || `m-${gId}`,
+                        group_id: gId,
+                        group_name: groupInfo.name || groupInfo.group_name || (gId === 1 ? 'Nexus' : gId === 30001 ? 'VisionAI' : gId === 400000 ? 'CyShield' : `Group ${gId}`),
+                        level: Number(groupInfo.level || (gId === 400000 ? 4 : gId === 30001 ? 3 : 1)),
+                        degree,
+                        milestone_title: m.title || 'Project Milestone',
+                        task_name: m.description || 'Milestone Deliverable',
+                        due_date: String(m.due_date).split('T')[0],
+                        days_overdue: diffDays,
+                        supervisor_name: groupInfo.supervisorName || groupInfo.supervisor || 'Assigned Academic Staff',
+                        mentor_name: groupInfo.mentorName || groupInfo.mentor || 'Industry Mentor',
+                        leader_name: groupInfo.leaderName || groupInfo.leader || 'Group Leader',
+                        status: severity,
+                        is_flagged: diffDays > 14,
+                        notes: m.description || 'Overdue milestone pending completion.',
+                      });
+                    }
+                  }
+                }
+              });
+            }
+          }
+        } catch {
+          // ignore error for single group
+        }
+      }
+
+      setDelays(collectedDelays);
+    } catch (err) {
+      console.error('Error fetching real-time project delays:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRealDelays();
+  }, [fetchRealDelays]);
 
   // Filtered Delays
   const filteredDelays = useMemo(() => {
@@ -259,7 +275,6 @@ const AdminProjectDelaysPage: React.FC = () => {
 
   const handleOpenExtensionModal = (item: ProjectDelayItem) => {
     setExtendingItem(item);
-    // Default next week
     const d = new Date();
     d.setDate(d.getDate() + 7);
     setNewExtensionDate(d.toISOString().split('T')[0]);
@@ -308,14 +323,14 @@ const AdminProjectDelaysPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `EduSync_Project_Delays_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Faculty_Project_Delays_Report_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   return (
-    <div className="admin-delays-shell">
+    <div className="app-layout">
       <Sidebar />
 
       <div className="main-viewport">
@@ -331,13 +346,21 @@ const AdminProjectDelaysPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="admin-delays-title">Project Delays & Academic Risk Oversight</h1>
-                <p className="admin-delays-subtitle">
-                  Faculty-wide monitoring of overdue project milestones, blockers, and deadline extensions across Levels 1–4.
-                </p>
               </div>
             </div>
 
             <div className="admin-delays-actions-top">
+              <button
+                type="button"
+                className="btn-admin-action btn-admin-secondary"
+                onClick={() => fetchRealDelays(true)}
+                disabled={refreshing}
+                title="Fetch latest milestone records directly from database"
+              >
+                <RefreshCw size={15} className={refreshing ? 'spin-icon' : ''} />
+                {refreshing ? 'Syncing…' : 'Live Sync'}
+              </button>
+
               <button
                 type="button"
                 className="btn-admin-action btn-admin-secondary"
@@ -359,46 +382,45 @@ const AdminProjectDelaysPage: React.FC = () => {
               color: '#065f46',
               fontSize: '13px',
               fontWeight: '600',
-              marginBottom: '24px',
+              marginBottom: '20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              gap: '10px'
             }}>
               <CheckCircle2 size={18} color="#059669" />
               <span>{actionSuccessMsg}</span>
             </div>
           )}
 
-          {/* Top KPI Metrics Cards */}
+          {/* KPI Summary Cards Grid */}
           <div className="admin-delays-stats-grid">
             <div className="admin-delays-stat-card">
               <div className="stat-icon-wrapper" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
                 <AlertTriangle size={22} />
               </div>
               <div className="stat-content">
-                <span className="stat-value">{metrics.total}</span>
-                <span className="stat-label">Total Overdue Items</span>
+                <div className="stat-value">{metrics.total}</div>
+                <div className="stat-label">Total Overdue Items</div>
               </div>
             </div>
 
             <div className="admin-delays-stat-card">
-              <div className="stat-icon-wrapper" style={{ backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+              <div className="stat-icon-wrapper" style={{ backgroundColor: '#ffe4e6', color: '#e11d48' }}>
                 <ShieldAlert size={22} />
               </div>
               <div className="stat-content">
-                <span className="stat-value" style={{ color: '#b91c1c' }}>{metrics.critical}</span>
-                <span className="stat-label">Critical Delays (&gt;14d)</span>
+                <div className="stat-value">{metrics.critical}</div>
+                <div className="stat-label">Critical Delays (&gt;14d)</div>
               </div>
             </div>
 
             <div className="admin-delays-stat-card">
-              <div className="stat-icon-wrapper" style={{ backgroundColor: '#fffbeb', color: '#d97706' }}>
+              <div className="stat-icon-wrapper" style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
                 <Clock size={22} />
               </div>
               <div className="stat-content">
-                <span className="stat-value" style={{ color: '#d97706' }}>{metrics.moderate}</span>
-                <span className="stat-label">Moderate Delays (3–14d)</span>
+                <div className="stat-value">{metrics.moderate}</div>
+                <div className="stat-label">Moderate Delays (3–14d)</div>
               </div>
             </div>
 
@@ -407,57 +429,64 @@ const AdminProjectDelaysPage: React.FC = () => {
                 <Users size={22} />
               </div>
               <div className="stat-content">
-                <span className="stat-value">{metrics.distinctGroups}</span>
-                <span className="stat-label">Affected Project Groups</span>
+                <div className="stat-value">{metrics.distinctGroups}</div>
+                <div className="stat-label">Affected Project Groups</div>
               </div>
             </div>
           </div>
 
-          {/* Filter Bar */}
+          {/* Filter Controls Box */}
           <div className="admin-delays-filter-box">
             <div className="filter-left-group">
-              {/* Level Filter Pills */}
+              {/* Level Selector Pills */}
               <div className="level-pill-group">
-                {(['ALL', 1, 2, 3, 4] as const).map((lvl) => (
+                <button
+                  type="button"
+                  className={`level-pill-btn ${selectedLevel === 'ALL' ? 'active' : ''}`}
+                  onClick={() => setSelectedLevel('ALL')}
+                >
+                  All Levels
+                </button>
+                {[1, 2, 3, 4].map((lvl) => (
                   <button
                     key={lvl}
                     type="button"
                     className={`level-pill-btn ${selectedLevel === lvl ? 'active' : ''}`}
                     onClick={() => setSelectedLevel(lvl)}
                   >
-                    {lvl === 'ALL' ? 'All Levels' : `Level ${lvl}`}
+                    Level {lvl}
                   </button>
                 ))}
               </div>
 
-              {/* Degree Filter */}
+              {/* Degree Selector */}
               <select
-                className="custom-select-filter"
                 value={selectedDegree}
                 onChange={(e) => setSelectedDegree(e.target.value)}
+                className="custom-select-filter"
               >
                 <option value="ALL">All Degrees</option>
-                <option value="IT">IT</option>
-                <option value="ITM">ITM</option>
-                <option value="AI">AI</option>
+                <option value="IT">IT — Information Technology</option>
+                <option value="ITM">ITM — Info Tech & Management</option>
+                <option value="AI">AI — Artificial Intelligence</option>
               </select>
 
               {/* Severity Filter */}
               <select
-                className="custom-select-filter"
                 value={selectedSeverity}
                 onChange={(e) => setSelectedSeverity(e.target.value)}
+                className="custom-select-filter"
               >
                 <option value="ALL">All Severities</option>
-                <option value="critical">Critical (&gt;14 Days)</option>
-                <option value="moderate">Moderate (3–14 Days)</option>
-                <option value="minor">Minor (&lt;3 Days)</option>
+                <option value="Critical">Critical (&gt;14 Days)</option>
+                <option value="Moderate">Moderate (7–14 Days)</option>
+                <option value="Minor">Minor (&lt;7 Days)</option>
               </select>
             </div>
 
-            {/* Live Search */}
+            {/* Search Box */}
             <div className="search-input-wrap">
-              <Search size={15} color="#94a3b8" />
+              <Search size={16} color="#94a3b8" />
               <input
                 type="text"
                 placeholder="Search group, student, supervisor..."
@@ -473,9 +502,6 @@ const AdminProjectDelaysPage: React.FC = () => {
               <h3 className="admin-delays-table-title">
                 Delayed Milestones Log ({filteredDelays.length})
               </h3>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
-                Showing active overdue stages requiring administrative attention
-              </div>
             </div>
 
             <div className="delays-table-wrapper">
@@ -493,281 +519,260 @@ const AdminProjectDelaysPage: React.FC = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
-                        Loading overdue projects...
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px 24px', color: '#64748b' }}>
+                        <Clock size={32} style={{ margin: '0 auto 8px auto', color: '#cbd5e1' }} />
+                        <div style={{ fontWeight: '600' }}>Fetching real-time delay records from database...</div>
                       </td>
                     </tr>
                   ) : filteredDelays.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                          <CheckCircle2 size={32} color="#10b981" />
-                          <span style={{ fontWeight: '600', color: '#0f172a', fontSize: '15px' }}>
-                            All projects on track for this selection!
-                          </span>
-                          <span style={{ fontSize: '13px', color: '#64748b' }}>
-                            No pending overdue milestones found.
-                          </span>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '60px 24px', color: '#64748b' }}>
+                        <CheckCircle2 size={40} style={{ margin: '0 auto 12px auto', color: '#22c55e' }} />
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                          No Overdue Milestones Found!
                         </div>
+                        <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                          {searchQuery || selectedLevel !== 'ALL' || selectedDegree !== 'ALL' || selectedSeverity !== 'ALL'
+                            ? 'No records match your selected filter criteria.'
+                            : 'All project milestones across Levels 1–4 are currently operating on schedule.'}
+                        </p>
                       </td>
                     </tr>
                   ) : (
-                    filteredDelays.map((item) => {
-                      const isCrit = item.status === 'Critical' || item.days_overdue > 14;
-                      return (
-                        <tr
-                          key={item.id}
-                          className={`delays-table-row ${isCrit ? 'critical-row' : ''}`}
-                        >
-                          {/* Group & Cohort */}
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                                  {item.group_name}
-                                </span>
-                                {item.is_flagged && (
-                                  <span title="Flagged High Risk" style={{ color: '#dc2626' }}>
-                                    🚩
-                                  </span>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span className="badge-level">Level {item.level}</span>
-                                <span className={`badge-degree ${item.degree.toLowerCase()}`}>
-                                  {item.degree}
-                                </span>
-                                {item.leader_name && (
-                                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                                    • Lead: {item.leader_name}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Overdue Milestone */}
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '13px' }}>
-                                {item.milestone_title}
+                    filteredDelays.map((item) => (
+                      <tr 
+                        key={item.id} 
+                        className={`delays-table-row ${item.status === 'Critical' ? 'critical-row' : ''}`}
+                      >
+                        {/* Group & Cohort */}
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>
+                              {item.group_name}
+                            </span>
+                            {item.is_flagged && (
+                              <span title="Flagged by Admin / Coordinator" style={{ color: '#e11d48' }}>
+                                🚩
                               </span>
-                              {item.task_name && (
-                                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                                  {item.task_name}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Deadline & Overdue Duration */}
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>
-                                Due: {new Date(item.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </span>
-                              <span className={`badge-overdue ${item.status.toLowerCase()}`}>
-                                <AlertTriangle size={11} />
-                                {item.days_overdue} days overdue
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Supervisor & Mentor */}
-                          <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
-                                <User size={13} color="#64748b" />
-                                {item.supervisor_name}
-                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span className="badge-level">Level {item.level}</span>
+                            <span className={`badge-degree ${item.degree.toLowerCase()}`}>
+                              {item.degree}
+                            </span>
+                            {item.leader_name && (
                               <span style={{ fontSize: '11px', color: '#64748b' }}>
-                                Mentor: {item.mentor_name || 'None'}
+                                • Lead: {item.leader_name}
                               </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Milestone / Stage */}
+                        <td>
+                          <div style={{ fontWeight: '600', fontSize: '13.5px', color: '#0f172a' }}>
+                            {item.milestone_title}
+                          </div>
+                          {item.task_name && (
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                              {item.task_name}
                             </div>
-                          </td>
+                          )}
+                        </td>
 
-                          {/* Notes */}
-                          <td>
-                            <div style={{ maxWidth: '240px', fontSize: '12px', color: '#475569', lineHeight: '1.4' }}>
-                              {item.notes || 'No blocker notes reported.'}
-                            </div>
-                          </td>
+                        {/* Deadline & Duration */}
+                        <td>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                            Due: {item.due_date}
+                          </div>
+                          <span
+                            className={`badge-overdue ${
+                              item.status === 'Critical'
+                                ? 'critical'
+                                : item.status === 'Moderate'
+                                ? 'moderate'
+                                : 'minor'
+                            }`}
+                          >
+                            <AlertTriangle size={12} />
+                            {item.days_overdue} days overdue
+                          </span>
+                        </td>
 
-                          {/* Actions */}
-                          <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                              <button
-                                type="button"
-                                className="btn-table-action btn-reminder"
-                                onClick={() => handleSendReminder(item)}
-                                title="Send immediate reminder alert to group and supervisor"
-                              >
-                                <Send size={12} />
-                                Remind
-                              </button>
+                        {/* Supervisor & Mentor */}
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
+                            <User size={13} color="#64748b" />
+                            {item.supervisor_name}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '3px' }}>
+                            Mentor: {item.mentor_name || 'Not assigned'}
+                          </div>
+                        </td>
 
-                              <button
-                                type="button"
-                                className="btn-table-action btn-extend"
-                                onClick={() => handleOpenExtensionModal(item)}
-                                title="Grant deadline extension"
-                              >
-                                <CalendarPlus size={12} />
-                                Extend
-                              </button>
+                        {/* Delay Notes */}
+                        <td>
+                          <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: '1.4' }}>
+                            {item.notes || 'Awaiting milestone submission.'}
+                          </div>
+                        </td>
 
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFlag(item.id)}
-                                title={item.is_flagged ? 'Unflag Risk' : 'Flag High Academic Risk'}
-                                style={{
-                                  background: item.is_flagged ? '#fee2e2' : '#f8fafc',
-                                  border: `1px solid ${item.is_flagged ? '#fca5a5' : '#cbd5e1'}`,
-                                  color: item.is_flagged ? '#dc2626' : '#64748b',
-                                  padding: '6px 8px',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                <Flag size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+                        {/* Actions */}
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              className="btn-table-action btn-reminder"
+                              title="Send urgent reminder email to group & supervisor"
+                              onClick={() => handleSendReminder(item)}
+                            >
+                              <Send size={13} />
+                              Remind
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-table-action btn-extend"
+                              title="Grant deadline extension"
+                              onClick={() => handleOpenExtensionModal(item)}
+                            >
+                              <CalendarPlus size={13} />
+                              Extend
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-table-action btn-extend"
+                              style={{ padding: '6px 8px', color: item.is_flagged ? '#dc2626' : '#94a3b8' }}
+                              title={item.is_flagged ? 'Unflag milestone' : 'Flag milestone for review'}
+                              onClick={() => handleToggleFlag(item.id)}
+                            >
+                              <Flag size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Deadline Extension Modal */}
-          {extendingItem && (
-            <div className="modal-overlay-delays">
-              <div className="modal-card-delays">
-                <div style={{
-                  padding: '18px 24px',
-                  borderBottom: '1px solid #f1f5f9',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  backgroundColor: '#fafbfc',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '10px',
-                      backgroundColor: '#eff6ff',
-                      color: '#2563eb',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid #dbeafe',
-                    }}>
-                      <CalendarPlus size={18} />
-                    </div>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
-                        Grant Deadline Extension
-                      </h3>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-                        {extendingItem.group_name} (Level {extendingItem.level})
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setExtendingItem(null)}
-                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-                      Milestone / Deliverable:
-                    </label>
-                    <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>
-                      {extendingItem.milestone_title}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-                      New Extended Deadline:
-                    </label>
-                    <input
-                      type="date"
-                      value={newExtensionDate}
-                      onChange={(e) => setNewExtensionDate(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        color: '#0f172a',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>
-                      Administrative Approval Reason / Remark:
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder="e.g. Approved 7-day extension due to lab maintenance; authorized by Coordinator."
-                      value={extensionReason}
-                      onChange={(e) => setExtensionReason(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '13px',
-                        color: '#0f172a',
-                        outline: 'none',
-                        resize: 'none',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '16px 24px',
-                  backgroundColor: '#f8fafc',
-                  borderTop: '1px solid #f1f5f9',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: '10px',
-                }}>
-                  <button
-                    type="button"
-                    className="btn-admin-action btn-admin-secondary"
-                    onClick={() => setExtendingItem(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-admin-action btn-admin-primary"
-                    onClick={handleSaveExtension}
-                  >
-                    Approve Extension
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
         </main>
       </div>
+
+      {/* Deadline Extension Modal */}
+      {extendingItem && (
+        <div className="modal-overlay-delays">
+          <div className="modal-card-delays">
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid #f1f5f9',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#fafbfc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CalendarPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                    Grant Deadline Extension
+                  </h3>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    {extendingItem.group_name} — Level {extendingItem.level} ({extendingItem.degree})
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExtendingItem(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#475569' }}>Milestone / Deliverable</span>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginTop: '2px' }}>
+                  {extendingItem.milestone_title}
+                </div>
+                <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '2px' }}>
+                  Original Due Date: {extendingItem.due_date} ({extendingItem.days_overdue} days overdue)
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+                  New Approved Deadline
+                </label>
+                <input
+                  type="date"
+                  value={newExtensionDate}
+                  onChange={(e) => setNewExtensionDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+                  Extension Justification / Notes
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Approved medical concession / supervisor-requested extra week for hardware delivery."
+                  value={extensionReason}
+                  onChange={(e) => setExtensionReason(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{
+              padding: '14px 24px',
+              backgroundColor: '#f8fafc',
+              borderTop: '1px solid #f1f5f9',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '10px'
+            }}>
+              <button
+                type="button"
+                className="btn-admin-action btn-admin-secondary"
+                onClick={() => setExtendingItem(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-admin-action btn-admin-primary"
+                onClick={handleSaveExtension}
+              >
+                Save Extension
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

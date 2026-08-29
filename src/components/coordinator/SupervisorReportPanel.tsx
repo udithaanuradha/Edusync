@@ -876,9 +876,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
             <h3 style={{ margin: 0, color: '#0f172a', fontSize: '16px', fontWeight: '700' }}>
               📊 {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages
             </h3>
-            <p style={{ margin: '2px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-              Proportion and count of students falling into each letter grade bracket for {selectedDegree === 'ALL' ? 'all degree programs' : selectedDegree}.
-            </p>
           </div>
 
           <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
@@ -994,37 +991,57 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
       <div
         style={{
           backgroundColor: '#ffffff',
-          borderRadius: '12px',
+          borderRadius: '16px',
           border: '1px solid #e2e8f0',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           overflow: 'hidden',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Table Toolbar */}
         <div
           style={{
-            padding: '16px 20px',
+            padding: '20px 24px',
             borderBottom: '1px solid #f1f5f9',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '12px',
+            gap: '14px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '16px' }}>
-              Student Marksheet ({filteredStudents.length})
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              backgroundColor: '#eff6ff',
+              color: '#2563eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <FileSpreadsheet size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '17px', textAlign: 'left' }}>
+                Student Marksheet
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#64748b', textAlign: 'left' }}>
+                Showing {filteredStudents.length} student {filteredStudents.length === 1 ? 'record' : 'records'}
+              </div>
+            </div>
             {selectedDegree !== 'ALL' && (
               <span
                 style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  padding: '2px 8px',
-                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: '700',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
                   backgroundColor: '#eff6ff',
-                  color: '#2563eb',
+                  color: '#1d4ed8',
+                  border: '1px solid #bfdbfe',
                 }}
               >
                 Degree: {selectedDegree}
@@ -1034,11 +1051,11 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             {/* Search Box */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', minWidth: '260px' }}>
               <Search
-                size={16}
+                size={15}
                 color="#94a3b8"
-                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
               />
               <input
                 type="text"
@@ -1046,12 +1063,14 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  padding: '8px 12px 8px 32px',
-                  borderRadius: '8px',
+                  padding: '9px 14px 9px 36px',
+                  borderRadius: '10px',
                   border: '1px solid #cbd5e1',
                   fontSize: '13px',
-                  width: '230px',
+                  width: '100%',
                   outline: 'none',
+                  backgroundColor: '#f8fafc',
+                  boxSizing: 'border-box',
                 }}
               />
             </div>
@@ -1067,84 +1086,107 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
           <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
             <FileSpreadsheet size={40} style={{ margin: '0 auto 12px auto', color: '#cbd5e1' }} />
             <div style={{ fontSize: '16px', fontWeight: '700', color: '#334155' }}>No Student Marks Found</div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px' }}>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#94a3b8' }}>
               {searchQuery || selectedGradeFilter !== 'ALL'
                 ? 'Try adjusting your search or filters.'
                 : `No evaluations recorded yet for Level ${levelNumber}. Marks submitted by panel evaluators will appear here.`}
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '12px 16px', minWidth: '170px' }}>Student Details</th>
-                  <th style={{ padding: '12px 14px', minWidth: '110px' }}>Reg / Index No</th>
-                  <th style={{ padding: '12px 14px', minWidth: '80px' }}>Degree</th>
-                  <th style={{ padding: '12px 14px', minWidth: '110px' }}>Project Group</th>
+                <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '190px' }}>Student Details</th>
+                  <th style={{ padding: '14px 16px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '120px' }}>Index No</th>
+                  <th style={{ padding: '14px 16px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '90px' }}>Degree</th>
+                  <th style={{ padding: '14px 16px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '140px' }}>Project Group</th>
                   {stages.map((st) => (
-                    <th key={st.stage_id} style={{ padding: '12px 14px', textAlign: 'center', minWidth: '140px' }}>
-                      <div style={{ fontWeight: '700', color: '#1e293b' }}>{st.stage_name}</div>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>Evaluator Marks & Avg</div>
+                    <th key={st.stage_id} style={{ padding: '14px 16px', textAlign: 'center', minWidth: '140px' }}>
+                      <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.stage_name}</div>
+                      <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: '500' }}>Marks & Avg</div>
                     </th>
                   ))}
-                  <th style={{ padding: '12px 14px', textAlign: 'center', backgroundColor: '#f1f5f9', minWidth: '110px' }}>
-                    Final Mark (%)
+                  <th style={{ padding: '14px 16px', textAlign: 'center', backgroundColor: '#f1f5f9', minWidth: '110px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Final Mark
                   </th>
-                  <th style={{ padding: '12px 14px', textAlign: 'center', minWidth: '100px' }}>Letter Grade</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'center', minWidth: '95px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Grade</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStudents.map((student, rowIndex) => {
                   const gInfo = student.gradeInfo;
-                  // Show the per-stage "Complete" action only once per group
-                  // (its first visible row) — every row for that group shares
-                  // the same panel, so repeating the button on every member
-                  // would just be clutter, not extra functionality.
                   const isFirstRowOfGroup =
                     rowIndex === 0 || filteredStudents[rowIndex - 1].group_name !== student.group_name;
 
                   return (
-                    <tr key={student.student_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr 
+                      key={student.student_id} 
+                      style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}
+                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
                       {/* Student Details */}
-                      <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                            {student.student_name}
-                          </span>
-                          {student.is_leader && (
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                backgroundColor: '#2563eb',
-                                color: '#ffffff',
-                                padding: '1px 6px',
-                                borderRadius: '10px',
-                                fontWeight: '700',
-                              }}
-                            >
-                              Leader
-                            </span>
-                          )}
-                        </div>
-                        {student.email && (
-                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                            {student.email}
+                      <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            backgroundColor: '#eff6ff',
+                            color: '#2563eb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            flexShrink: 0
+                          }}>
+                            {student.student_name ? student.student_name.charAt(0).toUpperCase() : 'S'}
                           </div>
-                        )}
+
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '13.5px' }}>
+                                {student.student_name}
+                              </span>
+                              {student.is_leader && (
+                                <span
+                                  style={{
+                                    fontSize: '9px',
+                                    backgroundColor: '#16a34a',
+                                    color: '#ffffff',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    fontWeight: '800',
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'uppercase'
+                                  }}
+                                >
+                                  Leader
+                                </span>
+                              )}
+                            </div>
+                            {student.email && (
+                              <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                                {student.email}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
 
                       {/* Reg No */}
-                      <td style={{ padding: '14px', color: '#475569', fontWeight: '500', verticalAlign: 'middle' }}>
-                        {student.university_id}
+                      <td style={{ padding: '16px', color: '#334155', fontWeight: '600', fontSize: '13px', verticalAlign: 'middle', textAlign: 'left' }}>
+                        {student.university_id || '—'}
                       </td>
 
                       {/* Degree Badge */}
-                      <td style={{ padding: '14px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '16px', verticalAlign: 'middle', textAlign: 'left' }}>
                         <span
                           style={{
                             display: 'inline-block',
-                            padding: '3px 8px',
+                            padding: '3px 9px',
                             borderRadius: '6px',
                             fontSize: '11px',
                             fontWeight: '700',
@@ -1174,15 +1216,32 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       </td>
 
                       {/* Project Group */}
-                      <td style={{ padding: '14px', color: '#334155', fontWeight: '600', verticalAlign: 'middle' }}>
-                        {student.group_name}
+                      <td style={{ padding: '16px', color: '#0f172a', fontWeight: '600', verticalAlign: 'middle', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {student.group_name ? student.group_name.charAt(0).toUpperCase() : 'G'}
+                          </div>
+                          <span>{student.group_name}</span>
+                        </div>
                       </td>
 
                       {/* Stage Marks with Evaluator-wise breakdown */}
                       {stages.map((st) => {
                         const stgData = student.stages[st.stage_id];
                         return (
-                          <td key={st.stage_id} style={{ padding: '14px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <td key={st.stage_id} style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
                             {stgData && stgData.average_mark !== null && stgData.average_mark !== undefined ? (
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                 {/* Evaluator-wise individual marks */}
@@ -1210,7 +1269,14 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                                 )}
 
                                 {/* Stage Average Mark */}
-                                <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>
+                                <div style={{ 
+                                  fontSize: '12.5px', 
+                                  fontWeight: '800', 
+                                  color: '#0f172a',
+                                  backgroundColor: '#f1f5f9',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px'
+                                }}>
                                   Avg: {stgData.average_mark}
                                   {stgData.total_marks && (
                                     <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#94a3b8' }}>
@@ -1219,8 +1285,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                                   )}
                                 </div>
 
-                                {/* One "Complete" action per group per stage — shown once,
-                                    on the group's first visible row, not repeated per member. */}
+                                {/* Complete button */}
                                 {isFirstRowOfGroup && (() => {
                                   const key = `${student.group_name}::${st.stage_name}`;
                                   const isCompleting = completingKey === key;
@@ -1229,16 +1294,16 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                                       type="button"
                                       onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
                                       disabled={isCompleting}
-                                      title={`Mark ${st.stage_name} complete for "${student.group_name}" — removes just this stage's panel from the Calendar for this group`}
+                                      title={`Mark ${st.stage_name} complete for "${student.group_name}"`}
                                       style={{
-                                        marginTop: '2px',
-                                        padding: '2px 7px',
+                                        marginTop: '3px',
+                                        padding: '2px 8px',
                                         borderRadius: '5px',
                                         border: 'none',
                                         backgroundColor: isCompleting ? '#a7f3d0' : '#16a34a',
                                         color: '#ffffff',
                                         fontWeight: '600',
-                                        fontSize: '9px',
+                                        fontSize: '9.5px',
                                         cursor: isCompleting ? 'default' : 'pointer',
                                       }}
                                     >
@@ -1248,31 +1313,40 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                                 })()}
                               </div>
                             ) : (
-                              <span style={{ color: '#cbd5e1' }}>—</span>
+                              <span style={{ color: '#cbd5e1', fontSize: '14px' }}>—</span>
                             )}
                           </td>
                         );
                       })}
 
                       {/* Final Mark */}
-                      <td style={{ padding: '14px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
-                        <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>
+                      <td style={{ padding: '16px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
+                        <div style={{ 
+                          fontWeight: '800', 
+                          fontSize: '14px', 
+                          color: '#0f172a',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          display: 'inline-block'
+                        }}>
                           {student.final_mark}%
                         </div>
                         {student.sum_total_max_marks > 0 && student.sum_total_max_marks !== 100 && (
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                             ({student.sum_obtained_marks}/{student.sum_total_max_marks})
                           </div>
                         )}
                       </td>
 
                       {/* Letter Grade */}
-                      <td style={{ padding: '14px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '16px', textAlign: 'center', verticalAlign: 'middle' }}>
                         <span
                           style={{
                             display: 'inline-block',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
+                            padding: '4px 12px',
+                            borderRadius: '8px',
                             fontSize: '13px',
                             fontWeight: '800',
                             backgroundColor: gInfo.badgeBg,

@@ -609,15 +609,14 @@ const LoginTable: React.FC = () => {
               <th style={columnHeaderStyle}>Security Role</th>
               <th style={columnHeaderStyle}>Access / Activity</th>
               <th style={columnHeaderStyle}>Verification & Status</th>
-              <th style={{ ...columnHeaderStyle, textAlign: 'right' }}>Security Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>Syncing users directory from server...</td></tr>
+              <tr><td colSpan={4} style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>Syncing users directory from server...</td></tr>
             ) : displayedLogins.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>No users match the selected filter.</td></tr>
+              <tr><td colSpan={4} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>No users match the selected filter.</td></tr>
             ) : (
               displayedLogins.map((login, index) => {
                 const verified = isUserVerified(login);
@@ -718,68 +717,6 @@ const LoginTable: React.FC = () => {
                           VERIFIED
                         </div>
                       )}
-                    </td>
-
-                    {/* Security Actions Column */}
-                    <td style={{ padding: '12px 24px', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        {!verified && (
-                          <button
-                            type="button"
-                            onClick={() => handleManualVerify(login)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              backgroundColor: '#ecfdf5',
-                              border: '1px solid #a7f3d0',
-                              borderRadius: '8px',
-                              padding: '6px 10px',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              color: '#047857',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                            }}
-                            title="Manually verify this account"
-                          >
-                            <CheckCircle2 size={12} />
-                            Verify
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => handleOpenReset(login)}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            backgroundColor: '#f8fafc',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '8px',
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            color: '#1e293b',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#eff6ff';
-                            e.currentTarget.style.borderColor = '#93c5fd';
-                            e.currentTarget.style.color = '#1d4ed8';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f8fafc';
-                            e.currentTarget.style.borderColor = '#cbd5e1';
-                            e.currentTarget.style.color = '#1e293b';
-                          }}
-                        >
-                          <KeyRound size={13} color="#2563eb" />
-                          Reset Password
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 );

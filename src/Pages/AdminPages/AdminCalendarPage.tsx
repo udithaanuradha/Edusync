@@ -449,9 +449,6 @@ const AdminCalendarPage: React.FC = () => {
                   <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
                     Academic Master Calendar
                   </h2>
-                  <p style={{ color: '#64748b', fontSize: '13.5px', margin: '3px 0 0 0' }}>
-                    Cross-level project milestones, evaluation schedules, and faculty academic calendar
-                  </p>
                 </div>
               </div>
             </div>

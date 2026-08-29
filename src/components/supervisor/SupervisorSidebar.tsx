@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { ClipboardCheck, CalendarDays } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import "./SupervisorSidebar.css";
 
 interface SupervisorSidebarProps {
@@ -28,16 +28,6 @@ const SupervisorSidebar: React.FC<SupervisorSidebarProps> = ({
         >
           <ClipboardCheck size={18} />
           <span>Approval</span>
-        </NavLink>
-
-        <NavLink
-          to="/supervisor/schedule-meeting"
-          className={({ isActive }) =>
-            `supervisor-nav-item ${isActive ? "active" : ""}`
-          }
-        >
-          <CalendarDays size={18} />
-          <span>Schedule Meeting</span>
         </NavLink>
       </nav>
     </aside>
