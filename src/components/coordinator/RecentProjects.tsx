@@ -46,7 +46,7 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
 
       <div className="projects-list">
         {projects.length === 0 ? (
-          <div style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
+          <div className="projects-empty-state" style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
             No recent projects found.
           </div>
         ) : (

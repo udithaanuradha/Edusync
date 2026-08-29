@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Pencil, Plus, Trash2, Users, X } from "lucide-react";
-import Sidebar from "../components/shared/Sidebar";
+import Sidebar, { coordinatorMenuItems, isCoordinatorUser } from "../components/shared/Sidebar";
 import CalendarGrid, {
   type CalendarGridMarker,
 } from "../components/shared/CalendarGrid";
@@ -37,6 +37,9 @@ type GroupOption = {
   id: number | string;
   name: string;
   supervisor: string;
+  supervisorId: number | null;
+  supervisor2: string | null;
+  supervisorId2: number | null;
   memberCount: number;
 };
 
@@ -54,7 +57,12 @@ type ScheduledPanel = {
   date: string;
   time: string;
   duration: string;
+  // Full panel roster (group supervisor(s) + external evaluators) — kept as
+  // one combined list because every "am I on this panel?" backend lookup
+  // matches against it. `supervisors` is the subset of `evaluators` that are
+  // the group's auto-detected supervisor(s), used only to render the badge.
   evaluators: string[];
+  supervisors: string[];
   location: string;
   meetingLink: string;
   notes: string;
@@ -208,6 +216,13 @@ const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => 
     : typeof row.evaluators === "string"
       ? JSON.parse(row.evaluators || "[]")
       : [],
+  supervisors: Array.isArray(row.supervisors)
+    ? row.supervisors
+        .map((item) => String(item ?? ""))
+        .filter(Boolean)
+    : typeof row.supervisors === "string"
+      ? JSON.parse(row.supervisors || "[]")
+      : [],
   location: String(row.location ?? "To be announced"),
   meetingLink: String(row.meeting_link ?? row.meetingLink ?? ""),
   notes: String(row.notes ?? ""),
@@ -261,7 +276,7 @@ const CalendarPage: React.FC = () => {
   const [evaluationType, setEvaluationType] = useState(evaluationTypes[0]);
   const [selectedLevel, setSelectedLevel] = useState<string>("1");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [selectedSupervisorIds, setSelectedSupervisorIds] = useState<number[]>(
+  const [selectedEvaluatorIds, setSelectedEvaluatorIds] = useState<number[]>(
     [],
   );
   const [editingPanelId, setEditingPanelId] = useState<string | null>(null);
@@ -337,7 +352,7 @@ const CalendarPage: React.FC = () => {
     setEvaluationType(evaluationTypes[0]);
     setSelectedLevel("1");
     setSelectedGroupId("");
-    setSelectedSupervisorIds([]);
+    setSelectedEvaluatorIds([]);
     setScheduleTime("10:00");
     setDuration("60 min");
     setLocation("");
@@ -366,8 +381,16 @@ const CalendarPage: React.FC = () => {
     setEvaluationType(panel.title);
     setSelectedLevel(String(panel.level));
     setSelectedGroupId(String(panel.groupId));
-    setSelectedSupervisorIds(
+    // panel.evaluators is the full roster (supervisors + external
+    // evaluators); exclude the supervisor names here since the "Group
+    // Supervisor(s)" section re-derives them automatically from the group
+    // selected above — only the external evaluators need to be prefilled.
+    const supervisorNamesLower = new Set(
+      panel.supervisors.map((name) => name.trim().toLowerCase()),
+    );
+    setSelectedEvaluatorIds(
       panel.evaluators
+        .filter((name) => !supervisorNamesLower.has(name.trim().toLowerCase()))
         .map(
           (name) =>
             supervisors.find((supervisor) => supervisor.name === name)?.id,
@@ -467,6 +490,18 @@ const CalendarPage: React.FC = () => {
               item.supervisor ??
               "Not assigned",
           ).trim();
+          const supervisorId =
+            item.supervisorId != null && Number.isFinite(Number(item.supervisorId))
+              ? Number(item.supervisorId)
+              : null;
+          const rawSupervisor2 = String(
+            item.supervisor2Name ?? item.supervisor2 ?? "",
+          ).trim();
+          const supervisor2 = rawSupervisor2 || null;
+          const supervisorId2 =
+            item.supervisorId2 != null && Number.isFinite(Number(item.supervisorId2))
+              ? Number(item.supervisorId2)
+              : null;
           const memberCount = Number(
             item.member_count ??
               item.memberCount ??
@@ -479,6 +514,9 @@ const CalendarPage: React.FC = () => {
             id: id ?? name,
             name,
             supervisor,
+            supervisorId,
+            supervisor2,
+            supervisorId2,
             memberCount: Number.isFinite(memberCount) ? memberCount : 0,
           };
         })
@@ -657,14 +695,69 @@ const CalendarPage: React.FC = () => {
     [scheduledPanels],
   );
 
+  const selectedGroup = useMemo(
+    () => groups.find((group) => String(group.id) === selectedGroupId) ?? null,
+    [groups, selectedGroupId],
+  );
+
+  // The selected group's assigned supervisor(s), auto-detected by matching
+  // project_groups.supervisor_id/supervisor_id_2 against the loaded staff
+  // list (falling back to a name match if a supervisor's account isn't in
+  // that list, e.g. no longer designated 'supervisor') so the "Group
+  // Supervisor(s)" section always reflects who the group is actually
+  // assigned to rather than requiring the coordinator to hand-pick them.
+  const groupSupervisorEntries = useMemo(() => {
+    if (!selectedGroup) return [];
+
+    const entries: { id: number | null; name: string }[] = [];
+    const seen = new Set<string>();
+
+    const addEntry = (id: number | null, name: string | null | undefined) => {
+      const cleanName = String(name || "").trim();
+      if (!cleanName || cleanName.toLowerCase() === "not assigned") return;
+
+      const key = cleanName.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const matched = supervisors.find(
+        (supervisor) =>
+          (id != null && supervisor.id === id) ||
+          supervisor.name.trim().toLowerCase() === key,
+      );
+      entries.push({ id: matched?.id ?? id ?? null, name: matched?.name ?? cleanName });
+    };
+
+    addEntry(selectedGroup.supervisorId, selectedGroup.supervisor);
+    addEntry(selectedGroup.supervisorId2, selectedGroup.supervisor2);
+
+    return entries;
+  }, [selectedGroup, supervisors]);
+
+  // Anyone already surfaced as a group supervisor is excluded from the
+  // External Evaluators picker below — they're already on the panel via the
+  // Group Supervisor(s) section, so offering them again would let the
+  // coordinator "double up" the same person under two different roles.
+  const groupSupervisorIds = useMemo(
+    () =>
+      new Set(
+        groupSupervisorEntries
+          .map((entry) => entry.id)
+          .filter((id): id is number => id != null),
+      ),
+    [groupSupervisorEntries],
+  );
+
   // Evaluator picker: filter by the search box, then group by department so
   // a long supervisor list is actually navigable (IT/CM/ITM, in that order,
   // with any unrecognized/missing department bucketed last).
   const groupedSupervisors = useMemo(() => {
     const query = supervisorSearchQuery.trim().toLowerCase();
-    const filtered = query
-      ? supervisors.filter((s) => s.name.toLowerCase().includes(query))
-      : supervisors;
+    const filtered = (
+      query
+        ? supervisors.filter((s) => s.name.toLowerCase().includes(query))
+        : supervisors
+    ).filter((s) => !groupSupervisorIds.has(s.id));
 
     const groups = new Map<string, SupervisorOption[]>();
     filtered.forEach((supervisor) => {
@@ -677,7 +770,7 @@ const CalendarPage: React.FC = () => {
     return order
       .filter((dept) => groups.has(dept))
       .map((dept) => ({ department: dept, members: groups.get(dept)! }));
-  }, [supervisors, supervisorSearchQuery]);
+  }, [supervisors, supervisorSearchQuery, groupSupervisorIds]);
 
   const displayedSupervisorPanels = useMemo(() => {
     if (!selectedCalendarDate) return supervisorAssignedPanels;
@@ -761,20 +854,33 @@ const CalendarPage: React.FC = () => {
   const handleScheduleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const selectedGroup = groups.find(
-      (group) => String(group.id) === selectedGroupId,
+    // External evaluators are whatever the coordinator picked in that
+    // section, minus anyone already covered by a group-supervisor entry
+    // (belt-and-suspenders against the group changing between selection and
+    // submit — groupedSupervisors already keeps them out of the picker).
+    const selectedExternalEvaluators = supervisors.filter(
+      (supervisor) =>
+        selectedEvaluatorIds.includes(supervisor.id) &&
+        !groupSupervisorIds.has(supervisor.id),
     );
-    const selectedEvaluators = supervisors.filter((supervisor) =>
-      selectedSupervisorIds.includes(supervisor.id),
-    );
+    const supervisorNames = groupSupervisorEntries.map((entry) => entry.name);
+    // The full panel roster stored in `evaluators` — group supervisor(s)
+    // first, then external evaluators — kept as one combined list because
+    // every "am I on this panel?" backend lookup matches against it.
+    const allEvaluatorNames = [
+      ...supervisorNames,
+      ...selectedExternalEvaluators.map((supervisor) => supervisor.name),
+    ];
 
     if (!selectedGroup) {
       alert("Please select a group before scheduling a panel.");
       return;
     }
 
-    if (!selectedEvaluators.length) {
-      alert("Please select at least one evaluator.");
+    if (allEvaluatorNames.length === 0) {
+      alert(
+        "Please select at least one evaluator, or choose a group with an assigned supervisor.",
+      );
       return;
     }
 
@@ -797,7 +903,8 @@ const CalendarPage: React.FC = () => {
       date: scheduleDate,
       time: scheduleTime,
       duration,
-      evaluators: selectedEvaluators.map((supervisor) => supervisor.name),
+      evaluators: allEvaluatorNames,
+      supervisors: supervisorNames,
       location: location.trim() || "To be announced",
       meetingLink: meetingLink.trim(),
       notes: notes.trim(),
@@ -816,6 +923,7 @@ const CalendarPage: React.FC = () => {
           academicLevel: nextPanel.level,
           targetGroup: nextPanel.groupName,
           evaluators: nextPanel.evaluators,
+          supervisors: nextPanel.supervisors,
           panelDate: nextPanel.date,
           startTime: nextPanel.time,
           duration: nextPanel.duration,
@@ -844,7 +952,7 @@ const CalendarPage: React.FC = () => {
     setDrawerMode("schedule");
     setIsDrawerOpen(false);
     setEditingPanelId(null);
-    setSelectedSupervisorIds([]);
+    setSelectedEvaluatorIds([]);
     setLocation("");
     setMeetingLink("");
     setNotes("");
@@ -930,8 +1038,8 @@ const CalendarPage: React.FC = () => {
     setFreezeReason("");
   };
 
-  const toggleSupervisor = (supervisorId: number) => {
-    setSelectedSupervisorIds((current) =>
+  const toggleEvaluator = (supervisorId: number) => {
+    setSelectedEvaluatorIds((current) =>
       current.includes(supervisorId)
         ? current.filter((value) => value !== supervisorId)
         : [...current, supervisorId],
@@ -960,7 +1068,7 @@ const CalendarPage: React.FC = () => {
         minHeight: "100vh",
       }}
     >
-      <Sidebar />
+      <Sidebar navItems={isCoordinatorUser(user) ? coordinatorMenuItems : undefined} />
 
       <div
         className="main-viewport"
@@ -1189,54 +1297,86 @@ const CalendarPage: React.FC = () => {
                         </span>
                       </div>
                     ) : (
-                      sortedPanels.map((panel) => (
-                        <article key={panel.id} className="upcoming-item">
-                          <div className="upcoming-date-chip">
-                            {formatShortDate(panel.date)}
-                          </div>
-                          <div className="upcoming-copy">
-                            <strong>{panel.title}</strong>
-                            <span>
-                              {panel.groupName} • Level {panel.level}
-                            </span>
-                            <span>{panel.kind}</span>
-                            <span className="panel-time">
-                              {panel.time} • {panel.duration}
-                            </span>
-                            {panel.meetingLink && (
-                              <a
-                                href={panel.meetingLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="panel-meeting-link"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                🔗 Join Meeting
-                              </a>
-                            )}
-                            {isCoordinator && (
-                              <div className="panel-action-row">
-                                <button
-                                  type="button"
-                                  className="panel-action-btn edit"
-                                  onClick={() => openEditPanelDrawer(panel)}
+                      sortedPanels.map((panel) => {
+                        // panel.evaluators is the full roster; panel.supervisors
+                        // is the subset auto-detected as the group's
+                        // supervisor(s) — subtract to get the external
+                        // evaluators the coordinator picked by hand.
+                        const supervisorNamesLower = new Set(
+                          panel.supervisors.map((name) => name.toLowerCase()),
+                        );
+                        const externalEvaluators = panel.evaluators.filter(
+                          (name) => !supervisorNamesLower.has(name.toLowerCase()),
+                        );
+
+                        return (
+                          <article key={panel.id} className="upcoming-item">
+                            <div className="upcoming-date-chip">
+                              {formatShortDate(panel.date)}
+                            </div>
+                            <div className="upcoming-copy">
+                              <strong>{panel.title}</strong>
+                              <span>
+                                {panel.groupName} • Level {panel.level}
+                              </span>
+                              <span>{panel.kind}</span>
+                              <span className="panel-time">
+                                {panel.time} • {panel.duration}
+                              </span>
+                              {panel.location &&
+                                panel.location.toLowerCase() !== "to be announced" && (
+                                  <span>📍 {panel.location}</span>
+                                )}
+                              {panel.supervisors.length > 0 && (
+                                <span>
+                                  <span className="role-badge supervisor-role-badge">
+                                    Supervisor
+                                  </span>{" "}
+                                  {panel.supervisors.join(", ")}
+                                </span>
+                              )}
+                              {externalEvaluators.length > 0 && (
+                                <span>👥 Evaluators: {externalEvaluators.join(", ")}</span>
+                              )}
+                              {panel.supervisors.length === 0 &&
+                                externalEvaluators.length === 0 && (
+                                  <span>👥 No panel members recorded</span>
+                                )}
+                              {panel.meetingLink && (
+                                <a
+                                  href={panel.meetingLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="panel-meeting-link"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  <Pencil size={13} />
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  className="panel-action-btn delete"
-                                  onClick={() => deletePanel(panel.id)}
-                                >
-                                  <Trash2 size={13} />
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </article>
-                      ))
+                                  🔗 Join Meeting
+                                </a>
+                              )}
+                              {isCoordinator && (
+                                <div className="panel-action-row">
+                                  <button
+                                    type="button"
+                                    className="panel-action-btn edit"
+                                    onClick={() => openEditPanelDrawer(panel)}
+                                  >
+                                    <Pencil size={13} />
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="panel-action-btn delete"
+                                    onClick={() => deletePanel(panel.id)}
+                                  >
+                                    <Trash2 size={13} />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      })
                     )}
                   </div>
                 </aside>
@@ -1367,70 +1507,112 @@ const CalendarPage: React.FC = () => {
                 </label>
 
                 <label className="drawer-field">
-                  <span>Selected Evaluators</span>
-                  {!supervisorsLoading && !supervisorsError && supervisors.length > 0 && (
-                    <input
-                      type="text"
-                      className="supervisor-search-input"
-                      placeholder="Search supervisors by name..."
-                      value={supervisorSearchQuery}
-                      onChange={(event) => setSupervisorSearchQuery(event.target.value)}
-                    />
-                  )}
-                  <div className="supervisor-picker-groups">
-                    {supervisorsLoading ? (
-                      <div className="drawer-help">Loading supervisors...</div>
-                    ) : supervisorsError ? (
-                      <div className="drawer-help error">
-                        {supervisorsError}
-                      </div>
-                    ) : supervisors.length === 0 ? (
+                  <span>Panel Members</span>
+
+                  <div className="panel-members-section">
+                    <div className="panel-members-subheader">
+                      <span className="panel-members-subtitle">
+                        Group Supervisor(s)
+                      </span>
+                    </div>
+                    {!selectedGroupId ? (
                       <div className="drawer-help">
-                        No supervisors available.
+                        Select a group above to auto-fill its supervisor(s).
                       </div>
-                    ) : groupedSupervisors.length === 0 ? (
+                    ) : groupSupervisorEntries.length === 0 ? (
                       <div className="drawer-help">
-                        No supervisors match "{supervisorSearchQuery}".
+                        This group has no supervisor assigned yet.
                       </div>
                     ) : (
-                      groupedSupervisors.map(({ department, members }) => (
-                        <div key={department} className="supervisor-dept-group">
-                          <div className="supervisor-dept-label">
-                            {department} <span>({members.length})</span>
-                          </div>
-                          <div className="supervisor-picker">
-                            {members.map((supervisor) => (
-                              <button
-                                key={supervisor.id}
-                                type="button"
-                                className={
-                                  selectedSupervisorIds.includes(supervisor.id)
-                                    ? "supervisor-chip active"
-                                    : "supervisor-chip"
-                                }
-                                onClick={() => toggleSupervisor(supervisor.id)}
-                              >
-                                <Users size={13} />
-                                <span>{supervisor.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))
+                      <div className="supervisor-picker">
+                        {groupSupervisorEntries.map((entry) => (
+                          <span
+                            key={entry.id ?? entry.name}
+                            className="supervisor-chip supervisor-chip-auto"
+                          >
+                            <Users size={13} />
+                            <span>{entry.name}</span>
+                            <span className="role-badge supervisor-role-badge">
+                              Supervisor
+                            </span>
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {selectedSupervisorIds.length > 0 && (
-                    <div className="selected-summary">
-                      {selectedSupervisorIds.map((id) => {
-                        const supervisor = supervisors.find(
-                          (item) => item.id === id,
-                        );
-                        return supervisor ? (
-                          <span key={id}>{supervisor.name}</span>
-                        ) : null;
-                      })}
+
+                  <div className="panel-members-section">
+                    <div className="panel-members-subheader">
+                      <span className="panel-members-subtitle">
+                        External Evaluators
+                      </span>
+                      {!supervisorsLoading && !supervisorsError && supervisors.length > 0 && (
+                        <input
+                          type="text"
+                          className="supervisor-search-input"
+                          placeholder="Search supervisors by name..."
+                          value={supervisorSearchQuery}
+                          onChange={(event) => setSupervisorSearchQuery(event.target.value)}
+                        />
+                      )}
                     </div>
-                  )}
+                    <div className="supervisor-picker-groups">
+                      {supervisorsLoading ? (
+                        <div className="drawer-help">Loading supervisors...</div>
+                      ) : supervisorsError ? (
+                        <div className="drawer-help error">
+                          {supervisorsError}
+                        </div>
+                      ) : supervisors.length === 0 ? (
+                        <div className="drawer-help">
+                          No supervisors available.
+                        </div>
+                      ) : groupedSupervisors.length === 0 ? (
+                        <div className="drawer-help">
+                          {supervisorSearchQuery
+                            ? `No supervisors match "${supervisorSearchQuery}".`
+                            : "No other staff available to add as evaluators."}
+                        </div>
+                      ) : (
+                        groupedSupervisors.map(({ department, members }) => (
+                          <div key={department} className="supervisor-dept-group">
+                            <div className="supervisor-dept-label">
+                              {department} <span>({members.length})</span>
+                            </div>
+                            <div className="supervisor-picker">
+                              {members.map((supervisor) => (
+                                <button
+                                  key={supervisor.id}
+                                  type="button"
+                                  className={
+                                    selectedEvaluatorIds.includes(supervisor.id)
+                                      ? "supervisor-chip active"
+                                      : "supervisor-chip"
+                                  }
+                                  onClick={() => toggleEvaluator(supervisor.id)}
+                                >
+                                  <Users size={13} />
+                                  <span>{supervisor.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {selectedEvaluatorIds.length > 0 && (
+                      <div className="selected-summary">
+                        {selectedEvaluatorIds.map((id) => {
+                          const supervisor = supervisors.find(
+                            (item) => item.id === id,
+                          );
+                          return supervisor ? (
+                            <span key={id}>{supervisor.name}</span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </label>
 
                 <div className="drawer-inline-grid">

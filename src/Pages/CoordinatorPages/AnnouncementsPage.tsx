@@ -1,11 +1,12 @@
 import React from 'react';
 import AppShell from '../../components/shared/layout/AppShell';
+import { coordinatorMenuItems } from '../../components/shared/Sidebar';
 import Announcements from '../../components/coordinator/Announcements';
 import './AnnouncementsPage.css';
 
 const AnnouncementsPage: React.FC = () => {
   return (
-    <AppShell>
+    <AppShell navItems={coordinatorMenuItems}>
       <div className="announcements-page-shell">
         <div className="dashboard-content">
             <div className="dashboard-header-section">

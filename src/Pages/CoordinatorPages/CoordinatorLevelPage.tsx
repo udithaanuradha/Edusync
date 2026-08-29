@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AppShell from '../../components/shared/layout/AppShell';
+import { coordinatorMenuItems } from '../../components/shared/Sidebar';
 import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
@@ -34,7 +35,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   };
 
   return (
-    <AppShell>
+    <AppShell navItems={coordinatorMenuItems}>
       <div className="coordinator-level-shell">
         <div className="dashboard-content">
             <div className="dashboard-header-section">

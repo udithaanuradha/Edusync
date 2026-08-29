@@ -308,6 +308,14 @@
   font-size: 12px;
 }
 
+/* Wins over .upcoming-copy span above (higher specificity) so the
+   Supervisor pill keeps its own color/size instead of inheriting the plain
+   metadata line styling. */
+.upcoming-copy .role-badge {
+  color: #fff;
+  font-size: 10px;
+}
+
 .empty-state-card {
   border: 1px dashed #cbd5e1;
   border-radius: 14px;
@@ -621,6 +629,57 @@
   background: #1d4ed8;
   color: #fff;
   border-color: #1d4ed8;
+}
+
+/* Panel Members field: "Group Supervisor(s)" (auto-filled, read-only) above
+   "External Evaluators" (the searchable picker). */
+.panel-members-section + .panel-members-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.panel-members-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.panel-members-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.panel-members-subheader .supervisor-search-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Auto-filled supervisor chips are informational, not clickable toggles. */
+.supervisor-chip-auto {
+  cursor: default;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.role-badge {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+}
+
+.supervisor-role-badge {
+  background: #10b981;
+  color: #fff;
 }
 
 .selected-summary {
