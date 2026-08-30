@@ -46,6 +46,13 @@ interface SidebarProps {
 // (it redirects straight back to /dashboard), so the link was dead weight.
 // Kept separate from `defaultMenuItems` so Student and any other role still
 // falling back to the default list are completely unaffected.
+//
+// Lists all four levels regardless of which one this coordinator is
+// assigned to — the sidebar itself isn't the access boundary. What each
+// level route actually renders IS: App.tsx redirects a coordinator away
+// from a /dashboard/level-N whose data they're not assigned to, back to
+// their own level, so clicking another level here never reveals its real
+// submissions/marksheet.
 export const coordinatorMenuItems: MenuItem[] = [
   { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   {
