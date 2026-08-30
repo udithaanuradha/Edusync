@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Users } from 'lucide-react';
 import AppShell from '../../components/shared/layout/AppShell';
-import PrimaryButton from '../../components/shared/ui/PrimaryButton';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
 import RecentProjects from '../../components/coordinator/RecentProjects';
-import AssignedGroupsModal from '../../components/shared/AssignedGroupsModal';
 
 import './StudentDashboard.css';
 
 const StudentDashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showAssignedGroup, setShowAssignedGroup] = useState(false);
-  const [studentId, setStudentId] = useState<number | string | null>(null);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -25,7 +20,6 @@ const StudentDashboard: React.FC = () => {
           setLoading(false);
           return;
         }
-        setStudentId(user.id);
 
         const token = localStorage.getItem("token");
         const res = await fetch(`http://localhost:5000/api/dashboard/student/summary/${user.id}`, {
@@ -60,23 +54,7 @@ const StudentDashboard: React.FC = () => {
                   Welcome back! Here's what's happening.
                 </p>
               </div>
-              <PrimaryButton
-                type="button"
-                onClick={() => setShowAssignedGroup(true)}
-                disabled={!studentId}
-                icon={<Users size={15} />}
-              >
-                Assigned Group
-              </PrimaryButton>
             </div>
-
-            {showAssignedGroup && studentId && (
-              <AssignedGroupsModal
-                role="student"
-                userId={studentId}
-                onClose={() => setShowAssignedGroup(false)}
-              />
-            )}
 
             {/* ROW 1: Project Cards */}
             <MyProjectStatus />

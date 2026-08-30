@@ -1,19 +1,31 @@
+/* Matches .timeline-section / .section-title (ProjectOverview.css) exactly —
+   same card radius, padding, shadow, and heading style as Milestone Details
+   and Scope Division, since this now sits alongside them as an equal card
+   rather than a visually distinct standalone widget. */
 .gantt-chart-wrapper {
-  margin-top: 24px;
-  padding: 20px;
+  padding: 24px;
   background: var(--eds-color-bg-surface);
   border: 1px solid var(--eds-color-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
 
 .gantt-chart-title {
-  margin: 0 0 16px 0;
-  font-size: 0.95rem;
-  font-weight: 600;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--eds-color-primary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/* States the whole chart's exact date span in plain text up front, so the
+   overall timeframe is obvious before reading a single bar. */
+.gantt-chart-range-caption {
+  margin: 4px 0 18px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
 }
 
 .gantt-chart-body {
@@ -45,22 +57,21 @@
   flex-shrink: 0;
 }
 
-/* Fixed height (matches .gantt-chart-row-track) with a 2-line clamp, so a
-   long milestone name wraps onto a second line instead of being cut off
-   with "…" after the first — while still keeping every label row the same
-   height as its corresponding bar row, so the two columns stay aligned. */
+/* Fixed height (matches .gantt-chart-row-track), single-line with an
+   ellipsis if the name is too long — the row's title attribute carries the
+   full name and date range on hover. Each row's actual dates are shown
+   directly on its bar instead (see .gantt-chart-bar-label), so they don't
+   need to be repeated here too. */
 .gantt-chart-label-row {
-  height: 42px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  height: 48px;
+  display: flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.3;
   color: var(--eds-color-success-text);
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gantt-chart-track-column {
@@ -93,9 +104,24 @@
   gap: 10px;
 }
 
+/* One per axis tick, spanning the full height of the bars area — lets a
+   bar's exact start/end be traced straight up to its date label. z-index:1
+   so it paints over each row-track's own opaque background (row-tracks are
+   position:relative with no z-index of their own, so without this the line
+   would only be visible in the gaps between rows, not through them). */
+.gantt-chart-gridline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--eds-color-border);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .gantt-chart-row-track {
   position: relative;
-  height: 42px;
+  height: 48px;
   background: var(--eds-color-bg-surface);
   border-radius: 6px;
 }
@@ -115,21 +141,28 @@
 }
 
 .gantt-chart-bar-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--eds-color-bg-surface);
-  padding: 0 6px;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Used instead of .gantt-chart-bar-label when a bar is too short (a
+   milestone spanning just a few days out of a much longer overall range)
+   for its date-range text to fit inside — placed just to its right instead. */
+.gantt-chart-bar-label-external {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
   white-space: nowrap;
 }
 
-.gantt-chart-today-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--eds-color-danger-solid);
-  pointer-events: none;
-}
 
 .gantt-chart-empty {
   color: var(--eds-color-text-muted);

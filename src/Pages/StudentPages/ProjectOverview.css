@@ -1,4 +1,9 @@
- /* ProjectTimeline.css */
+ /* ProjectOverview.css — rebuilt from the old ProjectTimeline.css. Most of
+   the .timeline-* card/form classes below are unchanged and now shared by
+   the Milestone Details / Tasks-for-this-Milestone cards; the additive
+   rules at the bottom (.pm-stat-strip, .milestone-selector-row,
+   .milestone-pill, .milestone-details-head) are new for the single
+   active-milestone-with-selector layout. */
 
 :root {
   --primary: var(--eds-color-primary);
@@ -324,4 +329,71 @@
   .task-input-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Stat strip (Milestones Planned / Submitted to Supervisor / Project
+   Duration) — same 3-card row pattern used by MilestoneProgressBoard's
+   .mpb-performance-row on the My Tasks tab. */
+.pm-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+/* ── Milestone selector — picks which single milestone the cards below
+   (Details / Scope Division / Tasks for this Milestone / Schedule Preview)
+   are currently showing. */
+.milestone-selector-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.milestone-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.milestone-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.milestone-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.milestone-pill-new {
+  border-style: dashed;
+}
+
+.milestone-details-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.milestone-details-head .section-title {
+  margin: 0;
+}
+
+.milestone-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
 }
