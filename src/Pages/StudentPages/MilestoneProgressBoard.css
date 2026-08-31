@@ -1,0 +1,411 @@
+/* ── Milestone Progress Board — "My Tasks" reworked to group by milestone,
+   show a per-milestone progress bar, and flag a milestone red with a short
+   advisory line when a task in it is overdue or due very soon. Built
+   entirely from tokens.css so it matches the rest of the unified design
+   system; the drag-and-drop board underneath each milestone is the
+   existing, unmodified TaskKanbanBoard. */
+
+.mpb-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mpb-performance-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+/* ── Single-milestone focus nav — only one milestone card shows at a time;
+   these arrows step to the previous/next one instead of scrolling through
+   every milestone stacked in a long list. */
+.mpb-milestone-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.mpb-nav-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-strong);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.mpb-nav-arrow:hover:not(:disabled) {
+  border-color: var(--eds-color-primary);
+  color: var(--eds-color-primary);
+}
+
+.mpb-nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.mpb-milestone-nav-label {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--eds-color-text-muted);
+  text-align: center;
+}
+
+.mpb-milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mpb-milestone-card {
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
+  border-left: 5px solid var(--eds-color-border);
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.2s ease;
+}
+
+.mpb-milestone-card.mpb-risk-behind {
+  border-left-color: var(--eds-color-danger-solid);
+}
+
+.mpb-milestone-card.mpb-risk-at-risk {
+  border-left-color: #f59e0b;
+}
+
+.mpb-milestone-card.mpb-risk-on-track {
+  border-left-color: var(--eds-color-success-solid);
+}
+
+.mpb-milestone-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mpb-milestone-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mpb-milestone-heading h4 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--eds-color-text-strong);
+}
+
+.mpb-risk-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.mpb-risk-badge-behind {
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
+}
+
+.mpb-risk-badge-at-risk {
+  background: var(--eds-color-warning-bg);
+  color: var(--eds-color-warning-text);
+}
+
+.mpb-risk-badge-on-track {
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
+}
+
+.mpb-progress-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--eds-color-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mpb-progress-percent {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--eds-color-text-strong);
+}
+
+.mpb-progress-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  overflow: hidden;
+}
+
+.mpb-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.mpb-progress-fill-behind {
+  background: var(--eds-color-danger-solid);
+}
+
+.mpb-progress-fill-at-risk {
+  background: #f59e0b;
+}
+
+.mpb-progress-fill-on-track {
+  background: var(--eds-color-success-solid);
+}
+
+.mpb-advice-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.mpb-advice-banner svg {
+  flex-shrink: 0;
+}
+
+.mpb-advice-behind {
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
+}
+
+.mpb-advice-at-risk {
+  background: var(--eds-color-warning-bg);
+  color: var(--eds-color-warning-text);
+}
+
+.mpb-advice-on-track {
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
+}
+
+/* ── "Who's working on this milestone" — team-wide visibility, the primary
+   defense against duplicate work (more reliable than title-matching alone). */
+.mpb-who-panel {
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.mpb-who-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--eds-color-text-muted);
+}
+
+.mpb-who-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mpb-who-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.mpb-who-name {
+  flex-shrink: 0;
+  min-width: 90px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+}
+
+.mpb-who-task {
+  flex: 1;
+  min-width: 0;
+  color: var(--eds-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mpb-empty-milestone {
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px dashed var(--eds-color-border);
+  border-radius: 16px;
+  padding: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--eds-color-text-muted);
+}
+
+/* ── "Add a task for yourself" — every student, not just the leader ──── */
+.mpb-add-task-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border: 1px dashed var(--eds-color-primary-soft-border);
+  border-radius: 12px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.mpb-add-task-btn:hover {
+  background: var(--eds-color-primary-soft-border);
+  transform: translateY(-1px);
+}
+
+.mpb-quick-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.mpb-quick-add-row input[type="text"],
+.mpb-quick-add-row textarea {
+  width: 100%;
+  border: 1px solid var(--eds-color-border);
+  border-radius: 10px;
+  background: var(--eds-color-bg-surface);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--eds-color-text-strong);
+  font-family: inherit;
+}
+
+.mpb-quick-add-row textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.mpb-quick-add-dates {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.mpb-quick-add-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.mpb-quick-add-date-field label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--eds-color-text-muted);
+}
+
+.mpb-quick-add-date-field input[type="date"] {
+  border: 1px solid var(--eds-color-border);
+  border-radius: 10px;
+  background: var(--eds-color-bg-surface);
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--eds-color-text-strong);
+}
+
+.mpb-quick-add-error {
+  margin: 0;
+  color: var(--eds-color-danger-solid);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Soft warnings (duplicate-title, unclaimed scope) — never block submission,
+   so these read as advisory rather than as a blocking form error. */
+.mpb-quick-add-warning {
+  margin: 0;
+  background: var(--eds-color-warning-bg);
+  color: var(--eds-color-warning-text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.mpb-quick-add-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mpb-quick-add-save,
+.mpb-quick-add-cancel {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.mpb-quick-add-save {
+  background: var(--eds-color-primary);
+  color: white;
+}
+
+.mpb-quick-add-cancel {
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
+  border: 1px solid var(--eds-color-border);
+}
+
+.mpb-quick-add-save:hover,
+.mpb-quick-add-cancel:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .mpb-progress-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}

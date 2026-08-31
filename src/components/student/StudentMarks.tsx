@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Award } from 'lucide-react';
+import { Award, Lock } from 'lucide-react';
 import './StudentMarks.css';
 
 interface EvaluatorFeedback {
@@ -27,6 +27,11 @@ interface StudentMarksRow {
   stages_completed: number;
   total_stages: number;
   stages: Record<string, StageEntry>;
+  // True once the Evaluation Panel has marked the "Final" stage complete for
+  // this student's group (see marksController.js's computeLevelMarksSummary).
+  // Gates only the cumulative grade/marks display below — per-stage feedback
+  // is unaffected and always shows regardless of this flag.
+  final_marks_released?: boolean;
 }
 
 interface GradeDefinition {
@@ -142,6 +147,7 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
     );
   }
 
+  const finalMarksReleased = Boolean(mine.final_marks_released);
   const grade = calculateGrade(mine.final_mark);
   const passed = grade.letter !== 'I';
   const progress = mine.total_stages > 0 ? mine.stages_completed / mine.total_stages : 0;
@@ -152,44 +158,68 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
     <div className="student-marks-layout">
       <div className="student-marks-left">
         <div className="student-marks-hero">
-          <div className="student-marks-ring-wrap">
-            <svg width="140" height="140" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="var(--eds-color-border)" strokeWidth="10" />
-              <circle
-                cx="70"
-                cy="70"
-                r={RING_RADIUS}
-                fill="none"
-                stroke={grade.badgeColor}
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={RING_CIRCUMFERENCE}
-                strokeDashoffset={dashOffset}
-                transform="rotate(-90 70 70)"
-              />
-            </svg>
-            <div className="student-marks-ring-center">
-              <span className="student-marks-grade-letter" style={{ color: grade.badgeColor }}>
-                {grade.letter}
+          {finalMarksReleased ? (
+            <>
+              <div className="student-marks-ring-wrap">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="var(--eds-color-border)" strokeWidth="10" />
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke={grade.badgeColor}
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={dashOffset}
+                    transform="rotate(-90 70 70)"
+                  />
+                </svg>
+                <div className="student-marks-ring-center">
+                  <span className="student-marks-grade-letter" style={{ color: grade.badgeColor }}>
+                    {grade.letter}
+                  </span>
+                </div>
+              </div>
+
+              <span
+                className="student-marks-pass-badge"
+                style={{
+                  backgroundColor: grade.badgeBg,
+                  color: grade.badgeColor,
+                  border: `1px solid ${grade.borderColor}`,
+                }}
+              >
+                {passed ? 'Pass' : 'Incomplete'}
               </span>
-            </div>
-          </div>
 
-          <span
-            className="student-marks-pass-badge"
-            style={{
-              backgroundColor: grade.badgeBg,
-              color: grade.badgeColor,
-              border: `1px solid ${grade.borderColor}`,
-            }}
-          >
-            {passed ? 'Pass' : 'Incomplete'}
-          </span>
+              <p className="student-marks-meta">
+                {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
+              </p>
+              <p className="student-marks-percent">({mine.final_mark}%)</p>
+            </>
+          ) : (
+            <>
+              <div className="student-marks-ring-wrap">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="#e2e8f0" strokeWidth="10" />
+                </svg>
+                <div className="student-marks-ring-center">
+                  <Lock size={32} color="#94a3b8" />
+                </div>
+              </div>
 
-          <p className="student-marks-meta">
-            {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
-          </p>
-          <p className="student-marks-percent">({mine.final_mark}%)</p>
+              <span className="student-marks-pending-badge">Pending</span>
+
+              <p className="student-marks-meta">
+                {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
+              </p>
+              <p className="student-marks-pending-note">
+                Your cumulative grade will appear once the Evaluation Panel releases final marks.
+              </p>
+            </>
+          )}
         </div>
       </div>
 
