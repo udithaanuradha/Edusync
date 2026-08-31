@@ -1,69 +1,66 @@
  /* ProjectTimeline.css */
 
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --bg-main: #f8fafc;
-  --text-dark: #0f172a;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --white: #ffffff;
+  --primary: var(--eds-color-primary);
+  --primary-hover: var(--eds-color-primary-hover);
+  --bg-main: var(--eds-color-bg-surface-soft);
+  --text-dark: var(--eds-color-text-strong);
+  --text-muted: var(--eds-color-text-muted);
+  --border: var(--eds-color-border);
+  --white: var(--eds-color-bg-surface);
 }
 
 /* Container Adjustments */
 .student-inner-tab-panel {
-  padding: 1.5rem;
-  background-color: var(--bg-main);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .student-inner-tab-heading {
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .student-inner-tab-heading h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-dark);
   margin: 0;
+  font-size: 24px;
+  color: var(--eds-color-text-strong);
 }
 
 .student-inner-tab-heading p {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  margin: 4px 0 0 0;
+  margin: 0;
+  color: var(--eds-color-text-muted);
+  max-width: 740px;
+  line-height: 1.75;
 }
 
 /* Side-by-Side Layout Wrapper */
 .timeline-form {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 1.25rem;
-  align-items: flex-start;
 }
 
-/* Individual Sections (Cards) */
+/* Individual Sections (Cards) — each is now a full-width row, stacked */
 .timeline-section {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.25rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  margin-bottom: 0; /* Removed bottom margin for side-by-side layout */
+  width: 100%;
 }
 
-/* Left Panel: Project Overview */
+/* Row 1: Project Overview */
 .timeline-section:first-of-type {
-  flex: 1;
-  min-width: 320px;
+  width: 100%;
 }
 
-/* Right Panel: Tasks & Durations */
+/* Row 2: Milestones & Duration */
 .timeline-section:nth-of-type(2) {
-  flex: 1.8;
-  min-width: 450px;
+  width: 100%;
 }
 
 .section-title {
@@ -117,7 +114,7 @@
 .timeline-summary {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #eff6ff;
+  background: var(--eds-color-primary-soft);
   border-radius: 6px;
   font-size: 0.85rem;
   color: var(--primary);
@@ -174,8 +171,8 @@
 }
 
 .remove-task-btn {
-  color: #ef4444;
-  background: #fef2f2;
+  color: var(--eds-color-danger-solid);
+  background: var(--eds-color-danger-bg);
   border: none;
   padding: 4px 8px;
   border-radius: 4px;
@@ -197,7 +194,7 @@
 
 .submit-btn {
   background: var(--primary);
-  color: rgb(195, 64, 64);
+  color: var(--eds-color-bg-surface);
   padding: 0.75rem 2rem;
   border-radius: 8px;
   font-weight: 600;
@@ -207,15 +204,15 @@
 }
 
 .submit-btn:disabled {
-  background: #cbd5e1;
+  background: var(--eds-color-border);
 }
 
 /* Placeholder for your Chart */
 .chart-container-placeholder {
   width: 100%;
   height: 200px;
-  background: #f1f5f9;
-  border: 2px dashed #cbd5e1;
+  background: var(--eds-color-border-soft);
+  border: 2px dashed var(--eds-color-border);
   border-radius: 12px;
   display: flex;
   align-items: center;

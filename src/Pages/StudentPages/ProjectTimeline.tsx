@@ -1,5 +1,6 @@
  import React, { useState, useMemo, useEffect } from 'react';
-import './ProjectTimeline.css'; 
+import './ProjectTimeline.css';
+import GanttChart from './GanttChart';
 interface Task {
   id: string;
   name: string;
@@ -414,6 +415,8 @@ const ProjectTimeline: React.FC<ProjectTimelineProps> = ({ groupIdProp, onMilest
             )}
           </div>
         </div>
+
+        <GanttChart tasks={tasks} timelineStart={timelineStart} timelineEnd={timelineEnd} />
 
         {submitMessage && (
           <div className={`timeline-submit-message ${submitError ? 'error' : 'success'}`}>

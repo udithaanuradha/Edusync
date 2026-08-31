@@ -1,0 +1,119 @@
+/* SupervisorMeetingRequest.css */
+
+.supervisor-meeting-request {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.request-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.request-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--eds-color-text-strong);
+  font-size: 1.5rem;
+}
+
+.request-header p {
+  margin: 0;
+  color: var(--eds-color-text-muted);
+  font-size: 0.95rem;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.success-alert {
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
+  border: 1px solid var(--eds-color-success-solid);
+}
+
+.error-alert {
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
+  border: 1px solid var(--eds-color-danger-bg);
+}
+
+.meeting-request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--eds-color-text-body);
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.8rem;
+  border: 1px solid var(--eds-color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--eds-color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-group.half {
+  flex: 1;
+}
+
+.submit-request-btn {
+  background: linear-gradient(135deg, var(--eds-color-primary) 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  margin-top: 1rem;
+}
+
+.submit-request-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+.submit-request-btn:disabled {
+  background: var(--eds-color-text-faint);
+  cursor: not-allowed;
+  box-shadow: none;
+}

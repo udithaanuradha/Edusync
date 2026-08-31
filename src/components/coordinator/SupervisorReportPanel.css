@@ -1,0 +1,82 @@
+.report-distribution-bar {
+  display: flex;
+  height: 14px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid var(--eds-color-border-soft);
+  border-radius: var(--eds-radius-pill);
+  background: var(--eds-color-bg-surface-soft);
+}
+
+.report-distribution-segment {
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.report-marks-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--eds-font-size-sm);
+}
+
+.report-marks-head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
+  border-bottom: 2px solid var(--eds-color-border);
+}
+
+.report-marks-head th {
+  padding: 14px 16px;
+  background: var(--eds-color-bg-surface);
+  white-space: nowrap;
+}
+
+.report-marks-head th div:first-child {
+  color: var(--eds-color-text-strong) !important;
+}
+
+.report-marks-cell {
+  padding-top: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--eds-color-border-soft);
+  vertical-align: middle;
+}
+
+.report-student-cell {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.report-index-cell,
+.report-final-cell,
+.report-grade-cell {
+  padding-right: 14px;
+  padding-left: 14px;
+  text-align: center;
+}
+
+.report-stage-cell {
+  padding-right: 12px;
+  padding-left: 12px;
+  text-align: center;
+}
+
+.report-marks-row:hover {
+  background: var(--eds-color-bg-surface-soft);
+}
+
+.report-final-cell {
+  background: var(--eds-color-bg-surface-soft);
+}
+
+@media (max-width: 720px) {
+  .report-marks-head th,
+  .report-marks-cell {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}

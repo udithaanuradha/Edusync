@@ -77,26 +77,31 @@ const Dashboard: React.FC = () => {
               title="Total Users"
               value={loading ? '...' : stats.totalUsers}
               color="blue"
+              subtitle="Registered system accounts"
             />
             <StatCard
               title="Students"
               value={loading ? '...' : stats.totalStudents}
               color="green"
+              subtitle="Registered student accounts"
             />
             <StatCard
               title="Coordinators"
               value={loading ? '...' : stats.totalCoordinators}
               color="amber"
+              subtitle="Assigned coordinators"
             />
             <StatCard
               title="Supervisors"
               value={loading ? '...' : stats.totalSupervisors}
               color="purple"
+              subtitle="Project supervisors"
             />
             <StatCard
               title="Industry Mentors"
               value={loading ? '...' : stats.totalMentors}
-              color="red" 
+              color="red"
+              subtitle="External industry experts"
             />
           </div>
 
@@ -105,9 +110,10 @@ const Dashboard: React.FC = () => {
             width: '100%',
             margin: '24px 0',
             padding: '24px',
-            backgroundColor: '#fff7ed',
-            border: '1px solid #fed7aa',
-            borderRadius: '12px',
+            backgroundColor: 'var(--eds-color-bg-surface)',
+            border: '1px solid var(--eds-color-border)',
+            borderRadius: '14px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -116,15 +122,15 @@ const Dashboard: React.FC = () => {
             <div style={{ textAlign: 'left' }}>
               <h3 style={{
                 margin: '0 0 4px 0',
-                color: '#9a3412',
+                color: 'var(--eds-color-text-strong)',
                 fontSize: '16px',
-                fontWeight: '600'
+                fontWeight: '700'
               }}>
                 🎓 End of Year Student Promotion
               </h3>
               <p style={{
                 margin: 0,
-                color: '#c2410c',
+                color: 'var(--eds-color-text-muted)',
                 fontSize: '14px'
               }}>
                 Promote all eligible students to the next academic level
@@ -133,16 +139,25 @@ const Dashboard: React.FC = () => {
             <button
               onClick={handleBatchPromotion}
               style={{
-                backgroundColor: '#dc2626',
-                color: 'white',
-                border: 'none',
+                backgroundColor: 'var(--eds-color-border-soft)',
+                color: 'var(--eds-color-text-strong)',
+                border: '1px solid var(--eds-color-border)',
                 padding: '12px 24px',
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                flexShrink: 0
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--eds-color-border)';
+                e.currentTarget.style.borderColor = 'var(--eds-color-text-faint)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--eds-color-border-soft)';
+                e.currentTarget.style.borderColor = 'var(--eds-color-border)';
               }}
             >
               Promote All Students
@@ -151,7 +166,7 @@ const Dashboard: React.FC = () => {
 
           {/* AnnouncementWidget */}
           <div style={{ marginBottom: '24px', width: '100%' }}>
-            <AnnouncementWidget />
+            <AnnouncementWidget title="Latest Announcements" maxItems={2} />
           </div>
 
           <div className="overview-row" style={{ width: '100%' }}>

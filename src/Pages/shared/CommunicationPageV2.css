@@ -1,0 +1,57 @@
+/* Sits inside the standard .main-viewport (index.css) below the Header,
+   same as every other page — this just makes the chat panel fill that
+   space edge-to-edge instead of using .content-container's page padding. */
+.v2-comm-page-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.chat-window-v2 {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  width: 100%;
+  background: #ffffff;
+  border-radius: var(--eds-radius-xl);
+  border: 1px solid var(--eds-color-border);
+  box-shadow: none;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.chat-container-v2 {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-main-v2 {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.messages-stream-v2 {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.chat-input-box-v2 {
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+}

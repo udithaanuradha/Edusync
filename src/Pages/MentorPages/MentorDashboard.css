@@ -1,53 +1,764 @@
- /* Update these in your MentorDashboard.css or Global CSS */
+/* ================================================================
+   MENTOR DASHBOARD STYLING
+   Executive, modern, scannable dashboard styling for Mentors.
+================================================================ */
 
-.app-layout {   
-  display: flex;
-  height: 100vh; /* Lock height to the screen */
-  width: 100vw;
-  overflow: hidden; /* Prevent the whole body from scrolling */
-}
-
-.main-viewport {
-  flex: 1;
+/* ── Page Header Container ───────────────────────────────────── */
+.mentor-page-header {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden; /* Keep the header fixed at the top */
+  align-items: flex-end;    /* RIGHT-align the title and subtitle */
+  text-align: right;
+  margin-bottom: 24px;
+  width: 100%;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
-.content-container {
-  flex: 1;
-  padding: 30px;
-  background-color: #f8fafc; /* Light gray background like your example */
-  overflow-y: auto; /* ONLY this part should scroll */
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.mentor-overview {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.dashboard-header-section {
-  margin-bottom: 4px;
-}
-
-.overview-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e293b;
+.mentor-page-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--eds-color-text-strong);
   margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
 }
 
-.overview-subtitle {
-  font-size: 14px;
-  color: #64748b;
+.mentor-page-subtitle {
+  font-size: 13px;
+  color: var(--eds-color-text-muted);
   margin: 0;
 }
 
-.overview-row {
+.md-group-picker-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.md-group-picker-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+}
+
+.md-group-select {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1.5px solid var(--eds-color-border);
+  background-color: var(--eds-color-bg-surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eds-color-text-strong);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.md-group-select:focus {
+  border-color: var(--eds-color-primary);
+}
+
+/* ── Loading / Error State ───────────────────────────────────── */
+.md-loading-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--eds-color-bg-surface);
+  padding: 36px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--eds-color-border);
+  color: var(--eds-color-text-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.md-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
+  border-radius: 50%;
+  animation: mdSpin 0.8s linear infinite;
+}
+
+@keyframes mdSpin {
+  to { transform: rotate(360deg); }
+}
+
+.md-error-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: var(--eds-color-danger-text);
+}
+
+.md-error-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.md-error-desc {
+  font-size: 12px;
+  margin: 2px 0 0 0;
+  color: var(--eds-color-danger-solid);
+}
+
+/* ── Main Layout Grid ────────────────────────────────────────── */
+.md-dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: mdFadeIn 0.25s ease-out;
+}
+
+@keyframes mdFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Base Card ───────────────────────────────────────────────── */
+.md-card {
+  background: var(--eds-color-bg-surface);
+  border-radius: 14px;
+  border: 1px solid var(--eds-color-border);
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.md-card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.md-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.md-header-icon {
+  color: var(--eds-color-primary);
+}
+
+.md-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0;
+}
+
+.md-header-hint {
+  font-size: 12px;
+  color: var(--eds-color-text-faint);
+  font-weight: 500;
+}
+
+/* ================================================================
+   TOP BANNER — PROJECT PROFILE & TEAM MEMBERS CARD
+================================================================ */
+.md-project-profile-card {
+  background: linear-gradient(135deg, var(--eds-color-bg-surface) 0%, var(--eds-color-bg-surface-soft) 100%);
+  border: 1px solid var(--eds-color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.md-profile-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--eds-color-border-soft);
+}
+
+.md-project-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.md-project-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--eds-color-text-strong);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.md-header-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.md-leader-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft);
+  border: 1px solid var(--eds-color-primary-soft-border);
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+.md-leader-badge strong {
+  color: var(--eds-color-primary-hover);
+  font-weight: 700;
+}
+
+.md-department-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #701a75;
+  background: #fdf4ff;
+  border: 1px solid #f5d0fe;
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+.md-department-badge strong {
+  color: #86198f;
+  font-weight: 700;
+}
+
+.md-level-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+/* ── 5 Members Chips Row ─────────────────────────────────────── */
+.md-team-members-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.md-team-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--eds-color-text-muted);
+  white-space: nowrap;
+}
+
+.md-team-chips-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.md-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--eds-color-text-body);
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  padding: 2.5px 9px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.md-member-chip:hover {
+  background: var(--eds-color-border-soft);
+  border-color: var(--eds-color-border);
+}
+
+.md-member-chip.is-leader {
+  background: var(--eds-color-success-bg);
+  border-color: var(--eds-color-success-solid);
+  color: var(--eds-color-success-text);
+  font-weight: 700;
+}
+
+.md-crown-icon {
+  font-size: 11px;
+}
+
+/* Overall Progress Gauge */
+.md-overall-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.md-gauge-pct {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--eds-color-primary);
+  line-height: 1;
+}
+
+.md-gauge-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+  margin-top: 3px;
+}
+
+/* Master Progress Bar */
+.md-master-track {
+  height: 8px;
+  background: var(--eds-color-border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.md-master-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary), var(--eds-color-primary-hover));
+  transition: width 0.6s ease;
+}
+
+/* Stats Counter Grid */
+.md-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.md-stat-box {
+  background: var(--eds-color-bg-surface);
+  border-radius: 10px;
+  border: 1px solid var(--eds-color-border);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.md-stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
+}
+
+.md-stat-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.md-stat-icon-wrap.completed { background: var(--eds-color-success-bg); color: var(--eds-color-success-solid); }
+.md-stat-icon-wrap.ongoing   { background: var(--eds-color-warning-bg); color: #b45309; }
+.md-stat-icon-wrap.yet       { background: var(--eds-color-border-soft); color: var(--eds-color-text-muted); }
+.md-stat-icon-wrap.milestones{ background: #e0e7ff; color: #4f46e5; }
+
+.md-stat-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.md-stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--eds-color-text-strong);
+  line-height: 1.2;
+}
+
+.md-stat-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+  margin-top: 1px;
+}
+
+/* ================================================================
+   SECTION 2 — STUDENT CONTRIBUTION & BREAKDOWN TABLE
+================================================================ */
+.md-students-table-wrap {
+  overflow-x: auto;
+}
+
+.md-students-table {
   width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.md-students-table th {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--eds-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
+}
+
+.md-students-table td {
+  padding: 14px 14px;
+  border-bottom: 1px solid var(--eds-color-border-soft);
+  vertical-align: middle;
+}
+
+.md-students-table tr.is-leader-row {
+  background: var(--eds-color-bg-surface-soft);
+}
+
+.md-students-table tr:hover {
+  background: var(--eds-color-bg-surface-soft);
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Member Column */
+.md-member-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.md-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.md-avatar.leader-avatar {
+  background: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary-hover);
+}
+
+.md-member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.md-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.md-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+}
+
+.md-role-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.md-role-tag.leader {
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border: 1px solid var(--eds-color-primary-soft-border);
+}
+
+.md-role-tag.member {
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
+}
+
+.md-sub-id {
+  font-size: 11px;
+  color: var(--eds-color-text-faint);
+  font-weight: 500;
+}
+
+/* Count Badges */
+.md-count-badge {
+  display: inline-block;
+  min-width: 26px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-faint);
+}
+
+.md-count-badge.completed.active {
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-solid-hover);
+}
+
+.md-count-badge.ongoing.active {
+  background: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary-hover);
+}
+
+.md-count-badge.yet.active {
+  background: var(--eds-color-warning-bg);
+  color: #b45309;
+}
+
+.md-total-assigned {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--eds-color-text-body);
+}
+
+/* Contribution Bar */
+.md-contrib-bar-wrap {
+  width: 170px;
+}
+
+.md-bar-track {
+  height: 6px;
+  background: var(--eds-color-border-soft);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.md-bar-fill.contrib {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--eds-color-primary), #38bdf8);
+}
+
+.md-bar-fill.personal {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--eds-color-success-solid), var(--eds-color-success-solid));
+}
+
+.md-contrib-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.md-contrib-pct {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--eds-color-primary-hover);
+}
+
+.md-contrib-sub {
+  font-size: 10.5px;
+  color: var(--eds-color-text-muted);
+  font-weight: 500;
+}
+
+.md-personal-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--eds-color-success-solid-hover);
+}
+
+/* ================================================================
+   SECTION 3 — MILESTONES ROADMAP
+================================================================ */
+.md-milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.md-milestone-tile {
+  background: var(--eds-color-bg-surface-soft);
+  border-radius: 12px;
+  border: 1px solid var(--eds-color-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.md-milestone-tile:hover {
+  background: var(--eds-color-bg-surface);
+  border-color: var(--eds-color-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.md-m-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.md-m-tile-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.md-m-index {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--eds-color-text-faint);
+}
+
+.md-m-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0;
+}
+
+.md-m-status {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+.md-m-status.approved { background: var(--eds-color-success-bg); color: var(--eds-color-success-solid-hover); }
+.md-m-status.pending  { background: var(--eds-color-warning-bg); color: #b45309; }
+.md-m-status.rejected { background: var(--eds-color-danger-bg); color: var(--eds-color-danger-solid); }
+
+.md-m-desc {
+  font-size: 11.5px;
+  color: var(--eds-color-text-muted);
+  margin: 4px 0 8px 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.md-m-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--eds-color-text-muted);
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.md-m-progress-section {
+  margin-top: auto;
+}
+
+.md-m-track {
+  height: 5px;
+  background: var(--eds-color-border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.md-m-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary-hover));
+  transition: width 0.4s ease;
+}
+
+.md-m-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.md-m-tasks-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+}
+
+.md-m-pct-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--eds-color-primary);
+}
+
+/* ── Responsive adjustments ──────────────────────────────────── */
+@media (max-width: 900px) {
+  .md-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Empty Dashboard Card ─────────────────────────────────────── */
+.md-empty-dashboard-card {
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 16px;
+  padding: 48px 32px;
+  text-align: center;
+  max-width: 600px;
+  margin: 40px auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.md-empty-icon-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--eds-color-warning-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+}
+
+.md-empty-dashboard-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0 0 12px 0;
+}
+
+.md-empty-dashboard-card p {
+  font-size: 14px;
+  color: var(--eds-color-text-muted);
+  line-height: 1.6;
+  margin: 0;
 }

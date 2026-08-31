@@ -176,10 +176,11 @@ const SupervisorPartInCalendar: React.FC = () => {
 
       if (!response.ok) throw new Error("Failed to save schedule to database");
 
-      // Update local storage so the next immediate open is accurate
       if (lectureStorageKey) {
         localStorage.setItem(lectureStorageKey, JSON.stringify(schedule));
       }
+
+      window.dispatchEvent(new CustomEvent('supervisorScheduleUpdated', { detail: schedule }));
 
       setIsOpen(false);
       alert("Weekly lecture schedule saved successfully!");

@@ -1,12 +1,13 @@
-.coordinator-level-shell .content-container {
-  padding: 32px 40px;
-}
-
 .coordinator-level-shell .dashboard-content {
   width: 100%;
-  max-width: none;
-  margin: 0;
-  gap: 24px;
+  max-width: 1380px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.coordinator-level-shell {
+  min-height: 100%;
+  background: #f8fafc;
 }
 
 .coordinator-level-shell .dashboard-header-section {
@@ -15,33 +16,53 @@
 
 .level-tabs-wrap {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  background: #ffffff;
-  padding: 6px;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--eds-color-border);
+  padding: 0 4px;
+  margin-bottom: 4px;
   width: 100%;
   flex-wrap: wrap;
 }
 
 .level-tab-btn {
-  flex: 1 1 0;
+  position: relative;
   border: none;
   background: transparent;
-  color: #475569;
-  padding: 14px 16px;
-  border-radius: 8px;
-  font-weight: 600;
+  color: var(--eds-color-text-muted);
+  padding: 13px 16px 15px;
+  border-radius: var(--eds-radius-sm) var(--eds-radius-sm) 0 0;
+  font-weight: var(--eds-font-weight-semibold);
+  font-size: var(--eds-font-size-base);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.level-tab-btn:focus-visible {
+  outline: none;
+}
+
+.level-tab-btn:hover {
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft);
 }
 
 .level-tab-btn.active {
-  background: #2563eb;
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.16);
+  color: var(--eds-color-primary-hover);
+  background: transparent;
+  font-weight: var(--eds-font-weight-bold);
+}
+
+.level-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--eds-color-primary);
 }
 
 .level-tab-panel {
@@ -50,17 +71,13 @@
 }
 
 @media (max-width: 640px) {
-  .coordinator-level-shell .content-container {
-    padding: 20px;
-  }
-
   .level-tabs-wrap {
-    width: 100%;
+    gap: 2px;
   }
 
   .level-tab-btn {
-    flex: 1 1 100%;
-    text-align: center;
-    padding: 12px 8px;
+    flex: 1 1 calc(50% - 2px);
+    padding: 11px 6px 13px;
+    font-size: var(--eds-font-size-sm);
   }
 }

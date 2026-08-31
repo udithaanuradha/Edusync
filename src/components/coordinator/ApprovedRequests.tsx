@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './ApprovedRequests.css';
+import PrimaryButton from '../shared/ui/PrimaryButton';
 import { ApprovedGroupRequest, ApprovedRequestMember } from './groupRequestTypes';
 
 type ApiRecord = Record<string, unknown>;
@@ -160,7 +161,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
         `${API_BASE}/coordinator/requests?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/requests?status=pending&level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/requests?status=approved&level=${levelNumber}&coordinatorId=${user?.id}`,
-        `${API_BASE}/coordinator/approved?level=${levelNumber}&coordinatorId=${user?.id}`,
+        `${API_BASE}/coordinator/approved?level=${levelNumber}&coordinatorId=${user?.id}&finalOnly=1`,
         `${API_BASE}/coordinator/pending?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/pending-requests?level=${levelNumber}&coordinatorId=${user?.id}`,
         `${API_BASE}/coordinator/all?level=${levelNumber}&coordinatorId=${user?.id}`,
@@ -295,9 +296,9 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button type="button" className="approved-refresh-btn" onClick={loadApprovedRequests}>
+          <PrimaryButton type="button" variant="secondary" className="approved-refresh-btn" onClick={loadApprovedRequests}>
             Refresh
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 
@@ -342,9 +343,11 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                 {request.createdAt && <span className="approved-meta">Submitted: {request.createdAt}</span>}
               </div>
 
-              <p><strong>Project Name:</strong> {request.projectName}</p>
-              <p><strong>Supervisor:</strong> {request.supervisorName}</p>
-              <p><strong>Group Leader:</strong> {request.groupLeader}</p>
+              <div className="approved-info-list">
+                <p><strong>Project Name:</strong> {request.projectName}</p>
+                <p><strong>Supervisor:</strong> {request.supervisorName}</p>
+                <p><strong>Group Leader:</strong> {request.groupLeader}</p>
+              </div>
 
               <div className="approved-members-box">
                 <p className="approved-members-title">Submitted Members List:</p>
@@ -357,13 +360,13 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                 )}
 
                 {alreadyCreated ? (
-                  <button type="button" className="approved-create-btn approved-create-btn--disabled" disabled>
+                  <PrimaryButton type="button" variant="secondary" className="approved-create-btn approved-create-btn--disabled" disabled>
                     Already Created
-                  </button>
+                  </PrimaryButton>
                 ) : (
-                  <button type="button" className="approved-create-btn" onClick={() => onCreateGroup(request)}>
+                  <PrimaryButton type="button" className="approved-create-btn" onClick={() => onCreateGroup(request)}>
                     Create Group
-                  </button>
+                  </PrimaryButton>
                 )}
               </div>
             </article>

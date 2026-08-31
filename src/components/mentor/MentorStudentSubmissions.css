@@ -1,0 +1,396 @@
+/* ── Mentor Student Submissions Styles ── */
+.mss-container {
+  padding: 32px;
+  background: var(--eds-color-bg-surface-soft);
+  min-height: 100vh;
+}
+
+.mss-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  gap: 16px;
+  color: var(--eds-color-text-muted);
+}
+
+.mss-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
+  border-radius: 50%;
+  animation: mss-spin 0.8s linear infinite;
+}
+
+@keyframes mss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Top Header Card ── */
+.mss-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--eds-color-border);
+  border-radius: 16px;
+  padding: 24px 32px;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  gap: 24px;
+}
+
+.mss-header-badge {
+  display: inline-block;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mss-header-left h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0 0 6px 0;
+}
+
+.mss-subtitle {
+  font-size: 14px;
+  color: var(--eds-color-text-muted);
+  margin: 0;
+  max-width: 650px;
+  line-height: 1.5;
+}
+
+.mss-header-stats {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.mss-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 12px;
+  padding: 10px 16px;
+}
+
+.mss-stat-pill.late {
+  background: var(--eds-color-warning-bg);
+  border-color: var(--eds-color-warning-bg);
+}
+
+.mss-stat-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.mss-stat-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  line-height: 1.2;
+}
+
+.mss-stat-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+  text-transform: uppercase;
+}
+
+/* ── Error Banner ── */
+.mss-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-solid);
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+/* ── Submissions Cards Grid ── */
+.mss-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 20px;
+}
+
+.mss-submission-card {
+  background: white;
+  border: 1px solid var(--eds-color-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mss-submission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.mss-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--eds-color-border-soft);
+}
+
+.mss-stage-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mss-stage-chip {
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-body);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.mss-status-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.mss-status-chip.ontime {
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-solid);
+}
+
+.mss-status-chip.late {
+  background: var(--eds-color-warning-bg);
+  color: #b45309;
+}
+
+.mss-group-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-bg-surface-soft);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--eds-color-border);
+}
+
+/* ── Student Row ── */
+.mss-student-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mss-avatar-circle {
+  width: 40px;
+  height: 40px;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mss-student-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mss-student-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mss-student-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+}
+
+.mss-leader-badge {
+  background: var(--eds-color-warning-bg);
+  color: #b45309;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mss-student-meta {
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+}
+
+/* ── Timeline Meta ── */
+.mss-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-bg-surface-soft);
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.mss-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mss-meta-item.deadline {
+  color: var(--eds-color-text-faint);
+}
+
+/* ── Files Stack ── */
+.mss-files-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mss-files-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--eds-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mss-files-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mss-file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.mss-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mss-file-icon {
+  color: var(--eds-color-primary);
+  flex-shrink: 0;
+}
+
+.mss-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--eds-color-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mss-btn-download {
+  background: var(--eds-color-success-solid);
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.mss-btn-download:hover {
+  background: var(--eds-color-success-solid);
+  transform: translateY(-1px);
+}
+
+.mss-no-files {
+  font-size: 13px;
+  color: var(--eds-color-text-faint);
+  font-style: italic;
+}
+
+/* ── Empty State ── */
+.mss-empty-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+}
+
+.mss-empty-card {
+  max-width: 480px;
+  text-align: center;
+  background: white;
+  border: 1px solid var(--eds-color-border);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.mss-empty-icon {
+  color: var(--eds-color-primary);
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.mss-empty-card h4 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0 0 10px 0;
+}
+
+.mss-empty-card p {
+  font-size: 14px;
+  color: var(--eds-color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
