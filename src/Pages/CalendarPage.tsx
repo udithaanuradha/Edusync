@@ -57,10 +57,11 @@ type ScheduledPanel = {
   date: string;
   time: string;
   duration: string;
-  // Full panel roster (group supervisor(s) + external evaluators) — kept as
-  // one combined list because every "am I on this panel?" backend lookup
-  // matches against it. `supervisors` is the subset of `evaluators` that are
-  // the group's auto-detected supervisor(s), used only to render the badge.
+  // Strictly distinct: `evaluators` is only the external evaluators the
+  // coordinator hand-picked; `supervisors` is the group's auto-detected
+  // supervisor(s). The backend's "am I on this panel?" lookups check both
+  // columns, so a supervisor's name never needs to also appear in
+  // `evaluators` for them to see/mark their own group's panel.
   evaluators: string[];
   supervisors: string[];
   location: string;
@@ -206,7 +207,19 @@ const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => 
     row.target_group_id ?? row.group_id ?? row.target_group ?? row.groupName ?? "",
   ),
   groupName: String(row.target_group ?? row.group_name ?? row.groupName ?? "Group"),
-  date: String(row.panel_date ?? row.date ?? toDateValue(new Date())),
+  // A DATE column comes back through the API as a full ISO datetime string
+  // (e.g. "2026-09-02T18:30:00.000Z"), not a plain "YYYY-MM-DD" — the mysql2
+  // driver returns it as a JS Date object, which JSON-serializes via
+  // toISOString(). Naively String()-ing that value used to feed it straight
+  // into the "Date" <input type="date">, which requires an exact
+  // "YYYY-MM-DD" value and silently renders empty for anything else — so
+  // editing a panel always showed a blank date field. getLocalDateStr (used
+  // the same way elsewhere in this file, e.g. for the supervisor's assigned
+  // panels) converts it to the calendar date it's actually meant to
+  // represent, using local date components rather than raw string slicing.
+  date:
+    getLocalDateStr((row.panel_date ?? row.date) as string | Date | null | undefined) ||
+    toDateValue(new Date()),
   time: String(row.start_time ?? row.time ?? "10:00"),
   duration: String(row.duration ?? "60 min"),
   evaluators: Array.isArray(row.evaluators)
@@ -381,10 +394,12 @@ const CalendarPage: React.FC = () => {
     setEvaluationType(panel.title);
     setSelectedLevel(String(panel.level));
     setSelectedGroupId(String(panel.groupId));
-    // panel.evaluators is the full roster (supervisors + external
-    // evaluators); exclude the supervisor names here since the "Group
-    // Supervisor(s)" section re-derives them automatically from the group
-    // selected above — only the external evaluators need to be prefilled.
+    // panel.evaluators is external evaluators only, so this filter is a
+    // no-op for panels created after the evaluators/supervisors split — it
+    // only matters for legacy rows saved before that split, where
+    // evaluators still included the supervisor names. Either way, the
+    // "Group Supervisor(s)" section re-derives them automatically from the
+    // group selected above, so only the external evaluators need prefilling.
     const supervisorNamesLower = new Set(
       panel.supervisors.map((name) => name.trim().toLowerCase()),
     );
@@ -526,10 +541,24 @@ const CalendarPage: React.FC = () => {
 
       if (mode === "schedule") {
         setSelectedGroupId((current) => {
+          if (!current) {
+            return current;
+          }
           if (list.some((group) => String(group.id) === current)) {
             return current;
           }
-          return "";
+          // A panel loaded from the server only ever carries its group's
+          // NAME, not its numeric id — evaluation_panels has no
+          // target_group_id column, so normalizePanelFromApi's groupId
+          // falls back to the group's name (see row.target_group there).
+          // openEditPanelDrawer sets selectedGroupId straight from that, so
+          // on first load here `current` is a name, not an id, and would
+          // never match a <select> option keyed by numeric id — silently
+          // resetting to "Choose a group" even though the panel does have
+          // one assigned. Resolve it against this level's freshly loaded
+          // group list by name instead of blanking the selection.
+          const matchByName = list.find((group) => group.name === current);
+          return matchByName ? String(matchByName.id) : "";
         });
       } else {
         setFreezeGroupId((current) => {
@@ -864,20 +893,23 @@ const CalendarPage: React.FC = () => {
         !groupSupervisorIds.has(supervisor.id),
     );
     const supervisorNames = groupSupervisorEntries.map((entry) => entry.name);
-    // The full panel roster stored in `evaluators` — group supervisor(s)
-    // first, then external evaluators — kept as one combined list because
-    // every "am I on this panel?" backend lookup matches against it.
-    const allEvaluatorNames = [
-      ...supervisorNames,
-      ...selectedExternalEvaluators.map((supervisor) => supervisor.name),
-    ];
+    // `evaluators` and `supervisors` are sent as two strictly distinct
+    // fields — evaluators holds ONLY the external evaluators the
+    // coordinator hand-picked here, never the group's own supervisor(s).
+    // The backend's "am I on this panel?" lookups (getPanelsByEvaluator,
+    // checkEvaluatorStatus, getMyAssignedGroups) check both columns, so a
+    // supervisor still sees their own group's panel without their name
+    // being duplicated into the evaluators list.
+    const externalEvaluatorNames = selectedExternalEvaluators.map(
+      (supervisor) => supervisor.name,
+    );
 
     if (!selectedGroup) {
       alert("Please select a group before scheduling a panel.");
       return;
     }
 
-    if (allEvaluatorNames.length === 0) {
+    if (supervisorNames.length === 0 && externalEvaluatorNames.length === 0) {
       alert(
         "Please select at least one evaluator, or choose a group with an assigned supervisor.",
       );
@@ -903,7 +935,7 @@ const CalendarPage: React.FC = () => {
       date: scheduleDate,
       time: scheduleTime,
       duration,
-      evaluators: allEvaluatorNames,
+      evaluators: externalEvaluatorNames,
       supervisors: supervisorNames,
       location: location.trim() || "To be announced",
       meetingLink: meetingLink.trim(),
@@ -1308,10 +1340,11 @@ const CalendarPage: React.FC = () => {
                       </div>
                     ) : (
                       sortedPanels.map((panel) => {
-                        // panel.evaluators is the full roster; panel.supervisors
-                        // is the subset auto-detected as the group's
-                        // supervisor(s) — subtract to get the external
-                        // evaluators the coordinator picked by hand.
+                        // panel.evaluators is external evaluators only, so this
+                        // subtraction is a no-op for panels created after the
+                        // evaluators/supervisors split — kept to also render
+                        // correctly for legacy rows saved before that split,
+                        // where evaluators still included the supervisor names.
                         const supervisorNamesLower = new Set(
                           panel.supervisors.map((name) => name.toLowerCase()),
                         );
@@ -1659,7 +1692,7 @@ const CalendarPage: React.FC = () => {
                 </label>
 
                 <label className="drawer-field">
-                  <span>Location / Meeting Link</span>
+                  <span>Location</span>
                   <input
                     type="text"
                     value={location}
@@ -1669,7 +1702,7 @@ const CalendarPage: React.FC = () => {
                 </label>
 
                 <label className="drawer-field">
-                  <span>Meeting Link (optional)</span>
+                  <span>Meeting Link</span>
                   <input
                     type="url"
                     value={meetingLink}
