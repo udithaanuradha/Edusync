@@ -11,7 +11,7 @@ const CommunicationPageV2: React.FC = () => {
   return (
     <AppShell navItems={isCoordinatorUser(user) ? coordinatorMenuItems : undefined}>
       <main className="v2-comm-page-content">
-        <ChatWindowV2 title="Real-Time Messages (V2)" />
+        <ChatWindowV2 title="Real-Time Messages" />
       </main>
     </AppShell>
   );

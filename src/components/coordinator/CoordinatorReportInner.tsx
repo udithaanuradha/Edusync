@@ -32,17 +32,24 @@ type Student = {
 };
 
 const GRADING_SCALE = [
-  { letter: 'A', min: 70 },
-  { letter: 'B', min: 60 },
-  { letter: 'C', min: 50 },
-  { letter: 'D', min: 40 },
-  { letter: 'I', min: -1 },
+  { min: 85, max: 100, letter: 'A+' },
+  { min: 75, max: 84.99, letter: 'A' },
+  { min: 70, max: 74.99, letter: 'A-' },
+  { min: 65, max: 69.99, letter: 'B+' },
+  { min: 60, max: 64.99, letter: 'B' },
+  { min: 55, max: 59.99, letter: 'B-' },
+  { min: 50, max: 54.99, letter: 'C+' },
+  { min: 45, max: 49.99, letter: 'C' },
+  { min: 40, max: 44.99, letter: 'C-' },
+  { min: 35, max: 39.99, letter: 'D' },
+  { min: 0, max: 34.99, letter: 'I' },
 ];
 
 const calculateGrade = (score: number) => {
   if (Number.isNaN(score)) return { letter: 'I', gradePoint: 0 };
+  const rounded = Math.max(0, Math.min(100, Math.round(score * 100) / 100));
   for (const g of GRADING_SCALE) {
-    if (score >= g.min) return { letter: g.letter, gradePoint: 0 };
+    if (rounded >= g.min && rounded <= g.max) return { letter: g.letter, gradePoint: 0 };
   }
   return { letter: 'I', gradePoint: 0 };
 };
@@ -162,7 +169,15 @@ const CoordinatorReportInner: React.FC<Props> = ({ levelNumber }) => {
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) return alert('No student marks available to export.');
     const headers = ['Student Name', 'Reg / Index No', 'Degree', 'Group', ...stages.map((s) => s.stage_name), 'Final Mark', 'Letter Grade'];
-    const rows = filteredStudents.map((s) => [s.student_name, s.university_id, s.degree, s.group_name, ...stages.map((st) => s.stages[st.stage_id]?.average_mark ?? '—'), s.final_mark, s.gradeInfo.letter]);
+    const rows = filteredStudents.map((s) => [
+      s.student_name,
+      s.university_id,
+      s.degree,
+      s.group_name,
+      ...stages.map((st) => s.stages[st.stage_id]?.average_mark ?? '—'),
+      s.final_mark,
+      s.gradeInfo.letter
+    ]);
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     const link = document.createElement('a');
@@ -178,7 +193,7 @@ const CoordinatorReportInner: React.FC<Props> = ({ levelNumber }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>{`Level ${levelNumber} — Coordinator Marks & Grade Reports`}</h2>
+        <h2 style={{ margin: 0 }}>{`Level ${levelNumber} — Marks & Grade Reports`}</h2>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleExportCSV} style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8 }}>Download CSV</button>
         </div>
@@ -230,8 +245,8 @@ const CoordinatorReportInner: React.FC<Props> = ({ levelNumber }) => {
                   <td style={{ padding: 12 }}>{s.degree}</td>
                   <td style={{ padding: 12 }}>{s.group_name}</td>
                   {stages.map((st) => <td key={st.stage_id} style={{ padding: 12, textAlign: 'center' }}>{s.stages[st.stage_id]?.average_mark ?? '—'}</td>)}
-                  <td style={{ padding: 12, textAlign: 'center' }}>{s.final_mark}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>{s.gradeInfo.letter}</td>
+                  <td style={{ padding: 12, textAlign: 'center' }}>{s.final_mark}%</td>
+                  <td style={{ padding: 12, textAlign: 'center' }}><strong>{s.gradeInfo.letter}</strong></td>
                 </tr>
               ))}
             </tbody>

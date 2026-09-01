@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { CalendarDays, Pencil, Plus, Trash2, Users, X, Calendar, Clock, Video, ExternalLink, MapPin } from "lucide-react";
 import Sidebar, { coordinatorMenuItems, isCoordinatorUser } from "../components/shared/Sidebar";
 import CalendarGrid, {
   type CalendarGridMarker,
@@ -660,19 +660,51 @@ const CalendarPage: React.FC = () => {
           const userName = userObj?.name || userObj?.full_name || joinedName || "";
           const token = localStorage.getItem("token");
 
-          const res = await fetch(
-            `http://localhost:5000/api/evaluation-panels/my-groups?evaluatorName=${encodeURIComponent(userName)}`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: token ? `Bearer ${token}` : "",
-              },
-            }
-          );
-          if (res.ok) {
-            const json = await res.json();
-            setSupervisorAssignedPanels(json.data || []);
+          const [myGroupsRes, byDateRes] = await Promise.all([
+            fetch(
+              `http://localhost:5000/api/evaluation-panels/my-groups?evaluatorName=${encodeURIComponent(userName)}`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: token ? `Bearer ${token}` : "",
+                },
+              }
+            ),
+            fetch(
+              `http://localhost:5000/api/evaluation-panels/by-date?evaluatorName=${encodeURIComponent(userName)}`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: token ? `Bearer ${token}` : "",
+                },
+              }
+            )
+          ]);
+
+          let panelsList: any[] = [];
+          if (myGroupsRes.ok) {
+            const json = await myGroupsRes.json();
+            panelsList = json.data || [];
           }
+
+          if (byDateRes.ok) {
+            const rawPanelsJson = await byDateRes.json();
+            const rawPanels = rawPanelsJson.data || [];
+            const linkMap = new Map<string, string>();
+            rawPanels.forEach((rp: any) => {
+              if (rp.meeting_link) {
+                linkMap.set(String(rp.id), rp.meeting_link);
+                if (rp.target_group) linkMap.set(String(rp.target_group), rp.meeting_link);
+              }
+            });
+
+            panelsList = panelsList.map((p) => ({
+              ...p,
+              meeting_link: p.meeting_link || linkMap.get(String(p.panel_id)) || linkMap.get(String(p.group_name)) || "",
+            }));
+          }
+
+          setSupervisorAssignedPanels(panelsList);
         } catch (err) {
           console.error("Failed to load supervisor assigned panels:", err);
         } finally {
@@ -802,8 +834,23 @@ const CalendarPage: React.FC = () => {
   }, [supervisors, supervisorSearchQuery, groupSupervisorIds]);
 
   const displayedSupervisorPanels = useMemo(() => {
-    if (!selectedCalendarDate) return supervisorAssignedPanels;
-    return supervisorAssignedPanels.filter(
+    const todayStr = toDateValue(new Date());
+    // Filter only upcoming evaluation panels (today or future dates) - exclude overdue/past panels
+    const upcomingPanels = supervisorAssignedPanels.filter((p) => {
+      const pDate = getLocalDateStr(p.panel_date);
+      if (!pDate) return true;
+      return pDate >= todayStr;
+    });
+
+    if (!selectedCalendarDate) {
+      return [...upcomingPanels].sort((a, b) => {
+        const dateA = `${getLocalDateStr(a.panel_date)} ${a.start_time || "00:00"}`;
+        const dateB = `${getLocalDateStr(b.panel_date)} ${b.start_time || "00:00"}`;
+        return dateA.localeCompare(dateB);
+      });
+    }
+
+    return upcomingPanels.filter(
       (p) => getLocalDateStr(p.panel_date) === selectedCalendarDate
     );
   }, [supervisorAssignedPanels, selectedCalendarDate]);
@@ -823,9 +870,11 @@ const CalendarPage: React.FC = () => {
     const mapped = new Map<number, CalendarGridMarker>();
 
     if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
+      const todayStr = toDateValue(new Date());
       supervisorAssignedPanels.forEach((p) => {
         const dateStr = getLocalDateStr(p.panel_date);
-        if (dateStr) {
+        // Only mark upcoming/active panels (today or future) on the calendar
+        if (dateStr && dateStr >= todayStr) {
           const pDate = parseDateValue(dateStr);
           if (pDate.getFullYear() === year && pDate.getMonth() === month) {
             const day = pDate.getDate();
@@ -1197,7 +1246,7 @@ const CalendarPage: React.FC = () => {
                   <div className="calendar-side-header">
                     <div>
                       <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                        Assigned Panels
+                        Upcoming Panels
                       </h3>
                       {selectedCalendarDate && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
@@ -1225,15 +1274,15 @@ const CalendarPage: React.FC = () => {
                   <div className="upcoming-list">
                     {loadingSupervisorPanels ? (
                       <div className="empty-state-card">
-                        <strong>Loading assigned panels...</strong>
+                        <strong>Loading upcoming panels...</strong>
                       </div>
                     ) : displayedSupervisorPanels.length === 0 ? (
                       <div className="empty-state-card">
-                        <strong>No evaluation panels found</strong>
+                        <strong>No upcoming evaluation panels</strong>
                         <span>
                           {selectedCalendarDate
-                            ? "No panels assigned for this selected date. Click another date or click 'Show All'."
-                            : "You have no assigned evaluation panels at this time."}
+                            ? "No upcoming panels scheduled for this selected date. Click another date or click 'Show All'."
+                            : "You have no upcoming evaluation panels scheduled at this time."}
                         </span>
                         {selectedCalendarDate && (
                           <button
@@ -1289,15 +1338,63 @@ const CalendarPage: React.FC = () => {
                             </div>
 
                             <div className="supervisor-panel-meta">
-                              <span>
-                                📅 {localDate ? formatLongDate(localDate) : "Scheduled Date"}
-                              </span>
-                              <span>
-                                ⏰ {panel.start_time || "10:00 AM"} ({panel.duration || "45 min"}){panel.location && panel.location.toLowerCase() !== "to be announced" ? ` • 📍 ${panel.location}` : ""}
-                              </span>
-                              <span>
-                                👥 Evaluators: {evaluatorsList}
-                              </span>
+                              <div className="supervisor-panel-meta-row">
+                                <div className="panel-meta-icon date-icon" title="Scheduled Date">
+                                  <Calendar size={14} />
+                                </div>
+                                <span style={{ fontWeight: "500" }}>{localDate ? formatLongDate(localDate) : "Scheduled Date"}</span>
+                              </div>
+
+                              <div className="supervisor-panel-meta-row">
+                                <div className="panel-meta-icon time-icon" title="Scheduled Time">
+                                  <Clock size={14} />
+                                </div>
+                                <span>
+                                  {panel.start_time || "10:00 AM"} ({panel.duration || "45 min"}){panel.location && panel.location.toLowerCase() !== "to be announced" && !panel.location.includes("zoom.us") ? ` • 📍 ${panel.location}` : ""}
+                                </span>
+                              </div>
+
+                              {(panel.meeting_link || panel.meetingLink || (panel.location && (panel.location.startsWith("http") || panel.location.includes("zoom.us")))) && (
+                                <div className="supervisor-panel-meta-row">
+                                  <div className="panel-meta-icon zoom-icon" title="Zoom Meeting">
+                                    <Video size={14} />
+                                  </div>
+                                  <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+                                    <span style={{ fontWeight: "600", color: "#475569" }}>Zoom:</span>
+                                    <a
+                                      href={
+                                        (panel.meeting_link || panel.meetingLink || panel.location).startsWith("http")
+                                          ? (panel.meeting_link || panel.meetingLink || panel.location)
+                                          : `https://${panel.meeting_link || panel.meetingLink || panel.location}`
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{
+                                        color: "#2563eb",
+                                        fontWeight: "600",
+                                        textDecoration: "underline",
+                                        wordBreak: "break-all",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "3px",
+                                      }}
+                                    >
+                                      <span>Join Zoom Meeting</span>
+                                      <ExternalLink size={11} />
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="supervisor-panel-meta-row">
+                                <div className="panel-meta-icon eval-icon" title="Panel Evaluators">
+                                  <Users size={14} />
+                                </div>
+                                <span>
+                                  <strong style={{ color: "#334155" }}>Evaluators:</strong> {evaluatorsList}
+                                </span>
+                              </div>
                             </div>
 
                             <button
@@ -1310,7 +1407,7 @@ const CalendarPage: React.FC = () => {
                                 );
                               }}
                             >
-                              Evaluate Group Marks →
+                              Evaluate Group Marks
                             </button>
                           </article>
                         );
