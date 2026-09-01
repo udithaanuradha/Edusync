@@ -74,6 +74,8 @@ interface Group {
   leader: string;
   members: GroupMember[];
   status: string;
+  department?: string;
+  academic_unit?: string;
 }
 
 interface AdminLevelPageProps {
@@ -290,7 +292,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                 marginBottom: '28px'
               }}>
                 <div>
-                  <h2 className="overview-title" style={{ textAlign: 'left', margin: 0 }}>Level {levelNumber} Management</h2>
+                  <h2 className="overview-title" style={{ textAlign: 'left', margin: 0, wordSpacing: '3px', letterSpacing: '0.2px' }}>Level {levelNumber} Management</h2>
                 </div>
 
                 {/* Multiple Admin Action Buttons */}
@@ -511,8 +513,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                   </p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     {stage.files.map((file) => {
-                                      const badgeLabel = getDegreeNameFromAcademicUnit(stage.academic_unit);
-                                      const degree = badgeLabel;
                                       return (
                                         <div
                                           key={file.file_id}
@@ -549,22 +549,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                             >
                                               📄 {file.file_name}
                                             </a>
-                                            {badgeLabel && (
-                                              <span
-                                                style={{
-                                                  backgroundColor: degree === 'ITM' ? '#fef3c7' : degree === 'AI' ? '#f3e8ff' : '#e0f2fe',
-                                                  color: degree === 'ITM' ? '#b45309' : degree === 'AI' ? '#6b21a8' : '#0369a1',
-                                                  border: `1px solid ${degree === 'ITM' ? '#fde68a' : degree === 'AI' ? '#d8b4fe' : '#7dd3fc'}`,
-                                                  fontSize: '11px',
-                                                  fontWeight: '700',
-                                                  padding: '2px 8px',
-                                                  borderRadius: '4px',
-                                                  whiteSpace: 'nowrap',
-                                                }}
-                                              >
-                                                {badgeLabel}
-                                              </span>
-                                            )}
                                           </div>
 
                                           {/* Green Download Button */}
@@ -718,10 +702,10 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                               <thead>
                                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Group Name</th>
-                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Supervisor</th>
-                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Mentor</th>
-                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Team Members</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Group Name</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Supervisor</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Assigned Mentor</th>
+                                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Team Members</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -733,8 +717,8 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                     onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                                   >
                                     {/* Group Name & Badge */}
-                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <td style={{ padding: '14px 18px', textAlign: 'left', whiteSpace: 'nowrap' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap' }}>
                                         <div style={{
                                           width: '34px',
                                           height: '34px',
@@ -751,28 +735,47 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                           {group.groupName ? group.groupName.charAt(0).toUpperCase() : 'G'}
                                         </div>
                                         <div>
-                                          <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a' }}>
+                                          <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', whiteSpace: 'nowrap' }}>
                                             {group.groupName}
                                           </div>
-                                          {group.groupId && (
-                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                                              ID: {group.groupId}
-                                            </div>
-                                          )}
+                                          {(group.department || group.academic_unit) && (() => {
+                                            const rawDept = group.department || group.academic_unit || '';
+                                            const normDept = getDegreeNameFromAcademicUnit(rawDept);
+                                            let deptColor = '#64748b';
+                                            if (normDept === 'ITM') {
+                                              deptColor = '#16a34a'; // Green (කොළ)
+                                            } else if (normDept === 'AI') {
+                                              deptColor = '#dc2626'; // Red (රතු)
+                                            } else if (normDept === 'IT') {
+                                              deptColor = '#7c3aed'; // Purple / Dam (දම්)
+                                            }
+                                            return (
+                                              <div 
+                                                style={{ 
+                                                  fontSize: '11px', 
+                                                  color: deptColor, 
+                                                  fontWeight: '700', 
+                                                  whiteSpace: 'nowrap' 
+                                                }}
+                                              >
+                                                {rawDept}
+                                              </div>
+                                            );
+                                          })()}
                                         </div>
                                       </div>
                                     </td>
 
                                     {/* Supervisor */}
-                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
-                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#1e293b', fontWeight: '500' }}>
-                                        <UserCheck size={14} color="#059669" />
-                                        {group.supervisor || 'Unassigned'}
+                                    <td style={{ padding: '14px 18px', textAlign: 'left', whiteSpace: 'nowrap' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#1e293b', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                        <UserCheck size={14} color="#059669" style={{ flexShrink: 0 }} />
+                                        <span style={{ whiteSpace: 'nowrap' }}>{group.supervisor || 'Unassigned'}</span>
                                       </div>
                                     </td>
 
                                     {/* Assigned Mentor */}
-                                    <td style={{ padding: '14px 18px', textAlign: 'left' }}>
+                                    <td style={{ padding: '14px 18px', textAlign: 'left', whiteSpace: 'nowrap' }}>
                                       {group.mentorName ? (
                                         <span style={{
                                           display: 'inline-flex',
@@ -784,9 +787,10 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                           backgroundColor: '#fffbeb',
                                           border: '1px solid #fde68a',
                                           padding: '3px 10px',
-                                          borderRadius: '6px'
+                                          borderRadius: '6px',
+                                          whiteSpace: 'nowrap'
                                         }}>
-                                          <Briefcase size={13} color="#d97706" />
+                                          <Briefcase size={13} color="#d97706" style={{ flexShrink: 0 }} />
                                           {group.mentorName}
                                         </span>
                                       ) : (
@@ -798,7 +802,8 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                           backgroundColor: '#f1f5f9',
                                           padding: '3px 8px',
                                           borderRadius: '6px',
-                                          fontStyle: 'italic'
+                                          fontStyle: 'italic',
+                                          whiteSpace: 'nowrap'
                                         }}>
                                           Unassigned
                                         </span>
@@ -807,7 +812,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
                                     {/* Members */}
                                     <td style={{ padding: '14px 18px', textAlign: 'left' }}>
-                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', alignItems: 'center', whiteSpace: 'nowrap' }}>
                                         {group.members.map((m) => (
                                           m.is_leader ? (
                                             <span 
@@ -822,7 +827,9 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                                 padding: '3px 9px', 
                                                 borderRadius: '6px', 
                                                 fontSize: '12px',
-                                                fontWeight: '600'
+                                                fontWeight: '600',
+                                                whiteSpace: 'nowrap',
+                                                flexShrink: 0
                                               }}
                                             >
                                               <span style={{ 
@@ -833,7 +840,8 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                                 padding: '1px 5px', 
                                                 borderRadius: '3px',
                                                 letterSpacing: '0.02em',
-                                                textTransform: 'uppercase'
+                                                textTransform: 'uppercase',
+                                                whiteSpace: 'nowrap'
                                               }}>
                                                 Leader
                                               </span>
@@ -852,7 +860,9 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                                 padding: '3px 9px', 
                                                 borderRadius: '6px', 
                                                 fontSize: '12px',
-                                                fontWeight: '500'
+                                                fontWeight: '500',
+                                                whiteSpace: 'nowrap',
+                                                flexShrink: 0
                                               }}
                                             >
                                               <User size={12} color="#60a5fa" />

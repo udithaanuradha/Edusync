@@ -41,13 +41,39 @@ interface EvaluationPanelEvent {
   start_time?: string;
   duration?: string;
   evaluators?: string[] | string;
+  supervisors?: string[] | string;
   location?: string;
+  department?: string;
+  group_supervisor_name?: string;
+  group_supervisor_name_2?: string;
 }
 
 interface FrozenDateEvent {
   date: string;
   reason: string;
 }
+
+const parseNamesList = (data?: any): string => {
+  if (!data) return '';
+  if (Array.isArray(data)) {
+    return data.map(item => typeof item === 'object' ? (item.name || item.username || '') : String(item)).filter(Boolean).join(', ');
+  }
+  if (typeof data === 'string') {
+    const trimmed = data.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => typeof item === 'object' ? (item.name || item.username || '') : String(item)).filter(Boolean).join(', ');
+        }
+      } catch {
+        // fallback
+      }
+    }
+    return trimmed;
+  }
+  return String(data);
+};
 
 const getDegreeNameFromAcademicUnit = (unit?: string): string => {
   if (!unit) return 'General';
@@ -209,7 +235,11 @@ const AdminCalendarPage: React.FC = () => {
             start_time: p.start_time || p.time || p.startTime,
             duration: p.duration,
             evaluators: p.evaluators,
-            location: p.location
+            supervisors: p.supervisors,
+            location: p.location,
+            department: p.department || p.academic_unit,
+            group_supervisor_name: p.group_supervisor_name,
+            group_supervisor_name_2: p.group_supervisor_name_2
           }));
 
           if (parsed.length === 0) {
@@ -225,7 +255,11 @@ const AdminCalendarPage: React.FC = () => {
                   start_time: p.time || p.start_time,
                   duration: p.duration,
                   evaluators: p.evaluators,
-                  location: p.location
+                  supervisors: p.supervisors,
+                  location: p.location,
+                  department: p.department || p.academic_unit,
+                  group_supervisor_name: p.group_supervisor_name,
+                  group_supervisor_name_2: p.group_supervisor_name_2
                 }));
               }
             } catch {
@@ -298,15 +332,22 @@ const AdminCalendarPage: React.FC = () => {
     if (typeFilter === 'stages' || typeFilter === 'frozen') return [];
     return evaluationPanels.filter(p => {
       if (levelFilter !== 'all' && String(p.academic_level) !== levelFilter) return false;
+      if (degreeFilter !== 'all') {
+        const deg = getDegreeNameFromAcademicUnit(p.department);
+        if (deg !== degreeFilter && p.department !== degreeFilter) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchGroup = p.group_name.toLowerCase().includes(q);
         const matchType = p.evaluation_type.toLowerCase().includes(q);
-        if (!matchGroup && !matchType) return false;
+        const matchDept = (p.department || '').toLowerCase().includes(q);
+        const matchSuper = (p.group_supervisor_name || '').toLowerCase().includes(q);
+        const matchEval = String(p.evaluators || '').toLowerCase().includes(q);
+        if (!matchGroup && !matchType && !matchDept && !matchSuper && !matchEval) return false;
       }
       return true;
     });
-  }, [evaluationPanels, levelFilter, typeFilter, searchQuery]);
+  }, [evaluationPanels, levelFilter, degreeFilter, typeFilter, searchQuery]);
 
   const filteredFrozenDates = useMemo(() => {
     if (typeFilter === 'stages' || typeFilter === 'panels') return [];
@@ -635,16 +676,16 @@ const AdminCalendarPage: React.FC = () => {
               </div>
 
               {/* Grid Weekday Headers */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '8px', marginBottom: '8px' }}>
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d} style={{ textAlign: 'center', fontWeight: '600', color: 'var(--eds-color-text-muted)', fontSize: '12px', padding: '6px 0' }}>
+                  <div key={d} style={{ textAlign: 'center', fontWeight: '600', color: 'var(--eds-color-text-muted)', fontSize: '12px', padding: '6px 0', overflow: 'hidden' }}>
                     {d}
                   </div>
                 ))}
               </div>
 
               {/* Calendar Days */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '8px' }}>
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
                   <div key={`empty-${i}`} style={{ minHeight: '90px', backgroundColor: 'var(--eds-color-bg-surface-soft)', borderRadius: '10px', opacity: 0.3 }} />
                 ))}
@@ -684,7 +725,11 @@ const AdminCalendarPage: React.FC = () => {
                         flexDirection: 'column',
                         justifyContent: 'space-between',
                         transition: 'all 0.15s ease',
-                        boxShadow: isSelected ? '0 0 0 2px rgba(37,99,235,0.15)' : 'none'
+                        boxShadow: isSelected ? '0 0 0 2px rgba(37,99,235,0.15)' : 'none',
+                        minWidth: 0,
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        boxSizing: 'border-box',
                       }}
                       onMouseOver={e => {
                         if (!isSelected) e.currentTarget.style.backgroundColor = hasFrozen ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface-soft)';
@@ -719,7 +764,7 @@ const AdminCalendarPage: React.FC = () => {
                       </div>
 
                       {/* Event Badges inside Cell */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px', overflow: 'hidden', minWidth: 0, maxWidth: '100%' }}>
                         {dayEvents?.frozen.map((fr, idx) => (
                           <div
                             key={`fr-${idx}`}
@@ -732,7 +777,10 @@ const AdminCalendarPage: React.FC = () => {
                               borderRadius: '4px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
+                              whiteSpace: 'nowrap',
+                              maxWidth: '100%',
+                              boxSizing: 'border-box',
+                              display: 'block',
                             }}
                             title={`Frozen: ${fr.reason}`}
                           >
@@ -760,7 +808,10 @@ const AdminCalendarPage: React.FC = () => {
                                 borderRadius: '4px',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                maxWidth: '100%',
+                                boxSizing: 'border-box',
+                                display: 'block',
                               }}
                               title={`L${st.academic_level} [${deg}]: ${st.stage_name}`}
                             >
@@ -919,38 +970,75 @@ const AdminCalendarPage: React.FC = () => {
                         })}
 
                         {/* Panels for Day */}
-                        {selectedDayData.panels.map((p) => (
-                          <div
-                            key={p.id}
-                            style={{
-                              backgroundColor: 'var(--eds-color-bg-surface)',
-                              border: '1px solid #c7d2fe',
-                              borderLeft: '4px solid #4f46e5',
-                              borderRadius: '10px',
-                              padding: '14px',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                              <span style={{ backgroundColor: '#e0e7ff', color: '#3730a3', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
-                                Level {p.academic_level} • {p.evaluation_type}
-                              </span>
-                              {p.start_time && (
-                                <span style={{ fontSize: '11.5px', color: '#4f46e5', fontWeight: '600' }}>
-                                  ⏰ {p.start_time} {p.duration ? `(${p.duration})` : ''}
-                                </span>
-                              )}
-                            </div>
-                            <h4 style={{ margin: '0 0 6px 0', fontSize: '14.5px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
-                              Group: {p.group_name}
-                            </h4>
-                            {p.location && (
-                              <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
-                                📍 Location: {p.location}
+                        {selectedDayData.panels.map((p) => {
+                          const evaluatorsText = parseNamesList(p.evaluators);
+                          const supervisorsText = [
+                            p.group_supervisor_name,
+                            p.group_supervisor_name_2,
+                            parseNamesList(p.supervisors)
+                          ].filter(Boolean).filter((val, idx, arr) => arr.indexOf(val) === idx).join(', ');
+                          const deptText = p.department ? getDegreeNameFromAcademicUnit(p.department) : '';
+
+                          return (
+                            <div
+                              key={p.id}
+                              style={{
+                                backgroundColor: 'var(--eds-color-bg-surface)',
+                                border: '1px solid #c7d2fe',
+                                borderLeft: '4px solid #4f46e5',
+                                borderRadius: '10px',
+                                padding: '14px',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ backgroundColor: '#e0e7ff', color: '#3730a3', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
+                                    Level {p.academic_level} • {p.evaluation_type}
+                                  </span>
+                                  {deptText && (
+                                    <span style={{ backgroundColor: 'var(--eds-color-border-soft)', color: 'var(--eds-color-text-muted)', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
+                                      {deptText}
+                                    </span>
+                                  )}
+                                </div>
+                                {p.start_time && (
+                                  <span style={{ fontSize: '11.5px', color: '#4f46e5', fontWeight: '600' }}>
+                                    ⏰ {p.start_time} {p.duration ? `(${p.duration})` : ''}
+                                  </span>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        ))}
+
+                              <h4 style={{ margin: '0 0 8px 0', fontSize: '14.5px', fontWeight: '700', color: 'var(--eds-color-text-strong)' }}>
+                                Group: {p.group_name}
+                              </h4>
+
+                              {/* Department, Supervisor, and Evaluator Details */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12px', color: 'var(--eds-color-text-body)', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #e0e7ff' }}>
+                                {deptText && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ color: 'var(--eds-color-text-muted)', fontWeight: '600', minWidth: '85px' }}>Department:</span>
+                                    <span style={{ fontWeight: '600', color: 'var(--eds-color-text-strong)' }}>{p.department} ({deptText})</span>
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ color: 'var(--eds-color-text-muted)', fontWeight: '600', minWidth: '85px' }}>Supervisor:</span>
+                                  <span style={{ fontWeight: '600', color: '#7c3aed' }}>
+                                    {supervisorsText || 'Not Assigned'}
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                  <span style={{ color: 'var(--eds-color-text-muted)', fontWeight: '600', minWidth: '85px' }}>Evaluator(s):</span>
+                                  <span style={{ fontWeight: '600', color: '#047857' }}>
+                                    {evaluatorsText || 'Not Assigned'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </>
                     )}
                   </div>

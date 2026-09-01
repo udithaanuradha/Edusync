@@ -134,8 +134,15 @@ const AdminAnnouncements: React.FC = () => {
   };
 
   // ✅ Delete only if this admin owns the announcement
+  const isMyAnnouncement = (ann: Announcement) => {
+    if (!user) return false;
+    if (ann.author_id && user.id && String(ann.author_id) === String(user.id)) return true;
+    if (user.name && ann.author_name && ann.author_name.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
+    return false;
+  };
+
   const handleDelete = async (ann: Announcement) => {
-    if (ann.author_id !== user.id && user.role !== 'admin') {
+    if (!isMyAnnouncement(ann)) {
       setStatusFeedback({ type: 'error', message: '❌ You can only delete your own announcements.' });
       setTimeout(() => setStatusFeedback(null), 3500);
       return;
@@ -162,8 +169,6 @@ const AdminAnnouncements: React.FC = () => {
       setTimeout(() => setStatusFeedback(null), 3500);
     }
   };
-
-  const isMyAnnouncement = (ann: Announcement) => ann.author_id === user.id;
 
   const getAudienceBadge = (audience: string) => {
     const aud = audience || '';
@@ -483,8 +488,8 @@ const AdminAnnouncements: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Delete only shown for own announcements or admin */}
-                    {(isMyAnnouncement(ann) || user.role === 'admin') && (
+                    {/* Delete only shown for own announcements */}
+                    {isMyAnnouncement(ann) && (
                       <button
                         onClick={() => handleDelete(ann)}
                         style={{ 

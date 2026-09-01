@@ -314,6 +314,11 @@ function App() {
           now lands on the same real-time V2 chat /dashboard/communication-v2
           already used. */}
       <Route
+        path="/communication"
+        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+      />
+
+      <Route
         path="/dashboard/communication"
         element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
       />

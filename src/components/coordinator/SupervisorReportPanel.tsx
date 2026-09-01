@@ -14,6 +14,11 @@ import './SupervisorReportPanel.css';
 
 interface SupervisorReportPanelProps {
   levelNumber?: number;
+  supervisorId?: string | number;
+  supervisorName?: string;
+  allowedGroupNames?: string[];
+  allowedGroupIds?: Array<number | string>;
+  isSupervisorView?: boolean;
 }
 
 // Grading Scale definition strictly based on Dhofar / UoM University Grading System
@@ -41,17 +46,17 @@ const GRADING_SCALE: GradeDefinition[] = [
 ];
 
 const DISTRIBUTION_COLORS: Record<string, string> = {
-  'A+': '#8bc9b0',
-  A: '#a6d6c0',
-  'A-': '#b9dfca',
-  'B+': '#9eb8dc',
-  B: '#b2c8e3',
-  'B-': '#c3d5e9',
-  'C+': '#e6c98f',
-  C: '#ead7a9',
-  'C-': '#e8c5a2',
-  D: '#c8d0dc',
-  I: '#d8b7bd',
+  'A+': '#10b981',
+  A: '#059669',
+  'A-': '#14b8a6',
+  'B+': '#3b82f6',
+  B: '#2563eb',
+  'B-': '#06b6d4',
+  'C+': '#f59e0b',
+  C: '#f97316',
+  'C-': '#ea580c',
+  D: '#64748b',
+  I: '#ef4444',
 };
 
 const calculateGrade = (finalScore: number): GradeDefinition => {
@@ -62,6 +67,13 @@ const calculateGrade = (finalScore: number): GradeDefinition => {
     }
   }
   return GRADING_SCALE[GRADING_SCALE.length - 1];
+};
+
+// University Promotion Policy: A student must obtain a grade of C- (min 40.0%) or higher to be promoted to the next level.
+export const PROMOTION_QUALIFYING_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-'];
+
+export const isEligibleForPromotion = (letter: string, finalScore: number): boolean => {
+  return PROMOTION_QUALIFYING_GRADES.includes(letter) && finalScore >= 40;
 };
 
 type DegreeType = 'ALL' | 'IT' | 'AI' | 'ITM';
@@ -104,7 +116,14 @@ interface CanonicalStage {
   raw_stage_ids: Array<string | number>;
 }
 
-const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumber = 2 }) => {
+const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
+  levelNumber = 2,
+  supervisorId,
+  supervisorName,
+  allowedGroupNames,
+  allowedGroupIds,
+  isSupervisorView = false,
+}) => {
   const [students, setStudents] = useState<StudentReportItem[]>([]);
   const [stages, setStages] = useState<Array<{ stage_id: number | string; stage_name: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -151,10 +170,52 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
     return 'ITM';
   };
 
-  // Fetch Level Marks Summary from Backend with Stage Deduplication
+  // Fetch Level Marks Summary from Backend with Stage Deduplication and Optional Supervisor Filtering
   const fetchReportData = async () => {
     setLoading(true);
     try {
+      // 1. Collect supervised group identifiers
+      const myGroupNames = new Set(
+        (allowedGroupNames || []).map((n) => n.trim().toLowerCase()).filter(Boolean)
+      );
+      const myGroupIds = new Set(
+        (allowedGroupIds || []).map((id) => String(id).trim()).filter(Boolean)
+      );
+
+      // Pre-fetch supervisor group list if needed
+      if ((isSupervisorView || supervisorId) && myGroupNames.size === 0 && myGroupIds.size === 0 && supervisorId) {
+        try {
+          const grpRes = await fetch(
+            `http://localhost:5000/api/groupdetailstosupervisordashboard/level/${levelNumber}/supervisor/${encodeURIComponent(
+              String(supervisorId)
+            )}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+              },
+            }
+          );
+          if (grpRes.ok) {
+            const grpPayload = await grpRes.json();
+            const grpList: any[] = Array.isArray(grpPayload)
+              ? grpPayload
+              : Array.isArray(grpPayload?.data)
+              ? grpPayload.data
+              : Array.isArray(grpPayload?.groups)
+              ? grpPayload.groups
+              : [];
+            grpList.forEach((g: any) => {
+              const name = String(g.group_name ?? g.groupName ?? g.name ?? '').trim().toLowerCase();
+              const id = String(g.group_id ?? g.groupId ?? g.id ?? '').trim();
+              if (name) myGroupNames.add(name);
+              if (id) myGroupIds.add(id);
+            });
+          }
+        } catch (e) {
+          console.warn('Could not pre-fetch supervisor groups list:', e);
+        }
+      }
+
       const response = await fetch(`http://localhost:5000/api/marks/summary/level/${levelNumber}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
@@ -164,7 +225,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
       if (response.ok) {
         const payload = await response.json();
         const rawStages = payload.stages || [];
-        const rawData = payload.data || [];
+        const rawData: any[] = Array.isArray(payload.data) ? payload.data : [];
 
         // 1. Deduplicate/group stages by normalized name (case-insensitive: Proposal=proposal, Interim=interim, Final=final)
         const stageGroupMap = new Map<string, CanonicalStage>();
@@ -198,8 +259,33 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
         setStages(canonicalList.map((s) => ({ stage_id: s.canonical_id, stage_name: s.stage_name })));
 
-        // 2. Process student marks aggregated across canonical stages
-        const processed: StudentReportItem[] = rawData.map((item: any) => {
+        // 2. Filter rawData to supervisor's supervised groups only if supervisor view
+        const isSupervisedStudent = (item: any): boolean => {
+          if (!isSupervisorView && !supervisorId && !supervisorName && myGroupNames.size === 0 && myGroupIds.size === 0) {
+            return true;
+          }
+
+          const gId = String(item.group_id ?? item.groupId ?? '').trim();
+          if (gId && myGroupIds.has(gId)) return true;
+
+          const gName = String(item.group_name ?? item.groupName ?? '').trim().toLowerCase();
+          if (gName && myGroupNames.has(gName)) return true;
+
+          const supId = String(item.supervisor_id ?? item.supervisorId ?? item.assigned_supervisor_id ?? '').trim();
+          if (supervisorId && supId && String(supervisorId).trim() === supId) return true;
+
+          const supName = String(item.supervisor_name ?? item.supervisorName ?? item.assigned_supervisor_name ?? '').trim().toLowerCase();
+          if (supervisorName && supName && supName.includes(supervisorName.trim().toLowerCase())) return true;
+
+          return false;
+        };
+
+        const targetData = (isSupervisorView || supervisorId || myGroupNames.size > 0 || myGroupIds.size > 0)
+          ? rawData.filter(isSupervisedStudent)
+          : rawData;
+
+        // 3. Process student marks aggregated across canonical stages
+        const processed: StudentReportItem[] = targetData.map((item: any) => {
           const degree = inferDegree(item);
           const canonicalStagesMap: { [canonicalId: string]: StageData } = {};
           let sumObtained = 0;
@@ -305,7 +391,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
   useEffect(() => {
     fetchReportData();
-  }, [levelNumber]);
+  }, [levelNumber, supervisorId, supervisorName, JSON.stringify(allowedGroupNames), JSON.stringify(allowedGroupIds), isSupervisorView]);
 
   // Filter students based on selected degree, search query, and grade filter
   const filteredStudents = useMemo(() => {
@@ -358,7 +444,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
     }
 
     const sumMarks = degreeStudents.reduce((acc, s) => acc + s.final_mark, 0);
-    const passCount = degreeStudents.filter((s) => s.gradeInfo.letter !== 'I').length;
+    const passCount = degreeStudents.filter((s) => isEligibleForPromotion(s.gradeInfo.letter, s.final_mark)).length;
 
     const gradeCounts: Record<string, number> = {};
     GRADING_SCALE.forEach((g) => {
@@ -531,7 +617,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
           }}
         >
           <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
-            Level {levelNumber} — Coordinator Marks & Grade Reports
+            Level {levelNumber} — Marks & Grade Reports
           </h2>
         </div>
         <div
@@ -546,64 +632,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
           }}
         >
           Loading evaluation reports...
-        </div>
-      </div>
-    );
-  }
-
-  if (students.length === 0) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-          }}
-        >
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
-            Level {levelNumber} — Coordinator Marks & Grade Reports
-          </h2>
-        </div>
-
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
-            padding: '64px 24px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            gap: '12px',
-          }}
-        >
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: '#f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#64748b',
-              marginBottom: '4px',
-            }}
-          >
-            <BarChart3 size={28} />
-          </div>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
-            No evaluation records yet
-          </h3>
-          <p style={{ margin: 0, fontSize: '14px', color: '#64748b', maxWidth: '420px' }}>
-            No evaluation marks or student records have been submitted for Level {levelNumber} yet.
-          </p>
         </div>
       </div>
     );
@@ -628,7 +656,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
       >
         <div>
           <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
-            Level {levelNumber} — Coordinator Marks & Grade Reports
+            {isSupervisorView
+              ? `Level ${levelNumber} — Supervised Groups Progress & Marks`
+              : `Level ${levelNumber} — Marks & Grade Reports`}
           </h2>
         </div>
 
@@ -881,11 +911,11 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
             <CheckCircle2 size={24} />
           </div>
           <div>
-            <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>Pass Rate</div>
+            <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>Pass Rate (≥ C-)</div>
             <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
               {degreeStats.passRate}%{' '}
               <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>
-                ({degreeStats.passCount}/{degreeStats.total})
+                {`(${degreeStats.passCount}/${degreeStats.total} passed)`}
               </span>
             </div>
           </div>
@@ -903,9 +933,22 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: '#eff6ff',
+              color: '#2563eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <BarChart3 size={17} />
+            </div>
             <h3 style={{ margin: 0, color: '#0f172a', fontSize: '16px', fontWeight: '700' }}>
-              📊 {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages
+              {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages
             </h3>
           </div>
 
@@ -1067,7 +1110,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             {/* Search Box */}
             <div style={{ position: 'relative', minWidth: '260px' }}>
               <Search
@@ -1093,7 +1135,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
               />
             </div>
           </div>
-        </div>
 
         {/* Table Content */}
         {loading ? (
@@ -1113,22 +1154,22 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
         ) : (
           <div style={{ overflowX: 'auto', width: '100%' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '14px 18px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '190px' }}>Student Details</th>
-                  <th style={{ padding: '14px 16px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '120px' }}>Index No</th>
-                  <th style={{ padding: '14px 16px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '90px' }}>Degree</th>
-                  <th style={{ padding: '14px 16px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '140px' }}>Project Group</th>
+                  <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569' }}>Student Details</th>
+                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Index No</th>
+                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Degree</th>
+                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Project Group</th>
                   {stages.map((st) => (
-                    <th key={st.stage_id} style={{ padding: '14px 16px', textAlign: 'center', minWidth: '140px' }}>
-                      <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.stage_name}</div>
-                      <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: '500' }}>Marks & Avg</div>
+                    <th key={st.stage_id} style={{ padding: '12px 8px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>{st.stage_name}</div>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', whiteSpace: 'nowrap' }}>Marks & Avg</div>
                     </th>
                   ))}
-                  <th style={{ padding: '14px 16px', textAlign: 'center', backgroundColor: '#f1f5f9', minWidth: '110px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', backgroundColor: '#f1f5f9', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#1e293b', whiteSpace: 'nowrap' }}>
                     Final Mark
                   </th>
-                  <th style={{ padding: '14px 16px', textAlign: 'center', minWidth: '95px', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Grade</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Grade</th>
                 </tr>
               </thead>
               <tbody>
@@ -1140,16 +1181,20 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                   return (
                     <tr 
                       key={student.student_id} 
-                      style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}
+                      style={{ 
+                        borderBottom: '1px solid #f1f5f9', 
+                        borderTop: isFirstRowOfGroup && rowIndex > 0 ? '2px solid #e2e8f0' : 'none',
+                        transition: 'background-color 0.15s ease' 
+                      }}
                       onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                       onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       {/* Student Details */}
-                      <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
+                      <td style={{ padding: '12px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{
-                            width: '34px',
-                            height: '34px',
+                            width: '32px',
+                            height: '32px',
                             borderRadius: '50%',
                             backgroundColor: '#eff6ff',
                             color: '#2563eb',
@@ -1157,7 +1202,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: '700',
-                            fontSize: '13px',
+                            fontSize: '12.5px',
                             flexShrink: 0
                           }}>
                             {student.student_name ? student.student_name.charAt(0).toUpperCase() : 'S'}
@@ -1165,7 +1210,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
 
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '13.5px' }}>
+                              <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px', whiteSpace: 'nowrap' }}>
                                 {student.student_name}
                               </span>
                               {student.is_leader && (
@@ -1178,7 +1223,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                                     borderRadius: '4px',
                                     fontWeight: '800',
                                     letterSpacing: '0.02em',
-                                    textTransform: 'uppercase'
+                                    textTransform: 'uppercase',
+                                    whiteSpace: 'nowrap'
                                   }}
                                 >
                                   Leader
@@ -1186,7 +1232,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                               )}
                             </div>
                             {student.email && (
-                              <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap' }}>
                                 {student.email}
                               </div>
                             )}
@@ -1195,16 +1241,16 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       </td>
 
                       {/* Reg No */}
-                      <td style={{ padding: '16px', color: '#334155', fontWeight: '600', fontSize: '13px', verticalAlign: 'middle', textAlign: 'left' }}>
+                      <td style={{ padding: '12px 10px', color: '#334155', fontWeight: '600', fontSize: '12.5px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
                         {student.university_id || '—'}
                       </td>
 
                       {/* Degree Badge */}
-                      <td style={{ padding: '16px', verticalAlign: 'middle', textAlign: 'left' }}>
+                      <td style={{ padding: '12px 10px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
                         <span
                           style={{
                             display: 'inline-block',
-                            padding: '3px 9px',
+                            padding: '3px 8px',
                             borderRadius: '6px',
                             fontSize: '11px',
                             fontWeight: '700',
@@ -1234,15 +1280,15 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       </td>
 
                       {/* Project Group */}
-                      <td style={{ padding: '16px', color: '#0f172a', fontWeight: '600', verticalAlign: 'middle', textAlign: 'left' }}>
+                      <td style={{ padding: '12px 10px', color: '#0f172a', fontWeight: '600', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '6px',
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '5px',
                             backgroundColor: '#f1f5f9',
                             color: '#475569',
-                            fontSize: '11px',
+                            fontSize: '10.5px',
                             fontWeight: '700',
                             display: 'flex',
                             alignItems: 'center',
@@ -1251,7 +1297,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                           }}>
                             {student.group_name ? student.group_name.charAt(0).toUpperCase() : 'G'}
                           </div>
-                          <span>{student.group_name}</span>
+                          <span style={{ fontSize: '12.5px' }}>{student.group_name}</span>
                         </div>
                       </td>
 
@@ -1259,117 +1305,82 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({ levelNumb
                       {stages.map((st) => {
                         const stgData = student.stages[st.stage_id];
                         return (
-                          <td key={st.stage_id} style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <td key={st.stage_id} style={{ padding: '12px 6px', textAlign: 'center', verticalAlign: 'middle' }}>
                             {stgData && stgData.average_mark !== null && stgData.average_mark !== undefined ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                {/* Evaluator-wise individual marks */}
-                                {stgData.evaluators && stgData.evaluators.length > 0 && (
-                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                    {stgData.evaluators.map((ev, eIdx) => (
-                                      <span
-                                        key={eIdx}
-                                        title={`${ev.evaluator_name}: ${ev.mark}/${ev.total_marks || 100}${ev.feedback ? ' (Feedback: ' + ev.feedback + ')' : ''}`}
-                                        style={{
-                                          fontSize: '11px',
-                                          backgroundColor: '#f8fafc',
-                                          color: '#334155',
-                                          padding: '2px 6px',
-                                          borderRadius: '4px',
-                                          border: '1px solid #e2e8f0',
-                                          fontWeight: '600',
-                                          cursor: 'default',
-                                        }}
-                                      >
-                                        E{eIdx + 1}: <strong style={{ color: '#0f172a' }}>{ev.mark}</strong>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Stage Average Mark */}
-                                <div style={{ 
-                                  fontSize: '12.5px', 
-                                  fontWeight: '800', 
-                                  color: '#0f172a',
-                                  backgroundColor: '#f1f5f9',
-                                  padding: '2px 8px',
-                                  borderRadius: '6px'
-                                }}>
-                                  Avg: {stgData.average_mark}
+                              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                <div 
+                                  style={{ 
+                                    fontSize: '12.5px', 
+                                    fontWeight: '700', 
+                                    color: '#0f172a',
+                                    backgroundColor: '#f8fafc',
+                                    border: '1px solid #e2e8f0',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'baseline',
+                                    gap: '2px',
+                                    cursor: 'default'
+                                  }}
+                                  title={stgData.evaluators && stgData.evaluators.length > 0 
+                                    ? stgData.evaluators.map((ev, i) => `${ev.evaluator_name}: ${ev.mark}/${ev.total_marks || 100}${ev.feedback ? ' (Feedback: ' + ev.feedback + ')' : ''}`).join('\n')
+                                    : undefined}
+                                >
+                                  <span>{stgData.average_mark}</span>
                                   {stgData.total_marks && (
-                                    <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#94a3b8' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8' }}>
                                       /{stgData.total_marks}
                                     </span>
                                   )}
                                 </div>
-
-                                {/* Complete button */}
-                                {isFirstRowOfGroup && (() => {
-                                  const key = `${student.group_name}::${st.stage_name}`;
-                                  const isCompleting = completingKey === key;
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
-                                      disabled={isCompleting}
-                                      title={`Mark ${st.stage_name} complete for "${student.group_name}"`}
-                                      style={{
-                                        marginTop: '3px',
-                                        padding: '2px 8px',
-                                        borderRadius: '5px',
-                                        border: 'none',
-                                        backgroundColor: isCompleting ? '#a7f3d0' : '#16a34a',
-                                        color: '#ffffff',
-                                        fontWeight: '600',
-                                        fontSize: '9.5px',
-                                        cursor: isCompleting ? 'default' : 'pointer',
-                                      }}
-                                    >
-                                      {isCompleting ? 'Completing…' : 'Complete'}
-                                    </button>
-                                  );
-                                })()}
+                                {stgData.evaluators && stgData.evaluators.length > 1 && (
+                                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                    {stgData.evaluators.map((ev, i) => `E${i + 1}:${ev.mark}`).join(' ')}
+                                  </div>
+                                )}
                               </div>
                             ) : (
-                              <span style={{ color: '#cbd5e1', fontSize: '14px' }}>—</span>
+                              <span style={{ color: '#cbd5e1', fontSize: '15px', fontWeight: '500' }}>—</span>
                             )}
                           </td>
                         );
                       })}
 
                       {/* Final Mark */}
-                      <td style={{ padding: '16px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
                         <div style={{ 
                           fontWeight: '800', 
-                          fontSize: '14px', 
+                          fontSize: '13px', 
                           color: '#0f172a',
                           backgroundColor: '#ffffff',
                           border: '1px solid #e2e8f0',
-                          padding: '4px 10px',
-                          borderRadius: '8px',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
                           display: 'inline-block'
                         }}>
                           {student.final_mark}%
                         </div>
                         {student.sum_total_max_marks > 0 && student.sum_total_max_marks !== 100 && (
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                            ({student.sum_obtained_marks}/{student.sum_total_max_marks})
+                          <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px' }}>
+                            {`(${student.sum_obtained_marks}/${student.sum_total_max_marks})`}
                           </div>
                         )}
                       </td>
 
                       {/* Letter Grade */}
-                      <td style={{ padding: '16px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
                         <span
                           style={{
                             display: 'inline-block',
-                            padding: '4px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
                             fontWeight: '800',
                             backgroundColor: gInfo.badgeBg,
                             color: gInfo.badgeColor,
                             border: `1px solid ${gInfo.borderColor}`,
+                            minWidth: '24px',
+                            textAlign: 'center'
                           }}
                         >
                           {gInfo.letter}

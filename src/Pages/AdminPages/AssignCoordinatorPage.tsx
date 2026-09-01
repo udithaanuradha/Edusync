@@ -34,7 +34,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
   const [allLecturers, setAllLecturers] = useState<Lecturer[]>([]);
   const [filteredLecturers, setFilteredLecturers] = useState<Lecturer[]>([]);
   const [selectedLecturerId, setSelectedLecturerId] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('IT');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentCoordinator, setCurrentCoordinator] = useState<Lecturer | null>(null);
 
@@ -194,7 +194,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
+            justifyContent: 'center',
             backgroundColor: '#ffffff',
             border: '1px solid #cbd5e1',
             color: '#334155',
@@ -203,6 +203,8 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
             cursor: 'pointer',
             fontWeight: '600',
             fontSize: '13.5px',
+            wordSpacing: '3px',
+            letterSpacing: '0.2px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             transition: 'all 0.15s ease'
           }}
@@ -217,7 +219,6 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
             e.currentTarget.style.color = '#334155';
           }}
         >
-          <ArrowLeft size={16} />
           Back to Level {levelNumber} Management
         </button>
 
@@ -231,7 +232,9 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
           borderRadius: '20px',
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '6px'
+          gap: '6px',
+          wordSpacing: '3px',
+          letterSpacing: '0.2px'
         }}>
           <GraduationCap size={15} /> Level {levelNumber} Academic Administration
         </span>
@@ -280,7 +283,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
               <UserPlus size={22} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a', wordSpacing: '3px', letterSpacing: '0.2px' }}>
                 Assign Degree Coordinator
               </h3>
               <span style={{ fontSize: '13px', color: '#64748b' }}>
@@ -391,184 +394,188 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
             </div>
           </div>
 
-          {/* 2. Active Coordinator Status Card */}
-          <div style={{
-            backgroundColor: currentCoordinator ? '#f0fdf4' : '#f8fafc',
-            border: currentCoordinator ? '1px solid #bbf7d0' : '1px dashed #cbd5e1',
-            borderRadius: '14px',
-            padding: '18px 20px',
-            marginBottom: '24px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <span style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: currentCoordinator ? '#166534' : '#64748b', letterSpacing: '0.04em' }}>
-                Current {selectedDepartment} Coordinator
-              </span>
+          {selectedDepartment ? (
+            <>
+              {/* 2. Active Coordinator Status Card */}
+              <div style={{
+                backgroundColor: currentCoordinator ? '#f0fdf4' : '#f8fafc',
+                border: currentCoordinator ? '1px solid #bbf7d0' : '1px dashed #cbd5e1',
+                borderRadius: '14px',
+                padding: '18px 20px',
+                marginBottom: '24px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: currentCoordinator ? '#166534' : '#64748b', letterSpacing: '0.04em' }}>
+                    Current {selectedDepartment} Coordinator
+                  </span>
 
-              {currentCoordinator && (
-                <span style={{
-                  backgroundColor: '#dcfce7',
-                  color: '#15803d',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  padding: '2px 8px',
-                  borderRadius: '4px'
-                }}>
-                  Active
-                </span>
-              )}
-            </div>
-
-            {currentCoordinator ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#16a34a',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: '700',
-                    fontSize: '15px',
-                    flexShrink: 0
-                  }}>
-                    {currentCoordinator.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '14.5px', color: '#0f172a' }}>
-                      {currentCoordinator.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {currentCoordinator.university_id ? `University ID: ${currentCoordinator.university_id}` : 'Designated Academic Staff'}
-                    </div>
-                  </div>
+                  {currentCoordinator && (
+                    <span style={{
+                      backgroundColor: '#dcfce7',
+                      color: '#15803d',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      padding: '2px 8px',
+                      borderRadius: '4px'
+                    }}>
+                      Active
+                    </span>
+                  )}
                 </div>
 
-                <button 
-                  onClick={handleRemoveCoordinator}
-                  disabled={loading}
-                  style={{
-                    backgroundColor: '#fee2e2',
-                    color: '#dc2626',
-                    border: '1px solid #fca5a5',
-                    padding: '7px 14px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#fecaca')}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#fee2e2')}
-                >
-                  <Trash2 size={14} />
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13px', padding: '4px 0' }}>
-                <AlertCircle size={16} />
-                <span>No coordinator currently appointed for <strong>{selectedDepartment}</strong>.</span>
-              </div>
-            )}
-          </div>
+                {currentCoordinator ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: '#16a34a',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: '700',
+                        fontSize: '15px',
+                        flexShrink: 0
+                      }}>
+                        {currentCoordinator.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '14.5px', color: '#0f172a' }}>
+                          {currentCoordinator.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {currentCoordinator.university_id ? `University ID: ${currentCoordinator.university_id}` : 'Designated Academic Staff'}
+                        </div>
+                      </div>
+                    </div>
 
-          {/* 3. Lecturer Selection & Assign Button */}
-          {!currentCoordinator ? (
-            <div>
-              <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
-                2. Select Department Lecturer
-              </label>
-              
-              <select 
-                value={selectedLecturerId} 
-                onChange={(e) => setSelectedLecturerId(e.target.value)}
-                style={{ 
-                  width: '100%', 
-                  padding: '13px 16px', 
-                  borderRadius: '10px', 
-                  border: '1px solid #cbd5e1', 
-                  fontSize: '14px',
-                  backgroundColor: '#f8fafc',
-                  color: '#0f172a',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  marginBottom: '18px',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">-- Choose Eligible Lecturer --</option>
-                {filteredLecturers.map(lecturer => (
-                  <option key={lecturer.id} value={lecturer.id}>
-                    {lecturer.name}{lecturer.university_id ? ` (${lecturer.university_id})` : ''}
-                  </option>
-                ))}
-              </select>
+                    <button 
+                      onClick={handleRemoveCoordinator}
+                      disabled={loading}
+                      style={{
+                        backgroundColor: '#fee2e2',
+                        color: '#dc2626',
+                        border: '1px solid #fca5a5',
+                        padding: '7px 14px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#fecaca')}
+                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#fee2e2')}
+                    >
+                      <Trash2 size={14} />
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13px', padding: '4px 0' }}>
+                    <AlertCircle size={16} />
+                    <span>No coordinator currently appointed for <strong>{selectedDepartment}</strong>.</span>
+                  </div>
+                )}
+              </div>
 
-              {filteredLecturers.length === 0 && (
-                <div style={{
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  backgroundColor: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  color: '#991b1b',
-                  fontSize: '13px',
-                  marginBottom: '18px'
-                }}>
-                  No available eligible lecturers found for academic unit <strong>{selectedDepartment}</strong>.
+              {/* 3. Lecturer Selection & Assign Button */}
+              {!currentCoordinator ? (
+                <div>
+                  <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
+                    2. Select Department Lecturer
+                  </label>
+                  
+                  <select 
+                    value={selectedLecturerId} 
+                    onChange={(e) => setSelectedLecturerId(e.target.value)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '13px 16px', 
+                      borderRadius: '10px', 
+                      border: '1px solid #cbd5e1', 
+                      fontSize: '14px',
+                      backgroundColor: '#f8fafc',
+                      color: '#0f172a',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      marginBottom: '18px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">-- Choose Eligible Lecturer --</option>
+                    {filteredLecturers.map(lecturer => (
+                      <option key={lecturer.id} value={lecturer.id}>
+                        {lecturer.name}{lecturer.university_id ? ` (${lecturer.university_id})` : ''}
+                      </option>
+                    ))}
+                  </select>
+
+                  {filteredLecturers.length === 0 && (
+                    <div style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      color: '#991b1b',
+                      fontSize: '13px',
+                      marginBottom: '18px'
+                    }}>
+                      No available eligible lecturers found for academic unit <strong>{selectedDepartment}</strong>.
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handleAssignCoordinator}
+                    disabled={loading || !selectedLecturerId}
+                    style={{ 
+                      width: '100%', 
+                      padding: '13px 20px', 
+                      backgroundColor: !selectedLecturerId ? '#cbd5e1' : '#2563eb', 
+                      color: !selectedLecturerId ? '#94a3b8' : '#ffffff', 
+                      border: 'none', 
+                      borderRadius: '10px', 
+                      fontWeight: '700', 
+                      cursor: !selectedLecturerId ? 'not-allowed' : 'pointer', 
+                      fontSize: '14.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: selectedLecturerId ? '0 4px 12px rgba(37, 99, 235, 0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      if (selectedLecturerId && !loading) e.currentTarget.style.backgroundColor = '#1d4ed8';
+                    }}
+                    onMouseOut={(e) => {
+                      if (selectedLecturerId && !loading) e.currentTarget.style.backgroundColor = '#2563eb';
+                    }}
+                  >
+                    <UserCheck size={18} />
+                    {loading ? 'Assigning...' : `Assign ${selectedDepartment} Coordinator`}
+                  </button>
                 </div>
-              )}
-
-              <button 
-                onClick={handleAssignCoordinator}
-                disabled={loading || !selectedLecturerId}
-                style={{ 
-                  width: '100%', 
-                  padding: '13px 20px', 
-                  backgroundColor: !selectedLecturerId ? '#cbd5e1' : '#2563eb', 
-                  color: !selectedLecturerId ? '#94a3b8' : '#ffffff', 
-                  border: 'none', 
-                  borderRadius: '10px', 
-                  fontWeight: '700', 
-                  cursor: !selectedLecturerId ? 'not-allowed' : 'pointer', 
-                  fontSize: '14.5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: selectedLecturerId ? '0 4px 12px rgba(37, 99, 235, 0.25)' : 'none',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseOver={(e) => {
-                  if (selectedLecturerId && !loading) e.currentTarget.style.backgroundColor = '#1d4ed8';
-                }}
-                onMouseOut={(e) => {
-                  if (selectedLecturerId && !loading) e.currentTarget.style.backgroundColor = '#2563eb';
-                }}
-              >
-                <UserCheck size={18} />
-                {loading ? 'Assigning...' : `Assign ${selectedDepartment} Coordinator`}
-              </button>
-            </div>
+              ) : null}
+            </>
           ) : (
             <div style={{
-              backgroundColor: '#fffbe6',
-              border: '1px solid #ffe58f',
-              borderRadius: '10px',
-              padding: '14px 16px',
-              fontSize: '13px',
-              color: '#8c6b00',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
+              padding: '24px',
+              backgroundColor: '#f8fafc',
+              borderRadius: '12px',
+              border: '1px dashed #cbd5e1',
+              textAlign: 'center',
+              color: '#64748b',
+              fontSize: '13.5px'
             }}>
-              <ShieldAlert size={18} />
-              <span>To appoint a new coordinator for this degree, please remove the current coordinator first.</span>
+              <BookOpen size={24} style={{ marginBottom: '8px', color: '#94a3b8' }} />
+              <p style={{ margin: 0, fontWeight: '500' }}>
+                Please select a degree program above to view or assign a coordinator.
+              </p>
             </div>
           )}
         </div>
@@ -605,7 +612,7 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
               <GraduationCap size={22} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a', wordSpacing: '3px', letterSpacing: '0.2px' }}>
                 Level {levelNumber} Coordinator Roster
               </h3>
               <span style={{ fontSize: '13px', color: '#64748b' }}>
@@ -654,7 +661,12 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
                       <div style={{ fontWeight: '700', fontSize: '14.5px', color: '#0f172a' }}>
                         {deg.label}
                       </div>
-                      <div style={{ fontSize: '12.5px', color: coord ? '#059669' : '#94a3b8', fontWeight: coord ? '600' : '400', marginTop: '2px' }}>
+                      <div style={{ 
+                        fontSize: '12.5px', 
+                        color: coord ? (deg.code === 'IT' ? '#2563eb' : deg.code === 'AI' ? '#7c3aed' : '#16a34a') : '#94a3b8', 
+                        fontWeight: coord ? '600' : '400', 
+                        marginTop: '2px' 
+                      }}>
                         {coord ? `Coordinator: ${coord.name}` : 'No coordinator appointed'}
                       </div>
                     </div>
@@ -665,9 +677,15 @@ const AssignCoordinatorPage: React.FC<AssignCoordinatorPageProps> = ({ levelNumb
                     fontWeight: '700',
                     padding: '4px 12px',
                     borderRadius: '20px',
-                    backgroundColor: coord ? '#dcfce7' : '#f1f5f9',
-                    color: coord ? '#15803d' : '#64748b',
-                    border: coord ? '1px solid #bbf7d0' : '1px solid #e2e8f0'
+                    backgroundColor: coord 
+                      ? (deg.code === 'IT' ? '#eff6ff' : deg.code === 'AI' ? '#f5f3ff' : '#dcfce7')
+                      : '#f1f5f9',
+                    color: coord 
+                      ? (deg.code === 'IT' ? '#1d4ed8' : deg.code === 'AI' ? '#6d28d9' : '#15803d')
+                      : '#64748b',
+                    border: coord 
+                      ? (deg.code === 'IT' ? '1px solid #bfdbfe' : deg.code === 'AI' ? '1px solid #ddd6fe' : '1px solid #bbf7d0')
+                      : '1px solid #e2e8f0'
                   }}>
                     {coord ? 'Assigned' : 'Vacant'}
                   </span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, MessageSquare, Users, Calendar, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
@@ -136,26 +136,75 @@ const SupervisorOverview: React.FC = () => {
   const [activeGroupProgress, setActiveGroupProgress] = useState<ActiveGroupProgress | null>(null);
   const [loadingActiveGroupProgress, setLoadingActiveGroupProgress] = useState(false);
 
-  useEffect(() => {
-    const readPanels = () => {
-      try {
-        const raw = window.localStorage.getItem(PANEL_STORAGE_KEY);
-        if (!raw) {
-          setEvaluationPanels([]);
-          return;
-        }
+  const supervisorName = useMemo(() => {
+    if (user?.name) return user.name;
+    try {
+      const raw = localStorage.getItem("user");
+      if (!raw) return "";
+      const u = JSON.parse(raw);
+      return u.name || [u.first_name, u.last_name].filter(Boolean).join(" ") || "";
+    } catch {
+      return "";
+    }
+  }, [user]);
 
-        const parsed = JSON.parse(raw) as StoredPanel[];
-        setEvaluationPanels(Array.isArray(parsed) ? parsed : []);
-      } catch {
+  useEffect(() => {
+    const fetchUpcomingEvaluationPanels = async () => {
+      if (!supervisorName) return;
+      try {
+        const token = localStorage.getItem("token");
+        const url = `http://localhost:5000/api/evaluation-panels/my-groups?evaluatorName=${encodeURIComponent(supervisorName)}`;
+        const res = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (res.ok) {
+          const resData = await res.json();
+          const list = resData.data || [];
+
+          // Filter only upcoming evaluation panels (today or future dates)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const upcomingList: StoredPanel[] = list
+            .filter((p: any) => {
+              if (!p.panel_date) return false;
+              const pDate = new Date(p.panel_date);
+              if (isNaN(pDate.getTime())) return false;
+              pDate.setHours(0, 0, 0, 0);
+              return pDate.getTime() >= today.getTime();
+            })
+            .map((p: any) => ({
+              id: String(p.panel_id || p.id),
+              title: p.evaluation_type || p.stage_name || 'Evaluation Panel',
+              level: String(p.academic_level || p.level || '1'),
+              groupName: p.group_name || p.project_title || 'Assigned Group',
+              date: p.panel_date,
+              time: p.start_time || '',
+              duration: p.duration || '',
+              location: p.location || '',
+              meetingLink: p.meeting_link || '',
+              notes: '',
+              evaluators: typeof p.evaluators === 'string' ? JSON.parse(p.evaluators) : (p.evaluators || []),
+            }));
+
+          // Sort chronologically (earliest first)
+          upcomingList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          setEvaluationPanels(upcomingList);
+        } else {
+          setEvaluationPanels([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch supervisor evaluation panels:", err);
         setEvaluationPanels([]);
       }
     };
 
-    readPanels();
-    window.addEventListener('storage', readPanels);
-    return () => window.removeEventListener('storage', readPanels);
-  }, []);
+    fetchUpcomingEvaluationPanels();
+  }, [supervisorName]);
 
   const loadConversations = useCallback(async () => {
     if (!user?.id) return;
@@ -468,7 +517,7 @@ const SupervisorOverview: React.FC = () => {
             <div className="notification-items">
               {evaluationPanels.length === 0 ? (
                 <div className="notification-row">
-                  <div className="notif-title">No evaluation panels scheduled yet.</div>
+                  <div className="notif-title">No upcoming evaluation panels scheduled.</div>
                 </div>
               ) : (
                 evaluationPanels.slice(0, 4).map((panel) => (
@@ -479,7 +528,8 @@ const SupervisorOverview: React.FC = () => {
                     <button
                       className="read-btn"
                       type="button"
-                      onClick={() => navigate('/supervisor/evaluation-panel')}
+                      onClick={() => navigate('/dashboard/calendar')}
+                      title="View in Calendar"
                     >
                       view
                     </button>

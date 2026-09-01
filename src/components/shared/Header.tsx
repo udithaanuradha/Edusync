@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useSocketV2 } from '../../hooks/useSocketV2';
+import { fetchUnreadMessageCountV2 } from '../../utils/apiV2';
 import { Bell, ChevronDown, LogOut, UserCog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Header.css';
@@ -15,15 +17,16 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard', showFeedbackBadge }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { subscribeToMessages, subscribeToGroupMessages } = useSocketV2();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [feedbackCount, setFeedbackCount] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
 
-  // Red notification badge — count of unseen supervisor feedback on the
-  // student's own group milestones. Students only; other roles never see
-  // this badge since there's nothing to fetch for them.
+  // 1. Red notification badge — count of unseen supervisor feedback on the
+  // student's own group milestones (Students only).
   useEffect(() => {
     const canShowBadge = showFeedbackBadge ?? (user?.role === 'student');
     if (!user?.id || !canShowBadge) {
@@ -49,15 +52,12 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard', showFeedbackBa
           setFeedbackCount(Number(data.count) || 0);
         }
       } catch {
-        // Silently ignore — the badge just stays at its last known count.
+        // Silently ignore
       }
     };
 
     loadFeedbackCount();
-    // Poll periodically in case feedback arrives while the header is mounted.
     const intervalId = setInterval(loadFeedbackCount, 60000);
-    // Also refresh immediately when ProjectManagementPage marks feedback seen,
-    // so the badge clears without waiting for the next poll.
     window.addEventListener('supervisor-feedback-seen', loadFeedbackCount);
 
     return () => {
@@ -66,6 +66,55 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard', showFeedbackBa
       window.removeEventListener('supervisor-feedback-seen', loadFeedbackCount);
     };
   }, [user?.id, user?.role, showFeedbackBadge]);
+
+  // 2. Real-time Unread Communication Chat Messages (All Roles)
+  const refreshUnreadChatCount = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const count = await fetchUnreadMessageCountV2(user.id);
+      setUnreadChatCount(count);
+    } catch {
+      // Silently ignore
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadChatCount(0);
+      return;
+    }
+
+    refreshUnreadChatCount();
+
+    // Poll periodically in case messages arrive while idle
+    const intervalId = setInterval(refreshUnreadChatCount, 15000);
+
+    // Subscribe to real-time 1:1 messages
+    const unsubscribe1 = subscribeToMessages((msg) => {
+      if (user && msg.sender_id !== user.id) {
+        refreshUnreadChatCount();
+      }
+    });
+
+    // Subscribe to real-time group messages
+    const unsubscribe2 = subscribeToGroupMessages((msg) => {
+      if (user && msg.sender_id !== user.id) {
+        refreshUnreadChatCount();
+      }
+    });
+
+    // Window events for immediate clearance when user reads messages
+    window.addEventListener('chat-messages-read', refreshUnreadChatCount);
+    window.addEventListener('chat-unread-updated', refreshUnreadChatCount);
+
+    return () => {
+      clearInterval(intervalId);
+      unsubscribe1();
+      unsubscribe2();
+      window.removeEventListener('chat-messages-read', refreshUnreadChatCount);
+      window.removeEventListener('chat-unread-updated', refreshUnreadChatCount);
+    };
+  }, [user?.id, refreshUnreadChatCount, subscribeToMessages, subscribeToGroupMessages]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,6 +149,18 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard', showFeedbackBa
     navigate('/login');
   };
 
+  const totalNotifications = feedbackCount + unreadChatCount;
+
+  const handleBellClick = () => {
+    if (unreadChatCount > 0) {
+      navigate('/dashboard/communication');
+    } else if (feedbackCount > 0 && user?.role === 'student') {
+      navigate('/project-management');
+    } else {
+      navigate('/dashboard/communication');
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
@@ -112,11 +173,28 @@ const Header: React.FC<HeaderProps> = ({ pageTitle = 'Dashboard', showFeedbackBa
             {user?.name || 'User'}
           </span>
 
-          <div className="notification-wrapper" title={feedbackCount > 0 ? 'New supervisor feedback' : undefined}>
+          <div
+            className="notification-wrapper"
+            title={
+              unreadChatCount > 0
+                ? `${unreadChatCount} new chat message${unreadChatCount > 1 ? 's' : ''}${feedbackCount > 0 ? `, ${feedbackCount} milestone feedback` : ''}`
+                : feedbackCount > 0
+                ? `${feedbackCount} new supervisor feedback`
+                : 'Communication & Messages'
+            }
+            onClick={handleBellClick}
+            style={{ cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') handleBellClick();
+            }}
+            aria-label="Notifications"
+          >
             <Bell size={20} className="bell-icon" />
-            {feedbackCount > 0 && (
+            {totalNotifications > 0 && (
               <span className="notification-badge notification-badge-feedback">
-                {feedbackCount > 9 ? '9+' : feedbackCount}
+                {totalNotifications > 9 ? '9+' : totalNotifications}
               </span>
             )}
           </div>

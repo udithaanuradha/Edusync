@@ -4,6 +4,8 @@ import Sidebar from "../../components/shared/Sidebar";
 import Header from "../../components/shared/Header";
 import SupervisorSidebar from "../../components/supervisor/SupervisorSidebar";
 import SupervisorFeedback from "../../components/supervisor/SupervisorFeedback";
+import SupervisorGroupMarks from "../../components/supervisor/SupervisorGroupMarks";
+import { Award, ListTodo } from "lucide-react";
 import "./SupervisorDashboard.css";
 import "./SupervisorLevelPage.css";
 
@@ -247,6 +249,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   // picking a student lists that student's tasks across the whole group.
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<number | string | null>(null);
+  const [progressSubTab, setProgressSubTab] = useState<'marks' | 'tasks'>('marks');
 
   // 🎯 Real DB Result මත පමණක් button එක පෙන්නීමට default = false කර ඇත
   const [isEvaluatorAssigned, setIsEvaluatorAssigned] = useState<boolean>(false);
@@ -1067,11 +1070,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
     );
   };
 
-  // Progress tab: land on the group grid for this level; selecting a group
-  // swaps the grid out for that group's overview, and selecting a milestone
-  // or student from there swaps that out for its task list (each with a way
-  // back), rather than showing everything at once.
-  const renderProgress = () => {
+  // Milestone and Task progress list & drill-down panels (Original View)
+  const renderTasksMilestoneProgress = () => {
     if (loadingProgressGroups)
       return (
         <p className="supervisor-level-muted">Loading progress data...</p>
@@ -1090,6 +1090,124 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
     if (selectedMilestoneId !== null) return renderMilestoneTasksPanel();
     if (selectedStudentId !== null) return renderStudentTasksPanel();
     return renderProgressDetailPanel();
+  };
+
+  // Progress tab: Allows toggling between Student Marks & Grades (for supervised groups) and Milestone/Task Progress
+  const renderProgress = () => {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Sub-View Switcher (Cards with soft icon badges and labels matching user theme) */}
+        <div style={{ display: 'flex', gap: '80px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <div
+            onClick={() => setProgressSubTab('marks')}
+            role="button"
+            tabIndex={0}
+            style={{
+              position: 'relative',
+              height: '52px',
+              minHeight: '52px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              border: progressSubTab === 'marks' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+              backgroundColor: progressSubTab === 'marks' ? '#ffffff' : '#ffffff',
+              boxShadow: progressSubTab === 'marks'
+                ? '0 4px 12px rgba(37, 99, 235, 0.12)'
+                : '0 1px 3px rgba(15, 23, 42, 0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              userSelect: 'none',
+            }}
+          >
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '9px',
+                backgroundColor: '#eff6ff',
+                color: '#2563eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Award size={18} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: progressSubTab === 'marks' ? '#1e40af' : '#1e293b' }}>
+                Student Marks & Grades
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                Supervised Groups
+              </div>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setProgressSubTab('tasks')}
+            role="button"
+            tabIndex={0}
+            style={{
+              position: 'relative',
+              height: '52px',
+              minHeight: '52px',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              border: progressSubTab === 'tasks' ? '2px solid #16a34a' : '1px solid #e2e8f0',
+              backgroundColor: progressSubTab === 'tasks' ? '#ffffff' : '#ffffff',
+              boxShadow: progressSubTab === 'tasks'
+                ? '0 4px 12px rgba(22, 163, 74, 0.12)'
+                : '0 1px 3px rgba(15, 23, 42, 0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              userSelect: 'none',
+            }}
+          >
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '9px',
+                backgroundColor: '#f0fdf4',
+                color: '#16a34a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ListTodo size={18} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: progressSubTab === 'tasks' ? '#15803d' : '#1e293b' }}>
+                Milestone & Task Progress
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                Task Tracker
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-View Content */}
+        {progressSubTab === 'marks' ? (
+          <SupervisorGroupMarks
+            levelNumber={levelNumber}
+            supervisorId={viewer.idStr}
+            supervisorName={viewer.name}
+            assignedGroups={groups}
+          />
+        ) : (
+          renderTasksMilestoneProgress()
+        )}
+      </div>
+    );
   };
 
   const handleApproveRequest = async (requestId: number) => {
@@ -1278,7 +1396,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               }}
             >
               <div>
-                <h2>Level {levelNumber} Management</h2>
+                <h2 style={{ wordSpacing: '3px', letterSpacing: '0.2px' }}>Level {levelNumber} Management</h2>
                 <p>
                   Manage level-specific stages, supervisor-assigned groups, and
                   approval submissions.

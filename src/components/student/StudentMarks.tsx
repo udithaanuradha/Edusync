@@ -142,8 +142,8 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
     );
   }
 
-  const grade = calculateGrade(mine.final_mark);
-  const passed = grade.letter !== 'I';
+  const PROMOTION_QUALIFYING_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-'];
+  const isPromoted = PROMOTION_QUALIFYING_GRADES.includes(grade.letter) && mine.final_mark >= 40;
   const progress = mine.total_stages > 0 ? mine.stages_completed / mine.total_stages : 0;
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
   const selectedStage = selectedStageId ? mine.stages[selectedStageId] : null;
@@ -178,18 +178,23 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
           <span
             className="student-marks-pass-badge"
             style={{
-              backgroundColor: grade.badgeBg,
-              color: grade.badgeColor,
-              border: `1px solid ${grade.borderColor}`,
+              backgroundColor: isPromoted ? '#dcfce7' : '#fee2e2',
+              color: isPromoted ? '#15803d' : '#b91c1c',
+              border: `1px solid ${isPromoted ? '#86efac' : '#fca5a5'}`,
             }}
           >
-            {passed ? 'Pass' : 'Incomplete'}
+            {isPromoted ? `Promoted to Level ${levelNumber + 1}` : 'Not Promoted (< C-)'}
           </span>
 
           <p className="student-marks-meta">
             {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
           </p>
           <p className="student-marks-percent">({mine.final_mark}%)</p>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>
+            {isPromoted
+              ? `🎉 Grade ${grade.letter} meets the C- minimum requirement for Level ${levelNumber + 1} promotion.`
+              : `⚠️ Minimum grade C- (40.0%+) is required to promote to Level ${levelNumber + 1}.`}
+          </div>
         </div>
       </div>
 

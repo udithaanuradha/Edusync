@@ -226,25 +226,24 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '7px 12px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #cbd5e1',
+            padding: '7px 14px',
+            backgroundColor: '#16a34a',
+            border: '1px solid #15803d',
             borderRadius: '8px',
-            color: '#475569',
+            color: '#ffffff',
             fontSize: '12px',
             fontWeight: '600',
             cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(22, 163, 74, 0.25)',
             transition: 'all 0.15s ease'
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#eff6ff';
-            e.currentTarget.style.borderColor = '#93c5fd';
-            e.currentTarget.style.color = '#2563eb';
+            e.currentTarget.style.backgroundColor = '#15803d';
+            e.currentTarget.style.borderColor = '#166534';
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#f8fafc';
-            e.currentTarget.style.borderColor = '#cbd5e1';
-            e.currentTarget.style.color = '#475569';
+            e.currentTarget.style.backgroundColor = '#16a34a';
+            e.currentTarget.style.borderColor = '#15803d';
           }}
         >
           <Download size={13} />
