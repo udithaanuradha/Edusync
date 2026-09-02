@@ -62,11 +62,20 @@ interface GroupMember {
   is_leader: number;
 }
 
+interface MentorInfo {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
 interface Group {
   groupId: number;
   groupName: string;
   supervisor: string;
   mentorName?: string;
+  mentors?: MentorInfo[];
+  mentorNames?: string[];
   leader: string;
   members: GroupMember[];
   status: string;
@@ -91,13 +100,15 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAllData();
+    fetchAllData(true);
     setIsAssignView(false); 
   }, [levelNumber]);
 
-  const fetchAllData = async () => {
+  const fetchAllData = async (showLoadingSpinner = true) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       setError('');
       
       const stageRes = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
@@ -119,38 +130,14 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
         groupData = Array.isArray(rawGroup) ? rawGroup : (rawGroup.data || []);
       }
 
-      // Fetch mentors list to map mentor names to their assigned groups
-      try {
-        const mentorRes = await fetch(`http://localhost:5000/api/users?role=mentor`);
-        if (mentorRes.ok) {
-          const mentorData = await mentorRes.json();
-          if (Array.isArray(groupData)) {
-            const enrichedGroups = groupData.map((group: any) => {
-              const assignedMentor = Array.isArray(mentorData) 
-                ? mentorData.find((m: any) => Number(m.id) === Number(group.mentor_id || group.mentorId))
-                : null;
-
-              return {
-                ...group,
-                mentorName: assignedMentor ? assignedMentor.name : (group.mentorName || null)
-              };
-            });
-            setGroups(enrichedGroups);
-          } else {
-            setGroups(groupData);
-          }
-        } else {
-          setGroups(groupData);
-        }
-      } catch {
-        setGroups(groupData);
-      }
-
+      setGroups(groupData);
     } catch (err) {
       console.error('Error in fetchAllData:', err);
       setError('Connection to server failed');
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -582,7 +569,16 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
                   {activeTab === 'groups' && (
                     <div>
-                     <MentorImportPanel levelNumber={levelNumber} />
+                     <MentorImportPanel 
+                       levelNumber={levelNumber} 
+                       onSuccess={(toastMsg?: string) => {
+                         if (toastMsg) {
+                           setToastMessage(toastMsg);
+                           setTimeout(() => setToastMessage(null), 5000);
+                         }
+                         fetchAllData(false);
+                       }} 
+                     />
                      
                     <div style={cardStyle}>
                       <h3 style={{ marginBottom: '20px', textAlign: 'left' }}>Level {levelNumber} Registered Groups</h3>
@@ -602,8 +598,48 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 <td style={{ padding: '12px', fontWeight: '600', textAlign: 'left' }}>{group.groupName}</td>
                                 <td style={{ padding: '12px', textAlign: 'left' }}>{group.supervisor}</td>
                                 <td style={{ padding: '12px', textAlign: 'left' }}>
-                                  {group.mentorName ? (
-                                    group.mentorName
+                                  {group.mentors && group.mentors.length > 0 ? (
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                      {group.mentors.map((m) => (
+                                        <span
+                                          key={m.id}
+                                          style={{
+                                            backgroundColor: '#f3e8ff',
+                                            color: '#7e22ce',
+                                            border: '1px solid #e9d5ff',
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            fontWeight: '500',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                          }}
+                                        >
+                                          {m.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : group.mentorName && group.mentorName !== 'Unassigned' ? (
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                      {group.mentorName.split(',').map((name, idx) => (
+                                        <span
+                                          key={idx}
+                                          style={{
+                                            backgroundColor: '#f3e8ff',
+                                            color: '#7e22ce',
+                                            border: '1px solid #e9d5ff',
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            fontWeight: '500',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                          }}
+                                        >
+                                          {name.trim()}
+                                        </span>
+                                      ))}
+                                    </div>
                                   ) : (
                                     <span style={{ color: 'var(--eds-color-text-faint)', fontStyle: 'italic' }}>Unassigned</span>
                                   )}

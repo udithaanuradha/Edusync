@@ -87,19 +87,7 @@ const MentorSidebarWrapper: React.FC = () => {
 
     const targetLevel = Number(match[1]);
 
-    // Check if targetLevel is Level 1 (always blocked for industry mentors)
-    if (targetLevel === 1) {
-      e.preventDefault();
-      e.stopPropagation();
-      setModalState({
-        isOpen: true,
-        level: 1,
-        message: 'Industry mentors are not assigned to Level 1 stages.',
-      });
-      return;
-    }
-
-    // Check if mentor has active group assignments at this level
+    // Check if mentor has active group assignments at this level (including Level 1, 2, 3, 4)
     if (!assignedLevels.includes(targetLevel)) {
       e.preventDefault();
       e.stopPropagation();
@@ -118,7 +106,7 @@ const MentorSidebarWrapper: React.FC = () => {
     const match = location.pathname.match(/level-(\d+)/);
     if (match) {
       const currentLvl = Number(match[1]);
-      if (!assignedLevels.includes(currentLvl) || currentLvl === 1) {
+      if (!assignedLevels.includes(currentLvl)) {
         const fallbackLevel = assignedLevels[0] || 2;
         navigate(`/dashboard/level-${fallbackLevel}`, { replace: true });
       }

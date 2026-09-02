@@ -34,7 +34,7 @@ import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import Level3mentor from "./pages/MentorPages/Level3mentor";
-import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
+import Level1mentor from "./pages/MentorPages/Level1mentor";
 import MentorSetupForm from "./pages/auth/MentorSetupForm";
 import ResetPasswordForm from "./pages/auth/ResetPasswordForm";
 import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
@@ -166,7 +166,7 @@ function App() {
           ) : userObj?.role === "admin" ? (
             <AdminLevelPage levelNumber={1} />
           ) : userObj?.role === "mentor" ? (
-            <MentorLevel1Blocked />
+            <Level1mentor />
           ) : (
             <Navigate to="/login" />
           )
