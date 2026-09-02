@@ -786,18 +786,70 @@
   color: var(--eds-color-text-strong);
 }
 
+/* Netflix-row style: a column with many tasks doesn't grow the milestone
+   card arbitrarily tall or need a long vertical scrollbar — cards scroll
+   sideways instead, peeking the edge of the next one, paged by the arrow
+   buttons in .task-board-column-carousel below. */
+.task-board-column-carousel {
+  position: relative;
+}
+
 .task-board-column-body {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  padding: 2px 2px 6px 2px;
+  /* Firefox: keep the row usable without a bulky always-visible scrollbar */
+  scrollbar-width: thin;
 }
 
 .task-board-empty {
   padding: 18px;
   font-size: 13px;
+  flex: 1 1 auto;
+}
+
+/* Small circular overlay buttons, vertically centered over the row —
+   only rendered when a column has more than one card to page through. */
+.task-board-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-strong);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.task-board-carousel-arrow:hover {
+  border-color: var(--eds-color-primary);
+  color: var(--eds-color-primary);
+}
+
+.task-board-carousel-arrow.prev {
+  left: -10px;
+}
+
+.task-board-carousel-arrow.next {
+  right: -10px;
 }
 
 .task-board-card {
+  flex: 0 0 200px;
+  width: 200px;
+  scroll-snap-align: start;
   background: var(--eds-color-bg-surface);
   border-radius: 18px;
   border: 1px solid var(--eds-color-border);

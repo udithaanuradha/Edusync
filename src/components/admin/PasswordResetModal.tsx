@@ -44,18 +44,30 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
   onClose,
   user,
 }) => {
+  const [customEmail, setCustomEmail] = useState<string>('');
   const [temporaryPassword, setTemporaryPassword] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [emailSent, setEmailSent] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Initialize customEmail when modal opens
+  React.useEffect(() => {
+    if (user) {
+      setCustomEmail(user.email || '');
+      setTemporaryPassword('');
+      setEmailSent(false);
+      setStatusMessage(null);
+    }
+  }, [user]);
+
   if (!isOpen || !user) return null;
+
+  const activeEmail = customEmail.trim() || user.email || '';
 
   const handleGeneratePassword = async () => {
     setIsSubmitting(true);
     setStatusMessage(null);
-    setEmailSent(false);
 
     const newPass = generateSecurePassword();
     setTemporaryPassword(newPass);
@@ -72,13 +84,14 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
           username: user.username,
           userId: user.id,
           temporaryPassword: newPass,
+          email: activeEmail,
         }),
       });
 
       if (response.ok) {
         setStatusMessage({
           type: 'success',
-          text: `Temporary password created and updated for ${user.username}.`,
+          text: `Temporary password created and synchronized for ${user.username}.`,
         });
       } else {
         setStatusMessage({
@@ -104,14 +117,68 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleOpenInGmail = () => {
+    if (!activeEmail) {
+      setStatusMessage({
+        type: 'error',
+        text: "Please enter the recipient's Gmail address in the input field above before composing.",
+      });
+      return;
+    }
+
+    const pass = temporaryPassword || generateSecurePassword();
+    if (!temporaryPassword) {
+      setTemporaryPassword(pass);
+    }
+
+    const subject = encodeURIComponent(`EduSync Account Password Reset - ${user.username}`);
+    const body = encodeURIComponent(
+`Dear ${user.username},
+
+An administrator has initiated a password reset for your EduSync academic portal account.
+
+Here are your temporary login credentials:
+----------------------------------------
+Portal URL: ${window.location.origin}/login
+Username / Email: ${activeEmail}
+Temporary Password: ${pass}
+----------------------------------------
+
+Please log in and update your password immediately.
+
+Best regards,
+EduSync Academic Administration`
+    );
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(activeEmail)}&su=${subject}&body=${body}`;
+    window.open(gmailUrl, '_blank');
+    
+    setEmailSent(true);
+    setStatusMessage({
+      type: 'success',
+      text: `Gmail compose window opened for ${activeEmail}!`,
+    });
+  };
+
   const handleSendResetEmail = async () => {
+    if (!activeEmail) {
+      setStatusMessage({
+        type: 'error',
+        text: "Please enter the recipient's Gmail address in the input field above before sending.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setStatusMessage(null);
 
+    const pass = temporaryPassword || generateSecurePassword();
+    if (!temporaryPassword) {
+      setTemporaryPassword(pass);
+    }
+
     try {
       const token = localStorage.getItem('token');
-      const targetEmail = user.email || `${user.username.toLowerCase().replace(/\s+/g, '')}@uom.lk`;
-      
       const response = await fetch(`http://localhost:5000/api/admin/users/send-reset-link`, {
         method: 'POST',
         headers: {
@@ -120,7 +187,8 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         },
         body: JSON.stringify({
           username: user.username,
-          email: targetEmail,
+          email: activeEmail,
+          temporaryPassword: pass,
         }),
       });
 
@@ -128,22 +196,22 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         setEmailSent(true);
         setStatusMessage({
           type: 'success',
-          text: `Password reset link sent to ${targetEmail} successfully!`,
+          text: `Password reset email dispatched to ${activeEmail} successfully!`,
         });
       } else {
+        const errData = await response.json().catch(() => null);
         setEmailSent(true);
         setStatusMessage({
           type: 'success',
-          text: `Password reset instructions dispatched to ${targetEmail}.`,
+          text: errData?.message || `Password reset dispatch attempted to ${activeEmail}. You can also use the Gmail Compose button.`,
         });
       }
     } catch (err) {
       console.warn('Backend email reset fallback:', err);
-      const targetEmail = user.email || `${user.username.toLowerCase().replace(/\s+/g, '')}@uom.lk`;
       setEmailSent(true);
       setStatusMessage({
         type: 'success',
-        text: `Password reset link simulated and dispatched to ${targetEmail}.`,
+        text: `Backend server unreachable. Please use the "Open & Send via Gmail" button below to send immediately!`,
       });
     } finally {
       setIsSubmitting(false);
@@ -184,7 +252,7 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         backgroundColor: 'var(--eds-color-bg-surface)',
         borderRadius: '16px',
         width: '100%',
-        maxWidth: '520px',
+        maxWidth: '540px',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         border: '1px solid var(--eds-color-border)',
         overflow: 'hidden',
@@ -242,53 +310,92 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
-          {/* Target User Info Card */}
+          {/* Target User Info & Target Email Input Card */}
           <div style={{
             padding: '14px 18px',
             backgroundColor: 'var(--eds-color-bg-surface-soft)',
             borderRadius: '12px',
             border: '1px solid var(--eds-color-border)',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            flexDirection: 'column',
+            gap: '12px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  backgroundColor: roleColor.bg,
+                  color: roleColor.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                }}>
+                  {user.username.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '14px' }}>
+                    {user.username}
+                  </div>
+                  <div style={{ fontSize: '12px', color: user.email ? '#64748b' : '#94a3b8' }}>
+                    {user.email || 'No email on database record'}
+                  </div>
+                </div>
+              </div>
+              <span style={{
                 backgroundColor: roleColor.bg,
                 color: roleColor.text,
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '600',
+                textTransform: 'capitalize',
+              }}>
+                {user.role}
+              </span>
+            </div>
+
+            {/* Editable Target Recipient Email */}
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.03em' }}>
+                Recipient Gmail / Email Address
+              </label>
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: '700',
-                fontSize: '14px',
+                gap: '8px',
+                backgroundColor: '#ffffff',
+                border: !activeEmail ? '1px solid #f59e0b' : '1px solid #cbd5e1',
+                borderRadius: '8px',
+                padding: '6px 12px',
               }}>
-                {user.username.charAt(0).toUpperCase()}
+                <Mail size={14} color={!activeEmail ? '#d97706' : '#64748b'} />
+                <input
+                  type="email"
+                  value={customEmail}
+                  onChange={(e) => setCustomEmail(e.target.value)}
+                  placeholder="Enter recipient's real Gmail (e.g. name@gmail.com)"
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    outline: 'none',
+                    fontSize: '13px',
+                    width: '100%',
+                    color: '#0f172a',
+                  }}
+                />
               </div>
-              <div>
-                <div style={{ fontWeight: '700', color: 'var(--eds-color-text-strong)', fontSize: '14px' }}>
-                  {user.username}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
-                  {user.email || `${user.username.toLowerCase().replace(/\s+/g, '')}@uom.lk`}
-                </div>
-              </div>
+              {!activeEmail && (
+                <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#b45309' }}>
+                  💡 Please type the recipient's personal Gmail address to send the credentials.
+                </p>
+              )}
             </div>
-            <span style={{
-              backgroundColor: roleColor.bg,
-              color: roleColor.text,
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: '600',
-              textTransform: 'capitalize',
-            }}>
-              {user.role}
-            </span>
           </div>
 
           {/* Privacy & Security Notice */}
@@ -301,9 +408,9 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
             gap: '10px',
             alignItems: 'flex-start',
           }}>
-            <ShieldAlert size={18} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ fontSize: '12px', color: 'var(--eds-color-warning-text)', lineHeight: '1.5' }}>
-              <strong>Security Protocol:</strong> Old passwords are encrypted using one-way hashing and cannot be viewed by anyone, including Admins. You can generate a temporary password or dispatch a reset link.
+            <ShieldAlert size={18} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '12px', color: '#92400e', lineHeight: '1.5' }}>
+              <strong>Security Protocol:</strong> Old passwords are encrypted using one-way hashing and cannot be viewed by anyone. You can generate a temporary password or dispatch via Gmail.
             </div>
           </div>
 
@@ -385,8 +492,8 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
-              <p style={{ margin: 0, fontSize: '11px', color: 'var(--eds-color-success-text)' }}>
-                💡 Please copy and share this temporary password with the user. They will be required to change it on their next login.
+              <p style={{ margin: 0, fontSize: '11px', color: '#166534' }}>
+                💡 Share this temporary password with the user. They will be required to change it on their next login.
               </p>
             </div>
           )}
@@ -421,16 +528,17 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
               {temporaryPassword ? 'Regenerate New Temporary Password' : 'Generate Temporary Password'}
             </button>
 
+            {/* Direct Gmail 1-Click Compose Button */}
             <button
               type="button"
-              disabled={isSubmitting || emailSent}
-              onClick={handleSendResetEmail}
+              disabled={isSubmitting}
+              onClick={handleOpenInGmail}
               style={{
                 width: '100%',
                 padding: '12px 18px',
-                backgroundColor: emailSent ? 'var(--eds-color-border-soft)' : 'var(--eds-color-bg-surface)',
-                color: emailSent ? 'var(--eds-color-text-muted)' : 'var(--eds-color-text-body)',
-                border: '1px solid var(--eds-color-border)',
+                backgroundColor: '#ea4335',
+                color: '#ffffff',
+                border: 'none',
                 borderRadius: '10px',
                 fontWeight: '600',
                 fontSize: '14px',
@@ -438,14 +546,43 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                cursor: isSubmitting || emailSent ? 'not-allowed' : 'pointer',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(234, 67, 53, 0.2)',
               }}
-              onMouseOver={(e) => !emailSent && (e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface-soft)')}
-              onMouseOut={(e) => !emailSent && (e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface)')}
+              onMouseOver={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = '#d93025')}
+              onMouseOut={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = '#ea4335')}
             >
               <Mail size={16} />
-              {emailSent ? 'Reset Email Dispatched ✓' : 'Send Password Reset Link via Email'}
+              ✉️ Open & Send via Gmail (Direct 1-Click)
+            </button>
+
+            {/* Automated Backend SMTP Dispatch */}
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleSendResetEmail}
+              style={{
+                width: '100%',
+                padding: '10px 18px',
+                backgroundColor: '#ffffff',
+                color: '#475569',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                fontWeight: '600',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+            >
+              <RefreshCw size={14} />
+              Send Automatically via Backend SMTP Server
             </button>
           </div>
 

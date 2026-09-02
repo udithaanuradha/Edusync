@@ -1,7 +1,20 @@
-// src/components/MentorImportPanel.tsx
+// src/components/mentor/MentorImportPanel.tsx
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { Users, CheckCircle, Clock, Send, AlertCircle, Lock, MessageSquare, Check } from 'lucide-react';
+import { 
+  UploadCloud, 
+  CheckCircle2, 
+  Send, 
+  AlertCircle, 
+  FileSpreadsheet, 
+  Download, 
+  Briefcase, 
+  Trash2,
+  Check,
+  Lock,
+  MessageSquare,
+  Clock
+} from 'lucide-react';
 
 interface MentorRow {
   groupNo: string;
@@ -21,23 +34,27 @@ interface UnfilledGroup {
 }
 
 interface MentorImportPanelProps {
-  academicUnit?: string; // e.g. 'ITM', 'IDS', 'CM' passed from parent coordinator session
+  academicUnit?: string;
   levelNumber: number;
   onSuccess?: (toastMsg?: string) => void;
 }
 
-export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUnit = 'ITM' , levelNumber, onSuccess }) => {
+export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ 
+  academicUnit = 'ITM', 
+  levelNumber,
+  onSuccess 
+}) => {
   const [mentors, setMentors] = useState<MentorRow[]>([]);
   const [unfilledGroups, setUnfilledGroups] = useState<UnfilledGroup[]>([]);
   const [allGroupsCovered, setAllGroupsCovered] = useState<boolean>(false);
   const [totalLevelGroups, setTotalLevelGroups] = useState<number>(0);
   const [missingGroupNames, setMissingGroupNames] = useState<string[]>([]);
+  const [fileName, setFileName] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success' | 'info' | 'warning' | ''; text: string }>({ type: '', text: '' });
+  const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success' | 'info' | 'warning' | ''; text: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Chat Reminder States
-  const [remindingGroupIds, setRemindingGroupIds] = useState<Record<number, boolean>>({});
-  const [remindedGroupIds, setRemindedGroupIds] = useState<Record<number, boolean>>({});
   const [isRemindingAll, setIsRemindingAll] = useState(false);
   const [allReminded, setAllReminded] = useState(false);
 
@@ -48,18 +65,17 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
   const currentUserId = currentUser.id || null;
 
   // Parse CSV File inside browser
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processFile = (file: File) => {
+    setFileName(file.name);
+    setStatusMessage(null);
 
     // Reset states
     setMentors([]);
     setUnfilledGroups([]);
     setAllGroupsCovered(false);
     setMissingGroupNames([]);
-    setRemindedGroupIds({});
     setAllReminded(false);
-    setStatusMessage({ type: 'info', text: 'Checking CSV against registered Level ' + levelNumber + ' groups...' });
+    setStatusMessage({ type: 'info', text: `Checking CSV against registered Level ${levelNumber} groups...` });
 
     Papa.parse(file, {
       header: true,
@@ -73,17 +89,20 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
           });
 
           return {
-            groupNo: cleanRow['group no.'] || cleanRow['group no'] || '',
-            groupName: cleanRow['group name'] || '',
-            name: cleanRow['mentor name'] || '',
-            company: cleanRow['mentor\'s company'] || cleanRow['mentors company'] || '',
-            email: cleanRow['mentor\'s mail'] || cleanRow['mentors mail'] || cleanRow['email'] || '',
+            groupNo: cleanRow['group no.'] || cleanRow['group no'] || cleanRow['group_no'] || '',
+            groupName: cleanRow['group name'] || cleanRow['group_name'] || cleanRow['group'] || '',
+            name: cleanRow['mentor name'] || cleanRow['mentor_name'] || cleanRow['name'] || '',
+            company: cleanRow['mentor\'s company'] || cleanRow['mentors company'] || cleanRow['company'] || '',
+            email: cleanRow['mentor\'s mail'] || cleanRow['mentors mail'] || cleanRow['mentor_email'] || cleanRow['email'] || '',
             phone: cleanRow['mentor\'s phone no.'] || cleanRow['mentor\'s phone no'] || cleanRow['phone'] || '',
           };
         }).filter(m => m.email && m.name);
 
         if (formattedData.length === 0) {
-          setStatusMessage({ type: 'error', text: 'No valid mentor rows found with Name and Email. Please check your CSV headers.' });
+          setStatusMessage({ 
+            type: 'error', 
+            text: 'No valid rows found with Name and Email. Please ensure CSV headers include Group Name, Mentor Name, and Email.' 
+          });
           return;
         }
 
@@ -108,51 +127,62 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
                 text: `All ${resData.totalLevelGroups} registered groups in Level ${levelNumber} are filled and matched! Ready to broadcast invites.`
               });
             } else {
-              setStatusMessage({ type: '', text: '' }); // Handled cleanly by the amber banner
+              setStatusMessage(null);
             }
           } else {
-            setStatusMessage({ type: 'error', text: resData.error || 'Failed to match groups.' });
+            setStatusMessage({ type: 'error', text: resData.error || 'Failed to match groups with database.' });
           }
         } catch (err) {
           setStatusMessage({ type: 'error', text: 'Failed to connect to backend server.' });
         }
       },
       error: (error) => {
-        setStatusMessage({ type: 'error', text: `Parsing error: ${error.message}` });
+        setStatusMessage({ type: 'error', text: `CSV Parsing error: ${error.message}` });
       }
     });
   };
 
-  // Send Chat Reminder to a single group's members
-  const handleSendGroupReminder = async (groupId: number, groupName: string) => {
-    setRemindingGroupIds(prev => ({ ...prev, [groupId]: true }));
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) processFile(file);
+  };
 
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/mentors/remind-group', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId,
-          groupName,
-          adminId: currentUserId
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setRemindedGroupIds(prev => ({ ...prev, [groupId]: true }));
-        setStatusMessage({
-          type: 'success',
-          text: `Chat reminder sent successfully to all members of "${groupName}"!`
-        });
-      } else {
-        setStatusMessage({ type: 'error', text: data.error || 'Failed to send reminder.' });
-      }
-    } catch (error) {
-      setStatusMessage({ type: 'error', text: 'Network error sending reminder.' });
-    } finally {
-      setRemindingGroupIds(prev => ({ ...prev, [groupId]: false }));
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.name.endsWith('.csv') || file.type === 'text/csv')) {
+      processFile(file);
+    } else {
+      setStatusMessage({ type: 'error', text: 'Please drop a valid .csv file.' });
     }
+  };
+
+  const handleDownloadSample = () => {
+    const headers = ['Group Name', 'Mentor Name', 'Mentor Email', 'Company', 'Phone'];
+    const sampleRows = [
+      ['Tech Titans', 'Samantha Perera', 'samantha.mentor@techcorp.com', 'Virtusa', '+94771234567'],
+      ['ABC', 'Roshan Silva', 'roshan.silva@innovate.lk', 'IFS Sri Lanka', '+94719876543']
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Level_${levelNumber}_Mentor_Mapping_Sample.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleReset = () => {
+    setMentors([]);
+    setUnfilledGroups([]);
+    setAllGroupsCovered(false);
+    setMissingGroupNames([]);
+    setFileName('');
+    setStatusMessage(null);
+    setAllReminded(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // Send Chat Reminder to ALL missing groups at once
@@ -172,9 +202,6 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
 
       const data = await response.json();
       if (data.success) {
-        const newReminded: Record<number, boolean> = {};
-        unfilledGroups.forEach(g => { newReminded[g.id] = true; });
-        setRemindedGroupIds(newReminded);
         setAllReminded(true);
         setStatusMessage({
           type: 'success',
@@ -190,7 +217,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
     }
   };
 
-  // Broadcast transactional invitations using Brevo
+  // Broadcast transactional invitations
   const handleSendInvites = async () => {
     if (!allGroupsCovered) {
       setStatusMessage({
@@ -218,6 +245,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
         setUnfilledGroups([]);
         setAllGroupsCovered(false);
         setMissingGroupNames([]);
+        setFileName('');
         if (fileInputRef.current) fileInputRef.current.value = '';
         if (onSuccess) {
           onSuccess(successMsg);
@@ -232,37 +260,200 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
     }
   };
 
+  const matchedCount = mentors.filter(m => m.groupMatched).length;
+
   return (
-    <div style={{ backgroundColor: 'var(--eds-color-bg-surface)', borderRadius: '12px', border: '1px solid var(--eds-color-border)', padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-        <Users size={20} color="var(--eds-color-primary)" />
-        <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--eds-color-text-strong)', margin: 0 }}>Onboard Industry Mentors</h3>
+    <div style={{ 
+      backgroundColor: '#ffffff', 
+      borderRadius: '16px', 
+      border: '1px solid #e2e8f0', 
+      padding: '24px', 
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
+      {/* Panel Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        borderBottom: '1px solid #f1f5f9',
+        paddingBottom: '16px',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            backgroundColor: '#eff6ff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#2563eb'
+          }}>
+            <Briefcase size={20} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#0f172a', margin: 0, textAlign: 'left' }}>
+              Onboard Industry Mentors
+            </h3>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0', textAlign: 'left' }}>
+              Map external industry mentors to Level {levelNumber} project groups. All registered groups must be updated before upload.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDownloadSample}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '7px 14px',
+            backgroundColor: '#16a34a',
+            border: '1px solid #15803d',
+            borderRadius: '8px',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(22, 163, 74, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#15803d';
+            e.currentTarget.style.borderColor = '#166534';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#16a34a';
+            e.currentTarget.style.borderColor = '#15803d';
+          }}
+        >
+          <Download size={13} />
+          Download Sample CSV
+        </button>
       </div>
 
-      <p style={{ fontSize: '14px', color: 'var(--eds-color-text-muted)', marginBottom: '20px' }}>
-        Upload a <strong>.csv</strong> file mapping external industry mentors to your Level {levelNumber} project groups. 
-        <span style={{ color: 'var(--eds-color-text-body)', fontWeight: '600' }}> All registered groups in Level {levelNumber} must be updated in this sheet before upload.</span>
-      </p>
+      {/* Upload Drop Area */}
+      {mentors.length === 0 && unfilledGroups.length === 0 ? (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            border: isDragging ? '2px dashed #2563eb' : '2px dashed #cbd5e1',
+            backgroundColor: isDragging ? '#eff6ff' : '#f8fafc',
+            borderRadius: '12px',
+            padding: '32px 20px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px'
+          }}
+          onMouseOver={(e) => {
+            if (!isDragging) {
+              e.currentTarget.style.backgroundColor = '#f1f5f9';
+              e.currentTarget.style.borderColor = '#94a3b8';
+            }
+          }}
+          onMouseOut={(e) => {
+            if (!isDragging) {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+              e.currentTarget.style.borderColor = '#cbd5e1';
+            }
+          }}
+        >
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef}
+            onChange={handleFileUpload} 
+            style={{ display: 'none' }} 
+          />
 
-      {/* File Drop Area */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px' }}>
-        <input 
-          type="file" 
-          accept=".csv" 
-          ref={fileInputRef}
-          onChange={handleFileUpload} 
-          style={{ fontSize: '14px', border: '1px solid var(--eds-color-border)', padding: '8px', borderRadius: '6px', width: '260px' }} 
-        />
-        <span style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>Headers required: Group Name, Mentor Name, Email</span>
-      </div>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#eff6ff',
+            color: '#2563eb',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <UploadCloud size={24} />
+          </div>
 
-      {/* Clean User-Friendly Pending Alert (with 1-click Chat Reminder) */}
+          <div>
+            <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>
+              Click to select or drag & drop CSV file
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+              Headers required: Group Name, Mentor Name, Email, Company
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          backgroundColor: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: '10px',
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FileSpreadsheet size={20} color="#2563eb" />
+            <div>
+              <div style={{ fontWeight: '600', color: '#1e40af', fontSize: '13.5px' }}>
+                {fileName || 'Level Mentor Mapping CSV'}
+              </div>
+              <div style={{ fontSize: '12px', color: '#3b82f6' }}>
+                {mentors.length} mentor assignment records loaded
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleReset}
+            style={{
+              background: '#ffffff',
+              border: '1px solid #cbd5e1',
+              color: '#dc2626',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}
+          >
+            <Trash2 size={13} /> Change File
+          </button>
+        </div>
+      )}
+
+      {/* Clean Amber Pending Notice with 1-Click Reminder */}
       {!allGroupsCovered && missingGroupNames.length > 0 && (
         <div style={{ 
           padding: '14px 18px', 
           borderRadius: '10px', 
           fontSize: '14px', 
-          marginBottom: '20px',
+          margin: '16px 0',
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
@@ -313,76 +504,109 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
         </div>
       )}
 
-      {/* General Toast Status Feedback */}
-      {statusMessage.text && (
+      {/* Status Feedback Message */}
+      {statusMessage && statusMessage.text && (
         <div style={{ 
           padding: '12px 16px', 
-          borderRadius: '8px', 
-          fontSize: '14px', 
-          marginBottom: '20px',
+          borderRadius: '10px', 
+          fontSize: '13px', 
+          fontWeight: '500',
+          marginTop: '16px',
           display: 'flex', 
           alignItems: 'center', 
           gap: '8px',
-          backgroundColor: statusMessage.type === 'error' ? 'var(--eds-color-danger-bg)' : statusMessage.type === 'success' ? 'var(--eds-color-success-bg)' : 'var(--eds-color-primary-soft)',
-          color: statusMessage.type === 'error' ? 'var(--eds-color-danger-text)' : statusMessage.type === 'success' ? 'var(--eds-color-success-text)' : 'var(--eds-color-primary-hover)',
-          border: `1px solid ${statusMessage.type === 'error' ? 'var(--eds-color-danger-solid)' : statusMessage.type === 'success' ? 'var(--eds-color-success-solid)' : 'var(--eds-color-primary-soft-border)'}`
+          backgroundColor: statusMessage.type === 'error' ? '#fef2f2' : statusMessage.type === 'success' ? '#f0fdf4' : '#eff6ff',
+          color: statusMessage.type === 'error' ? '#991b1b' : statusMessage.type === 'success' ? '#166534' : '#1e40af',
+          border: `1px solid ${statusMessage.type === 'error' ? '#fecaca' : statusMessage.type === 'success' ? '#bbf7d0' : '#bfdbfe'}`
         }}>
           {statusMessage.type === 'success' ? (
-            <CheckCircle size={18} style={{ flexShrink: 0 }} />
+            <CheckCircle2 size={16} />
           ) : (
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <AlertCircle size={16} />
           )}
           <span>{statusMessage.text}</span>
         </div>
       )}
 
-      {/* Preview Table */}
+      {/* Mapping Preview Table */}
       {(mentors.length > 0 || unfilledGroups.length > 0) && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--eds-color-text-body)', margin: 0 }}>
-              Mapping Preview:
-            </h4>
-            <span style={{ 
-              fontSize: '12px', 
-              fontWeight: '600', 
-              padding: '3px 10px', 
-              borderRadius: '20px',
-              backgroundColor: allGroupsCovered ? 'var(--eds-color-success-bg)' : '#fef3c7',
-              color: allGroupsCovered ? 'var(--eds-color-success-text)' : '#92400e',
-              border: `1px solid ${allGroupsCovered ? 'var(--eds-color-success-solid)' : '#fde047'}`
-            }}>
-              {allGroupsCovered ? `All ${totalLevelGroups} Groups Complete` : `${mentors.filter(m => m.groupMatched).length} of ${totalLevelGroups} Groups Filled`}
-            </span>
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                Mapping Preview
+              </h4>
+              <span style={{ 
+                fontSize: '11.5px', 
+                backgroundColor: allGroupsCovered ? '#ecfdf5' : '#fef3c7', 
+                color: allGroupsCovered ? '#065f46' : '#92400e', 
+                border: `1px solid ${allGroupsCovered ? '#a7f3d0' : '#fde047'}`,
+                padding: '2px 8px', 
+                borderRadius: '12px', 
+                fontWeight: '600' 
+              }}>
+                {allGroupsCovered ? `All ${totalLevelGroups} Groups Complete` : `${matchedCount} of ${totalLevelGroups} Groups Filled`}
+              </span>
+            </div>
           </div>
 
-          <div style={{ overflowX: 'auto', border: '1px solid var(--eds-color-border)', borderRadius: '8px', marginBottom: '20px', maxHeight: '300px' }}>
+          <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px', maxHeight: '280px', overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-              <thead style={{ backgroundColor: 'var(--eds-color-bg-surface-soft)', position: 'sticky', top: 0, zIndex: 1 }}>
+              <thead style={{ backgroundColor: '#f8fafc', position: 'sticky', top: 0, borderBottom: '1px solid #e2e8f0', zIndex: 1 }}>
                 <tr>
-                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Group No</th>
-                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Group Name</th>
-                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Mentor</th>
-                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Email</th>
-                  <th style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>Status</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Target Group</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Mentor Name</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Company</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Email Address</th>
+                  <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', textAlign: 'right' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {/* 1. Render rows provided in the CSV */}
                 {mentors.map((mentor, index) => (
-                  <tr key={`mentor-${index}`} style={{ borderBottom: '1px solid var(--eds-color-border)' }}>
-                    <td style={{ padding: '10px 12px' }}>{mentor.groupNo || index + 1}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{mentor.groupName}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>{mentor.name}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>{mentor.email}</td>
-                    <td style={{ padding: '10px 12px' }}>
+                  <tr key={`mentor-${index}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: '600', color: '#0f172a' }}>
+                      {mentor.groupName || `Group #${mentor.groupNo}`}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: '500' }}>
+                      {mentor.name}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#64748b' }}>
+                      {mentor.company || '-'}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#475569' }}>
+                      {mentor.email}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                       {mentor.groupMatched ? (
-                        <span style={{ color: 'var(--eds-color-success-solid)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                          <CheckCircle size={14} /> Match found
+                        <span style={{ 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#ecfdf5',
+                          color: '#065f46',
+                          border: '1px solid #a7f3d0',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11.5px',
+                          fontWeight: '600'
+                        }}>
+                          <Check size={12} /> Matched
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--eds-color-danger-solid)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                          Group not found
+                        <span style={{ 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#fef2f2',
+                          color: '#991b1b',
+                          border: '1px solid #fecaca',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11.5px',
+                          fontWeight: '600'
+                        }}>
+                          Group Missing
                         </span>
                       )}
                     </td>
@@ -394,17 +618,28 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
                   <tr 
                     key={`unfilled-${unfilled.id}`} 
                     style={{ 
-                      borderBottom: '1px solid var(--eds-color-border)', 
+                      borderBottom: '1px solid #f1f5f9', 
                       backgroundColor: 'rgba(245, 158, 11, 0.04)' 
                     }}
                   >
-                    <td style={{ padding: '10px 12px', color: 'var(--eds-color-text-muted)' }}>—</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{unfilled.groupName}</td>
-                    <td style={{ padding: '10px 12px', color: '#b45309', fontStyle: 'italic' }}>Pending submission</td>
-                    <td style={{ padding: '10px 12px', color: '#b45309', fontStyle: 'italic' }}>Pending submission</td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <span style={{ color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                        <Clock size={14} /> Not filled yet
+                    <td style={{ padding: '10px 14px', fontWeight: '600', color: '#0f172a' }}>{unfilled.groupName}</td>
+                    <td style={{ padding: '10px 14px', color: '#b45309', fontStyle: 'italic' }}>Pending submission</td>
+                    <td style={{ padding: '10px 14px', color: '#b45309', fontStyle: 'italic' }}>-</td>
+                    <td style={{ padding: '10px 14px', color: '#b45309', fontStyle: 'italic' }}>Pending submission</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                      <span style={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        backgroundColor: '#fffbeb',
+                        color: '#d97706',
+                        border: '1px solid #fde68a',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: '600'
+                      }}>
+                        <Clock size={12} /> Not filled yet
                       </span>
                     </td>
                   </tr>
@@ -413,60 +648,84 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ academicUn
             </table>
           </div>
 
-          {/* Action Button */}
-          {allGroupsCovered ? (
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '10px' }}>
             <button
-              onClick={handleSendInvites}
-              disabled={isSending}
+              type="button"
+              onClick={handleReset}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 22px',
-                backgroundColor: 'var(--eds-color-primary)',
-                color: '#ffffff',
-                border: 'none',
+                padding: '9px 16px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
                 borderRadius: '8px',
-                fontSize: '14px',
+                color: '#475569',
+                fontSize: '13px',
                 fontWeight: '600',
-                cursor: isSending ? 'not-allowed' : 'pointer',
-                opacity: isSending ? 0.7 : 1,
-                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+                cursor: 'pointer'
               }}
             >
-              <Send size={16} />
-              {isSending ? 'Dispatching Invites...' : 'Confirm & Broadcast Invites'}
+              Cancel
             </button>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+            {allGroupsCovered ? (
               <button
                 type="button"
-                disabled={true}
+                onClick={handleSendInvites}
+                disabled={isSending}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '10px 20px',
-                  backgroundColor: 'var(--eds-color-bg-surface-soft)',
-                  color: 'var(--eds-color-text-faint)',
-                  border: '1px solid var(--eds-color-border)',
+                  padding: '9px 20px',
+                  backgroundColor: isSending ? '#93c5fd' : '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
                   borderRadius: '8px',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: '600',
-                  cursor: 'not-allowed',
-                  width: 'fit-content'
+                  cursor: isSending ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                  transition: 'background-color 0.15s ease'
+                }}
+                onMouseOver={(e) => {
+                  if (!isSending) e.currentTarget.style.backgroundColor = '#1d4ed8';
+                }}
+                onMouseOut={(e) => {
+                  if (!isSending) e.currentTarget.style.backgroundColor = '#2563eb';
                 }}
               >
-                <Lock size={15} />
-                Upload Blocked (All groups must be filled)
+                <Send size={15} />
+                {isSending ? 'Sending Onboarding Invites...' : 'Confirm & Broadcast Invites'}
               </button>
-              <span style={{ fontSize: '12px', color: 'var(--eds-color-text-muted)' }}>
-                * Please ensure all groups have filled their details before uploading.
-              </span>
-            </div>
-          )}
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  disabled={true}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '9px 16px',
+                    backgroundColor: '#f1f5f9',
+                    color: '#94a3b8',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'not-allowed'
+                  }}
+                >
+                  <Lock size={14} />
+                  Upload Blocked (All groups must be filled)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 };
+
+export default MentorImportPanel;

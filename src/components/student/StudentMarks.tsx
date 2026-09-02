@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Award } from 'lucide-react';
+import { Award, Lock } from 'lucide-react';
 import './StudentMarks.css';
 
 interface EvaluatorFeedback {
@@ -27,6 +27,11 @@ interface StudentMarksRow {
   stages_completed: number;
   total_stages: number;
   stages: Record<string, StageEntry>;
+  // True once the Evaluation Panel has marked the "Final" stage complete for
+  // this student's group (see marksController.js's computeLevelMarksSummary).
+  // Gates only the cumulative grade/marks display below — per-stage feedback
+  // is unaffected and always shows regardless of this flag.
+  final_marks_released?: boolean;
 }
 
 interface GradeDefinition {
@@ -142,8 +147,11 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
     );
   }
 
+  const finalMarksReleased = Boolean(mine.final_marks_released);
   const grade = calculateGrade(mine.final_mark);
   const passed = grade.letter !== 'I';
+  const PROMOTION_QUALIFYING_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-'];
+  const isPromoted = PROMOTION_QUALIFYING_GRADES.includes(grade.letter) && mine.final_mark >= 40;
   const progress = mine.total_stages > 0 ? mine.stages_completed / mine.total_stages : 0;
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
   const selectedStage = selectedStageId ? mine.stages[selectedStageId] : null;
@@ -152,44 +160,75 @@ const StudentMarks: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
     <div className="student-marks-layout">
       <div className="student-marks-left">
         <div className="student-marks-hero">
-          <div className="student-marks-ring-wrap">
-            <svg width="140" height="140" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="var(--eds-color-border)" strokeWidth="10" />
-              <circle
-                cx="70"
-                cy="70"
-                r={RING_RADIUS}
-                fill="none"
-                stroke={grade.badgeColor}
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={RING_CIRCUMFERENCE}
-                strokeDashoffset={dashOffset}
-                transform="rotate(-90 70 70)"
-              />
-            </svg>
-            <div className="student-marks-ring-center">
-              <span className="student-marks-grade-letter" style={{ color: grade.badgeColor }}>
-                {grade.letter}
-              </span>
-            </div>
-          </div>
+          {finalMarksReleased ? (
+            <>
+              <div className="student-marks-ring-wrap">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="var(--eds-color-border)" strokeWidth="10" />
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke={grade.badgeColor}
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={dashOffset}
+                    transform="rotate(-90 70 70)"
+                  />
+                </svg>
+                <div className="student-marks-ring-center">
+                  <span className="student-marks-grade-letter" style={{ color: grade.badgeColor }}>
+                    {grade.letter}
+                  </span>
+                </div>
+              </div>
 
-          <span
-            className="student-marks-pass-badge"
-            style={{
-              backgroundColor: grade.badgeBg,
-              color: grade.badgeColor,
-              border: `1px solid ${grade.borderColor}`,
-            }}
-          >
-            {passed ? 'Pass' : 'Incomplete'}
-          </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                <span
+                  className="student-marks-pass-badge"
+                  style={{
+                    backgroundColor: isPromoted ? '#dcfce7' : '#fee2e2',
+                    color: isPromoted ? '#15803d' : '#b91c1c',
+                    border: `1px solid ${isPromoted ? '#86efac' : '#fca5a5'}`,
+                  }}
+                >
+                  {isPromoted ? `Promoted to Level ${levelNumber + 1}` : (passed ? 'Pass (Not Promoted < C-)' : 'Incomplete')}
+                </span>
+              </div>
 
-          <p className="student-marks-meta">
-            {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
-          </p>
-          <p className="student-marks-percent">({mine.final_mark}%)</p>
+              <p className="student-marks-meta">
+                {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
+              </p>
+              <p className="student-marks-percent">({mine.final_mark}%)</p>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>
+                {isPromoted
+                  ? `🎉 Grade ${grade.letter} meets the C- minimum requirement for Level ${levelNumber + 1} promotion.`
+                  : `⚠️ Minimum grade C- (40.0%+) is required to promote to Level ${levelNumber + 1}.`}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="student-marks-ring-wrap">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r={RING_RADIUS} fill="none" stroke="#e2e8f0" strokeWidth="10" />
+                </svg>
+                <div className="student-marks-ring-center">
+                  <Lock size={32} color="#94a3b8" />
+                </div>
+              </div>
+
+              <span className="student-marks-pending-badge">Pending</span>
+
+              <p className="student-marks-meta">
+                {mine.stages_completed}/{mine.total_stages} stage(s) evaluated
+              </p>
+              <p className="student-marks-pending-note">
+                Your cumulative grade will appear once the Evaluation Panel releases final marks.
+              </p>
+            </>
+          )}
         </div>
       </div>
 

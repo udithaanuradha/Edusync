@@ -39,7 +39,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
       <div className="coordinator-level-shell">
         <div className="dashboard-content">
             <div className="dashboard-header-section">
-              <h2 className="overview-title">Level {levelNumber} Management</h2>
+              <h2 className="overview-title" style={{ wordSpacing: '3px', letterSpacing: '0.2px' }}>Level {levelNumber} Management</h2>
               <p className="overview-subtitle">
                 Manage and create project stages and groups for Level {levelNumber} students
               </p>

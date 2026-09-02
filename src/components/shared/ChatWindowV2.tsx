@@ -191,6 +191,8 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                 : c
             )
           );
+
+          window.dispatchEvent(new CustomEvent('chat-messages-read'));
         }
       } catch (err) {
         console.error("[ChatWindowV2] Error loading history:", err);
@@ -220,6 +222,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
         if (user && incomingMsg.sender_id === selectedConversation.partner_id) {
           markConversationAsRead(incomingMsg.sender_id);
           markMessagesAsReadV2(incomingMsg.sender_id, user.id);
+          window.dispatchEvent(new CustomEvent('chat-messages-read'));
         }
       }
 
@@ -288,6 +291,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
         setMessages((prev) => [...prev, toMessageV2Shape(incomingMsg)]);
         if (user && incomingMsg.sender_id !== user.id) {
           markGroupConversationReadV2(conversationId, user.id);
+          window.dispatchEvent(new CustomEvent('chat-messages-read'));
         }
       }
 

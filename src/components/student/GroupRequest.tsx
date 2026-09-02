@@ -91,8 +91,10 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
       .finally(() => setSupervisorsLoading(false));
 
     // Fetch Students for this level, scoped server-side to the same
-    // department as the requesting student (?studentId=).
-    fetch(`http://localhost:5000/api/users/level/${levelNumber}?studentId=${user?.id ?? ''}`, {
+    // department as the requesting student (?studentId=) — this endpoint
+    // also excludes students who already belong to a live group, unlike
+    // the old /api/users/level one, so they can no longer be picked here.
+    fetch(`http://localhost:5000/api/groups/available-members/${levelNumber}?studentId=${user?.id ?? ''}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())

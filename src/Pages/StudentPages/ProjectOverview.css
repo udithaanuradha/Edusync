@@ -1,0 +1,399 @@
+ /* ProjectOverview.css — rebuilt from the old ProjectTimeline.css. Most of
+   the .timeline-* card/form classes below are unchanged and now shared by
+   the Milestone Details / Tasks-for-this-Milestone cards; the additive
+   rules at the bottom (.pm-stat-strip, .milestone-selector-row,
+   .milestone-pill, .milestone-details-head) are new for the single
+   active-milestone-with-selector layout. */
+
+:root {
+  --primary: var(--eds-color-primary);
+  --primary-hover: var(--eds-color-primary-hover);
+  --primary-tint: var(--eds-color-primary-soft);
+  --bg-main: var(--eds-color-bg-surface-soft);
+  --text-dark: var(--eds-color-text-strong);
+  --text-muted: var(--eds-color-text-muted);
+  --text-label: #475569;
+  --border: var(--eds-color-border);
+  --white: var(--eds-color-bg-surface);
+  --success: #047857;
+  --success-tint: #ecfdf5;
+  --danger: var(--eds-color-danger-solid);
+  --danger-tint: var(--eds-color-danger-bg);
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --shadow-card: 0 14px 36px rgba(15, 23, 42, 0.06);
+}
+
+/* Container Adjustments */
+.student-inner-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.student-inner-tab-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-inner-tab-heading h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-dark);
+}
+
+.student-inner-tab-heading p {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 740px;
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+/* Side-by-Side Layout Wrapper */
+.timeline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Individual Sections (Cards) — each is a full-width row, stacked */
+.timeline-section {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  width: 100%;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 18px 0;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Form Grids */
+.timeline-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.timeline-form-full {
+  grid-column: span 2;
+}
+
+/* Grouping & Labels */
+.timeline-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-label);
+}
+
+.timeline-form-input {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-main);
+  color: var(--text-dark);
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.timeline-form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Summary Box */
+.timeline-summary {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--primary-tint);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  color: var(--primary-hover);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-summary strong {
+  font-size: 14px;
+}
+
+/* Task Entry Row (Right Side) */
+.task-input-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr auto;
+  gap: 14px;
+  align-items: flex-end;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.add-task-btn {
+  background: var(--primary);
+  color: white;
+  padding: 12px 18px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.add-task-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Table Styling */
+.tasks-display-list {
+  margin-top: 18px;
+}
+
+.no-tasks-text {
+  margin: 0;
+  padding: 22px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg-main);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+
+.tasks-table-wrapper {
+  margin-top: 0;
+  max-height: 250px; /* Limits table height to keep view compact */
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.tasks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 560px;
+}
+
+.tasks-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-main);
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-label);
+  border-bottom: 1px solid var(--border);
+}
+
+.tasks-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dark);
+}
+
+.tasks-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tasks-table tbody tr:hover {
+  background: var(--bg-main);
+}
+
+.remove-task-btn {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.remove-task-btn:hover {
+  background: #fee2e2;
+  transform: translateY(-1px);
+}
+
+/* Footer (Submit) */
+.timeline-form-footer {
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.timeline-submit-message {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.timeline-submit-message.success {
+  background: var(--success-tint);
+  color: var(--success);
+  border: 1px solid #a7f3d0;
+}
+
+.timeline-submit-message.error {
+  background: var(--danger-tint);
+  color: var(--danger);
+  border: 1px solid #fecaca;
+}
+
+.submit-btn {
+  background: var(--primary);
+  color: var(--white);
+  padding: 14px 28px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+  background: var(--border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Placeholder for chart area (unused now that GanttChart renders instead,
+   kept for backward compatibility with any other consumer of this class) */
+.chart-container-placeholder {
+  width: 100%;
+  height: 200px;
+  background: var(--bg-main);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+  .timeline-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-form-full {
+    grid-column: span 1;
+  }
+
+  .task-input-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Stat strip (Milestones Planned / Submitted to Supervisor / Project
+   Duration) — same 3-card row pattern used by MilestoneProgressBoard's
+   .mpb-performance-row on the My Tasks tab. */
+.pm-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+/* ── Milestone selector — picks which single milestone the cards below
+   (Details / Scope Division / Tasks for this Milestone / Schedule Preview)
+   are currently showing. */
+.milestone-selector-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.milestone-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.milestone-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.milestone-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.milestone-pill-new {
+  border-style: dashed;
+}
+
+.milestone-details-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.milestone-details-head .section-title {
+  margin: 0;
+}
+
+.milestone-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
