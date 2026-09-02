@@ -7,7 +7,6 @@ import {
   Send, 
   AlertCircle, 
   FileSpreadsheet, 
-  Download, 
   Briefcase, 
   Trash2,
   Check,
@@ -158,22 +157,6 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
     }
   };
 
-  const handleDownloadSample = () => {
-    const headers = ['Group Name', 'Mentor Name', 'Mentor Email', 'Company', 'Phone'];
-    const sampleRows = [
-      ['Tech Titans', 'Samantha Perera', 'samantha.mentor@techcorp.com', 'Virtusa', '+94771234567'],
-      ['ABC', 'Roshan Silva', 'roshan.silva@innovate.lk', 'IFS Sri Lanka', '+94719876543']
-    ];
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Level_${levelNumber}_Mentor_Mapping_Sample.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleReset = () => {
     setMentors([]);
     setUnfilledGroups([]);
@@ -305,37 +288,6 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={handleDownloadSample}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '7px 14px',
-            backgroundColor: '#16a34a',
-            border: '1px solid #15803d',
-            borderRadius: '8px',
-            color: '#ffffff',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: '0 2px 5px rgba(22, 163, 74, 0.25)',
-            transition: 'all 0.15s ease'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#15803d';
-            e.currentTarget.style.borderColor = '#166534';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#16a34a';
-            e.currentTarget.style.borderColor = '#15803d';
-          }}
-        >
-          <Download size={13} />
-          Download Sample CSV
-        </button>
       </div>
 
       {/* Upload Drop Area */}
