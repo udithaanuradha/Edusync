@@ -379,6 +379,18 @@
   border-style: dashed;
 }
 
+/* Marks a milestone that already has scope sections defined, so it's
+   visually obvious which pill to click instead of guessing — this is what
+   was missing when the wrong milestone kept getting picked as the default. */
+.milestone-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
 .milestone-details-head {
   display: flex;
   align-items: flex-start;
