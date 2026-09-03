@@ -585,7 +585,15 @@ const CalendarPage: React.FC = () => {
 
   const loadPanelsFromServer = async () => {
     try {
-      const response = await fetch(`${CALENDAR_API_BASE}/panels`, {
+      // coordinatorId lets the backend scope this to just the logged-in
+      // user's own department (resolved server-side from their own
+      // account) — without it, every department's panels came back, which
+      // is what fed both the "Upcoming Panels" list and the month grid's
+      // per-day panel-count dots with every other coordinator's panels too.
+      const panelsUrl = user?.id
+        ? `${CALENDAR_API_BASE}/panels?coordinatorId=${user.id}`
+        : `${CALENDAR_API_BASE}/panels`;
+      const response = await fetch(panelsUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
         },
@@ -647,7 +655,8 @@ const CalendarPage: React.FC = () => {
     fetchSupervisors();
     void loadPanelsFromServer();
     void loadFrozenDatesFromServer();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Fetch real assigned evaluation panels for supervisor
   useEffect(() => {
@@ -1449,71 +1458,115 @@ const CalendarPage: React.FC = () => {
                           (name) => !supervisorNamesLower.has(name.toLowerCase()),
                         );
 
+                        const hasLocation =
+                          panel.location &&
+                          panel.location.toLowerCase() !== "to be announced";
+
                         return (
                           <article key={panel.id} className="upcoming-item">
-                            <div className="upcoming-date-chip">
-                              {formatShortDate(panel.date)}
-                            </div>
-                            <div className="upcoming-copy">
-                              <strong>{panel.title}</strong>
-                              <span>
-                                {panel.groupName} • Level {panel.level}
-                              </span>
-                              <span>{panel.kind}</span>
-                              <span className="panel-time">
-                                {panel.time} • {panel.duration}
-                              </span>
-                              {panel.location &&
-                                panel.location.toLowerCase() !== "to be announced" && (
-                                  <span>📍 {panel.location}</span>
-                                )}
-                              {panel.supervisors.length > 0 && (
-                                <span>
-                                  <span className="role-badge supervisor-role-badge">
-                                    Supervisor
-                                  </span>{" "}
-                                  {panel.supervisors.join(", ")}
+                            <div className="upcoming-item-top">
+                              <div className="upcoming-item-titleblock">
+                                <span className="upcoming-item-group">
+                                  {panel.groupName}
                                 </span>
-                              )}
-                              {externalEvaluators.length > 0 && (
-                                <span>👥 Evaluators: {externalEvaluators.join(", ")}</span>
-                              )}
-                              {panel.supervisors.length === 0 &&
-                                externalEvaluators.length === 0 && (
-                                  <span>👥 No panel members recorded</span>
-                                )}
-                              {panel.meetingLink && (
-                                <a
-                                  href={panel.meetingLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="panel-meeting-link"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  🔗 Join Meeting
-                                </a>
-                              )}
-                              {isCoordinator && (
-                                <div className="panel-action-row">
-                                  <button
-                                    type="button"
-                                    className="panel-action-btn edit"
-                                    onClick={() => openEditPanelDrawer(panel)}
-                                  >
-                                    <Pencil size={13} />
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="panel-action-btn delete"
-                                    onClick={() => deletePanel(panel.id)}
-                                  >
-                                    <Trash2 size={13} />
-                                    Delete
-                                  </button>
+                                <div className="upcoming-item-badges">
+                                  <span className="upcoming-level-pill">
+                                    Level {panel.level}
+                                  </span>
+                                  <span className="upcoming-stage-pill">
+                                    {panel.title}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="upcoming-date-chip">
+                                {formatShortDate(panel.date)}
+                              </div>
+                            </div>
+
+                            <div className="upcoming-item-rows">
+                              <div className="upcoming-item-row">
+                                <span className="upcoming-icon-badge upcoming-icon-time">
+                                  <Clock size={14} />
+                                </span>
+                                <span>
+                                  {panel.time} ({panel.duration})
+                                </span>
+                              </div>
+
+                              {hasLocation && (
+                                <div className="upcoming-item-row">
+                                  <span className="upcoming-icon-badge upcoming-icon-location">
+                                    <MapPin size={14} />
+                                  </span>
+                                  <span>{panel.location}</span>
                                 </div>
                               )}
+
+                              {panel.meetingLink && (
+                                <div className="upcoming-item-row">
+                                  <span className="upcoming-icon-badge upcoming-icon-meeting">
+                                    <Video size={14} />
+                                  </span>
+                                  <a
+                                    href={panel.meetingLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="panel-meeting-link"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    Join Meeting
+                                  </a>
+                                </div>
+                              )}
+
+                              <div className="upcoming-item-row">
+                                <span className="upcoming-icon-badge upcoming-icon-people">
+                                  <Users size={14} />
+                                </span>
+                                <div className="upcoming-people-block">
+                                  {panel.supervisors.length > 0 && (
+                                    <div className="upcoming-people-line">
+                                      <span className="role-badge supervisor-role-badge">
+                                        Supervisor
+                                      </span>
+                                      <span>{panel.supervisors.join(", ")}</span>
+                                    </div>
+                                  )}
+                                  {externalEvaluators.length > 0 && (
+                                    <div className="upcoming-people-line upcoming-people-muted">
+                                      Evaluators: {externalEvaluators.join(", ")}
+                                    </div>
+                                  )}
+                                  {panel.supervisors.length === 0 &&
+                                    externalEvaluators.length === 0 && (
+                                      <div className="upcoming-people-line upcoming-people-muted">
+                                        No panel members recorded
+                                      </div>
+                                    )}
+                                </div>
+                              </div>
                             </div>
+
+                            {isCoordinator && (
+                              <div className="panel-action-row">
+                                <button
+                                  type="button"
+                                  className="panel-action-btn edit"
+                                  onClick={() => openEditPanelDrawer(panel)}
+                                >
+                                  <Pencil size={13} />
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  className="panel-action-btn delete"
+                                  onClick={() => deletePanel(panel.id)}
+                                >
+                                  <Trash2 size={13} />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </article>
                         );
                       })

@@ -19,6 +19,11 @@ interface SupervisorReportPanelProps {
   allowedGroupNames?: string[];
   allowedGroupIds?: Array<number | string>;
   isSupervisorView?: boolean;
+  // The logged-in coordinator's own id, used server-side to resolve and
+  // scope this report to their own department — never send a department
+  // string directly, the backend looks it up from this id. Left undefined
+  // by callers that intentionally see every department (AdminLevelPage.tsx).
+  coordinatorId?: string | number;
 }
 
 // Grading Scale definition strictly based on Dhofar / UoM University Grading System
@@ -123,6 +128,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   allowedGroupNames,
   allowedGroupIds,
   isSupervisorView = false,
+  coordinatorId,
 }) => {
   const [students, setStudents] = useState<StudentReportItem[]>([]);
   const [stages, setStages] = useState<Array<{ stage_id: number | string; stage_name: string }>>([]);
@@ -133,6 +139,14 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   // Keyed by `${group_name}::${stage_name}` — tracks which single (group,
   // stage) cell is mid-request, so only that button shows a loading state.
   const [completingKey, setCompletingKey] = useState<string | null>(null);
+  // Same key shape, but tracks which (group, stage) cells have already been
+  // completed THIS session, so the button doesn't just revert to looking
+  // exactly like it never got clicked once the request finishes — there's
+  // no "is this panel already completed?" field in the marks-summary
+  // response this component reads, so this can't survive a page refresh,
+  // but it does give an immediate, lasting visual confirmation after a
+  // successful click.
+  const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Degree helper directly from users table's academic_unit column
@@ -216,7 +230,15 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
         }
       }
 
-      const response = await fetch(`http://localhost:5000/api/marks/summary/level/${levelNumber}`, {
+      // coordinatorId lets the backend scope this to just this coordinator's
+      // own department (resolved server-side from their own account) —
+      // omitted entirely when this panel is rendered for an admin
+      // (AdminLevelPage.tsx doesn't pass it), so admins keep seeing every
+      // department.
+      const summaryUrl = coordinatorId
+        ? `http://localhost:5000/api/marks/summary/level/${levelNumber}?coordinatorId=${coordinatorId}`
+        : `http://localhost:5000/api/marks/summary/level/${levelNumber}`;
+      const response = await fetch(summaryUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
         },
@@ -391,7 +413,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
 
   useEffect(() => {
     fetchReportData();
-  }, [levelNumber, supervisorId, supervisorName, JSON.stringify(allowedGroupNames), JSON.stringify(allowedGroupIds), isSupervisorView]);
+  }, [levelNumber, supervisorId, supervisorName, JSON.stringify(allowedGroupNames), JSON.stringify(allowedGroupIds), isSupervisorView, coordinatorId]);
 
   // Filter students based on selected degree, search query, and grade filter
   const filteredStudents = useMemo(() => {
@@ -506,6 +528,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
       if (!response.ok || !result.success) {
         throw new Error(result.message || 'Failed to complete panel.');
       }
+      setCompletedKeys((prev) => new Set(prev).add(key));
       alert(`Done — ${result.panelsUpdated} panel(s) removed from the Calendar for "${groupName}".`);
     } catch (err) {
       alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -522,7 +545,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   const handleDownloadPdfReport = async () => {
     setDownloadingPdf(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/marks/report/level/${levelNumber}/pdf`);
+      const pdfUrl = coordinatorId
+        ? `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf?coordinatorId=${coordinatorId}`
+        : `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf`;
+      const response = await fetch(pdfUrl);
       if (!response.ok) {
         // Errors come back as JSON, not a PDF — surface the real message if present.
         const contentType = response.headers.get('content-type') || '';
@@ -1158,8 +1184,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
                   <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569' }}>Student Details</th>
                   <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Index No</th>
-                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Degree</th>
-                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Project Group</th>
+                  {/* Degree and Project Group columns are dropped in favor of
+                      one section-header row per group (name, degree badge,
+                      member count) below — repeating them on every student
+                      row got noisy fast with more groups. */}
                   {stages.map((st) => (
                     <th key={st.stage_id} style={{ padding: '12px 8px', textAlign: 'center' }}>
                       <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>{st.stage_name}</div>
@@ -1177,14 +1205,50 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                   const gInfo = student.gradeInfo;
                   const isFirstRowOfGroup =
                     rowIndex === 0 || filteredStudents[rowIndex - 1].group_name !== student.group_name;
+                  // Student Details, Index No, Final Mark, Grade + one column per stage.
+                  const totalColumns = 4 + stages.length;
 
                   return (
-                    <tr 
-                      key={student.student_id} 
-                      style={{ 
-                        borderBottom: '1px solid #f1f5f9', 
-                        borderTop: isFirstRowOfGroup && rowIndex > 0 ? '2px solid #e2e8f0' : 'none',
-                        transition: 'background-color 0.15s ease' 
+                    <React.Fragment key={student.student_id}>
+                    {isFirstRowOfGroup && (
+                      <tr>
+                        <td
+                          colSpan={totalColumns}
+                          style={{
+                            padding: '10px 14px',
+                            backgroundColor: '#f1f5f9',
+                            borderTop: rowIndex === 0 ? 'none' : '2px solid #e2e8f0',
+                            borderBottom: '1px solid #e2e8f0',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontWeight: '800', fontSize: '13.5px', color: '#0f172a' }}>
+                              {student.group_name}
+                            </span>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                ...degreeBadgeStyle(student.degree),
+                              }}
+                            >
+                              {student.degree}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              {groupMemberCounts.get(student.group_name)} member
+                              {groupMemberCounts.get(student.group_name) === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr
+                      style={{
+                        borderBottom: '1px solid #f1f5f9',
+                        transition: 'background-color 0.15s ease'
                       }}
                       onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                       onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -1245,61 +1309,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                         {student.university_id || '—'}
                       </td>
 
-                      {/* Degree Badge */}
-                      <td style={{ padding: '12px 10px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            backgroundColor:
-                              student.degree === 'IT'
-                                ? '#e0f2fe'
-                                : student.degree === 'AI'
-                                ? '#f3e8ff'
-                                : '#fef3c7',
-                            color:
-                              student.degree === 'IT'
-                                ? '#0369a1'
-                                : student.degree === 'AI'
-                                ? '#6b21a8'
-                                : '#92400e',
-                            border: `1px solid ${
-                              student.degree === 'IT'
-                                ? '#bae6fd'
-                                : student.degree === 'AI'
-                                ? '#e9d5ff'
-                                : '#fde68a'
-                            }`,
-                          }}
-                        >
-                          {student.degree}
-                        </span>
-                      </td>
-
-                      {/* Project Group */}
-                      <td style={{ padding: '12px 10px', color: '#0f172a', fontWeight: '600', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: '5px',
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            fontSize: '10.5px',
-                            fontWeight: '700',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            {student.group_name ? student.group_name.charAt(0).toUpperCase() : 'G'}
-                          </div>
-                          <span style={{ fontSize: '12.5px' }}>{student.group_name}</span>
-                        </div>
-                      </td>
+                      {/* Degree and Project Group are shown once in the group
+                          section header above instead of repeating per row. */}
 
                       {/* Stage Marks with Evaluator-wise breakdown */}
                       {stages.map((st) => {
@@ -1338,6 +1349,65 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                                     {stgData.evaluators.map((ev, i) => `E${i + 1}:${ev.mark}`).join(' ')}
                                   </div>
                                 )}
+
+                                {/* One "Complete" action per group per stage — shown once,
+                                    on the group's first visible row, not repeated per member.
+                                    Marks this stage's evaluation done and removes just that
+                                    stage's panel from the Calendar for this group. */}
+                                {isFirstRowOfGroup && (() => {
+                                  const key = `${student.group_name}::${st.stage_name}`;
+                                  const isCompleting = completingKey === key;
+                                  const isCompleted = completedKeys.has(key);
+
+                                  // Once completed this session, swap in a
+                                  // visibly different, disabled badge instead
+                                  // of re-rendering the same "Complete"
+                                  // button — otherwise a successful click had
+                                  // no lasting sign it had ever happened.
+                                  if (isCompleted) {
+                                    return (
+                                      <span
+                                        title={`${st.stage_name} marked complete for "${student.group_name}"`}
+                                        style={{
+                                          marginTop: '4px',
+                                          padding: '2px 7px',
+                                          borderRadius: '5px',
+                                          backgroundColor: '#f1f5f9',
+                                          color: '#16a34a',
+                                          fontWeight: '700',
+                                          fontSize: '9px',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '3px',
+                                        }}
+                                      >
+                                        ✓ Completed
+                                      </span>
+                                    );
+                                  }
+
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
+                                      disabled={isCompleting}
+                                      title={`Mark ${st.stage_name} complete for "${student.group_name}" — removes just this stage's panel from the Calendar for this group`}
+                                      style={{
+                                        marginTop: '4px',
+                                        padding: '2px 7px',
+                                        borderRadius: '5px',
+                                        border: 'none',
+                                        backgroundColor: isCompleting ? '#a7f3d0' : '#16a34a',
+                                        color: '#ffffff',
+                                        fontWeight: '600',
+                                        fontSize: '9px',
+                                        cursor: isCompleting ? 'default' : 'pointer',
+                                      }}
+                                    >
+                                      {isCompleting ? 'Completing…' : 'Complete'}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             ) : (
                               <span style={{ color: '#cbd5e1', fontSize: '15px', fontWeight: '500' }}>—</span>
@@ -1387,6 +1457,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                         </span>
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
