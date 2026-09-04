@@ -1,0 +1,289 @@
+/* MentorDelayedTasksTab.css */
+
+.mentor-delays-tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Header Card */
+.mentor-delays-header-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  flex-wrap: wrap;
+}
+
+.mentor-delays-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mentor-delays-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.mentor-delays-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.mentor-delays-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.mentor-delays-count-badge {
+  margin-left: auto;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mentor-delays-count-badge.ontrack {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+/* Status Boxes */
+.mentor-delays-status-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  color: #64748b;
+}
+
+.mentor-delays-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: mentorSpin 0.8s linear infinite;
+}
+
+@keyframes mentorSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mentor-delays-ontrack-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.mentor-delays-ontrack-box h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #166534;
+  margin: 0;
+}
+
+.mentor-delays-ontrack-box p {
+  font-size: 13px;
+  color: #15803d;
+  margin: 0;
+}
+
+.mentor-delays-error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.btn-delays-retry {
+  padding: 6px 14px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Table Card */
+.mentor-delays-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.mentor-delays-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.mentor-delays-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mentor-delays-table th {
+  padding: 12px 16px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mentor-delays-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.mentor-delays-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.mentor-delays-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.mentor-delays-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  color: #0f172a;
+}
+
+.mentor-task-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mentor-task-name-text {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 13.5px;
+}
+
+.mentor-task-milestone-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.mentor-group-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mentor-student-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mentor-student-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mentor-student-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mentor-student-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 12.5px;
+}
+
+.mentor-student-id {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.mentor-due-date-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.mentor-delay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mentor-status-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}

@@ -151,18 +151,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             setAllGroupsCovered(Boolean(resData.allGroupsCovered));
             setTotalLevelGroups(resData.totalLevelGroups || 0);
             setMissingGroupNames(resData.missingGroups || []);
-
-            if (resData.allGroupsCovered) {
-              setStatusMessage({
-                type: 'success',
-                text: `All ${resData.totalLevelGroups} registered groups in Level ${levelNumber} are filled and matched! Ready to broadcast invites.`
-              });
-            } else {
-              setStatusMessage({
-                type: 'info',
-                text: `${resData.data?.length || 0} group(s) filled with mentor details. You can dispatch invites to these mentors now, and notify the ${resData.unfilledGroups?.length || 0} pending group(s) via Chat.`
-              });
-            }
+            setStatusMessage(null);
           } else {
             setStatusMessage({ type: 'error', text: resData.error || 'Failed to match groups with database.' });
           }
@@ -267,7 +256,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
         } catch (e) {
           console.warn('Could not persist mentor invites dispatched flag in storage:', e);
         }
-        setStatusMessage({ type: 'success', text: successMsg });
+        setStatusMessage(null);
         setMentors([]);
         setUnfilledGroups([]);
         setAllGroupsCovered(false);
@@ -445,101 +434,66 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
         <>
           {isLevelFullyOnboarded ? (
             <div style={{
-              padding: '14px 18px',
+              padding: '12px 18px',
               backgroundColor: '#f0fdf4',
               border: '1px solid #bbf7d0',
               borderRadius: '10px',
               marginBottom: '16px',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
+              alignItems: 'center',
+              gap: '10px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '13.5px', color: '#166534', fontWeight: '600' }}>
-                  Mentor Onboarding Active: All {totalRegisteredGroupsCount} currently registered project groups in Level {levelNumber} have active Industry Mentors.
-                </span>
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#15803d', marginLeft: '28px', lineHeight: '1.4' }}>
-                💡 All currently enrolled groups have active Industry Mentors. If new project groups are added or mentor assignments change, you can re-sync the Master CSV anytime or use the <strong>Change</strong> button below.
-              </div>
+              <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: '13.5px', color: '#166534', fontWeight: '600' }}>
+                All {totalRegisteredGroupsCount} project groups have assigned Industry Mentors.
+              </span>
             </div>
-          ) : isLevelPartiallyOnboarded ? (
+          ) : isLevelPartiallyOnboarded || hasDispatchedInvites ? (
             <div style={{
-              padding: '14px 18px',
+              padding: '12px 18px',
               backgroundColor: '#eff6ff',
               border: '1px solid #bfdbfe',
               borderRadius: '10px',
               marginBottom: '16px',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
+              alignItems: 'center',
+              gap: '10px',
+              flexWrap: 'wrap'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <Clock size={18} color="#2563eb" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '13.5px', color: '#1e40af', fontWeight: '600' }}>
-                  Onboarding In Progress: {assignedGroupsCount} of {totalRegisteredGroupsCount} project groups have active Industry Mentors assigned.
+              <Clock size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: '13.5px', color: '#1e40af', fontWeight: '600' }}>
+                {assignedGroupsCount} of {totalRegisteredGroupsCount} groups assigned
+              </span>
+              {pendingGroupNames.length > 0 && (
+                <span style={{
+                  fontSize: '12px',
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e',
+                  border: '1px solid #fde047',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  fontWeight: '600'
+                }}>
+                  Pending: {pendingGroupNames.join(', ')}
                 </span>
-                {pendingGroupNames.length > 0 && (
-                  <span style={{
-                    fontSize: '12px',
-                    backgroundColor: '#fef3c7',
-                    color: '#92400e',
-                    border: '1px solid #fde047',
-                    padding: '2px 8px',
-                    borderRadius: '6px',
-                    fontWeight: '600'
-                  }}>
-                    Pending Mentors/Invites: {pendingGroupNames.join(', ')}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#1d4ed8', marginLeft: '28px', lineHeight: '1.4' }}>
-                💡 You can re-upload/sync an updated Master CSV anytime as remaining groups submit details, or use the <strong>Change</strong> button in the table below to manage individual assignments.
-              </div>
-            </div>
-          ) : hasDispatchedInvites ? (
-            <div style={{
-              padding: '14px 18px',
-              backgroundColor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              borderRadius: '10px',
-              marginBottom: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '13.5px', color: '#166534', fontWeight: '600' }}>
-                  Invitations Dispatched: Onboarding invitations have been sent to mapped group mentors in Level {levelNumber}.
-                </span>
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#15803d', marginLeft: '28px', lineHeight: '1.4' }}>
-                💡 Once mentors complete their account setup, they will appear in the table below. You can sync an updated Master CSV anytime or use <strong>Change</strong> to manage assignments.
-              </div>
+              )}
             </div>
           ) : (
             <>
               <div style={{
-                padding: '14px 18px',
+                padding: '12px 18px',
                 backgroundColor: '#fffbeb',
                 border: '1px solid #fde68a',
                 borderRadius: '10px',
                 marginBottom: '20px',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '6px'
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Clock size={18} color="#d97706" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: '13.5px', color: '#92400e', fontWeight: '600' }}>
-                    Mentor Onboarding Pending: No Industry Mentors have been onboarded for Level {levelNumber} yet.
-                  </span>
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#b45309', marginLeft: '28px', lineHeight: '1.4' }}>
-                  💡 Upload the mapping CSV file below to dispatch initial invitations to industry mentors.
-                </div>
+                <Clock size={18} color="#d97706" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '13.5px', color: '#92400e', fontWeight: '600' }}>
+                  No Industry Mentors assigned yet. Upload a Master CSV to begin.
+                </span>
               </div>
 
               {/* Upload Drop Area (Only visible when initial onboarding is pending) */}

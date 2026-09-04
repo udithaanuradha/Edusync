@@ -1,7 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Sidebar from '../shared/Sidebar';
+import {
+  LayoutDashboard,
+  Users as UsersGroup,
+  CalendarDays,
+  MessageSquare,
+  ClipboardList,
+} from 'lucide-react';
+import Sidebar, { type MenuItem } from '../shared/Sidebar';
 import './MentorStyles.css';
+
+/**
+ * Mentor-specific nav items (excludes "Project Delays" so it is only available as a level tab)
+ */
+const mentorMenuItems: MenuItem[] = [
+  { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  {
+    key: "academicLevel",
+    icon: UsersGroup,
+    label: "Academic Level",
+    hasSubmenu: true,
+    submenu: [
+      { label: "Level 1", path: "/dashboard/level-1" },
+      { label: "Level 2", path: "/dashboard/level-2" },
+      { label: "Level 3", path: "/dashboard/level-3" },
+      { label: "Level 4", path: "/dashboard/level-4" },
+    ],
+  },
+  { path: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
+  {
+    path: "/dashboard/communication",
+    icon: MessageSquare,
+    label: "Communication",
+  },
+  { path: "/dashboard/announcements", icon: ClipboardList, label: "Announcements" },
+];
 
 /**
  * UnassignedLevelModal Component
@@ -120,7 +153,7 @@ const MentorSidebarWrapper: React.FC = () => {
         className="mentor-sidebar-container"
         onClickCapture={handleSidebarClick}
       >
-        <Sidebar />
+        <Sidebar navItems={mentorMenuItems} />
       </div>
 
       {modalState.isOpen && (
