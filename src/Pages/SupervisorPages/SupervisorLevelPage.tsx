@@ -398,10 +398,13 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                   : null,
           }),
         )
-        .filter((group) => group.level === null || group.level === levelNumber)
-        .filter((group) =>
-          belongsToViewer(group.supervisorId, group.supervisorName, viewer),
-        );
+        .filter((group) => group.level === null || group.level === levelNumber);
+      // No belongsToViewer re-filter here (unlike loadSubmissions below) —
+      // this endpoint's SQL already scopes to
+      // `supervisor_id = ? OR supervisor_id_2 = ?` server-side, and the
+      // response's single supervisorId/supervisorName field is always the
+      // *primary* supervisor, so re-filtering against it here would wrongly
+      // drop every group where the viewer is only the second supervisor.
 
       setGroups(normalized);
     } catch (error) {
