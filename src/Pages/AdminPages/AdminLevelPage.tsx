@@ -22,7 +22,14 @@ import {
   Trash2,
   User,
   UserCheck,
-  Briefcase
+  Briefcase,
+  Edit3,
+  Mail,
+  Building2,
+  Phone,
+  AlertCircle,
+  History,
+  Search
 } from 'lucide-react';
 
 interface StageFile {
@@ -71,6 +78,7 @@ interface MentorInfo {
   name: string;
   email?: string;
   phone?: string;
+  company?: string;
 }
 
 interface Group {
@@ -78,6 +86,9 @@ interface Group {
   groupName: string;
   supervisor: string;
   mentorName?: string;
+  mentorEmail?: string;
+  mentorPhone?: string;
+  mentorCompany?: string;
   mentors?: MentorInfo[];
   mentorNames?: string[];
   leader: string;
@@ -85,6 +96,26 @@ interface Group {
   status: string;
   department?: string;
   academic_unit?: string;
+}
+
+interface MentorHistoryRecord {
+  id: number;
+  group_id: number;
+  group_name: string;
+  level: number;
+  academic_unit?: string;
+  mentor_id?: number | null;
+  mentor_name: string;
+  mentor_email: string;
+  mentor_phone?: string;
+  mentor_company?: string;
+  new_mentor_name?: string;
+  new_mentor_email?: string;
+  reassigned_by?: number | null;
+  reassigned_by_name?: string;
+  reassigned_by_email?: string;
+  reassigned_reason?: string;
+  unassigned_at: string;
 }
 
 interface AdminLevelPageProps {
@@ -103,6 +134,134 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [deletingStageId, setDeletingStageId] = useState<number | null>(null);
+
+  // Mentor Assignment History Modal States
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyList, setHistoryList] = useState<MentorHistoryRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+
+  const fetchMentorHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/mentors/history/level/${levelNumber}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryList(data.history || []);
+      } else {
+        setHistoryList([]);
+      }
+    } catch (err) {
+      console.error('Error fetching mentor history:', err);
+      setHistoryList([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleOpenHistoryModal = () => {
+    setShowHistoryModal(true);
+    setHistorySearch('');
+    fetchMentorHistory();
+  };
+
+  // Reassign / Change Mentor Modal States
+  const [reassignModalGroup, setReassignModalGroup] = useState<any | null>(null);
+  const [reassignTargetMentor, setReassignTargetMentor] = useState<any | null>(null);
+  const [reassignForm, setReassignForm] = useState({
+    newMentorName: '',
+    newMentorEmail: '',
+    newMentorCompany: '',
+    newMentorPhone: '',
+    sendAppreciation: true
+  });
+  const [isReassigning, setIsReassigning] = useState(false);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+
+  const handleOpenReassignModal = (group: any, targetMentor: any | null = null) => {
+    setReassignModalGroup(group);
+    setReassignTargetMentor(targetMentor);
+    setReassignForm({
+      newMentorName: '',
+      newMentorEmail: '',
+      newMentorCompany: '',
+      newMentorPhone: '',
+      sendAppreciation: true
+    });
+    setReassignError(null);
+  };
+
+  const handleCloseReassignModal = () => {
+    setReassignModalGroup(null);
+    setReassignTargetMentor(null);
+    setReassignError(null);
+  };
+
+  const handleConfirmReassign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reassignForm.newMentorName.trim() || !reassignForm.newMentorEmail.trim()) {
+      setReassignError("Mentor name and email are required.");
+      return;
+    }
+
+    setIsReassigning(true);
+    setReassignError(null);
+
+    try {
+      let currentAdminId: number | null = null;
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          currentAdminId = parsed.id ?? parsed.user_id ?? null;
+        }
+      } catch (e) {
+        console.warn('Could not parse user from localStorage:', e);
+      }
+
+      const oldMentorId = reassignTargetMentor?.id || null;
+      const oldMentorEmail = reassignTargetMentor?.email || (reassignModalGroup.mentors && reassignModalGroup.mentors[0]?.email) || reassignModalGroup.mentorEmail || '';
+      const oldMentorName = reassignTargetMentor?.name || (reassignModalGroup.mentors && reassignModalGroup.mentors[0]?.name) || reassignModalGroup.mentorName || '';
+      const oldMentorPhone = reassignTargetMentor?.phone || (reassignModalGroup.mentors && reassignModalGroup.mentors[0]?.phone) || reassignModalGroup.mentorPhone || null;
+      const oldMentorCompany = reassignTargetMentor?.company || (reassignModalGroup.mentors && reassignModalGroup.mentors[0]?.company) || reassignModalGroup.mentorCompany || null;
+
+      const res = await fetch('http://localhost:5000/api/admin/mentors/reassign-group-mentor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId: reassignModalGroup.groupId,
+          groupName: reassignModalGroup.groupName,
+          level: levelNumber,
+          academicUnit: reassignModalGroup.academic_unit || reassignModalGroup.department || 'ITM',
+          oldMentorId,
+          oldMentorName,
+          oldMentorEmail,
+          oldMentorPhone,
+          oldMentorCompany,
+          reassignedBy: currentAdminId,
+          sendAppreciation: reassignForm.sendAppreciation,
+          newMentorName: reassignForm.newMentorName.trim(),
+          newMentorEmail: reassignForm.newMentorEmail.trim(),
+          newMentorCompany: reassignForm.newMentorCompany.trim(),
+          newMentorPhone: reassignForm.newMentorPhone.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToastMessage(`✅ Mentor reassigned for "${reassignModalGroup.groupName}"! Setup invite dispatched.`);
+        setTimeout(() => setToastMessage(null), 5000);
+        handleCloseReassignModal();
+        fetchAllData(false);
+      } else {
+        setReassignError(data.error || 'Failed to reassign mentor.');
+      }
+    } catch (err: any) {
+      setReassignError('Network error during mentor reassignment.');
+    } finally {
+      setIsReassigning(false);
+    }
+  };
 
   const handleDeleteStage = async (stageId: number, stageName: string) => {
     try {
@@ -247,23 +406,47 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
           ) : (
             <div style={{ width: '100%' }}>
               
-              {/* Toast Message */}
+              {/* Floating Toast Message */}
               {toastMessage && (
                 <div style={{
-                  padding: '12px 18px',
-                  backgroundColor: 'var(--eds-color-success-bg)',
-                  border: '1px solid var(--eds-color-success-solid)',
-                  borderRadius: '10px',
-                  color: 'var(--eds-color-success-text)',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  marginBottom: '20px',
+                  position: 'fixed',
+                  top: '24px',
+                  right: '32px',
+                  zIndex: 99999,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
+                  padding: '14px 20px',
+                  backgroundColor: '#166534',
+                  color: '#ffffff',
+                  borderRadius: '10px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                  fontSize: '13.5px',
+                  fontWeight: '600',
+                  border: '1px solid #22c55e'
                 }}>
-                  <CheckCircle2 size={16} color="var(--eds-color-success-solid)" />
+                  <CheckCircle2 size={18} color="#86efac" style={{ flexShrink: 0 }} />
                   <span>{toastMessage}</span>
+                  <button
+                    type="button"
+                    onClick={() => setToastMessage(null)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#86efac',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0.8
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.opacity = '1'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    title="Close notification"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               )}
 
@@ -339,6 +522,38 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                   >
                     <Download size={15} color="var(--eds-color-primary)" />
                     Export Level Report
+                  </button>
+
+                  {/* Mentor History Button */}
+                  <button
+                    type="button"
+                    onClick={handleOpenHistoryModal}
+                    title="View past mentor changes and assignment audit log"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 14px',
+                      backgroundColor: 'var(--eds-color-bg-surface)',
+                      color: 'var(--eds-color-text-body)',
+                      border: '1px solid var(--eds-color-border)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface-soft)';
+                      e.currentTarget.style.borderColor = 'var(--eds-color-text-faint)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--eds-color-bg-surface)';
+                      e.currentTarget.style.borderColor = 'var(--eds-color-border)';
+                    }}
+                  >
+                    <History size={15} color="#d97706" />
+                    Mentor History
                   </button>
 
                   {/* + Add Coordinators Button */}
@@ -626,6 +841,7 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                       <MentorImportPanel 
                         levelNumber={levelNumber} 
+                        registeredGroups={groups}
                         onSuccess={(toastMsg?: string) => {
                           if (toastMsg) {
                             setToastMessage(toastMsg);
@@ -772,38 +988,135 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
                                     {/* Assigned Mentor */}
                                     <td style={{ padding: '14px 18px', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                                      {group.mentorName ? (
-                                        <span style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '6px',
-                                          fontSize: '12.5px',
-                                          fontWeight: '600',
-                                          color: '#b45309',
-                                          backgroundColor: '#fffbeb',
-                                          border: '1px solid #fde68a',
-                                          padding: '3px 10px',
-                                          borderRadius: '6px',
-                                          whiteSpace: 'nowrap'
-                                        }}>
-                                          <Briefcase size={13} color="#d97706" style={{ flexShrink: 0 }} />
-                                          {group.mentorName}
-                                        </span>
-                                      ) : (
-                                        <span style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          fontSize: '12px',
-                                          color: '#94a3b8',
-                                          backgroundColor: '#f1f5f9',
-                                          padding: '3px 8px',
-                                          borderRadius: '6px',
-                                          fontStyle: 'italic',
-                                          whiteSpace: 'nowrap'
-                                        }}>
-                                          Unassigned
-                                        </span>
-                                      )}
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                        {group.mentors && group.mentors.length > 0 ? (
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                            {group.mentors.map((m: any, idx: number) => (
+                                              <div key={idx} style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                backgroundColor: '#fffbeb',
+                                                border: '1px solid #fde68a',
+                                                padding: '3px 6px 3px 10px',
+                                                borderRadius: '7px',
+                                                whiteSpace: 'nowrap'
+                                              }}>
+                                                <span style={{
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: '5px',
+                                                  fontSize: '12.5px',
+                                                  fontWeight: '600',
+                                                  color: '#b45309'
+                                                }}>
+                                                  <Briefcase size={13} color="#d97706" style={{ flexShrink: 0 }} />
+                                                  {m.name}
+                                                </span>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleOpenReassignModal(group, m)}
+                                                  title={`Change / Reassign mentor ${m.name} for ${group.groupName}`}
+                                                  style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '3px',
+                                                    padding: '2px 7px',
+                                                    backgroundColor: '#eff6ff',
+                                                    border: '1px solid #bfdbfe',
+                                                    borderRadius: '5px',
+                                                    color: '#2563eb',
+                                                    fontSize: '11px',
+                                                    fontWeight: '600',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.15s ease'
+                                                  }}
+                                                  onMouseOver={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#dbeafe';
+                                                    e.currentTarget.style.borderColor = '#93c5fd';
+                                                  }}
+                                                  onMouseOut={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                    e.currentTarget.style.borderColor = '#bfdbfe';
+                                                  }}
+                                                >
+                                                  <Edit3 size={10} />
+                                                  Change
+                                                </button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : group.mentorName && group.mentorName !== 'Unassigned' && group.mentorName.trim() !== '' ? (
+                                          <div style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            backgroundColor: '#fffbeb',
+                                            border: '1px solid #fde68a',
+                                            padding: '3px 6px 3px 10px',
+                                            borderRadius: '7px',
+                                            whiteSpace: 'nowrap'
+                                          }}>
+                                            <span style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '5px',
+                                              fontSize: '12.5px',
+                                              fontWeight: '600',
+                                              color: '#b45309'
+                                            }}>
+                                              <Briefcase size={13} color="#d97706" style={{ flexShrink: 0 }} />
+                                              {group.mentorName}
+                                            </span>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => handleOpenReassignModal(group, { name: group.mentorName, email: group.mentorEmail })}
+                                              title={`Change / Reassign mentor ${group.mentorName} for ${group.groupName}`}
+                                              style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '3px',
+                                                padding: '2px 7px',
+                                                backgroundColor: '#eff6ff',
+                                                border: '1px solid #bfdbfe',
+                                                borderRadius: '5px',
+                                                color: '#2563eb',
+                                                fontSize: '11px',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s ease'
+                                              }}
+                                              onMouseOver={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#dbeafe';
+                                                e.currentTarget.style.borderColor = '#93c5fd';
+                                              }}
+                                              onMouseOut={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                e.currentTarget.style.borderColor = '#bfdbfe';
+                                              }}
+                                            >
+                                              <Edit3 size={10} />
+                                              Change
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <span style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            fontSize: '12px',
+                                            color: '#94a3b8',
+                                            backgroundColor: '#f1f5f9',
+                                            padding: '3px 8px',
+                                            borderRadius: '6px',
+                                            fontStyle: 'italic',
+                                            whiteSpace: 'nowrap'
+                                          }}>
+                                            Unassigned
+                                          </span>
+                                        )}
+                                      </div>
                                     </td>
 
                                     {/* Members */}
@@ -890,6 +1203,634 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
 
         </main>
       </div>
+
+      {/* Change / Reassign Mentor Modal */}
+      {reassignModalGroup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(15, 23, 42, 0.55)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '520px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '18px 24px',
+              borderBottom: '1px solid #f1f5f9',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  backgroundColor: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Briefcase size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                    Reassign Industry Mentor
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Group: <strong>{reassignModalGroup.groupName}</strong> (Level {levelNumber})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseReassignModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleConfirmReassign} style={{ padding: '24px' }}>
+              {/* Current Mentor Summary */}
+              {reassignTargetMentor ? (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '13px'
+                  }}>
+                    <span style={{ color: '#92400e' }}>
+                      Mentor to Replace: <strong>{reassignTargetMentor.name}</strong>
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#b45309', backgroundColor: '#fef3c7', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                      Will be unlinked
+                    </span>
+                  </div>
+
+                  {/* Co-mentors note if multiple mentors exist */}
+                  {reassignModalGroup.mentors && reassignModalGroup.mentors.filter((m: any) => m.id !== reassignTargetMentor.id && m.name !== reassignTargetMentor.name).length > 0 && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      backgroundColor: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: '#166534',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <CheckCircle2 size={14} color="#16a34a" style={{ flexShrink: 0 }} />
+                      <span>
+                        Co-mentor <strong>{reassignModalGroup.mentors.filter((m: any) => m.id !== reassignTargetMentor.id && m.name !== reassignTargetMentor.name).map((m: any) => m.name).join(', ')}</strong> will remain active with this group.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (reassignModalGroup.mentorName && reassignModalGroup.mentorName !== 'Unassigned' && reassignModalGroup.mentorName.trim() !== '') ? (
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#fffbeb',
+                  border: '1px solid #fde68a',
+                  borderRadius: '10px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '13px'
+                }}>
+                  <span style={{ color: '#92400e' }}>
+                    Mentor to Replace: <strong>{reassignModalGroup.mentorName}</strong>
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#b45309', backgroundColor: '#fef3c7', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                    Will be unlinked
+                  </span>
+                </div>
+              ) : null}
+
+              {reassignError && (
+                <div style={{
+                  padding: '10px 14px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  color: '#991b1b',
+                  fontSize: '13px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={15} />
+                  <span>{reassignError}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#334155', marginBottom: '5px' }}>
+                    New Mentor Full Name <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Samantha Perera"
+                    value={reassignForm.newMentorName}
+                    onChange={(e) => setReassignForm({ ...reassignForm, newMentorName: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '13.5px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#334155', marginBottom: '5px' }}>
+                    New Mentor Work Email <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. samantha.mentor@company.com"
+                    value={reassignForm.newMentorEmail}
+                    onChange={(e) => setReassignForm({ ...reassignForm, newMentorEmail: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '13.5px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#334155', marginBottom: '5px' }}>
+                      Company / Organization
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Virtusa / IFS"
+                      value={reassignForm.newMentorCompany}
+                      onChange={(e) => setReassignForm({ ...reassignForm, newMentorCompany: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '13.5px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#334155', marginBottom: '5px' }}>
+                      Phone Number (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. +94771234567"
+                      value={reassignForm.newMentorPhone}
+                      onChange={(e) => setReassignForm({ ...reassignForm, newMentorPhone: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '13.5px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Option to send thank you / transition email to old mentor */}
+                {(reassignTargetMentor?.name || (reassignModalGroup.mentorName && reassignModalGroup.mentorName !== 'Unassigned')) && (
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    marginTop: '6px',
+                    cursor: 'pointer',
+                    padding: '10px 12px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={reassignForm.sendAppreciation}
+                      onChange={(e) => setReassignForm({ ...reassignForm, sendAppreciation: e.target.checked })}
+                      style={{ marginTop: '2px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '12.5px', color: '#475569', lineHeight: '1.4' }}>
+                      Send official <strong>Appreciation & Transition Notice</strong> email to previous mentor (<strong>{reassignTargetMentor?.name || reassignModalGroup.mentorName}</strong>).
+                    </span>
+                  </label>
+                )}
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: '12px',
+                marginTop: '24px',
+                paddingTop: '16px',
+                borderTop: '1px solid #f1f5f9'
+              }}>
+                <button
+                  type="button"
+                  onClick={handleCloseReassignModal}
+                  disabled={isReassigning}
+                  style={{
+                    padding: '9px 16px',
+                    backgroundColor: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: isReassigning ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isReassigning}
+                  style={{
+                    padding: '9px 20px',
+                    backgroundColor: isReassigning ? '#93c5fd' : '#2563eb',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: isReassigning ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {isReassigning ? 'Dispatching Invites...' : 'Confirm & Dispatch Invitation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mentor History Modal */}
+      {showHistoryModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(15, 23, 42, 0.55)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '860px',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '18px 24px',
+              borderBottom: '1px solid #f1f5f9',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  backgroundColor: '#fef3c7',
+                  color: '#d97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <History size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                    Mentor Assignment History
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Audit log of previous mentor changes and unlinks for Level {levelNumber}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {historyList.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ['Record ID', 'Group Name', 'Level', 'Academic Unit', 'Previous Mentor Name', 'Previous Mentor Email', 'Previous Mentor Phone', 'Previous Mentor Company', 'Replaced By (New Mentor)', 'New Mentor Email', 'Reassigned By Admin', 'Reason', 'Unassigned Date'];
+                      const rows = historyList.map(h => [
+                        `"${h.id}"`,
+                        `"${h.group_name}"`,
+                        `"Level ${h.level}"`,
+                        `"${h.academic_unit || 'ITM'}"`,
+                        `"${h.mentor_name}"`,
+                        `"${h.mentor_email}"`,
+                        `"${h.mentor_phone || '-'}"`,
+                        `"${h.mentor_company || '-'}"`,
+                        `"${h.new_mentor_name || '-'}"`,
+                        `"${h.new_mentor_email || '-'}"`,
+                        `"${h.reassigned_by_name || (h.reassigned_by ? 'Admin #' + h.reassigned_by : 'Admin')}"`,
+                        `"${h.reassigned_reason || 'Reassigned / Changed'}"`,
+                        `"${h.unassigned_at ? new Date(h.unassigned_at).toLocaleString() : '-'}"`
+                      ]);
+
+                      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement('a');
+                      link.setAttribute('href', encodedUri);
+                      link.setAttribute('download', `Level_${levelNumber}_Mentor_History_${new Date().toISOString().split('T')[0]}.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+
+                      setToastMessage(`✅ Level ${levelNumber} Mentor History exported successfully!`);
+                      setTimeout(() => setToastMessage(null), 4000);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      color: '#475569',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Download size={13} color="#2563eb" />
+                    Export CSV
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Search Filter Bar */}
+            <div style={{ padding: '14px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '10px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '10px' }} />
+                <input
+                  type="text"
+                  placeholder="Filter by group name or mentor name..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px 8px 34px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Body / Table */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+              {historyLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
+                  Loading mentor history records...
+                </div>
+              ) : historyList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                  <History size={36} style={{ marginBottom: '10px', opacity: 0.4 }} />
+                  <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#475569' }}>
+                    No Mentor Reassignment History Yet
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12.5px', color: '#94a3b8' }}>
+                    When industry mentors are replaced or reassigned for Level {levelNumber}, the previous mentor details will be automatically archived and displayed here.
+                  </p>
+                </div>
+              ) : (() => {
+                const filtered = historyList.filter(h => 
+                  !historySearch.trim() ||
+                  h.group_name.toLowerCase().includes(historySearch.toLowerCase()) ||
+                  h.mentor_name.toLowerCase().includes(historySearch.toLowerCase()) ||
+                  (h.new_mentor_name && h.new_mentor_name.toLowerCase().includes(historySearch.toLowerCase()))
+                );
+
+                if (filtered.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '13px' }}>
+                      No history matches "{historySearch}".
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                      <thead style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <tr>
+                          <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Target Group</th>
+                          <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Previous Mentor</th>
+                          <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Replaced By</th>
+                          <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase' }}>Action Details</th>
+                          <th style={{ padding: '10px 14px', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', textAlign: 'right' }}>Unassigned At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((record) => (
+                          <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '12px 14px', fontWeight: '600', color: '#0f172a', verticalAlign: 'top' }}>
+                              <div>{record.group_name}</div>
+                              {record.academic_unit && (
+                                <span style={{
+                                  display: 'inline-block',
+                                  marginTop: '4px',
+                                  padding: '2px 6px',
+                                  fontSize: '10.5px',
+                                  fontWeight: '600',
+                                  borderRadius: '4px',
+                                  backgroundColor: '#e0f2fe',
+                                  color: '#0284c7'
+                                }}>
+                                  {record.academic_unit}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: '600', color: '#b45309' }}>{record.mentor_name}</div>
+                              <div style={{ fontSize: '11.5px', color: '#64748b' }}>{record.mentor_email}</div>
+                              {record.mentor_phone && (
+                                <div style={{ fontSize: '11px', color: '#64748b' }}>📞 {record.mentor_phone}</div>
+                              )}
+                              {record.mentor_company && (
+                                <div style={{ fontSize: '11px', color: '#0284c7' }}>🏢 {record.mentor_company}</div>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                              {record.new_mentor_name ? (
+                                <div>
+                                  <div style={{ fontWeight: '600', color: '#15803d' }}>{record.new_mentor_name}</div>
+                                  <div style={{ fontSize: '11.5px', color: '#64748b' }}>{record.new_mentor_email}</div>
+                                </div>
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '12px' }}>Unassigned</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                              <div style={{ fontSize: '12px', color: '#334155', fontWeight: '500' }}>
+                                {record.reassigned_by_name ? `By: ${record.reassigned_by_name}` : 'By: Administrator'}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                {record.reassigned_reason || 'Reassigned'}
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                              <span style={{
+                                backgroundColor: '#f1f5f9',
+                                color: '#475569',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11.5px',
+                                fontWeight: '500'
+                              }}>
+                                {record.unassigned_at ? new Date(record.unassigned_at).toLocaleString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) : '-'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '14px 24px',
+              borderTop: '1px solid #f1f5f9',
+              backgroundColor: '#f8fafc'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  color: '#475569',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

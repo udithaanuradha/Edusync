@@ -1,5 +1,5 @@
 // src/components/mentor/MentorImportPanel.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { 
   UploadCloud, 
@@ -12,7 +12,8 @@ import {
   Check,
   Lock,
   MessageSquare,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 
 interface MentorRow {
@@ -24,6 +25,9 @@ interface MentorRow {
   phone: string;
   groupId?: number | null;
   groupMatched?: boolean;
+  isAlreadyAssigned?: boolean;
+  currentMentorName?: string | null;
+  currentMentorEmail?: string | null;
 }
 
 interface UnfilledGroup {
@@ -35,12 +39,14 @@ interface UnfilledGroup {
 interface MentorImportPanelProps {
   academicUnit?: string;
   levelNumber: number;
+  registeredGroups?: any[];
   onSuccess?: (toastMsg?: string) => void;
 }
 
 export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({ 
   academicUnit = 'ITM', 
   levelNumber,
+  registeredGroups,
   onSuccess 
 }) => {
   const [mentors, setMentors] = useState<MentorRow[]>([]);
@@ -56,6 +62,31 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
   // Chat Reminder States
   const [isRemindingAll, setIsRemindingAll] = useState(false);
   const [allReminded, setAllReminded] = useState(false);
+  const [isJustSent, setIsJustSent] = useState(false);
+
+  // Persistent tracking across page navigation/refresh for this Level
+  const storageKey = `edusync_mentor_invites_sent_level_${levelNumber}`;
+  const [hasStoredDispatched, setHasStoredDispatched] = useState<boolean>(() => {
+    return localStorage.getItem(`edusync_mentor_invites_sent_level_${levelNumber}`) === 'true';
+  });
+
+  useEffect(() => {
+    setHasStoredDispatched(localStorage.getItem(`edusync_mentor_invites_sent_level_${levelNumber}`) === 'true');
+  }, [levelNumber]);
+
+  // Compute live onboarding state from current registered groups in DB
+  const totalRegisteredGroupsCount = registeredGroups ? registeredGroups.length : 0;
+  const assignedGroupsCount = registeredGroups 
+    ? registeredGroups.filter(g => (g.mentors && g.mentors.length > 0) || (g.mentorName && g.mentorName !== 'Unassigned' && String(g.mentorName).trim() !== '')).length 
+    : 0;
+  const unassignedGroups = registeredGroups
+    ? registeredGroups.filter(g => !((g.mentors && g.mentors.length > 0) || (g.mentorName && g.mentorName !== 'Unassigned' && String(g.mentorName).trim() !== '')))
+    : [];
+  const pendingGroupNames = unassignedGroups.map(g => g.groupName || g.group_name || `Group #${g.groupId || g.id}`);
+  const isLevelFullyOnboarded = totalRegisteredGroupsCount > 0 && assignedGroupsCount === totalRegisteredGroupsCount;
+  const isLevelPartiallyOnboarded = totalRegisteredGroupsCount > 0 && assignedGroupsCount > 0 && assignedGroupsCount < totalRegisteredGroupsCount;
+  const hasDispatchedInvites = isJustSent || (hasStoredDispatched && !isLevelFullyOnboarded);
+  const isAlreadyActive = isLevelFullyOnboarded || isLevelPartiallyOnboarded || hasDispatchedInvites;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +105,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
     setAllGroupsCovered(false);
     setMissingGroupNames([]);
     setAllReminded(false);
+    setIsJustSent(false);
     setStatusMessage({ type: 'info', text: `Checking CSV against registered Level ${levelNumber} groups...` });
 
     Papa.parse(file, {
@@ -126,7 +158,10 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
                 text: `All ${resData.totalLevelGroups} registered groups in Level ${levelNumber} are filled and matched! Ready to broadcast invites.`
               });
             } else {
-              setStatusMessage(null);
+              setStatusMessage({
+                type: 'info',
+                text: `${resData.data?.length || 0} group(s) filled with mentor details. You can dispatch invites to these mentors now, and notify the ${resData.unfilledGroups?.length || 0} pending group(s) via Chat.`
+              });
             }
           } else {
             setStatusMessage({ type: 'error', text: resData.error || 'Failed to match groups with database.' });
@@ -188,7 +223,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
         setAllReminded(true);
         setStatusMessage({
           type: 'success',
-          text: `Chat reminders sent successfully to all members across ${unfilledGroups.length} missing group(s)!`
+          text: `Chat reminder sent successfully to group leader(s) across ${unfilledGroups.length} missing group(s)!`
         });
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to send reminders.' });
@@ -200,12 +235,14 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
     }
   };
 
-  // Broadcast transactional invitations
+  // Broadcast transactional invitations to all filled group mentors
   const handleSendInvites = async () => {
-    if (!allGroupsCovered) {
+    const validFilledMentors = mentors.filter(m => m.groupMatched && m.email && m.name && m.email.toLowerCase() !== 'pending submission');
+    
+    if (validFilledMentors.length === 0) {
       setStatusMessage({
         type: 'error',
-        text: `Cannot proceed: All ${totalLevelGroups} registered groups in Level ${levelNumber} must be filled before broadcasting invites.`
+        text: 'No valid filled group mentors found in the CSV to dispatch invitations.'
       });
       return;
     }
@@ -217,12 +254,19 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
       const response = await fetch('http://localhost:5000/api/admin/mentors/send-invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mentors, academicUnit, level: levelNumber }),
+        body: JSON.stringify({ mentors: validFilledMentors, academicUnit, level: levelNumber }),
       });
 
       const resData = await response.json();
       if (response.ok) {
-        const successMsg = '🚀 All mentor onboarding invitations dispatched successfully!';
+        const successMsg = resData.message || '🚀 Mentor onboarding invitations dispatched successfully!';
+        setIsJustSent(true);
+        try {
+          localStorage.setItem(storageKey, 'true');
+          setHasStoredDispatched(true);
+        } catch (e) {
+          console.warn('Could not persist mentor invites dispatched flag in storage:', e);
+        }
         setStatusMessage({ type: 'success', text: successMsg });
         setMentors([]);
         setUnfilledGroups([]);
@@ -259,7 +303,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: 'flex-start',
+        alignItems: 'center',
         borderBottom: '1px solid #f1f5f9',
         paddingBottom: '16px',
         marginBottom: '20px',
@@ -288,114 +332,305 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Hidden global file input */}
+        <input 
+          type="file" 
+          accept=".csv" 
+          ref={fileInputRef}
+          onChange={handleFileUpload} 
+          style={{ display: 'none' }} 
+        />
+
+        {/* Sync / Upload Master CSV Button (Available when onboarding is already active) */}
+        {isAlreadyActive && mentors.length === 0 && unfilledGroups.length === 0 && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '8px',
+              color: '#2563eb',
+              fontSize: '12.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#dbeafe';
+              e.currentTarget.style.borderColor = '#93c5fd';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#eff6ff';
+              e.currentTarget.style.borderColor = '#bfdbfe';
+            }}
+          >
+            <UploadCloud size={14} />
+            Upload / Sync Master CSV
+          </button>
+        )}
       </div>
 
-      {/* Upload Drop Area */}
-      {mentors.length === 0 && unfilledGroups.length === 0 ? (
-        <div
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            border: isDragging ? '2px dashed #2563eb' : '2px dashed #cbd5e1',
-            backgroundColor: isDragging ? '#eff6ff' : '#f8fafc',
-            borderRadius: '12px',
-            padding: '32px 20px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px'
-          }}
-          onMouseOver={(e) => {
-            if (!isDragging) {
-              e.currentTarget.style.backgroundColor = '#f1f5f9';
-              e.currentTarget.style.borderColor = '#94a3b8';
-            }
-          }}
-          onMouseOut={(e) => {
-            if (!isDragging) {
-              e.currentTarget.style.backgroundColor = '#f8fafc';
-              e.currentTarget.style.borderColor = '#cbd5e1';
-            }
-          }}
-        >
-          <input 
-            type="file" 
-            accept=".csv" 
-            ref={fileInputRef}
-            onChange={handleFileUpload} 
-            style={{ display: 'none' }} 
-          />
-
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: '#eff6ff',
-            color: '#2563eb',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <UploadCloud size={24} />
+      {/* Top Status Alert / Feedback Message */}
+      {statusMessage && statusMessage.text && (
+        <div style={{ 
+          padding: '12px 18px', 
+          borderRadius: '10px', 
+          fontSize: '13.5px', 
+          fontWeight: '500',
+          marginBottom: '18px',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          gap: '12px',
+          backgroundColor: statusMessage.type === 'success' 
+            ? '#f0fdf4' 
+            : statusMessage.type === 'error' 
+              ? '#fef2f2' 
+              : '#eff6ff',
+          color: statusMessage.type === 'success' 
+            ? '#166534' 
+            : statusMessage.type === 'error' 
+              ? '#991b1b' 
+              : '#1e40af',
+          border: statusMessage.type === 'success' 
+            ? '1px solid #86efac' 
+            : statusMessage.type === 'error' 
+              ? '1px solid #fecaca' 
+              : '1px solid #bfdbfe',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+            ) : statusMessage.type === 'error' ? (
+              <AlertCircle size={18} color="#dc2626" style={{ flexShrink: 0 }} />
+            ) : (
+              <Clock size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+            )}
+            <span style={{ lineHeight: '1.4' }}>{statusMessage.text}</span>
           </div>
 
-          <div>
-            <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>
-              Click to select or drag & drop CSV file
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-              Headers required: Group Name, Mentor Name, Email, Company
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setStatusMessage(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: statusMessage.type === 'success' ? '#166534' : statusMessage.type === 'error' ? '#991b1b' : '#1e40af',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              borderRadius: '4px',
+              opacity: 0.75
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.opacity = '1'; }}
+            onMouseOut={(e) => { e.currentTarget.style.opacity = '0.75'; }}
+            title="Dismiss notification"
+          >
+            <X size={16} />
+          </button>
         </div>
-      ) : (
+      )}
+
+      {/* 1. Live Level Onboarding Status Indicator (when no fresh CSV is actively being previewed) */}
+      {mentors.length === 0 && unfilledGroups.length === 0 && (
+        <>
+          {isLevelFullyOnboarded ? (
+            <div style={{
+              padding: '14px 18px',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '10px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '13.5px', color: '#166534', fontWeight: '600' }}>
+                  Mentor Onboarding Active: All {totalRegisteredGroupsCount} currently registered project groups in Level {levelNumber} have active Industry Mentors.
+                </span>
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#15803d', marginLeft: '28px', lineHeight: '1.4' }}>
+                💡 All currently enrolled groups have active Industry Mentors. If new project groups are added or mentor assignments change, you can re-sync the Master CSV anytime or use the <strong>Change</strong> button below.
+              </div>
+            </div>
+          ) : isLevelPartiallyOnboarded ? (
+            <div style={{
+              padding: '14px 18px',
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '10px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <Clock size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '13.5px', color: '#1e40af', fontWeight: '600' }}>
+                  Onboarding In Progress: {assignedGroupsCount} of {totalRegisteredGroupsCount} project groups have active Industry Mentors assigned.
+                </span>
+                {pendingGroupNames.length > 0 && (
+                  <span style={{
+                    fontSize: '12px',
+                    backgroundColor: '#fef3c7',
+                    color: '#92400e',
+                    border: '1px solid #fde047',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontWeight: '600'
+                  }}>
+                    Pending Mentors/Invites: {pendingGroupNames.join(', ')}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#1d4ed8', marginLeft: '28px', lineHeight: '1.4' }}>
+                💡 You can re-upload/sync an updated Master CSV anytime as remaining groups submit details, or use the <strong>Change</strong> button in the table below to manage individual assignments.
+              </div>
+            </div>
+          ) : hasDispatchedInvites ? (
+            <div style={{
+              padding: '14px 18px',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '10px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle2 size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '13.5px', color: '#166534', fontWeight: '600' }}>
+                  Invitations Dispatched: Onboarding invitations have been sent to mapped group mentors in Level {levelNumber}.
+                </span>
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#15803d', marginLeft: '28px', lineHeight: '1.4' }}>
+                💡 Once mentors complete their account setup, they will appear in the table below. You can sync an updated Master CSV anytime or use <strong>Change</strong> to manage assignments.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{
+                padding: '14px 18px',
+                backgroundColor: '#fffbeb',
+                border: '1px solid #fde68a',
+                borderRadius: '10px',
+                marginBottom: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Clock size={18} color="#d97706" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '13.5px', color: '#92400e', fontWeight: '600' }}>
+                    Mentor Onboarding Pending: No Industry Mentors have been onboarded for Level {levelNumber} yet.
+                  </span>
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#b45309', marginLeft: '28px', lineHeight: '1.4' }}>
+                  💡 Upload the mapping CSV file below to dispatch initial invitations to industry mentors.
+                </div>
+              </div>
+
+              {/* Upload Drop Area (Only visible when initial onboarding is pending) */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: isDragging ? '2px dashed #2563eb' : '2px dashed #cbd5e1',
+                  backgroundColor: isDragging ? '#eff6ff' : '#f8fafc',
+                  borderRadius: '12px',
+                  padding: '32px 20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}
+                onMouseOver={(e) => {
+                  if (!isDragging) {
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                    e.currentTarget.style.borderColor = '#94a3b8';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!isDragging) {
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }
+                }}
+              >
+                <input 
+                  type="file" 
+                  accept=".csv" 
+                  ref={fileInputRef}
+                  onChange={handleFileUpload} 
+                  style={{ display: 'none' }} 
+                />
+
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  backgroundColor: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <UploadCloud size={24} />
+                </div>
+
+                <div>
+                  <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>
+                    Click to select or drag & drop CSV file
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    Headers required: Group Name, Mentor Name, Email, Company
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* 2. File Header Card (Only visible when a fresh CSV has been uploaded and is being reviewed) */}
+      {(mentors.length > 0 || unfilledGroups.length > 0) && (
         <div style={{
           backgroundColor: '#eff6ff',
           border: '1px solid #bfdbfe',
           borderRadius: '10px',
           padding: '12px 16px',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
+          gap: '10px',
           marginBottom: '16px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <FileSpreadsheet size={20} color="#2563eb" />
-            <div>
-              <div style={{ fontWeight: '600', color: '#1e40af', fontSize: '13.5px' }}>
-                {fileName || 'Level Mentor Mapping CSV'}
-              </div>
-              <div style={{ fontSize: '12px', color: '#3b82f6' }}>
-                {mentors.length} mentor assignment records loaded
-              </div>
+          <FileSpreadsheet size={20} color="#2563eb" style={{ flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: '600', color: '#1e40af', fontSize: '13.5px' }}>
+              {fileName || 'Level Mentor Mapping CSV'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#3b82f6' }}>
+              {mentors.length} mentor assignment records loaded
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={handleReset}
-            style={{
-              background: '#ffffff',
-              border: '1px solid #cbd5e1',
-              color: '#dc2626',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '12px',
-              fontWeight: '600'
-            }}
-          >
-            <Trash2 size={13} /> Change File
-          </button>
         </div>
       )}
 
@@ -444,39 +679,15 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
             {allReminded ? (
               <>
                 <Check size={14} />
-                Reminders Sent via Chat
+                Reminders Sent to Leader(s)
               </>
             ) : (
               <>
                 <MessageSquare size={14} />
-                {isRemindingAll ? 'Sending...' : 'Notify Missing Groups via Chat'}
+                {isRemindingAll ? 'Sending...' : 'Notify Group Leader(s) via Chat'}
               </>
             )}
           </button>
-        </div>
-      )}
-
-      {/* Status Feedback Message */}
-      {statusMessage && statusMessage.text && (
-        <div style={{ 
-          padding: '12px 16px', 
-          borderRadius: '10px', 
-          fontSize: '13px', 
-          fontWeight: '500',
-          marginTop: '16px',
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px',
-          backgroundColor: statusMessage.type === 'error' ? '#fef2f2' : statusMessage.type === 'success' ? '#f0fdf4' : '#eff6ff',
-          color: statusMessage.type === 'error' ? '#991b1b' : statusMessage.type === 'success' ? '#166534' : '#1e40af',
-          border: `1px solid ${statusMessage.type === 'error' ? '#fecaca' : statusMessage.type === 'success' ? '#bbf7d0' : '#bfdbfe'}`
-        }}>
-          {statusMessage.type === 'success' ? (
-            <CheckCircle2 size={16} />
-          ) : (
-            <AlertCircle size={16} />
-          )}
-          <span>{statusMessage.text}</span>
         </div>
       )}
 
@@ -529,22 +740,39 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
                     <td style={{ padding: '10px 14px', color: '#475569' }}>
                       {mentor.email}
                     </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {mentor.groupMatched ? (
-                        <span style={{ 
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          backgroundColor: '#ecfdf5',
-                          color: '#065f46',
-                          border: '1px solid #a7f3d0',
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11.5px',
-                          fontWeight: '600'
-                        }}>
-                          <Check size={12} /> Matched
-                        </span>
+                        mentor.isAlreadyAssigned ? (
+                          <span style={{ 
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            backgroundColor: '#f0fdf4',
+                            color: '#166534',
+                            border: '1px solid #bbf7d0',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11.5px',
+                            fontWeight: '600'
+                          }}>
+                            <CheckCircle2 size={12} color="#16a34a" /> Already Active (Skipped)
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            backgroundColor: '#eff6ff',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11.5px',
+                            fontWeight: '600'
+                          }}>
+                            <Send size={12} color="#2563eb" /> New Mentor (Will Send Invite)
+                          </span>
+                        )
                       ) : (
                         <span style={{ 
                           display: 'inline-flex',
@@ -619,60 +847,77 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
               Cancel
             </button>
 
-            {allGroupsCovered ? (
-              <button
-                type="button"
-                onClick={handleSendInvites}
-                disabled={isSending}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '9px 20px',
-                  backgroundColor: isSending ? '#93c5fd' : '#2563eb',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: isSending ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
-                  transition: 'background-color 0.15s ease'
-                }}
-                onMouseOver={(e) => {
-                  if (!isSending) e.currentTarget.style.backgroundColor = '#1d4ed8';
-                }}
-                onMouseOut={(e) => {
-                  if (!isSending) e.currentTarget.style.backgroundColor = '#2563eb';
-                }}
-              >
-                <Send size={15} />
-                {isSending ? 'Sending Onboarding Invites...' : 'Confirm & Broadcast Invites'}
-              </button>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {(() => {
+              const validFilledMentors = mentors.filter(m => m.groupMatched && m.email && m.name && m.email.toLowerCase() !== 'pending submission');
+              const newMentorsCount = validFilledMentors.filter(m => !m.isAlreadyAssigned).length;
+              const skippedMentorsCount = validFilledMentors.filter(m => m.isAlreadyAssigned).length;
+              const pendingGroupsCount = unfilledGroups.length;
+
+              if (validFilledMentors.length === 0) {
+                return (
+                  <button
+                    type="button"
+                    disabled={true}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 16px',
+                      backgroundColor: '#f1f5f9',
+                      color: '#94a3b8',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'not-allowed'
+                    }}
+                  >
+                    <Lock size={14} />
+                    No Valid Mentors in CSV
+                  </button>
+                );
+              }
+
+              return (
                 <button
                   type="button"
-                  disabled={true}
+                  onClick={handleSendInvites}
+                  disabled={isSending}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '9px 16px',
-                    backgroundColor: '#f1f5f9',
-                    color: '#94a3b8',
-                    border: '1px solid #e2e8f0',
+                    gap: '8px',
+                    padding: '9px 20px',
+                    backgroundColor: isSending ? '#93c5fd' : '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
                     borderRadius: '8px',
                     fontSize: '13px',
                     fontWeight: '600',
-                    cursor: 'not-allowed'
+                    cursor: isSending ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isSending) e.currentTarget.style.backgroundColor = '#1d4ed8';
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isSending) e.currentTarget.style.backgroundColor = '#2563eb';
                   }}
                 >
-                  <Lock size={14} />
-                  Upload Blocked (All groups must be filled)
+                  <Send size={15} />
+                  {isSending 
+                    ? 'Dispatching Onboarding Invites...' 
+                    : newMentorsCount === 0
+                      ? `All ${validFilledMentors.length} Mentors Active (Skipped)`
+                      : pendingGroupsCount > 0
+                        ? `Dispatch Invites to ${newMentorsCount} Filled Mentor${newMentorsCount === 1 ? '' : 's'} (${pendingGroupsCount} Group${pendingGroupsCount === 1 ? '' : 's'} Pending)`
+                        : skippedMentorsCount > 0
+                          ? `Dispatch Invites to ${newMentorsCount} New Mentor${newMentorsCount === 1 ? '' : 's'} (${skippedMentorsCount} Active Skipped)`
+                          : `Confirm & Broadcast All ${validFilledMentors.length} Invites`}
                 </button>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}
