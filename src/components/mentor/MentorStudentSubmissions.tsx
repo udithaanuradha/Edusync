@@ -119,7 +119,6 @@ const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ lev
       {/* ── Top Header Section ── */}
       <div className="mss-header-card">
         <div className="mss-header-left">
-          <div className="mss-header-badge">Level {levelNumber} Submissions</div>
           <h3>Student Submissions & Reports</h3>
           <p className="mss-subtitle">
             Review and download reports, project documents, and stage deliverables submitted by your assigned group members.

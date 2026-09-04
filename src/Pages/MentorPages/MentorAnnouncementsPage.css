@@ -85,11 +85,11 @@
 }
 
 .overview-title {
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--eds-color-text-strong);
   margin: 0 0 4px 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .overview-subtitle {

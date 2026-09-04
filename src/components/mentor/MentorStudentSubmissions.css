@@ -58,14 +58,14 @@
 }
 
 .mss-header-left h3 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--eds-color-text-strong);
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
 }
 
 .mss-subtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--eds-color-text-muted);
   margin: 0;
   max-width: 650px;

@@ -138,14 +138,14 @@
 }
 
 .gt-overall-header h4 {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--eds-color-text-strong);
   margin: 0 0 4px 0;
 }
 
 .gt-group-name-sub {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--eds-color-text-muted);
 }
@@ -485,7 +485,7 @@
 }
 
 .gt-section-title {
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--eds-color-text-strong);
   margin: 0 0 2px 0;
@@ -493,7 +493,7 @@
 }
 
 .gt-section-sub {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--eds-color-text-muted);
   margin: 0;
 }

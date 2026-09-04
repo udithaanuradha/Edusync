@@ -1,5 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import heroBg from '../../assets/background.png';
@@ -13,6 +13,16 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  // Load remembered credentials on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('remembered_email');
+    const savedRemember = localStorage.getItem('remember_me');
+    if (savedEmail && savedRemember === 'true') {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   // Unverified-account handling: shown when /api/login returns 403 because
   // the account hasn't completed OTP verification yet.
@@ -46,6 +56,15 @@ const Login: React.FC = () => {
         setNeedsVerification(true);
       }
       throw new Error(data.error || 'Login failed');
+    }
+
+    // Handle "Remember Me" persistence
+    if (rememberMe) {
+      localStorage.setItem('remembered_email', loginEmail);
+      localStorage.setItem('remember_me', 'true');
+    } else {
+      localStorage.removeItem('remembered_email');
+      localStorage.removeItem('remember_me');
     }
 
     setNeedsVerification(false);
