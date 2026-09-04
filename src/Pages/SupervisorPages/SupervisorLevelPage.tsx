@@ -249,7 +249,13 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   // picking a student lists that student's tasks across the whole group.
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<number | string | null>(null);
-  const [progressSubTab, setProgressSubTab] = useState<'marks' | 'tasks'>('marks');
+  // The Overview dashboard's "View Full Progress" button links here for
+  // exactly the milestone/task detail it's showing a preview of — so a
+  // groupId deep link should land on the "Milestone & Task Progress"
+  // sub-view, not the default "Student Marks & Grades" one.
+  const [progressSubTab, setProgressSubTab] = useState<'marks' | 'tasks'>(() =>
+    deepLinkGroupId ? 'tasks' : 'marks',
+  );
 
   // 🎯 Real DB Result මත පමණක් button එක පෙන්නීමට default = false කර ඇත
   const [isEvaluatorAssigned, setIsEvaluatorAssigned] = useState<boolean>(false);
