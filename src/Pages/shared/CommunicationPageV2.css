@@ -1,8 +1,13 @@
-/* Sits inside the standard .main-viewport (index.css) below the Header,
-   same as every other page — this just makes the chat panel fill that
-   space edge-to-edge instead of using .content-container's page padding. */
+/* Sits inside AppShell's .content (AppShell.module.css) below the Header.
+   That wrapper is a plain block, not a flex container, so `flex: 1` here
+   has no effect on it — height: 100% is what actually makes this fill the
+   available space exactly. Getting this bounded matters beyond looks: if
+   this box were left to grow to fit the chat's full content instead, the
+   conversations sidebar and message stream inside it would never get a
+   real height to scroll *within*, and AppShell's .content would become the
+   only thing that scrolls — taking both panels down together with it. */
 .v2-comm-page-content {
-  flex: 1;
+  height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -33,6 +38,19 @@
   min-height: 0;
   height: 100%;
   overflow: hidden;
+}
+
+/* Without min-height: 0 here, this flex row's sidebar child defaults to
+   min-height: auto and won't shrink below its content height — so a long
+   conversation list could grow the sidebar past .chat-container-v2's own
+   height instead of scrolling internally via .conversations-list-v2. */
+.conversations-sidebar-v2 {
+  min-height: 0;
+  height: 100%;
+}
+
+.conversations-list-v2 {
+  min-height: 0;
 }
 
 .chat-main-v2 {

@@ -110,11 +110,18 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialTab, setModalInitialTab] = useState<string>("assigned_groups");
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStreamRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Scrolls only the message stream itself (by setting its own scrollTop)
+  // rather than messagesEndRef.scrollIntoView(), which asks the browser to
+  // pick whichever scrollable ancestor it finds — if that ever resolves to
+  // a shared container instead of .messages-stream-v2, it drags the
+  // conversations sidebar's scroll position along with it.
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesStreamRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -589,7 +596,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                 </div>
               </div>
 
-              <div className="messages-stream-v2">
+              <div className="messages-stream-v2" ref={messagesStreamRef}>
                 {loadingMessages ? (
                   <div className="chat-empty-state-v2">
                     <Loader size={24} className="spinner" />
@@ -631,7 +638,6 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                     );
                   })
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               {isPartnerTyping && (
