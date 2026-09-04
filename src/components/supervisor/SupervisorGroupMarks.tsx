@@ -222,12 +222,41 @@ const SupervisorGroupMarks: React.FC<SupervisorGroupMarksProps> = ({
 
         setStages(canonicalList);
 
-        // 4. Filter students to supervised groups only
-        const isMyStudent = (item: any): boolean => {
-          if (!supervisorId && !supervisorName && myGroupNames.size === 0 && myGroupIds.size === 0) {
-            return true;
+        // 4. Collect evaluation panels for this level
+        let rawPanels: any[] = Array.isArray(payload.panels) ? payload.panels : [];
+        if (rawPanels.length === 0) {
+          try {
+            const calRes = await fetch(`http://localhost:5000/api/calendar/all`, {
+              headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+            });
+            if (calRes.ok) {
+              const calData = await calRes.json();
+              rawPanels = Array.isArray(calData) ? calData : [];
+            }
+          } catch (e) {
+            console.warn("Fallback calendar panels fetch:", e);
           }
+        }
 
+        // Map of group name (lowercase) to its completed evaluation panels
+        const completedPanelsByGroup = new Map<string, any[]>();
+        rawPanels.forEach((p: any) => {
+          const status = String(p.status || '').trim().toLowerCase();
+          const pLevel = String(p.academic_level ?? p.level ?? '').trim();
+          if (pLevel && String(levelNumber) !== pLevel) {
+            return;
+          }
+          if (status === 'completed' || status === 'complete') {
+            const tGroup = String(p.target_group || '').trim().toLowerCase();
+            if (!completedPanelsByGroup.has(tGroup)) {
+              completedPanelsByGroup.set(tGroup, []);
+            }
+            completedPanelsByGroup.get(tGroup)!.push(p);
+          }
+        });
+
+        // 5. Filter students to supervised groups only
+        const isMyStudent = (item: any): boolean => {
           const gId = String(item.group_id ?? item.groupId ?? '').trim();
           if (gId && myGroupIds.has(gId)) return true;
 
@@ -235,23 +264,56 @@ const SupervisorGroupMarks: React.FC<SupervisorGroupMarksProps> = ({
           if (gName && myGroupNames.has(gName)) return true;
 
           const supId = String(item.supervisor_id ?? item.supervisorId ?? item.assigned_supervisor_id ?? '').trim();
-          if (supervisorId && supId && String(supervisorId).trim() === supId) return true;
+          const supId2 = String(item.supervisor_id_2 ?? item.supervisorId2 ?? '').trim();
+          if (supervisorId && ((supId && String(supervisorId).trim() === supId) || (supId2 && String(supervisorId).trim() === supId2))) {
+            return true;
+          }
 
           const supName = String(item.supervisor_name ?? item.supervisorName ?? item.assigned_supervisor_name ?? '').trim().toLowerCase();
-          if (supervisorName && supName && supName.includes(supervisorName.trim().toLowerCase())) return true;
+          const supName2 = String(item.supervisor_name_2 ?? item.supervisorName2 ?? '').trim().toLowerCase();
+          if (supervisorName) {
+            const sNameLower = supervisorName.trim().toLowerCase();
+            if (supName && supName.includes(sNameLower)) return true;
+            if (supName2 && supName2.includes(sNameLower)) return true;
+          }
+
+          // Check if panel lists this supervisor
+          if (gName && rawPanels.length > 0) {
+            const hasPanelSup = rawPanels.some((p) => {
+              if (String(p.target_group || '').trim().toLowerCase() !== gName) return false;
+              if (p.supervisors) {
+                const sStr = typeof p.supervisors === 'string' ? p.supervisors.toLowerCase() : JSON.stringify(p.supervisors).toLowerCase();
+                if (supervisorName && sStr.includes(supervisorName.trim().toLowerCase())) return true;
+                if (supervisorId && sStr.includes(String(supervisorId))) return true;
+              }
+              return false;
+            });
+            if (hasPanelSup) return true;
+          }
+
+          if (!supervisorId && !supervisorName && myGroupNames.size === 0 && myGroupIds.size === 0) {
+            return true;
+          }
 
           return false;
         };
 
-        const supervisedStudents = rawStudents.filter(isMyStudent);
+        // Only show groups that have an evaluation panel set AND status = 'completed'
+        const supervisedStudents = rawStudents
+          .filter(isMyStudent)
+          .filter((item: any) => {
+            const gName = String(item.group_name || item.groupName || '').trim().toLowerCase();
+            return completedPanelsByGroup.has(gName) && completedPanelsByGroup.get(gName)!.length > 0;
+          });
 
-        // 5. Group students by Group Name
+        // 6. Group students by Group Name
         const groupsMap = new Map<string, GroupMarksSection>();
 
         supervisedStudents.forEach((item: any) => {
           const groupName = String(item.group_name || item.groupName || 'Unassigned Group').trim();
           const groupId = item.group_id ?? item.groupId ?? groupName;
           const degree = inferDegree(item);
+          const groupCompletedPanels = completedPanelsByGroup.get(groupName.toLowerCase()) || [];
 
           // Process student's stage marks
           const studentStages: { [key: string]: any } = {};
@@ -260,10 +322,17 @@ const SupervisorGroupMarks: React.FC<SupervisorGroupMarksProps> = ({
           let hasAnyMark = false;
 
           canonicalList.forEach((cStg) => {
+            // Check if this specific stage has a completed evaluation panel
+            const isStageCompleted = groupCompletedPanels.some((p: any) => {
+              const pType = String(p.evaluation_type || '').trim().toLowerCase();
+              const sName = cStg.stage_name.toLowerCase();
+              return pType === sName || sName.includes(pType) || pType.includes(sName);
+            });
+
             const evaluators: any[] = [];
             let stageTotal = 100;
 
-            if (item.stages) {
+            if (isStageCompleted && item.stages) {
               cStg.raw_ids.forEach((rId) => {
                 const sData = item.stages[rId] || item.stages[String(rId)];
                 if (sData) {
@@ -423,10 +492,10 @@ const SupervisorGroupMarks: React.FC<SupervisorGroupMarksProps> = ({
       >
         <Users size={40} color="#94a3b8" style={{ margin: '0 auto 14px auto' }} />
         <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>
-          No Supervised Groups Found
+          No Completed Evaluations Found
         </h3>
-        <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-          No groups assigned to you as supervisor were found for Level {levelNumber}.
+        <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto' }}>
+          Only supervised groups with an evaluation panel set and marked as completed are displayed here.
         </p>
       </div>
     );

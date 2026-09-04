@@ -18,6 +18,12 @@ interface GroupMember {
   feedback?: string;
   stage_avg_mark?: number | null;
   evaluator_count?: number;
+  evaluations_list?: Array<{
+    evaluator_id: number | string;
+    evaluator_name: string;
+    marks: number;
+    total_marks?: number;
+  }>;
 }
 
 interface GroupData {
@@ -859,9 +865,57 @@ const SupervisorEvaluationPanel: React.FC = () => {
                               const sId = String(member.student_id);
                               const currentMarkVal = evaluations[sId]?.marks || "";
                               const currentNum = Number(currentMarkVal);
-                              const currentPercent = currentMarkVal !== "" && totalMaxMarks > 0 
+                              const hasInput = currentMarkVal !== "" && !isNaN(currentNum);
+                              const currentPercent = hasInput && totalMaxMarks > 0 
                                 ? Math.round((currentNum / totalMaxMarks) * 100) 
                                 : null;
+
+                              // Collect marks given by OTHER evaluators for this student
+                              let otherEvaluatorMarks: number[] = [];
+
+                              if (member.evaluations_list && member.evaluations_list.length > 0) {
+                                otherEvaluatorMarks = member.evaluations_list
+                                  .filter((ev) => {
+                                    if (currentEvaluator.id && ev.evaluator_id) {
+                                      return String(ev.evaluator_id) !== String(currentEvaluator.id);
+                                    }
+                                    if (currentEvaluator.name && ev.evaluator_name) {
+                                      return ev.evaluator_name.trim().toLowerCase() !== currentEvaluator.name.trim().toLowerCase();
+                                    }
+                                    return true;
+                                  })
+                                  .map((ev) => Number(ev.marks))
+                                  .filter((m) => !isNaN(m));
+                              } else if (member.stage_avg_mark !== null && member.stage_avg_mark !== undefined) {
+                                const dbAvg = Number(member.stage_avg_mark);
+                                const dbCount = member.evaluator_count || 1;
+                                const hadExistingDbMark = member.marks !== "" && member.marks !== null && member.marks !== undefined;
+                                
+                                if (hadExistingDbMark) {
+                                  const otherCount = Math.max(0, dbCount - 1);
+                                  const otherSum = Math.max(0, (dbAvg * dbCount) - Number(member.marks));
+                                  if (otherCount > 0) {
+                                    otherEvaluatorMarks = Array(otherCount).fill(otherSum / otherCount);
+                                  }
+                                } else {
+                                  otherEvaluatorMarks = Array(dbCount).fill(dbAvg);
+                                }
+                              }
+
+                              // Calculate live dynamic stage average combining other evaluators and current input
+                              let liveAvgMark: number | null = null;
+                              let liveEvaluatorCount = 0;
+
+                              const allMarksForAvg = [...otherEvaluatorMarks];
+                              if (hasInput) {
+                                allMarksForAvg.push(currentNum);
+                              }
+
+                              if (allMarksForAvg.length > 0) {
+                                const totalSum = allMarksForAvg.reduce((sum, val) => sum + val, 0);
+                                liveAvgMark = Number((totalSum / allMarksForAvg.length).toFixed(2));
+                                liveEvaluatorCount = allMarksForAvg.length;
+                              }
 
                               return (
                                 <tr key={sId} style={{ borderBottom: "1px solid var(--eds-color-border-soft)" }}>
@@ -933,24 +987,26 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                     </div>
                                   </td>
 
-                                  {/* Stage Average Display */}
+                                  {/* Stage Average Display (Live Dynamically Updated) */}
                                   <td style={{ padding: "14px", verticalAlign: "middle" }}>
-                                    {member.stage_avg_mark !== null && member.stage_avg_mark !== undefined ? (
+                                    {liveAvgMark !== null ? (
                                       <div>
                                         <span
                                           style={{
                                             fontWeight: "700",
                                             fontSize: "14px",
-                                            color: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-solid)" : "var(--eds-color-danger-solid)",
-                                            backgroundColor: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-bg)" : "var(--eds-color-danger-bg)",
+                                            color: (liveAvgMark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-solid)" : "var(--eds-color-danger-solid)",
+                                            backgroundColor: (liveAvgMark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-bg)" : "var(--eds-color-danger-bg)",
                                             padding: "3px 8px",
                                             borderRadius: "6px",
+                                            display: "inline-block",
+                                            transition: "all 0.2s ease"
                                           }}
                                         >
-                                          {member.stage_avg_mark} /{totalMaxMarks} ({Math.round((member.stage_avg_mark / totalMaxMarks) * 100)}%)
+                                          {liveAvgMark} /{totalMaxMarks} ({Math.round((liveAvgMark / totalMaxMarks) * 100)}%)
                                         </span>
                                         <div style={{ fontSize: "11px", color: "var(--eds-color-text-muted)", marginTop: "3px" }}>
-                                          {member.evaluator_count || 1} evaluator{(member.evaluator_count || 1) > 1 ? "s" : ""}
+                                          {liveEvaluatorCount} evaluator{liveEvaluatorCount > 1 ? "s" : ""}
                                         </div>
                                       </div>
                                     ) : (
@@ -1020,7 +1076,14 @@ const SupervisorEvaluationPanel: React.FC = () => {
                             if (!submitting) e.currentTarget.style.backgroundColor = "var(--eds-color-success-solid)";
                           }}
                         >
-                          {submitting ? "Saving to Database..." : "Save & Submit Marks"}
+                          {submitting ? (
+                            <>
+                              <RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} />
+                              <span>Submitting...</span>
+                            </>
+                          ) : (
+                            "Save & Submit Marks"
+                          )}
                         </button>
                       </div>
                     </div>

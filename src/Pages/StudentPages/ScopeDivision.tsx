@@ -229,13 +229,20 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     );
   }
 
+  // A student can only ever have ONE claimed section per milestone — used
+  // below to proactively disable claiming a second one, instead of only
+  // catching it after the fact via the backend's 409 response.
+  const myClaimedSection = currentUser
+    ? sections.find((s) => String(s.claimedBy) === String(currentUser.id))
+    : undefined;
+
   return (
     <div className="timeline-section scope-division-card">
       <h4 className="section-title">Scope Division</h4>
       <p className="scope-division-desc">
         Your supervisor and mentor have broken this milestone into scope sections below. Tick a
         section to claim it — once a section is ticked, it locks to that student and disappears
-        as an option for everyone else.
+        as an option for everyone else. You can only claim one section per milestone.
       </p>
 
       <div className="scope-division-note">
@@ -313,10 +320,19 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
                   <button
                     type="button"
                     className="scope-section-claim-btn"
-                    disabled={claimingId === section.id}
+                    disabled={claimingId === section.id || Boolean(myClaimedSection)}
                     onClick={() => handleClaim(section.id)}
+                    title={
+                      myClaimedSection
+                        ? `You've already claimed "${myClaimedSection.title}" in this milestone.`
+                        : undefined
+                    }
                   >
-                    {claimingId === section.id ? 'Claiming…' : '☐ Tick to claim'}
+                    {claimingId === section.id
+                      ? 'Claiming…'
+                      : myClaimedSection
+                      ? 'Already claimed elsewhere'
+                      : '☐ Tick to claim'}
                   </button>
                 )}
                 {userRole === 'leader' && (
