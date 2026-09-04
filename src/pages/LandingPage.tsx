@@ -104,7 +104,7 @@ const LandingPage: React.FC = () => {
               <span>EduSync</span>
             </div>
             <p>
-              EduSync is an integrated academic project management platform designed for the University of Moratuwa, streamlining student collaboration, milestone tracking, supervisor guidance, and evaluation workflows.
+              EduSync is an integrated academic project management platform designed for the University of Moratuwa IT Faculty, streamlining student collaboration, milestone tracking, supervisor guidance, and evaluation workflows.
             </p>
           </div>
 
