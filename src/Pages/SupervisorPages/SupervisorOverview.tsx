@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MessageSquare, Users, Calendar, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, MessageSquare, Users, Calendar, Megaphone, ClipboardCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import { useAuth } from '../../context/AuthContext';
 import { useSocketV2 } from '../../hooks/useSocketV2';
 import { fetchConversationsV2 } from '../../utils/apiV2';
 import { ConversationV2, MessageV2 } from '../../types/chatV2';
+import { fetchPendingApprovalRequests, getViewerIdentity } from '../../utils/supervisorApprovals';
 import SupervisorTaskScheduler from './SupervisorTaskScheduler';
 import './SupervisorOverview.css';
 
@@ -131,6 +132,7 @@ const SupervisorOverview: React.FC = () => {
   const autoSelectedLevelRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [pendingMeetingsCount, setPendingMeetingsCount] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [announcementsCount, setAnnouncementsCount] = useState(0);
   const [evaluationPanels, setEvaluationPanels] = useState<StoredPanel[]>([]);
   const [activeGroupProgress, setActiveGroupProgress] = useState<ActiveGroupProgress | null>(null);
@@ -306,7 +308,16 @@ const SupervisorOverview: React.FC = () => {
         console.warn("Failed fetching meeting requests:", err);
       }
 
-      // 3. Fetch announcements independently
+      // 3. Fetch pending group-approval requests independently
+      try {
+        const viewer = getViewerIdentity();
+        const { requests } = await fetchPendingApprovalRequests(viewer);
+        setPendingApprovalsCount(requests.length);
+      } catch (err) {
+        console.warn("Failed fetching pending approval requests:", err);
+      }
+
+      // 4. Fetch announcements independently
       try {
         const annRes = await fetch(`http://localhost:5000/api/announcements`, { headers: authHeaders });
         if (annRes.ok) {
@@ -331,11 +342,13 @@ const SupervisorOverview: React.FC = () => {
     };
     window.addEventListener("announcementsReadUpdated", handleReadUpdate);
     window.addEventListener("meetingRequestUpdated", handleReadUpdate);
+    window.addEventListener("approvalRequestUpdated", handleReadUpdate);
     window.addEventListener("storage", handleReadUpdate);
     return () => {
       clearInterval(interval);
       window.removeEventListener("announcementsReadUpdated", handleReadUpdate);
       window.removeEventListener("meetingRequestUpdated", handleReadUpdate);
+      window.removeEventListener("approvalRequestUpdated", handleReadUpdate);
       window.removeEventListener("storage", handleReadUpdate);
     };
   }, [user]);
@@ -453,6 +466,26 @@ const SupervisorOverview: React.FC = () => {
               <div className="stat-label">Meeting Requests</div>
               <div className="stat-value">
                 <span className="num">{pendingMeetingsCount}</span>
+                <span className="unit">pending</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="header-stat-card"
+            onClick={() => navigate('/supervisor/approval')}
+            role="button"
+            tabIndex={0}
+            title="View Pending Approvals"
+          >
+            {pendingApprovalsCount > 0 && <span className="stat-card-badge-dot" />}
+            <div className="stat-badge-icon approval-bg">
+              <ClipboardCheck size={18} />
+            </div>
+            <div className="stat-info">
+              <div className="stat-label">Pending Approvals</div>
+              <div className="stat-value">
+                <span className="num">{pendingApprovalsCount}</span>
                 <span className="unit">pending</span>
               </div>
             </div>
