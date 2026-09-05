@@ -117,7 +117,7 @@
 .md-dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
   animation: mdFadeIn 0.25s ease-out;
 }
 
@@ -155,16 +155,10 @@
 }
 
 .md-card-title {
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--eds-color-text-strong);
   margin: 0;
-}
-
-.md-header-hint {
-  font-size: 12px;
-  color: var(--eds-color-text-faint);
-  font-weight: 500;
 }
 
 /* ================================================================

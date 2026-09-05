@@ -466,9 +466,6 @@ const MentorDashboard: React.FC = () => {
                     <Users size={18} className="md-header-icon" />
                     <h4 className="md-card-title">Student Contribution & Workload Distribution</h4>
                   </div>
-                  <span className="md-header-hint">
-                    Real-time task tracking and project contribution per member
-                  </span>
                 </div>
 
                 <div className="md-students-table-wrap">
@@ -587,9 +584,6 @@ const MentorDashboard: React.FC = () => {
                     <Target size={18} className="md-header-icon" />
                     <h4 className="md-card-title">Milestone Roadmap & Health</h4>
                   </div>
-                  <span className="md-header-hint">
-                    Progress status of all project milestones
-                  </span>
                 </div>
 
                 <div className="md-milestone-grid">
