@@ -167,55 +167,72 @@
   text-overflow: ellipsis;
 }
 
+/* Lecture is deliberately excluded from the purple categorical set below —
+   it's a neutral/system indicator for a frozen, imported timetable slot
+   rather than a category competing for hue, and it's typically the block
+   type that dominates a given week, so giving it the same purple as
+   everything else made an entire week's schedule read as "all one color."
+   Plain gray keeps it visually receding no matter how many there are. */
 .block-lecture {
   background: var(--eds-color-text-muted);
   border: 1px solid var(--eds-color-text-muted);
 }
 
+/* The remaining 7 categories are variants of the dashboard's own purple,
+   spanning indigo -> violet -> purple -> fuchsia at alternating light/dark
+   steps (validated as a set via the dataviz skill's validate_palette.js in
+   this exact declaration order: lightness band, chroma floor, CVD
+   adjacent-pair separation, normal-vision floor, and white-text contrast
+   all pass — no warnings). Alternating light/dark between neighbors is what
+   keeps same-family hues tellable apart; re-validate before reordering or
+   swapping any of these seven. */
+
+.block-interim {
+  background: #86198f;
+  border: 1px solid #701a75;
+}
+
 .block-meeting {
+  /* The dashboard's own brand primary — Meeting is the anchor color the
+     rest of this ramp is built around. */
   background: var(--eds-color-primary);
   border: 1px solid var(--eds-color-primary);
 }
 
+.block-evaluation {
+  background: #4338ca;
+  border: 1px solid #3730a3;
+}
+
 .block-faculty {
-  background: #8b5cf6;
-  border: 1px solid #7c3aed;
+  background: #d946ef;
+  border: 1px solid #c026d3;
+}
+
+.block-code {
+  background: #5b21b6;
+  border: 1px solid #4c1d95;
 }
 
 .block-personal {
-  background: var(--eds-color-success-solid);
-  border: 1px solid var(--eds-color-success-solid);
+  background: #a855f7;
+  border: 1px solid #9333ea;
 }
 
-/* NEW: Expanded Category Colors */
-.block-interim {
-  background: #b45309;
-  border: 1px solid #b45309;
-}
-
-/* Amber */
-.block-evaluation {
-  background: var(--eds-color-danger-solid);
-  border: 1px solid var(--eds-color-danger-solid);
-}
-
-/* Red */
-.block-code {
-  background: #06b6d4;
-  border: 1px solid #0891b2;
-}
-
-/* Cyan */
 .block-final {
-  background: #ec4899;
-  border: 1px solid #db2777;
+  background: #6b21a8;
+  border: 1px solid #581c87;
 }
-
-/* Pink */
 
 /* Mini Form Modal */
 .task-form-overlay {
-  position: absolute;
+  /* Was `position: absolute`, anchored to whatever positioned ancestor
+     happened to contain it rather than the actual viewport — on a page
+     shorter/scrolled differently than the overlay's own ancestor box, that
+     put the modal off-center with no way to scroll it fully into view.
+     `fixed` always covers the true viewport, matching CalendarPage.css's
+     own .drawer-overlay right next to this one. */
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -225,6 +242,8 @@
   align-items: center;
   justify-content: center;
   z-index: 50;
+  overflow-y: auto;
+  padding: 24px 0;
 }
 
 .task-form-card {
@@ -232,6 +251,13 @@
   border-radius: 12px;
   padding: 24px;
   width: 400px;
+  /* This form can run long (the "Group Meeting/Request Approve" category
+     adds a request-detail box on top of the usual fields) — without a
+     bounded height + its own scroll, a tall instance of this card
+     overflowed both above and below the viewport with no way to reach the
+     rest of it except scrolling the whole page. */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 

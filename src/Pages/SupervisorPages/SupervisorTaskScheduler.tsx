@@ -492,9 +492,9 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
             <span
               style={{
                 fontSize: "12px",
-                color: "var(--eds-color-success-solid)",
+                color: "var(--eds-color-primary)",
                 fontWeight: 700,
-                backgroundColor: "#d1fae5",
+                backgroundColor: "var(--eds-color-primary-soft)",
                 padding: "4px 10px",
                 borderRadius: "12px",
                 cursor: isInline ? "pointer" : "default",
@@ -725,11 +725,17 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                     }}
                   >
                     <option value="">-- Choose a Student Request --</option>
-                    {studentRequests.map((req) => (
-                      <option key={req.id} value={req.id}>
-                        {req.group_name || `Group #${req.group_id}`} - {req.topic || req.reason || "Meeting"} ({req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "")} {req.preferred_time ? req.preferred_time.substring(0, 5) : ""})
-                      </option>
-                    ))}
+                    {studentRequests.map((req) => {
+                      const reqDate = req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "");
+                      const slot = reqDate
+                        ? `${reqDate}${req.preferred_time ? ` ${req.preferred_time.substring(0, 5)}` : ""}`
+                        : "no date proposed";
+                      return (
+                        <option key={req.id} value={req.id}>
+                          {req.group_name || `Group #${req.group_id}`} - {req.topic || req.reason || "Meeting"} ({slot})
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
 
@@ -758,7 +764,9 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                         </div>
                       )}
                       <div style={{ fontSize: "11px", color: "var(--eds-color-text-muted)" }}>
-                        Requested: {req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "")} ({req.preferred_time ? req.preferred_time.substring(0, 5) : ""} - {req.end_time ? req.end_time.substring(0, 5) : ""})
+                        {(req.preferred_date || req.date)
+                          ? `Requested: ${req.preferred_date ? req.preferred_date.split("T")[0] : req.date.split("T")[0]} (${req.preferred_time ? req.preferred_time.substring(0, 5) : ""} - ${req.end_time ? req.end_time.substring(0, 5) : ""})`
+                          : "No fixed date/time from the student — see their note above for available options, then pick one below."}
                       </div>
                     </div>
                   );

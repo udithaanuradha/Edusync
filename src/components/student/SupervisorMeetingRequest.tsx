@@ -13,9 +13,6 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
   const [groupName, setGroupName] = useState('');
   const [supervisorId, setSupervisorId] = useState('');
   const [topic, setTopic] = useState('');
-  const [preferredDate, setPreferredDate] = useState('');
-  const [preferredTime, setPreferredTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [reason, setReason] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [supervisors, setSupervisors] = useState<any[]>([]);
@@ -68,9 +65,9 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
           supervisor_id: Number(supervisorId),
           group_name: groupName,
           topic,
-          preferred_date: preferredDate,
-          preferred_time: preferredTime,
-          end_time: endTime,
+          // No preferred_date/time from the student anymore — they list a
+          // few options in `reason` instead, and the supervisor picks the
+          // actual slot when scheduling.
           reason,
         }),
       });
@@ -82,9 +79,6 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       setStatus('success');
       window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
       setTopic('');
-      setPreferredDate('');
-      setPreferredTime('');
-      setEndTime('');
       setReason('');
       setGroupName('');
       setSupervisorId('');
@@ -129,14 +123,6 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
               </button>
             </div>
 
-            <div className="drawer-summary-card" style={{ margin: '0 1.5rem 1.5rem', background: 'var(--eds-color-primary-soft)', border: '1px solid var(--eds-color-primary-soft-border)' }}>
-              <span className="drawer-summary-label" style={{ color: 'var(--eds-color-primary-hover)' }}>Level {levelNumber} Project</span>
-              <strong style={{ color: 'var(--eds-color-primary-hover)' }}>Supervisor Meeting</strong>
-              <span style={{ color: 'var(--eds-color-primary)' }}>
-                Use this form to request a meeting with your project supervisor. They will be notified and can schedule the meeting in their calendar.
-              </span>
-            </div>
-
             <div style={{ padding: '0 1.5rem', flex: 1, overflowY: 'auto' }}>
               {status === 'success' && (
                 <div className="alert success-alert" style={{ marginBottom: '1.5rem' }}>
@@ -178,8 +164,24 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                           </span>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--eds-color-text-muted)', marginBottom: '0.5rem' }}>
-                          Requested for: {req.preferred_date ? req.preferred_date.split('T')[0] : ''} at {req.preferred_time ? req.preferred_time.substring(0, 5) : ''} to {req.end_time ? req.end_time.substring(0, 5) : ''}
+                          {req.preferred_date
+                            ? `Requested for: ${req.preferred_date.split('T')[0]}${req.preferred_time ? ` at ${req.preferred_time.substring(0, 5)}` : ''}${req.end_time ? ` to ${req.end_time.substring(0, 5)}` : ''}`
+                            : 'Your supervisor will pick a date/time from the availability you listed below.'}
                         </div>
+                        {req.reason && (
+                          <div style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--eds-color-text-body)',
+                            background: 'var(--eds-color-bg-surface-soft)',
+                            padding: '0.5rem',
+                            borderRadius: '4px',
+                            marginBottom: '0.5rem',
+                            whiteSpace: 'pre-wrap',
+                          }}>
+                            <strong>Your notes / availability:</strong><br/>
+                            {req.reason}
+                          </div>
+                        )}
                         {req.supervisor_message && (
                           <div style={{ 
                             fontSize: '0.85rem', 
@@ -242,41 +244,10 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                 </label>
 
                 <label className="drawer-field">
-                  <span>Preferred Date</span>
-                  <input
-                    type="date"
-                    required
-                    value={preferredDate}
-                    onChange={(e) => setPreferredDate(e.target.value)}
-                  />
-                </label>
-
-                <div className="drawer-inline-grid">
-                  <label className="drawer-field">
-                    <span>Start Time</span>
-                    <input
-                      type="time"
-                      required
-                      value={preferredTime}
-                      onChange={(e) => setPreferredTime(e.target.value)}
-                    />
-                  </label>
-                  <label className="drawer-field">
-                    <span>End Time</span>
-                    <input
-                      type="time"
-                      required
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                    />
-                  </label>
-                </div>
-
-                <label className="drawer-field">
                   <span>Additional Notes / Reason</span>
                   <textarea
-                    rows={4}
-                    placeholder="Briefly describe what you'd like to discuss..."
+                    rows={5}
+                    placeholder={"List a few dates/times you're available (e.g., Mon 9/8 2-4pm, Tue 9/9 anytime after 10am), plus what you'd like to discuss. Your supervisor will confirm one and schedule it."}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                   ></textarea>

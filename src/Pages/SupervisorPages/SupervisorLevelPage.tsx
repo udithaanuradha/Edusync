@@ -40,6 +40,10 @@ type GroupItem = {
   supervisorId: string;
   supervisorName: string;
   level: number | null;
+  // Not a column on project_groups — parsed server-side from the
+  // group_requests row that created this group, so it's null for a group
+  // created some other way (e.g. manually by an admin/coordinator).
+  projectName: string | null;
 };
 
 type SubmissionItem = {
@@ -68,6 +72,8 @@ type ProgressGroupItem = {
   progressPercent: number;
   totalMilestones: number;
   approvedMilestones: number;
+  // See GroupItem.projectName above — same source, same null-when-unknown.
+  projectName: string | null;
 };
 
 type ProgressMilestone = {
@@ -396,6 +402,10 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 : item.level !== undefined && item.level !== null
                   ? Number(item.level)
                   : null,
+            projectName:
+              (item.project_name as string | null | undefined) ??
+              (item.projectName as string | null | undefined) ??
+              null,
           }),
         )
         .filter((group) => group.level === null || group.level === levelNumber);
@@ -551,6 +561,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
         progressPercent: Number(item.progressPercent ?? 0),
         totalMilestones: Number(item.totalMilestones ?? 0),
         approvedMilestones: Number(item.approvedMilestones ?? 0),
+        projectName: (item.projectName as string | null | undefined) ?? (item.project_name as string | null | undefined) ?? null,
       }));
 
       setProgressGroups(normalized);
@@ -736,6 +747,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               </span>
             </div>
             <p className="supervisor-level-card-meta">
+              <strong>Project:</strong> {group.projectName || "Not specified"}
+            </p>
+            <p className="supervisor-level-card-meta">
               <strong>Leader:</strong> {group.leader}
             </p>
             <p className="supervisor-level-card-meta">
@@ -858,6 +872,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             <h4>{group.groupName}</h4>
             <span className="supervisor-pill">{group.memberCount} members</span>
           </div>
+          <p className="supervisor-level-card-meta">
+            <strong>Project:</strong> {group.projectName || "Not specified"}
+          </p>
           {renderProgressMeter(
             group.progressPercent,
             `${group.completedTasks}/${group.totalTasks} tasks`,
@@ -878,6 +895,10 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
       return <p className="supervisor-level-error">{progressError || "Failed to load group progress."}</p>;
     }
 
+    // Reuses the project name already fetched into progressGroups for this
+    // level — no separate request needed just for this label.
+    const projectName = progressGroups.find((g) => g.groupId === progressDetail.group.id)?.projectName;
+
     return (
       <div className="supervisor-progress-detail">
         <button
@@ -890,6 +911,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
 
         <div className="supervisor-progress-detail-head">
           <h3>{progressDetail.group.name} — Overall Progress</h3>
+          <p className="supervisor-level-card-meta">
+            <strong>Project:</strong> {projectName || "Not specified"}
+          </p>
           {renderProgressMeter(
             progressDetail.overall.percent,
             `${progressDetail.overall.completed}/${progressDetail.overall.total} tasks`,
@@ -1165,10 +1189,10 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               minHeight: '52px',
               padding: '8px 16px',
               borderRadius: '12px',
-              border: progressSubTab === 'tasks' ? '2px solid #16a34a' : '1px solid #e2e8f0',
+              border: progressSubTab === 'tasks' ? '2px solid var(--eds-color-primary)' : '1px solid #e2e8f0',
               backgroundColor: progressSubTab === 'tasks' ? '#ffffff' : '#ffffff',
               boxShadow: progressSubTab === 'tasks'
-                ? '0 4px 12px rgba(22, 163, 74, 0.12)'
+                ? '0 4px 12px rgba(99, 112, 184, 0.25)'
                 : '0 1px 3px rgba(15, 23, 42, 0.05)',
               display: 'flex',
               alignItems: 'center',
@@ -1183,8 +1207,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 width: '34px',
                 height: '34px',
                 borderRadius: '9px',
-                backgroundColor: '#f0fdf4',
-                color: '#16a34a',
+                backgroundColor: 'var(--eds-color-primary-soft)',
+                color: 'var(--eds-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1194,7 +1218,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <ListTodo size={18} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: progressSubTab === 'tasks' ? '#15803d' : '#1e293b' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: progressSubTab === 'tasks' ? 'var(--eds-color-primary-hover)' : '#1e293b' }}>
                 Milestone & Task Progress
               </div>
               <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>

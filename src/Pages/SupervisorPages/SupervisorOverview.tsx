@@ -75,6 +75,10 @@ type GroupItem = {
   leader: string;
   memberCount: number;
   members: string;
+  // Not a project_groups column — parsed server-side from the
+  // group_requests row that created this group, so it's null/undefined for
+  // a group created some other way (e.g. manually by an admin/coordinator).
+  projectName?: string | null;
 };
 
 // Shape returned by GET /api/supervice-st-progress/group/:groupId — the
@@ -696,6 +700,9 @@ const SupervisorOverview: React.FC = () => {
           {activeGroup && (
             <div className="group-progress" onClick={goToFullProgress} role="button" tabIndex={0}>
               <h3>{activeGroup.groupName} — Group Details</h3>
+              <p className="overall">
+                Project: <strong>{activeGroup.projectName || "Not specified"}</strong>
+              </p>
               <p className="overall">
                 Leader: <strong>{activeGroup.leader}</strong> · {activeGroup.memberCount} members
               </p>
