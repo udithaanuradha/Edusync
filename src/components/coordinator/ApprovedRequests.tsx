@@ -328,6 +328,9 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                 <span className="approved-status-badge">
                   <CheckCircle2 size={14} /> Supervisor Approved
                 </span>
+                {request.raw?.project_type === 'individual' && (
+                  <span className="approved-status-badge approved-individual-badge">Individual</span>
+                )}
               </div>
 
               <h4>Group: {request.groupName}</h4>

@@ -30,6 +30,12 @@ type ProjectOverviewProps = {
   onMilestonesChanged?: () => void;
   onNavigateSupervisorChat: () => void;
   onNavigateMentorChat: () => void;
+  /** Total member count of the underlying group record — an Individual
+      Project is a "group of one" that reuses this exact page, so Scope
+      Division (nothing to divide between one person) only renders when
+      there's more than one member. Undefined (still loading) defaults to
+      showing it, same as today. */
+  memberCount?: number;
 };
 
 const API_BASE = 'http://localhost:5000/api/milestones';
@@ -70,6 +76,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   onMilestonesChanged,
   onNavigateSupervisorChat,
   onNavigateMentorChat,
+  memberCount,
 }) => {
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
   // null = the "+ New Milestone" draft slot, not "nothing selected"
@@ -487,15 +494,17 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
 
           <GanttChart tasks={ganttTasks} timelineStart={formStart} timelineEnd={formEnd} />
 
-          <ScopeDivision
-            milestoneId={activeMilestone?.id ?? null}
-            userRole={userRole}
-            currentUser={currentUser}
-            supervisor={supervisor}
-            mentor={mentor}
-            onNavigateSupervisorChat={onNavigateSupervisorChat}
-            onNavigateMentorChat={onNavigateMentorChat}
-          />
+          {memberCount !== 1 && (
+            <ScopeDivision
+              milestoneId={activeMilestone?.id ?? null}
+              userRole={userRole}
+              currentUser={currentUser}
+              supervisor={supervisor}
+              mentor={mentor}
+              onNavigateSupervisorChat={onNavigateSupervisorChat}
+              onNavigateMentorChat={onNavigateMentorChat}
+            />
+          )}
         </>
       )}
     </div>

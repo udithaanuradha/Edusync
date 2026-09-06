@@ -59,6 +59,13 @@
   font-size: 1.1rem;
 }
 
+.approval-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .approval-level-badge {
   padding: 4px 10px;
   border-radius: 999px;
@@ -66,6 +73,15 @@
   color: #075985;
   font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Individual Project tag — distinct accent from the level badge so the two
+   read as separate pieces of info, using the same design-system primary
+   tint as the Group/Individual toggle itself (ProjectTypeToggle.css). */
+.approval-individual-badge {
+  background: var(--eds-color-primary-soft, #eef0ff);
+  color: var(--eds-color-primary-hover, #505d9f);
 }
 
 .approval-actions {
