@@ -592,9 +592,24 @@ const CalendarPage: React.FC = () => {
       // account) — without it, every department's panels came back, which
       // is what fed both the "Upcoming Panels" list and the month grid's
       // per-day panel-count dots with every other coordinator's panels too.
-      const panelsUrl = user?.id
-        ? `${CALENDAR_API_BASE}/panels?coordinatorId=${user.id}`
-        : `${CALENDAR_API_BASE}/panels`;
+      //
+      // Students are scoped differently: sending coordinatorId=user.id for
+      // a student made the backend resolve THEIR OWN personal
+      // academic_unit/level (via getCoordinatorScope, which just reads
+      // whatever id it's given off the users table) and filter panels by
+      // that — coincidentally similar to their department, but not their
+      // actual group, so a student never saw their group's own panel if
+      // some other quirk of that lookup didn't line up, and never saw a
+      // meeting link either since the list came back effectively empty.
+      // studentId instead resolves their own group server-side (via
+      // project_group_members/project_groups) and filters by that group's
+      // target_group, which is what they should see. Every other role's
+      // request is unchanged.
+      const panelsUrl = isStudent && user?.id
+        ? `${CALENDAR_API_BASE}/panels?studentId=${user.id}`
+        : user?.id
+          ? `${CALENDAR_API_BASE}/panels?coordinatorId=${user.id}`
+          : `${CALENDAR_API_BASE}/panels`;
       const response = await fetch(panelsUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
@@ -1501,15 +1516,26 @@ const CalendarPage: React.FC = () => {
                       </div>
                     ) : (
                       sortedPanels.map((panel) => {
+                        try {
                         // panel.evaluators is external evaluators only, so this
                         // subtraction is a no-op for panels created after the
                         // evaluators/supervisors split — kept to also render
                         // correctly for legacy rows saved before that split,
                         // where evaluators still included the supervisor names.
+                        // Defaulted to [] — legacy panels cached in
+                        // localStorage (PANEL_STORAGE_KEY, the fetch-failure
+                        // fallback) from before the evaluators/supervisors
+                        // split can be missing these fields entirely, which
+                        // crashed the whole page with no error boundary to
+                        // catch it (Cannot read properties of undefined
+                        // (reading 'map')). panelSupervisors is reused below
+                        // instead of touching panel.supervisors directly, so
+                        // every read of it stays crash-safe.
+                        const panelSupervisors = panel.supervisors || [];
                         const supervisorNamesLower = new Set(
-                          panel.supervisors.map((name) => name.toLowerCase()),
+                          panelSupervisors.map((name) => name.toLowerCase()),
                         );
-                        const externalEvaluators = panel.evaluators.filter(
+                        const externalEvaluators = (panel.evaluators || []).filter(
                           (name) => !supervisorNamesLower.has(name.toLowerCase()),
                         );
 
@@ -1594,12 +1620,12 @@ const CalendarPage: React.FC = () => {
                                   <Users size={14} />
                                 </span>
                                 <div className="upcoming-people-block">
-                                  {panel.supervisors.length > 0 && (
+                                  {panelSupervisors.length > 0 && (
                                     <div className="upcoming-people-line">
                                       <span className="role-badge supervisor-role-badge">
                                         Supervisor
                                       </span>
-                                      <span>{panel.supervisors.join(", ")}</span>
+                                      <span>{panelSupervisors.join(", ")}</span>
                                     </div>
                                   )}
                                   {externalEvaluators.length > 0 && (
@@ -1607,7 +1633,7 @@ const CalendarPage: React.FC = () => {
                                       Evaluators: {externalEvaluators.join(", ")}
                                     </div>
                                   )}
-                                  {panel.supervisors.length === 0 &&
+                                  {panelSupervisors.length === 0 &&
                                     externalEvaluators.length === 0 && (
                                       <div className="upcoming-people-line upcoming-people-muted">
                                         No panel members recorded
@@ -1639,6 +1665,10 @@ const CalendarPage: React.FC = () => {
                             )}
                           </article>
                         );
+                        } catch (err) {
+                          console.error('[CalendarPage] Failed to render upcoming panel', panel, err);
+                          return null;
+                        }
                       })
                     )}
                   </div>

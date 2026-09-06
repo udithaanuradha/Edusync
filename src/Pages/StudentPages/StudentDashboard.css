@@ -62,6 +62,32 @@
   margin-top: 4px;
 }
 
+/* Level 3 / Level 4 only — title+subtitle on the left, the Group/Individual
+   toggle right-aligned opposite it. Only rendered at all when a page passes
+   StudentLevelPageLayout's `headerRight` prop, so Level 1/Level 2 (and every
+   other page using .dashboard-header-section) never get this wrapper. */
+.student-level-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+
+/* min-width: 0 lets this shrink below its content's natural width instead
+   of forcing the row to wrap — the long subtitle wraps onto its own second
+   line while the toggle stays pinned to the right on the SAME row as the
+   heading, at any width, rather than dropping below it. */
+.student-level-header-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.student-level-header-actions {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
 /* --- 3. ROW 1: THE 5 STAT CARDS (1 Row, 5 Columns) --- */
 .student-stats-grid {
   display: grid;

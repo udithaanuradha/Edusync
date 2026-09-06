@@ -520,6 +520,7 @@ const ProjectManagementPage: React.FC = () => {
                 onMilestonesChanged={() => groupId && fetchMilestones(groupId)}
                 onNavigateSupervisorChat={() => navigate('/dashboard/communication-v2')}
                 onNavigateMentorChat={() => navigate('/dashboard/communication-v2')}
+                memberCount={groupMembers?.length}
               />
             )}
           </div>
@@ -565,6 +566,7 @@ const ProjectManagementPage: React.FC = () => {
                 onStatusChange={handleBoardStatusChange}
                 onAddTask={handleSaveTask}
                 currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+                memberCount={groupMembers?.length}
               />
             )}
           </div>
