@@ -345,7 +345,11 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
     }
   };
 
-  const showForm = Boolean(activeMilestone) || userRole === 'leader';
+  // Creating a NEW milestone (activeMilestone === null) is open to any group
+  // member — only editing fields on an EXISTING one is leader-only, matching
+  // the backend split (createMilestone has no leader check; only
+  // updateMilestoneDetails does).
+  const canEditFields = !activeMilestone || userRole === 'leader';
 
   return (
     <div className="student-inner-tab-panel">
@@ -378,116 +382,108 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
               regardless of whether any milestone exists yet — it has its
               own built-in "add a milestone to see it plotted here"
               placeholder. */}
-          {milestones.length === 0 && userRole !== 'leader' ? (
-            <div className="no-tasks-text">
-              No milestones have been planned yet. Ask your group leader to add one.
-            </div>
-          ) : (
-            <div className="milestone-selector-row">
-              {milestones.map((m) => (
+          <div className="milestone-selector-row">
+            {milestones.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`milestone-pill ${activeId === m.id ? 'active' : ''}`}
+                onClick={() => setActiveId(m.id)}
+                title={scopeCounts[m.id] > 0 ? `${scopeCounts[m.id]} scope section(s) defined` : undefined}
+              >
+                {m.title || 'Untitled milestone'}
+                {scopeCounts[m.id] > 0 && <span className="milestone-pill-dot" aria-hidden="true" />}
+              </button>
+            ))}
+            {/* Creating a milestone is open to any group member, not just
+                the leader — matches createMilestone having no leader check. */}
+            <button
+              type="button"
+              className={`milestone-pill milestone-pill-new ${activeId === null ? 'active' : ''}`}
+              onClick={() => setActiveId(null)}
+            >
+              <Plus size={14} /> New Milestone
+            </button>
+          </div>
+
+          <form className="timeline-section" onSubmit={handleSave}>
+            <div className="milestone-details-head">
+              <h4 className="section-title">Milestone Details</h4>
+              {activeMilestone && userRole === 'leader' && (
                 <button
-                  key={m.id}
                   type="button"
-                  className={`milestone-pill ${activeId === m.id ? 'active' : ''}`}
-                  onClick={() => setActiveId(m.id)}
-                  title={scopeCounts[m.id] > 0 ? `${scopeCounts[m.id]} scope section(s) defined` : undefined}
+                  className="danger-btn milestone-delete-btn"
+                  onClick={handleDelete}
+                  disabled={deleting}
                 >
-                  {m.title || 'Untitled milestone'}
-                  {scopeCounts[m.id] > 0 && <span className="milestone-pill-dot" aria-hidden="true" />}
-                </button>
-              ))}
-              {userRole === 'leader' && (
-                <button
-                  type="button"
-                  className={`milestone-pill milestone-pill-new ${activeId === null ? 'active' : ''}`}
-                  onClick={() => setActiveId(null)}
-                >
-                  <Plus size={14} /> New Milestone
+                  <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}
                 </button>
               )}
             </div>
-          )}
 
-          {showForm && (
-            <form className="timeline-section" onSubmit={handleSave}>
-              <div className="milestone-details-head">
-                <h4 className="section-title">Milestone Details</h4>
-                {activeMilestone && userRole === 'leader' && (
-                  <button
-                    type="button"
-                    className="danger-btn milestone-delete-btn"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                  >
-                    <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}
-                  </button>
-                )}
+            <div className="timeline-form-grid">
+              <div className="timeline-form-group timeline-form-full">
+                <label htmlFor="milestone-name">Milestone / Workflow Name</label>
+                <input
+                  id="milestone-name"
+                  type="text"
+                  className="timeline-form-input"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  readOnly={!canEditFields}
+                  placeholder="e.g. Requirements Gathering"
+                />
               </div>
 
-              <div className="timeline-form-grid">
-                <div className="timeline-form-group timeline-form-full">
-                  <label htmlFor="milestone-name">Milestone / Workflow Name</label>
-                  <input
-                    id="milestone-name"
-                    type="text"
-                    className="timeline-form-input"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    readOnly={userRole !== 'leader'}
-                    placeholder="e.g. Requirements Gathering"
-                  />
-                </div>
-
-                <div className="timeline-form-group">
-                  <label htmlFor="milestone-start">Start Date</label>
-                  <input
-                    id="milestone-start"
-                    type="date"
-                    className="timeline-form-input"
-                    value={formStart}
-                    onChange={(e) => setFormStart(e.target.value)}
-                    disabled={userRole !== 'leader'}
-                  />
-                </div>
-
-                <div className="timeline-form-group">
-                  <label htmlFor="milestone-end">End Date</label>
-                  <input
-                    id="milestone-end"
-                    type="date"
-                    className="timeline-form-input"
-                    value={formEnd}
-                    onChange={(e) => setFormEnd(e.target.value)}
-                    disabled={userRole !== 'leader'}
-                  />
-                </div>
+              <div className="timeline-form-group">
+                <label htmlFor="milestone-start">Start Date</label>
+                <input
+                  id="milestone-start"
+                  type="date"
+                  className="timeline-form-input"
+                  value={formStart}
+                  onChange={(e) => setFormStart(e.target.value)}
+                  disabled={!canEditFields}
+                />
               </div>
 
-              {formStart && formEnd && (
-                <div className="timeline-summary">
-                  📌 This milestone runs for <strong>{durationDays} {durationDays === 1 ? 'day' : 'days'}</strong>
-                  {' — '}
-                  {formatShortDate(formStart)} to {formatShortDate(formEnd)}.
-                </div>
-              )}
+              <div className="timeline-form-group">
+                <label htmlFor="milestone-end">End Date</label>
+                <input
+                  id="milestone-end"
+                  type="date"
+                  className="timeline-form-input"
+                  value={formEnd}
+                  onChange={(e) => setFormEnd(e.target.value)}
+                  disabled={!canEditFields}
+                />
+              </div>
+            </div>
 
-              {saveMessage && (
-                <div className={`timeline-submit-message ${saveError ? 'error' : 'success'}`}>{saveMessage}</div>
-              )}
+            {formStart && formEnd && (
+              <div className="timeline-summary">
+                📌 This milestone runs for <strong>{durationDays} {durationDays === 1 ? 'day' : 'days'}</strong>
+                {' — '}
+                {formatShortDate(formStart)} to {formatShortDate(formEnd)}.
+              </div>
+            )}
 
-              {userRole === 'leader' && (
-                <div className="timeline-form-footer">
-                  <button type="submit" className="submit-btn" disabled={saving}>
-                    {saving ? 'Saving...' : activeMilestone ? 'Save Changes' : 'Create Milestone'}
-                  </button>
-                </div>
-              )}
+            {saveMessage && (
+              <div className={`timeline-submit-message ${saveError ? 'error' : 'success'}`}>{saveMessage}</div>
+            )}
 
-              {userRole !== 'leader' && !activeMilestone && (
-                <p className="role-warning">Only the group leader can create milestones.</p>
-              )}
-            </form>
-          )}
+            {canEditFields && (
+              <div className="timeline-form-footer">
+                <button type="submit" className="submit-btn" disabled={saving}>
+                  {saving ? 'Saving...' : activeMilestone ? 'Save Changes' : 'Create Milestone'}
+                </button>
+              </div>
+            )}
+
+            {!canEditFields && (
+              <p className="role-warning">Only the group leader can edit an existing milestone's details.</p>
+            )}
+          </form>
 
           <GanttChart tasks={ganttTasks} timelineStart={formStart} timelineEnd={formEnd} />
 
