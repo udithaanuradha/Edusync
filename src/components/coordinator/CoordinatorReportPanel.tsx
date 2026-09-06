@@ -5,7 +5,6 @@ import {
   BarChart3,
   CheckCircle2,
   FileSpreadsheet,
-  GraduationCap,
   Layers,
   Search,
   TrendingUp,
@@ -15,17 +14,8 @@ import {
 import PrimaryButton from '../shared/ui/PrimaryButton';
 import './SupervisorReportPanel.css';
 
-interface SupervisorReportPanelProps {
+interface CoordinatorReportPanelProps {
   levelNumber?: number;
-  supervisorId?: string | number;
-  supervisorName?: string;
-  allowedGroupNames?: string[];
-  allowedGroupIds?: Array<number | string>;
-  isSupervisorView?: boolean;
-  // The logged-in coordinator's own id, used server-side to resolve and
-  // scope this report to their own department — never send a department
-  // string directly, the backend looks it up from this id. Left undefined
-  // by callers that intentionally see every department (AdminLevelPage.tsx).
   coordinatorId?: string | number;
 }
 
@@ -87,14 +77,11 @@ const calculateGrade = (finalScore: number): GradeDefinition => {
   return GRADING_SCALE[GRADING_SCALE.length - 1];
 };
 
-// University Promotion Policy: A student must obtain a grade of C- (min 40.0%) or higher to be promoted to the next level.
-export const PROMOTION_QUALIFYING_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-'];
+const PROMOTION_QUALIFYING_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-'];
 
-export const isEligibleForPromotion = (letter: string, finalScore: number): boolean => {
+const isEligibleForPromotion = (letter: string, finalScore: number): boolean => {
   return PROMOTION_QUALIFYING_GRADES.includes(letter) && finalScore >= 40;
 };
-
-type DegreeType = 'ALL' | 'IT' | 'AI' | 'ITM';
 
 interface EvaluatorMarkItem {
   evaluator_name: string;
@@ -124,7 +111,7 @@ interface StudentReportItem {
   stages: { [stageId: string]: StageData };
   sum_obtained_marks: number;
   sum_total_max_marks: number;
-  final_mark: number | null; // percentage out of 100, null if pending
+  final_mark: number | null;
   gradeInfo: GradeDefinition;
   isEvaluated: boolean;
 }
@@ -135,34 +122,17 @@ interface CanonicalStage {
   raw_stage_ids: Array<string | number>;
 }
 
-const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
+const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
   levelNumber = 2,
-  supervisorId,
-  supervisorName,
-  allowedGroupNames,
-  allowedGroupIds,
-  isSupervisorView = false,
   coordinatorId,
 }) => {
   const [students, setStudents] = useState<StudentReportItem[]>([]);
   const [stages, setStages] = useState<Array<{ stage_id: number | string; stage_name: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedDegree, setSelectedDegree] = useState<DegreeType>('ALL');
+  const [coordinatorDept, setCoordinatorDept] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>('ALL');
-  // Keyed by `${group_name}::${stage_name}` — tracks which single (group,
-  // stage) cell is mid-request, so only that button shows a loading state.
   const [completingKey, setCompletingKey] = useState<string | null>(null);
-  // Normalized `${group_name}::${stage_name}` keys (see normalizePanelKey)
-  // for every (group, stage) that currently has an ACTIVE, non-completed
-  // panel on the Calendar — fetched from GET /api/calendar/panels, which
-  // reads evaluation_panels.status straight from the database. A row is
-  // "Complete"-able only while its key is in this set; once
-  // completePanelsForGroups flips that panel's status to 'completed'
-  // server-side, its key drops out (see handleCompleteGroupStage) and the
-  // "✓ Completed" state is what a page refresh will also show, since it's
-  // re-derived from this same persisted status on every mount — unlike the
-  // old session-only completedKeys flag this replaces.
   const [activePanelKeys, setActivePanelKeys] = useState<Set<string>>(new Set());
   const [panelsLoaded, setPanelsLoaded] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -175,92 +145,23 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
     }, 4000);
   };
 
-  // Degree helper directly from users table's academic_unit column
   const inferDegree = (item: any): 'IT' | 'AI' | 'ITM' => {
-    // 1. Primary: users.academic_unit
     const unit = String(item.academic_unit || item.degree || '').trim().toUpperCase();
-    if (unit === 'ITM' || unit.includes('ITM') || unit.includes('MANAGEMENT')) {
+    if (unit === 'ITM' || unit.includes('ITM') || unit.includes('MANAGEMENT') || unit === 'IDS') {
       return 'ITM';
     }
-    if (unit === 'AI' || unit.includes('AI') || unit.includes('ARTIFICIAL')) {
+    if (unit === 'AI' || unit.includes('AI') || unit.includes('ARTIFICIAL') || unit === 'CM') {
       return 'AI';
     }
     if (unit === 'IT' || unit.includes('INFORMATION')) {
       return 'IT';
     }
-
-    // 2. Secondary fallback: group department / group name / student details
-    const groupDept = (
-      String(item.group_department || '') + ' ' +
-      String(item.department || '') + ' ' +
-      String(item.group_name || '') + ' ' +
-      String(item.university_id || '')
-    ).toUpperCase();
-
-    if (groupDept.includes('ITM') || groupDept.includes('MANAGEMENT') || groupDept.includes('CYGEN')) {
-      return 'ITM';
-    }
-    if (groupDept.includes('AI') || groupDept.includes('ARTIFICIAL')) {
-      return 'AI';
-    }
-    if (groupDept.includes('IT')) {
-      return 'IT';
-    }
-
     return 'ITM';
   };
 
-  // Fetch Level Marks Summary from Backend with Stage Deduplication and Optional Supervisor Filtering
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      // 1. Collect supervised group identifiers
-      const myGroupNames = new Set(
-        (allowedGroupNames || []).map((n) => n.trim().toLowerCase()).filter(Boolean)
-      );
-      const myGroupIds = new Set(
-        (allowedGroupIds || []).map((id) => String(id).trim()).filter(Boolean)
-      );
-
-      // Pre-fetch supervisor group list if needed
-      if ((isSupervisorView || supervisorId) && myGroupNames.size === 0 && myGroupIds.size === 0 && supervisorId) {
-        try {
-          const grpRes = await fetch(
-            `http://localhost:5000/api/groupdetailstosupervisordashboard/level/${levelNumber}/supervisor/${encodeURIComponent(
-              String(supervisorId)
-            )}`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-              },
-            }
-          );
-          if (grpRes.ok) {
-            const grpPayload = await grpRes.json();
-            const grpList: any[] = Array.isArray(grpPayload)
-              ? grpPayload
-              : Array.isArray(grpPayload?.data)
-              ? grpPayload.data
-              : Array.isArray(grpPayload?.groups)
-              ? grpPayload.groups
-              : [];
-            grpList.forEach((g: any) => {
-              const name = String(g.group_name ?? g.groupName ?? g.name ?? '').trim().toLowerCase();
-              const id = String(g.group_id ?? g.groupId ?? g.id ?? '').trim();
-              if (name) myGroupNames.add(name);
-              if (id) myGroupIds.add(id);
-            });
-          }
-        } catch (e) {
-          console.warn('Could not pre-fetch supervisor groups list:', e);
-        }
-      }
-
-      // coordinatorId lets the backend scope this to just this coordinator's
-      // own department (resolved server-side from their own account) —
-      // omitted entirely when this panel is rendered for an admin
-      // (AdminLevelPage.tsx doesn't pass it), so admins keep seeing every
-      // department.
       const summaryUrl = coordinatorId
         ? `http://localhost:5000/api/marks/summary/level/${levelNumber}?coordinatorId=${coordinatorId}`
         : `http://localhost:5000/api/marks/summary/level/${levelNumber}`;
@@ -272,12 +173,12 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
 
       if (response.ok) {
         const payload = await response.json();
+        setCoordinatorDept(payload.coordinatorDepartment || null);
         const rawStages = payload.stages || [];
         const rawData: any[] = Array.isArray(payload.data) ? payload.data : [];
 
-        // 1. Deduplicate/group stages by normalized name (case-insensitive: Proposal=proposal, Interim=interim, Final=final)
+        // Deduplicate stages
         const stageGroupMap = new Map<string, CanonicalStage>();
-
         rawStages.forEach((stg: any) => {
           const rawName = String(stg.stage_name || '').trim();
           const normalizedKey = rawName.toLowerCase();
@@ -313,50 +214,28 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
 
         setStages(canonicalList.map((s) => ({ stage_id: s.canonical_id, stage_name: s.stage_name })));
 
-        // 2. Filter rawData to supervisor's supervised groups only if supervisor view
-        const isSupervisedStudent = (item: any): boolean => {
-          if (!isSupervisorView && !supervisorId && !supervisorName && myGroupNames.size === 0 && myGroupIds.size === 0) {
-            return true;
-          }
-
-          const gId = String(item.group_id ?? item.groupId ?? '').trim();
-          if (gId && myGroupIds.has(gId)) return true;
-
-          const gName = String(item.group_name ?? item.groupName ?? '').trim().toLowerCase();
-          if (gName && myGroupNames.has(gName)) return true;
-
-          const supId = String(item.supervisor_id ?? item.supervisorId ?? item.assigned_supervisor_id ?? '').trim();
-          if (supervisorId && supId && String(supervisorId).trim() === supId) return true;
-
-          const supName = String(item.supervisor_name ?? item.supervisorName ?? item.assigned_supervisor_name ?? '').trim().toLowerCase();
-          if (supervisorName && supName && supName.includes(supervisorName.trim().toLowerCase())) return true;
-
-          return false;
-        };
-
-        const targetData = (isSupervisorView || supervisorId || myGroupNames.size > 0 || myGroupIds.size > 0)
-          ? rawData.filter(isSupervisedStudent)
-          : rawData;
-
-        // Filter: Show only groups whose evaluation status is completed
-        const completedGroupNames = new Set<string>();
+        // Groups that have an evaluation panel set (scheduled or completed) or have marks
+        const panelGroupNames = new Set<string>();
         const completedPanelsSet = new Set<string>();
         (payload.panels || []).forEach((p: any) => {
+          if (p.target_group) {
+            panelGroupNames.add(String(p.target_group).trim().toLowerCase());
+          }
           if (String(p.status || '').toLowerCase() === 'completed') {
-            if (p.target_group) completedGroupNames.add(String(p.target_group).trim().toLowerCase());
             if (p.target_group && p.evaluation_type) {
               completedPanelsSet.add(normalizePanelKey(p.target_group, p.evaluation_type));
             }
           }
         });
 
-        const evaluatedGroupData = targetData.filter((item: any) => {
+        const targetData = rawData.filter((item: any) => {
           const gName = String(item.group_name || '').trim().toLowerCase();
-          return completedGroupNames.has(gName);
+          const hasMarks = item.stages && Object.values(item.stages).some((s: any) => s && (s.average_mark !== null || (s.evaluators && s.evaluators.length > 0)));
+          return panelGroupNames.has(gName) || hasMarks;
         });
 
-        // 3. Process student marks aggregated across canonical stages
-        const processed: StudentReportItem[] = evaluatedGroupData.map((item: any) => {
+        // Process student marks
+        const processed: StudentReportItem[] = targetData.map((item: any) => {
           const degree = inferDegree(item);
           const canonicalStagesMap: { [canonicalId: string]: StageData } = {};
           let sumObtained = 0;
@@ -365,10 +244,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
 
           canonicalList.forEach((cStg) => {
             const combinedEvaluators: EvaluatorMarkItem[] = [];
-            let stageTotalMax = 100;
+            let stageTotalMax = 60;
             const isStageCompleted = completedPanelsSet.has(normalizePanelKey(item.group_name, cStg.stage_name));
 
-            if (isStageCompleted && item.stages) {
+            if (item.stages) {
               cStg.raw_stage_ids.forEach((rId) => {
                 const stgData = item.stages[rId] || item.stages[String(rId)];
                 if (stgData) {
@@ -407,9 +286,12 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                 evaluator_count: combinedEvaluators.length,
                 evaluators: combinedEvaluators,
               };
-              sumObtained += roundedAvg;
-              sumMax += stageTotalMax;
-              stagesEvaluatedCount++;
+              // Only count towards student's final mark if evaluation panel is completed
+              if (isStageCompleted) {
+                sumObtained += roundedAvg;
+                sumMax += stageTotalMax;
+                stagesEvaluatedCount++;
+              }
             } else {
               canonicalStagesMap[cStg.canonical_id] = {
                 stage_id: cStg.canonical_id,
@@ -453,30 +335,20 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
 
         setStudents(processed);
       } else {
-        console.warn('Could not fetch marks summary from API. Using empty dataset.');
+        console.warn('Could not fetch marks summary for coordinator.');
         setStudents([]);
       }
     } catch (err) {
-      console.error('Error fetching marks reports:', err);
+      console.error('Error fetching coordinator marks reports:', err);
       setStudents([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // `${group_name}::${stage_name}`, case/whitespace-insensitive so it lines
-  // up regardless of how a group or stage name happens to be cased.
   const normalizePanelKey = (groupName: string, stageName: string) =>
     `${String(groupName).trim().toLowerCase()}::${String(stageName).trim().toLowerCase()}`;
 
-  // Fetch which (group, stage) panels are still active (not yet marked
-  // completed) so the marksheet's "Complete" button reflects real,
-  // persisted panel status instead of only what happened this session.
-  // Deliberately NOT /api/calendar/panels ("upcoming panels") — that list
-  // drops any panel whose date has passed, which is true of nearly every
-  // panel by the time marks are being reviewed here, so it can't tell
-  // "completed" apart from "just old". This hits the dedicated status
-  // endpoint instead, which ignores panel_date entirely.
   const fetchActivePanels = async () => {
     try {
       const panelsUrl = coordinatorId
@@ -505,12 +377,60 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   useEffect(() => {
     fetchReportData();
     void fetchActivePanels();
-  }, [levelNumber, supervisorId, supervisorName, JSON.stringify(allowedGroupNames), JSON.stringify(allowedGroupIds), isSupervisorView, coordinatorId]);
+  }, [levelNumber, coordinatorId]);
 
-  // Filter students based on selected degree, search query, and grade filter
+  // Determine this coordinator's degree details
+  const degreeInfo = useMemo(() => {
+    const dept = (coordinatorDept || '').toUpperCase();
+    if (dept === 'IDS' || dept === 'ITM') {
+      return {
+        code: 'ITM' as const,
+        name: 'ITM — Info Tech & Management',
+        badgeBg: '#fef3c7',
+        badgeColor: '#92400e',
+        borderColor: '#fde68a',
+      };
+    }
+    if (dept === 'CM' || dept === 'AI') {
+      return {
+        code: 'AI' as const,
+        name: 'AI — Artificial Intelligence',
+        badgeBg: '#f3e8ff',
+        badgeColor: '#6b21a8',
+        borderColor: '#e9d5ff',
+      };
+    }
+    if (dept === 'IT') {
+      return {
+        code: 'IT' as const,
+        name: 'IT — Information Technology',
+        badgeBg: '#e0f2fe',
+        badgeColor: '#0369a1',
+        borderColor: '#bae6fd',
+      };
+    }
+    // Fallback based on students
+    if (students.length > 0) {
+      const firstDegree = students[0].degree;
+      if (firstDegree === 'AI') {
+        return { code: 'AI' as const, name: 'AI — Artificial Intelligence', badgeBg: '#f3e8ff', badgeColor: '#6b21a8', borderColor: '#e9d5ff' };
+      }
+      if (firstDegree === 'IT') {
+        return { code: 'IT' as const, name: 'IT — Information Technology', badgeBg: '#e0f2fe', badgeColor: '#0369a1', borderColor: '#bae6fd' };
+      }
+    }
+    return {
+      code: 'ITM' as const,
+      name: 'ITM — Info Tech & Management',
+      badgeBg: '#fef3c7',
+      badgeColor: '#92400e',
+      borderColor: '#fde68a',
+    };
+  }, [coordinatorDept, students]);
+
+  // Filter students based on search query and grade filter
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      const matchDegree = selectedDegree === 'ALL' || s.degree === selectedDegree;
       const matchSearch =
         searchQuery === '' ||
         s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -518,12 +438,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
         s.group_name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchGrade =
         selectedGradeFilter === 'ALL' || s.gradeInfo.letter === selectedGradeFilter;
-      return matchDegree && matchSearch && matchGrade;
+      return matchSearch && matchGrade;
     });
-  }, [students, selectedDegree, searchQuery, selectedGradeFilter]);
+  }, [students, searchQuery, selectedGradeFilter]);
 
-  // Member count per group, for the group section header (avoids repeating
-  // "N members" logic inline and re-scanning the array per row).
   const groupMemberCounts = useMemo(() => {
     const counts = new Map<string, number>();
     filteredStudents.forEach((s) => {
@@ -532,22 +450,11 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
     return counts;
   }, [filteredStudents]);
 
-  const degreeBadgeStyle = (degree: string) => ({
-    backgroundColor: degree === 'IT' ? '#e0f2fe' : degree === 'AI' ? '#f3e8ff' : '#fef3c7',
-    color: degree === 'IT' ? '#0369a1' : degree === 'AI' ? '#6b21a8' : '#92400e',
-    border: `1px solid ${degree === 'IT' ? '#bae6fd' : degree === 'AI' ? '#e9d5ff' : '#fde68a'}`,
-  });
-
-  // Degree-specific students subset for calculating statistics
-  const degreeStudents = useMemo(() => {
-    return students.filter((s) => selectedDegree === 'ALL' || s.degree === selectedDegree);
-  }, [students, selectedDegree]);
-
-  // Calculate Grade Distribution Percentages & Statistics for Degree
-  const degreeStats = useMemo(() => {
-    const evaluatedStudents = degreeStudents.filter((s) => s.isEvaluated && s.final_mark !== null);
+  // Statistics for this coordinator's cohort (ethical: computed based on evaluated students)
+  const cohortStats = useMemo(() => {
+    const evaluatedStudents = students.filter((s) => s.isEvaluated && s.final_mark !== null);
     const total = evaluatedStudents.length;
-    const pendingCount = degreeStudents.length - evaluatedStudents.length;
+    const pendingCount = students.length - evaluatedStudents.length;
 
     if (evaluatedStudents.length === 0) {
       return {
@@ -592,24 +499,37 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
       gradeCounts,
       gradePercentages,
     };
-  }, [degreeStudents]);
-
-  // Degree Counts
-  const countsByDegree = useMemo(() => {
-    return {
-      ALL: students.length,
-      IT: students.filter((s) => s.degree === 'IT').length,
-      AI: students.filter((s) => s.degree === 'AI').length,
-      ITM: students.filter((s) => s.degree === 'ITM').length,
-    };
   }, [students]);
 
+  const handleCompleteGroupStage = async (groupName: string, stageName: string) => {
+    const key = `${groupName}::${stageName}`;
 
-  // Download the server-generated "Marks Distribution Report" PDF (summary
-  // stats + a histogram/bell-curve chart, rendered entirely server-side —
-  // no chart is ever drawn in this UI). The response is a raw PDF stream,
-  // not JSON, so this fetches it as a Blob and triggers a normal browser
-  // file download via a throwaway <a download> element.
+    setCompletingKey(key);
+    try {
+      const response = await fetch('http://localhost:5000/api/calendar/panels/complete-for-groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level: levelNumber, groupNames: [groupName], stageName }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to complete panel.');
+      }
+      setActivePanelKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(normalizePanelKey(groupName, stageName));
+        return next;
+      });
+      showToast(`Done — ${stageName} marked complete for "${groupName}".`, 'success');
+      void fetchActivePanels();
+      void fetchReportData();
+    } catch (err) {
+      showToast(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+    } finally {
+      setCompletingKey(null);
+    }
+  };
+
   const handleDownloadPdfReport = async () => {
     if (filteredStudents.length === 0) {
       showToast('No student marks available to export for this selection.', 'warning');
@@ -617,18 +537,11 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
     }
     setDownloadingPdf(true);
     try {
-      const params = new URLSearchParams();
-      if (coordinatorId) {
-        params.set('coordinatorId', String(coordinatorId));
-      }
-      if (selectedDegree && selectedDegree !== 'ALL') {
-        params.set('degree', selectedDegree);
-      }
-      const queryString = params.toString() ? `?${params.toString()}` : '';
-      const pdfUrl = `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf${queryString}`;
+      const pdfUrl = coordinatorId
+        ? `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf?coordinatorId=${coordinatorId}`
+        : `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf`;
       const response = await fetch(pdfUrl);
       if (!response.ok) {
-        // Errors come back as JSON, not a PDF — surface the real message if present.
         const contentType = response.headers.get('content-type') || '';
         const message = contentType.includes('application/json')
           ? (await response.json())?.message
@@ -640,8 +553,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const degreeSuffix = selectedDegree && selectedDegree !== 'ALL' ? `_${selectedDegree}` : '';
-      link.download = `Level_${levelNumber}${degreeSuffix}_Marks_Distribution_Report.pdf`;
+      link.download = `Level_${levelNumber}_${degreeInfo.code}_Marks_Distribution_Report.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -653,7 +565,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
     }
   };
 
-  // Export to CSV with Evaluator Marks Breakdown
   const handleExportCSV = () => {
     if (filteredStudents.length === 0) {
       showToast('No student marks available to export for this selection.', 'warning');
@@ -674,36 +585,43 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
     ];
 
     const rows = filteredStudents.map((s) => {
-      const stageCols = stages.map((st) => {
-        const data = s.stages[st.stage_id];
-        if (data && data.average_mark !== null) {
-          const evalStr = data.evaluators && data.evaluators.length > 0
-            ? data.evaluators.map((e, i) => `E${i + 1}(${e.evaluator_name}): ${e.mark}`).join('; ') + ` | Avg: ${data.average_mark}`
-            : `${data.average_mark}`;
-          return `"${evalStr}"`;
-        }
-        return '"—"';
+      const stageColumns = stages.map((st) => {
+        const isPending =
+          panelsLoaded &&
+          activePanelKeys.has(normalizePanelKey(s.group_name, st.stage_name));
+        const stgData = s.stages[st.stage_id];
+        if (isPending || !stgData || stgData.average_mark === null) return 'Pending / Scheduled';
+        const evaluatorsDetail = stgData.evaluators && stgData.evaluators.length > 0
+          ? ` [${stgData.evaluators.map((e, idx) => `E${idx + 1}:${e.mark}/${e.total_marks || 60}`).join('; ')}]`
+          : '';
+        return `${stgData.average_mark}/${stgData.total_marks || 60}${evaluatorsDetail}`;
       });
+
+      const passStatus = !s.isEvaluated
+        ? 'Pending Evaluation'
+        : isEligibleForPromotion(s.gradeInfo.letter, s.final_mark || 0)
+        ? 'Pass (Eligible)'
+        : 'Fail (Repeat)';
 
       return [
         `"${s.student_name}"`,
         `"${s.university_id}"`,
         `"${s.degree}"`,
         `"${s.group_name}"`,
-        ...stageCols,
+        ...stageColumns.map((c) => `"${c}"`),
         s.sum_obtained_marks,
         s.sum_total_max_marks,
         s.final_mark !== null ? s.final_mark : 'N/A',
         `"${s.gradeInfo.letter}"`,
-        !s.isEvaluated ? 'Pending Evaluation' : isEligibleForPromotion(s.gradeInfo.letter, s.final_mark || 0) ? 'Pass' : 'Fail',
-      ];
+        `"${passStatus}"`,
+      ].join(',');
     });
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Level_${levelNumber}_${selectedDegree}_Marks_Report.csv`);
+    link.setAttribute('download', `Level_${levelNumber}_${degreeInfo.code}_Marksheet_Report.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -807,9 +725,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
       >
         <div>
           <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>
-            {isSupervisorView
-              ? `Level ${levelNumber} — Supervised Groups Progress & Marks`
-              : `Level ${levelNumber} — Marks & Grade Reports`}
+            Level {levelNumber} — {degreeInfo.name} Marks & Grade Reports
           </h2>
         </div>
 
@@ -821,105 +737,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
             Download CSV
           </button>
         </div>
-      </div>
-
-      {/* Degree Program Tabs (IT, AI, ITM, ALL) */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '2px',
-          overflowX: 'auto',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setSelectedDegree('ALL')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 20px',
-            border: 'none',
-            borderBottom: selectedDegree === 'ALL' ? '3px solid var(--eds-color-primary)' : '3px solid transparent',
-            backgroundColor: 'transparent',
-            color: selectedDegree === 'ALL' ? 'var(--eds-color-primary)' : '#64748b',
-            fontWeight: selectedDegree === 'ALL' ? '700' : '600',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <Layers size={18} />
-          All Degrees ({countsByDegree.ALL})
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSelectedDegree('IT')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 20px',
-            border: 'none',
-            borderBottom: selectedDegree === 'IT' ? '3px solid #0284c7' : '3px solid transparent',
-            backgroundColor: 'transparent',
-            color: selectedDegree === 'IT' ? '#0284c7' : '#64748b',
-            fontWeight: selectedDegree === 'IT' ? '700' : '600',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <GraduationCap size={18} />
-          IT — Information Technology ({countsByDegree.IT})
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSelectedDegree('AI')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 20px',
-            border: 'none',
-            borderBottom: selectedDegree === 'AI' ? '3px solid #7c3aed' : '3px solid transparent',
-            backgroundColor: 'transparent',
-            color: selectedDegree === 'AI' ? '#7c3aed' : '#64748b',
-            fontWeight: selectedDegree === 'AI' ? '700' : '600',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <Award size={18} />
-          AI — Artificial Intelligence ({countsByDegree.AI})
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSelectedDegree('ITM')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 20px',
-            border: 'none',
-            borderBottom: selectedDegree === 'ITM' ? '3px solid #d97706' : '3px solid transparent',
-            backgroundColor: 'transparent',
-            color: selectedDegree === 'ITM' ? '#d97706' : '#64748b',
-            fontWeight: selectedDegree === 'ITM' ? '700' : '600',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <BarChart3 size={18} />
-          ITM — Info Tech & Management ({countsByDegree.ITM})
-        </button>
       </div>
 
       {/* Summary KPI Cards Row */}
@@ -958,10 +775,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
           </div>
           <div>
             <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
-              {selectedDegree === 'ALL' ? 'Total Evaluated' : `${selectedDegree} Students Evaluated`}
+              {degreeInfo.code} Students Evaluated
             </div>
             <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
-              {degreeStats.total} <span style={{ fontSize: '13px', fontWeight: 'normal', color: '#94a3b8' }}>students</span>
+              {cohortStats.total} <span style={{ fontSize: '13px', fontWeight: 'normal', color: '#94a3b8' }}>students</span>
             </div>
           </div>
         </div>
@@ -995,7 +812,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
           <div>
             <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>Average Score</div>
             <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
-              {degreeStats.evaluatedCount > 0 ? `${degreeStats.avgMark}%` : '—'}
+              {cohortStats.evaluatedCount > 0 ? `${cohortStats.avgMark}%` : '—'}
             </div>
           </div>
         </div>
@@ -1029,7 +846,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
           <div>
             <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>Pass Rate (≥ C-)</div>
             <div style={{ color: '#0f172a', fontSize: '22px', fontWeight: '700', marginTop: '2px' }}>
-              {degreeStats.evaluatedCount > 0 ? `${degreeStats.passRate}%` : '—'}
+              {cohortStats.evaluatedCount > 0 ? `${cohortStats.passRate}%` : '—'}
             </div>
           </div>
         </div>
@@ -1061,25 +878,25 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
               <BarChart3 size={17} />
             </div>
             <h3 style={{ margin: 0, color: '#0f172a', fontSize: '16px', fontWeight: '700' }}>
-              {selectedDegree === 'ALL' ? 'Overall' : selectedDegree} Grade Distribution & Percentages
+              {degreeInfo.code} Grade Distribution & Percentages
             </h3>
           </div>
 
           <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>
-            Total Evaluated: <strong>{degreeStats.total} students</strong>
+            Total Evaluated: <strong>{cohortStats.total} students</strong>
           </div>
         </div>
 
         {/* Visual Stacked Progress Bar */}
-        {degreeStats.evaluatedCount > 0 ? (
+        {cohortStats.evaluatedCount > 0 ? (
           <div className="report-distribution-bar" style={{ height: '18px', borderRadius: '8px', overflow: 'hidden' }}>
             {GRADING_SCALE.map((g) => {
-              const pct = degreeStats.gradePercentages[g.letter] || 0;
+              const pct = cohortStats.gradePercentages[g.letter] || 0;
               if (pct === 0) return null;
               return (
                 <div
                   key={g.letter}
-                  title={`${g.letter}: ${pct}% (${degreeStats.gradeCounts[g.letter]} students)`}
+                  title={`${g.letter}: ${pct}% (${cohortStats.gradeCounts[g.letter]} students)`}
                   className="report-distribution-segment"
                   style={{ width: `${pct}%`, backgroundColor: DISTRIBUTION_COLORS[g.letter] }}
                 />
@@ -1102,8 +919,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
           }}
         >
           {GRADING_SCALE.map((g) => {
-            const count = degreeStats.gradeCounts[g.letter] || 0;
-            const pct = degreeStats.gradePercentages[g.letter] || 0;
+            const count = cohortStats.gradeCounts[g.letter] || 0;
+            const pct = cohortStats.gradePercentages[g.letter] || 0;
             const isSelected = selectedGradeFilter === g.letter;
 
             return (
@@ -1208,51 +1025,49 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                 Student Marksheet
               </div>
               <div style={{ fontSize: '12.5px', color: '#64748b', textAlign: 'left' }}>
-                Showing {filteredStudents.length} student {filteredStudents.length === 1 ? 'record' : 'records'}
+                Showing {filteredStudents.length} student records ({cohortStats.total} evaluated{cohortStats.pendingCount > 0 ? `, ${cohortStats.pendingCount} pending completion` : ''})
               </div>
             </div>
-            {selectedDegree !== 'ALL' && (
-              <span
-                style={{
-                  fontSize: '11.5px',
-                  fontWeight: '700',
-                  padding: '3px 10px',
-                  borderRadius: '20px',
-                  backgroundColor: '#eff6ff',
-                  color: '#1d4ed8',
-                  border: '1px solid #bfdbfe',
-                }}
-              >
-                Degree: {selectedDegree}
-              </span>
-            )}
+            <span
+              style={{
+                fontSize: '11.5px',
+                fontWeight: '700',
+                padding: '3px 10px',
+                borderRadius: '20px',
+                backgroundColor: degreeInfo.badgeBg,
+                color: degreeInfo.badgeColor,
+                border: `1px solid ${degreeInfo.borderColor}`,
+              }}
+            >
+              Degree: {degreeInfo.code}
+            </span>
           </div>
 
-            {/* Search Box */}
-            <div style={{ position: 'relative', minWidth: '260px' }}>
-              <Search
-                size={15}
-                color="#94a3b8"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-              />
-              <input
-                type="text"
-                placeholder="Search name, index, group..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  padding: '9px 14px 9px 36px',
-                  borderRadius: '10px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '13px',
-                  width: '100%',
-                  outline: 'none',
-                  backgroundColor: '#f8fafc',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
+          {/* Search Box */}
+          <div style={{ position: 'relative', minWidth: '260px' }}>
+            <Search
+              size={15}
+              color="#94a3b8"
+              style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+            />
+            <input
+              type="text"
+              placeholder="Search name, index, group..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: '9px 14px 9px 36px',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                width: '100%',
+                outline: 'none',
+                backgroundColor: '#f8fafc',
+                boxSizing: 'border-box',
+              }}
+            />
           </div>
+        </div>
 
         {/* Table Content */}
         {loading ? (
@@ -1276,10 +1091,6 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
                   <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569' }}>Student Details</th>
                   <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Index No</th>
-                  {/* Degree and Project Group columns are dropped in favor of
-                      one section-header row per group (name, degree badge,
-                      member count) below — repeating them on every student
-                      row got noisy fast with more groups. */}
                   {stages.map((st) => (
                     <th key={st.stage_id} style={{ padding: '12px 8px', textAlign: 'center' }}>
                       <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>{st.stage_name}</div>
@@ -1297,208 +1108,239 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                   const gInfo = student.gradeInfo;
                   const isFirstRowOfGroup =
                     rowIndex === 0 || filteredStudents[rowIndex - 1].group_name !== student.group_name;
-                  // Student Details, Index No, Final Mark, Grade + one column per stage.
                   const totalColumns = 4 + stages.length;
 
                   return (
                     <React.Fragment key={student.student_id}>
-                    {isFirstRowOfGroup && (
-                      <tr>
-                        <td
-                          colSpan={totalColumns}
-                          style={{
-                            padding: '10px 14px',
-                            backgroundColor: '#f1f5f9',
-                            borderTop: rowIndex === 0 ? 'none' : '2px solid #e2e8f0',
-                            borderBottom: '1px solid #e2e8f0',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontWeight: '800', fontSize: '13.5px', color: '#0f172a' }}>
-                              {student.group_name}
-                            </span>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: '700',
-                                ...degreeBadgeStyle(student.degree),
-                              }}
-                            >
-                              {student.degree}
-                            </span>
-                            <span style={{ fontSize: '12px', color: '#64748b' }}>
-                              {groupMemberCounts.get(student.group_name)} member
-                              {groupMemberCounts.get(student.group_name) === 1 ? '' : 's'}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    <tr
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                        transition: 'background-color 0.15s ease'
-                      }}
-                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
-                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      {/* Student Details */}
-                      <td style={{ padding: '12px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            backgroundColor: '#eff6ff',
-                            color: '#2563eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: '700',
-                            fontSize: '12.5px',
-                            flexShrink: 0
-                          }}>
-                            {student.student_name ? student.student_name.charAt(0).toUpperCase() : 'S'}
-                          </div>
-
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                                {student.student_name}
+                      {isFirstRowOfGroup && (
+                        <tr>
+                          <td
+                            colSpan={totalColumns}
+                            style={{
+                              padding: '10px 14px',
+                              backgroundColor: '#f1f5f9',
+                              borderTop: rowIndex === 0 ? 'none' : '2px solid #e2e8f0',
+                              borderBottom: '1px solid #e2e8f0',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ fontWeight: '800', fontSize: '13.5px', color: '#0f172a' }}>
+                                {student.group_name}
                               </span>
-                              {student.is_leader && (
-                                <span
-                                  style={{
-                                    fontSize: '9px',
-                                    backgroundColor: '#16a34a',
-                                    color: '#ffffff',
-                                    padding: '1px 5px',
-                                    borderRadius: '4px',
-                                    fontWeight: '800',
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'uppercase',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  Leader
-                                </span>
-                              )}
-                            </div>
-                            {student.email && (
-                              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap' }}>
-                                {student.email}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Reg No */}
-                      <td style={{ padding: '12px 10px', color: '#334155', fontWeight: '600', fontSize: '12.5px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                        {student.university_id || '—'}
-                      </td>
-
-                      {/* Degree and Project Group are shown once in the group
-                          section header above instead of repeating per row. */}
-
-                      {/* Stage Marks with Evaluator-wise breakdown */}
-                      {stages.map((st) => {
-                        const stgData = student.stages[st.stage_id];
-
-                        return (
-                          <td key={st.stage_id} style={{ padding: '12px 6px', textAlign: 'center', verticalAlign: 'middle' }}>
-                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                              {stgData && stgData.average_mark !== null && stgData.average_mark !== undefined ? (
-                                <>
-                                  <div 
-                                    style={{ 
-                                      fontSize: '12.5px', 
-                                      fontWeight: '700', 
-                                      color: '#0f172a',
-                                      backgroundColor: '#f8fafc',
-                                      border: '1px solid #e2e8f0',
-                                      padding: '3px 8px',
-                                      borderRadius: '6px',
-                                      display: 'inline-flex',
-                                      alignItems: 'baseline',
-                                      gap: '2px',
-                                      cursor: 'default'
-                                    }}
-                                    title={stgData.evaluators && stgData.evaluators.length > 0 
-                                      ? stgData.evaluators.map((ev, i) => `${ev.evaluator_name}: ${ev.mark}/${ev.total_marks || 100}${ev.feedback ? ' (Feedback: ' + ev.feedback + ')' : ''}`).join('\n')
-                                      : undefined}
-                                  >
-                                    <span>{stgData.average_mark}</span>
-                                    {stgData.total_marks && (
-                                      <span style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8' }}>
-                                        /{stgData.total_marks}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {stgData.evaluators && stgData.evaluators.length > 1 && (
-                                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', fontWeight: '500', whiteSpace: 'nowrap' }}>
-                                      {stgData.evaluators.map((ev, i) => `E${i + 1}:${ev.mark}`).join(' ')}
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <span style={{ color: '#cbd5e1', fontSize: '15px', fontWeight: '500' }}>—</span>
-                              )}
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  backgroundColor: degreeInfo.badgeBg,
+                                  color: degreeInfo.badgeColor,
+                                  border: `1px solid ${degreeInfo.borderColor}`,
+                                }}
+                              >
+                                {student.degree}
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>
+                                {groupMemberCounts.get(student.group_name)} member
+                                {groupMemberCounts.get(student.group_name) === 1 ? '' : 's'}
+                              </span>
                             </div>
                           </td>
-                        );
-                      })}
-
-                      {/* Final Mark */}
-                      <td style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
-                        {student.isEvaluated && student.final_mark !== null ? (
-                          <>
-                            <div style={{ 
-                              fontWeight: '800', 
-                              fontSize: '13px', 
-                              color: '#0f172a',
-                              backgroundColor: '#ffffff',
-                              border: '1px solid #e2e8f0',
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                              display: 'inline-block'
+                        </tr>
+                      )}
+                      <tr
+                        style={{
+                          borderBottom: '1px solid #f1f5f9',
+                          transition: 'background-color 0.15s ease',
+                        }}
+                        onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                        onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        {/* Student Details */}
+                        <td style={{ padding: '12px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              backgroundColor: '#eff6ff',
+                              color: '#2563eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '700',
+                              fontSize: '12.5px',
+                              flexShrink: 0,
                             }}>
-                              {student.final_mark}%
+                              {student.student_name ? student.student_name.charAt(0).toUpperCase() : 'S'}
                             </div>
-                            {student.sum_total_max_marks > 0 && (
-                              <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px' }}>
-                                {`(${student.sum_obtained_marks}/${student.sum_total_max_marks})`}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '600' }}>—</span>
-                        )}
-                      </td>
 
-                      {/* Letter Grade */}
-                      <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '3px 10px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '800',
-                            backgroundColor: gInfo.badgeBg,
-                            color: gInfo.badgeColor,
-                            border: `1px solid ${gInfo.borderColor}`,
-                            minWidth: '24px',
-                            textAlign: 'center'
-                          }}
-                        >
-                          {gInfo.letter}
-                        </span>
-                      </td>
-                    </tr>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                  {student.student_name}
+                                </span>
+                                {student.is_leader && (
+                                  <span
+                                    style={{
+                                      fontSize: '9px',
+                                      backgroundColor: '#16a34a',
+                                      color: '#ffffff',
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      fontWeight: '800',
+                                      letterSpacing: '0.02em',
+                                      textTransform: 'uppercase',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    Leader
+                                  </span>
+                                )}
+                              </div>
+                              {student.email && (
+                                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap' }}>
+                                  {student.email}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Reg No */}
+                        <td style={{ padding: '12px 10px', color: '#334155', fontWeight: '600', fontSize: '12.5px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
+                          {student.university_id || '—'}
+                        </td>
+
+                        {/* Stage Marks with Evaluator-wise breakdown */}
+                        {stages.map((st) => {
+                          const stgData = student.stages[st.stage_id];
+                          const isPending =
+                            panelsLoaded &&
+                            activePanelKeys.has(normalizePanelKey(student.group_name, st.stage_name));
+                          const key = `${student.group_name}::${st.stage_name}`;
+                          const isCompleting = completingKey === key;
+
+                          return (
+                            <td key={st.stage_id} style={{ padding: '12px 6px', textAlign: 'center', verticalAlign: 'middle' }}>
+                              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                {stgData && stgData.average_mark !== null && stgData.average_mark !== undefined ? (
+                                  <>
+                                    <div 
+                                      style={{ 
+                                        fontSize: '12.5px', 
+                                        fontWeight: '700', 
+                                        color: '#0f172a',
+                                        backgroundColor: '#f8fafc',
+                                        border: '1px solid #e2e8f0',
+                                        padding: '3px 8px',
+                                        borderRadius: '6px',
+                                        display: 'inline-flex',
+                                        alignItems: 'baseline',
+                                        gap: '2px',
+                                        cursor: 'default',
+                                      }}
+                                      title={stgData.evaluators && stgData.evaluators.length > 0 
+                                        ? stgData.evaluators.map((ev) => `${ev.evaluator_name}: ${ev.mark}/${ev.total_marks || 60}${ev.feedback ? ' (Feedback: ' + ev.feedback + ')' : ''}`).join('\n')
+                                        : undefined}
+                                    >
+                                      <span>{stgData.average_mark}</span>
+                                      {stgData.total_marks && (
+                                        <span style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8' }}>
+                                          /{stgData.total_marks}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {stgData.evaluators && stgData.evaluators.length > 1 && (
+                                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                        {stgData.evaluators.map((ev, i) => `E${i + 1}:${ev.mark}`).join(' ')}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span style={{ color: '#cbd5e1', fontSize: '15px', fontWeight: '500' }}>—</span>
+                                )}
+
+                                {/* Complete button: shown on group's 1st row ONLY when this stage has an active/pending panel */}
+                                {isFirstRowOfGroup && isPending && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
+                                    disabled={isCompleting}
+                                    title={`Mark ${st.stage_name} complete for "${student.group_name}"`}
+                                    style={{
+                                      marginTop: '5px',
+                                      padding: '2px 8px',
+                                      borderRadius: '5px',
+                                      border: '1px solid #16a34a',
+                                      backgroundColor: isCompleting ? '#f0fdf4' : '#16a34a',
+                                      color: isCompleting ? '#16a34a' : '#ffffff',
+                                      fontWeight: '700',
+                                      fontSize: '9.5px',
+                                      cursor: isCompleting ? 'default' : 'pointer',
+                                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {isCompleting ? 'Completing…' : 'Complete'}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+
+                        {/* Final Mark */}
+                        <td style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc', verticalAlign: 'middle' }}>
+                          {student.isEvaluated && student.final_mark !== null ? (
+                            <>
+                              <div style={{ 
+                                fontWeight: '800', 
+                                fontSize: '13px', 
+                                color: '#0f172a',
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e2e8f0',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                display: 'inline-block',
+                              }}>
+                                {student.final_mark}%
+                              </div>
+                              {student.sum_total_max_marks > 0 && (
+                                <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px' }}>
+                                  {`(${student.sum_obtained_marks}/${student.sum_total_max_marks})`}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '600' }}>—</span>
+                          )}
+                        </td>
+
+                        {/* Letter Grade */}
+                        <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '3px 10px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '800',
+                              backgroundColor: gInfo.badgeBg,
+                              color: gInfo.badgeColor,
+                              border: `1px solid ${gInfo.borderColor}`,
+                              minWidth: '24px',
+                              textAlign: 'center',
+                            }}
+                          >
+                            {gInfo.letter}
+                          </span>
+                        </td>
+                      </tr>
                     </React.Fragment>
                   );
                 })}
@@ -1511,4 +1353,4 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   );
 };
 
-export default SupervisorReportPanel;
+export default CoordinatorReportPanel;

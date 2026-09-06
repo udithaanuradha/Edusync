@@ -117,7 +117,7 @@ const Dashboard: React.FC = () => {
               title="Industry Mentors"
               value={loading ? '...' : stats.totalMentors}
               color="red"
-              subtitle="External industry experts"
+              subtitle="Registered industry mentors"
             />
           </div>
 

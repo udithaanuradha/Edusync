@@ -58,10 +58,6 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success' | 'info' | 'warning' | ''; text: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  
-  // Chat Reminder States
-  const [isRemindingAll, setIsRemindingAll] = useState(false);
-  const [allReminded, setAllReminded] = useState(false);
   const [isJustSent, setIsJustSent] = useState(false);
 
   // Persistent tracking across page navigation/refresh for this Level
@@ -188,40 +184,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
     setMissingGroupNames([]);
     setFileName('');
     setStatusMessage(null);
-    setAllReminded(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  // Send Chat Reminder to ALL missing groups at once
-  const handleSendAllMissingReminders = async () => {
-    if (unfilledGroups.length === 0) return;
-    setIsRemindingAll(true);
-
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/mentors/remind-all-missing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          missingGroups: unfilledGroups,
-          adminId: currentUserId
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setAllReminded(true);
-        setStatusMessage({
-          type: 'success',
-          text: `Chat reminder sent successfully to group leader(s) across ${unfilledGroups.length} missing group(s)!`
-        });
-      } else {
-        setStatusMessage({ type: 'error', text: data.error || 'Failed to send reminders.' });
-      }
-    } catch (error) {
-      setStatusMessage({ type: 'error', text: 'Network error sending reminders.' });
-    } finally {
-      setIsRemindingAll(false);
-    }
   };
 
   // Broadcast transactional invitations to all filled group mentors
