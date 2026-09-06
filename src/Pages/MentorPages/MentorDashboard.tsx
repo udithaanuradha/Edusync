@@ -118,10 +118,10 @@ const MentorDashboard: React.FC = () => {
 
       // 2. Select active group
       const activeGroup = selectedGroupId
-        ? groups.find((g) => (g.id || g.groupId) === selectedGroupId) || groups[0]
+        ? groups.find((g) => Number(g.id || g.groupId) === Number(selectedGroupId)) || groups[0]
         : groups[0];
 
-      const activeGroupId = activeGroup.id || activeGroup.groupId;
+      const activeGroupId = Number(activeGroup.id || activeGroup.groupId);
       if (!selectedGroupId && activeGroupId) {
         setSelectedGroupId(activeGroupId);
       }
