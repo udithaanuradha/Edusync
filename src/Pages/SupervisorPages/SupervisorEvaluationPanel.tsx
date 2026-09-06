@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { User, Users, Calendar, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import Sidebar from "../../components/shared/Sidebar";
 import Header from "../../components/shared/Header";
 import SupervisorSidebar from "../../components/supervisor/SupervisorSidebar";
@@ -17,6 +18,12 @@ interface GroupMember {
   feedback?: string;
   stage_avg_mark?: number | null;
   evaluator_count?: number;
+  evaluations_list?: Array<{
+    evaluator_id: number | string;
+    evaluator_name: string;
+    marks: number;
+    total_marks?: number;
+  }>;
 }
 
 interface GroupData {
@@ -32,7 +39,10 @@ interface GroupData {
   start_time?: string;
   duration?: string;
   location?: string;
+  meeting_link?: string;
   evaluators?: string;
+  supervisors?: string;
+  supervisor_name?: string;
   leader_name?: string;
   total_marks?: number;
   members: GroupMember[];
@@ -93,7 +103,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
     [key: string]: { marks: string; feedback: string };
   }>({});
 
-  // Resolve current user / supervisor identity
+  // Evaluator User Identity
   const currentEvaluator = useMemo(() => {
     try {
       const raw = localStorage.getItem("user");
@@ -119,34 +129,97 @@ const SupervisorEvaluationPanel: React.FC = () => {
         currentEvaluator.name
       )}`;
 
-      const response = await fetch(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-      });
+      const [response, byDateResponse] = await Promise.all([
+        fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        }),
+        fetch(
+          `http://localhost:5000/api/evaluation-panels/by-date?level=${levelNum}&evaluatorName=${encodeURIComponent(
+            currentEvaluator.name
+          )}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          }
+        ),
+      ]);
 
       if (response.ok) {
         const data = await response.json();
-        const loadedGroups: GroupData[] = data.data || [];
-        setGroups(loadedGroups);
+        let loadedGroups: GroupData[] = data.data || [];
 
-        if (loadedGroups.length > 0) {
+        if (byDateResponse.ok) {
+          const byDateData = await byDateResponse.json();
+          const rawPanels = byDateData.data || [];
+          const supMap = new Map<string, string>();
+          rawPanels.forEach((rp: any) => {
+            let sName = "";
+            if (rp.supervisors) {
+              try {
+                const parsed = typeof rp.supervisors === "string" ? JSON.parse(rp.supervisors) : rp.supervisors;
+                if (Array.isArray(parsed)) {
+                  sName = parsed.map((s: any) => typeof s === "object" ? (s.name || s.username) : s).filter(Boolean).join(", ");
+                } else {
+                  sName = String(rp.supervisors);
+                }
+              } catch {
+                sName = String(rp.supervisors);
+              }
+            }
+            if (sName) {
+              supMap.set(String(rp.id), sName);
+              if (rp.target_group) supMap.set(String(rp.target_group), sName);
+            }
+          });
+
+          loadedGroups = loadedGroups.map((g) => ({
+            ...g,
+            supervisor_name: g.supervisor_name || supMap.get(String(g.panel_id)) || supMap.get(String(g.group_name)) || "",
+          }));
+        }
+
+        // Filter only upcoming evaluation panels (today or future dates), excluding overdue/past ones
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcomingGroups = loadedGroups.filter((g) => {
+          if (!g.panel_date) return true;
+          const pDate = new Date(g.panel_date);
+          if (isNaN(pDate.getTime())) return true;
+          pDate.setHours(0, 0, 0, 0);
+          return pDate.getTime() >= today.getTime();
+        });
+
+        // Sort upcoming panels chronologically (earliest first)
+        upcomingGroups.sort((a, b) => {
+          const dateA = a.panel_date ? new Date(a.panel_date).getTime() : 0;
+          const dateB = b.panel_date ? new Date(b.panel_date).getTime() : 0;
+          return dateA - dateB;
+        });
+
+        setGroups(upcomingGroups);
+
+        if (upcomingGroups.length > 0) {
           const urlPanelId = searchParams.get("panelId");
           const urlGroupId = searchParams.get("groupId");
 
           let chosenGroup: GroupData | undefined;
           if (urlPanelId) {
-            chosenGroup = loadedGroups.find((g) => String(g.panel_id) === String(urlPanelId));
+            chosenGroup = upcomingGroups.find((g) => String(g.panel_id) === String(urlPanelId));
           }
           if (!chosenGroup && urlGroupId) {
-            chosenGroup = loadedGroups.find((g) => String(g.group_id) === String(urlGroupId));
+            chosenGroup = upcomingGroups.find((g) => String(g.group_id) === String(urlGroupId));
           }
           if (!chosenGroup && selectedPanelKey) {
-            chosenGroup = loadedGroups.find((g) => getPanelKey(g) === String(selectedPanelKey));
+            chosenGroup = upcomingGroups.find((g) => getPanelKey(g) === String(selectedPanelKey));
           }
           if (!chosenGroup) {
-            chosenGroup = loadedGroups[0];
+            chosenGroup = upcomingGroups[0];
           }
 
           const chosenKey = getPanelKey(chosenGroup);
@@ -390,8 +463,10 @@ const SupervisorEvaluationPanel: React.FC = () => {
               }}
             >
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <h2 style={{ margin: 0, color: "var(--eds-color-text-strong)" }}>Evaluation Panel Marks Entry</h2>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <h2 style={{ margin: 0, color: "var(--eds-color-text-strong)", wordSpacing: "3px", letterSpacing: "0.2px" }}>
+                    Evaluation Panel Marks Entry
+                  </h2>
                   <span
                     style={{
                       backgroundColor: "var(--eds-color-success-solid)",
@@ -437,7 +512,7 @@ const SupervisorEvaluationPanel: React.FC = () => {
                     e.currentTarget.style.borderColor = "var(--eds-color-border)";
                   }}
                 >
-                  ← Back to Calendar
+                  Back to Calendar
                 </button>
               </div>
             </div>
@@ -487,12 +562,13 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   border: "1px solid var(--eds-color-border)",
                 }}
               >
-                <div style={{ fontSize: "24px", marginBottom: "8px" }}>⏳</div>
                 <p style={{ color: "var(--eds-color-text-muted)", margin: 0, fontWeight: "500" }}>
                   Loading assigned evaluation panels for Level {selectedLevel}...
                 </p>
               </div>
-            ) : groups.length === 0 ? (
+            ) : null}
+
+            {groups.length === 0 && !loading ? (
               <div
                 style={{
                   padding: "40px 20px",
@@ -502,31 +578,40 @@ const SupervisorEvaluationPanel: React.FC = () => {
                   border: "1px dashed var(--eds-color-border)",
                 }}
               >
-                <div style={{ fontSize: "36px", marginBottom: "12px" }}>📋</div>
+                <div style={{ display: "inline-flex", padding: "14px", borderRadius: "50%", backgroundColor: "var(--eds-color-bg-surface-soft)", marginBottom: "12px" }}>
+                  <Calendar size={28} style={{ color: "var(--eds-color-primary)" }} />
+                </div>
                 <h3 style={{ margin: "0 0 8px 0", color: "var(--eds-color-text-strong)" }}>
-                  No Evaluation Panels Assigned
+                  No Upcoming Evaluation Panels
                 </h3>
                 <p style={{ color: "var(--eds-color-text-muted)", maxWidth: "500px", margin: "0 auto 16px auto", fontSize: "14px" }}>
-                  You are currently not listed as an active evaluator in any evaluation panel for Level {selectedLevel}.
-                  Please select another level or contact the coordinator if you should be assigned.
+                  You currently have no upcoming evaluation panels scheduled for Level {selectedLevel}. Past or concluded evaluation panels are hidden.
+                  Please select another level or contact the coordinator if a panel is scheduled for today.
                 </p>
                 <button
                   type="button"
                   onClick={() => fetchAssignedGroups(selectedLevel)}
                   style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
                     padding: "8px 16px",
                     borderRadius: "6px",
                     border: "1px solid var(--eds-color-border)",
                     backgroundColor: "var(--eds-color-bg-surface-soft)",
+                    color: "var(--eds-color-text-strong)",
                     cursor: "pointer",
                     fontSize: "13px",
                     fontWeight: "600",
                   }}
                 >
-                  🔄 Refresh Status
+                  <RefreshCw size={14} />
+                  <span>Refresh Status</span>
                 </button>
               </div>
-            ) : (
+            ) : null}
+
+            {groups.length > 0 && !loading && (
               <>
                 {/* Group Selector & Panel Info Banner */}
                 <div
@@ -601,10 +686,76 @@ const SupervisorEvaluationPanel: React.FC = () => {
                       )}
 
                       {selectedGroup.panel_date && (
-                        <span style={{ fontSize: "13px", color: "var(--eds-color-text-muted)", fontWeight: "500" }}>
-                          📅 {new Date(selectedGroup.panel_date).toLocaleDateString()}
-                          {selectedGroup.start_time ? ` at ${selectedGroup.start_time}` : ""}
-                        </span>
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "4px 12px 4px 6px",
+                            backgroundColor: "var(--eds-color-bg-surface)",
+                            borderRadius: "10px",
+                            border: "1px solid var(--eds-color-border)",
+                            fontSize: "13px",
+                            color: "var(--eds-color-text-strong)",
+                            fontWeight: "500",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "7px",
+                              backgroundColor: "#ede9fe",
+                              color: "#6d28d9",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Calendar size={15} />
+                          </div>
+                          <span>
+                            {new Date(selectedGroup.panel_date).toLocaleDateString()}
+                            {selectedGroup.start_time ? ` at ${selectedGroup.start_time}` : ""}
+                          </span>
+                        </div>
+                      )}
+
+                      {selectedGroup.supervisor_name && (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "4px 12px 4px 6px",
+                            backgroundColor: "var(--eds-color-bg-surface)",
+                            borderRadius: "10px",
+                            border: "1px solid var(--eds-color-border)",
+                            fontSize: "13px",
+                            color: "var(--eds-color-text-strong)",
+                            fontWeight: "600",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "7px",
+                              backgroundColor: "#dcfce7",
+                              color: "#15803d",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <User size={15} />
+                          </div>
+                          <span>Supervisor: {selectedGroup.supervisor_name}</span>
+                        </div>
                       )}
                     </div>
                   )}
@@ -636,13 +787,9 @@ const SupervisorEvaluationPanel: React.FC = () => {
                         }}
                       >
                         <div>
-                          <h3 style={{ margin: "0 0 6px 0", color: "var(--eds-color-text-strong)", fontSize: "18px" }}>
+                          <h3 style={{ margin: 0, color: "var(--eds-color-text-strong)", fontSize: "18px" }}>
                             {selectedGroup.group_name}
                           </h3>
-                          <p style={{ margin: 0, color: "var(--eds-color-text-muted)", fontSize: "14px" }}>
-                            <strong>Leader:</strong> {selectedGroup.leader_name || "N/A"} •{" "}
-                            <strong>Members:</strong> {selectedGroup.members?.length || 0} students
-                          </p>
                         </div>
 
                         {/* Panel Evaluators pill */}
@@ -718,9 +865,57 @@ const SupervisorEvaluationPanel: React.FC = () => {
                               const sId = String(member.student_id);
                               const currentMarkVal = evaluations[sId]?.marks || "";
                               const currentNum = Number(currentMarkVal);
-                              const currentPercent = currentMarkVal !== "" && totalMaxMarks > 0 
+                              const hasInput = currentMarkVal !== "" && !isNaN(currentNum);
+                              const currentPercent = hasInput && totalMaxMarks > 0 
                                 ? Math.round((currentNum / totalMaxMarks) * 100) 
                                 : null;
+
+                              // Collect marks given by OTHER evaluators for this student
+                              let otherEvaluatorMarks: number[] = [];
+
+                              if (member.evaluations_list && member.evaluations_list.length > 0) {
+                                otherEvaluatorMarks = member.evaluations_list
+                                  .filter((ev) => {
+                                    if (currentEvaluator.id && ev.evaluator_id) {
+                                      return String(ev.evaluator_id) !== String(currentEvaluator.id);
+                                    }
+                                    if (currentEvaluator.name && ev.evaluator_name) {
+                                      return ev.evaluator_name.trim().toLowerCase() !== currentEvaluator.name.trim().toLowerCase();
+                                    }
+                                    return true;
+                                  })
+                                  .map((ev) => Number(ev.marks))
+                                  .filter((m) => !isNaN(m));
+                              } else if (member.stage_avg_mark !== null && member.stage_avg_mark !== undefined) {
+                                const dbAvg = Number(member.stage_avg_mark);
+                                const dbCount = member.evaluator_count || 1;
+                                const hadExistingDbMark = member.marks !== "" && member.marks !== null && member.marks !== undefined;
+                                
+                                if (hadExistingDbMark) {
+                                  const otherCount = Math.max(0, dbCount - 1);
+                                  const otherSum = Math.max(0, (dbAvg * dbCount) - Number(member.marks));
+                                  if (otherCount > 0) {
+                                    otherEvaluatorMarks = Array(otherCount).fill(otherSum / otherCount);
+                                  }
+                                } else {
+                                  otherEvaluatorMarks = Array(dbCount).fill(dbAvg);
+                                }
+                              }
+
+                              // Calculate live dynamic stage average combining other evaluators and current input
+                              let liveAvgMark: number | null = null;
+                              let liveEvaluatorCount = 0;
+
+                              const allMarksForAvg = [...otherEvaluatorMarks];
+                              if (hasInput) {
+                                allMarksForAvg.push(currentNum);
+                              }
+
+                              if (allMarksForAvg.length > 0) {
+                                const totalSum = allMarksForAvg.reduce((sum, val) => sum + val, 0);
+                                liveAvgMark = Number((totalSum / allMarksForAvg.length).toFixed(2));
+                                liveEvaluatorCount = allMarksForAvg.length;
+                              }
 
                               return (
                                 <tr key={sId} style={{ borderBottom: "1px solid var(--eds-color-border-soft)" }}>
@@ -792,24 +987,26 @@ const SupervisorEvaluationPanel: React.FC = () => {
                                     </div>
                                   </td>
 
-                                  {/* Stage Average Display */}
+                                  {/* Stage Average Display (Live Dynamically Updated) */}
                                   <td style={{ padding: "14px", verticalAlign: "middle" }}>
-                                    {member.stage_avg_mark !== null && member.stage_avg_mark !== undefined ? (
+                                    {liveAvgMark !== null ? (
                                       <div>
                                         <span
                                           style={{
                                             fontWeight: "700",
                                             fontSize: "14px",
-                                            color: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-solid)" : "var(--eds-color-danger-solid)",
-                                            backgroundColor: (member.stage_avg_mark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-bg)" : "var(--eds-color-danger-bg)",
+                                            color: (liveAvgMark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-solid)" : "var(--eds-color-danger-solid)",
+                                            backgroundColor: (liveAvgMark / totalMaxMarks) >= 0.5 ? "var(--eds-color-success-bg)" : "var(--eds-color-danger-bg)",
                                             padding: "3px 8px",
                                             borderRadius: "6px",
+                                            display: "inline-block",
+                                            transition: "all 0.2s ease"
                                           }}
                                         >
-                                          {member.stage_avg_mark} /{totalMaxMarks} ({Math.round((member.stage_avg_mark / totalMaxMarks) * 100)}%)
+                                          {liveAvgMark} /{totalMaxMarks} ({Math.round((liveAvgMark / totalMaxMarks) * 100)}%)
                                         </span>
                                         <div style={{ fontSize: "11px", color: "var(--eds-color-text-muted)", marginTop: "3px" }}>
-                                          {member.evaluator_count || 1} evaluator{(member.evaluator_count || 1) > 1 ? "s" : ""}
+                                          {liveEvaluatorCount} evaluator{liveEvaluatorCount > 1 ? "s" : ""}
                                         </div>
                                       </div>
                                     ) : (
@@ -848,16 +1045,12 @@ const SupervisorEvaluationPanel: React.FC = () => {
                           paddingTop: "16px",
                           borderTop: "1px solid var(--eds-color-border-soft)",
                           display: "flex",
-                          justifyContent: "space-between",
+                          justifyContent: "flex-end",
                           alignItems: "center",
                           flexWrap: "wrap",
                           gap: "12px",
                         }}
                       >
-                        <div style={{ fontSize: "13px", color: "var(--eds-color-text-muted)" }}>
-                          Logged in as evaluator: <strong>{currentEvaluator.name || "Supervisor"}</strong>
-                        </div>
-
                         <button
                           type="submit"
                           disabled={submitting}
@@ -883,7 +1076,14 @@ const SupervisorEvaluationPanel: React.FC = () => {
                             if (!submitting) e.currentTarget.style.backgroundColor = "var(--eds-color-success-solid)";
                           }}
                         >
-                          {submitting ? "Saving to Database..." : "Save & Submit Marks"}
+                          {submitting ? (
+                            <>
+                              <RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} />
+                              <span>Submitting...</span>
+                            </>
+                          ) : (
+                            "Save & Submit Marks"
+                          )}
                         </button>
                       </div>
                     </div>

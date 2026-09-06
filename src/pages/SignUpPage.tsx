@@ -36,12 +36,11 @@ const SignUpPage: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isResending, setIsResending] = useState(false);
 
-  // All 5 system roles requested
+  // System roles available for public sign up
   const systemRoles = [
     { value: 'student', label: 'Student' },
     { value: 'lecturer', label: 'Lecturer' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'industry mentor', label: 'Industry Mentor' }
+    { value: 'admin', label: 'Admin' }
   ];
 
   const passwordCriteria = getPasswordCriteria(formData.password);

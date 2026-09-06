@@ -118,10 +118,10 @@ const MentorDashboard: React.FC = () => {
 
       // 2. Select active group
       const activeGroup = selectedGroupId
-        ? groups.find((g) => (g.id || g.groupId) === selectedGroupId) || groups[0]
+        ? groups.find((g) => Number(g.id || g.groupId) === Number(selectedGroupId)) || groups[0]
         : groups[0];
 
-      const activeGroupId = activeGroup.id || activeGroup.groupId;
+      const activeGroupId = Number(activeGroup.id || activeGroup.groupId);
       if (!selectedGroupId && activeGroupId) {
         setSelectedGroupId(activeGroupId);
       }
@@ -466,9 +466,6 @@ const MentorDashboard: React.FC = () => {
                     <Users size={18} className="md-header-icon" />
                     <h4 className="md-card-title">Student Contribution & Workload Distribution</h4>
                   </div>
-                  <span className="md-header-hint">
-                    Real-time task tracking and project contribution per member
-                  </span>
                 </div>
 
                 <div className="md-students-table-wrap">
@@ -587,9 +584,6 @@ const MentorDashboard: React.FC = () => {
                     <Target size={18} className="md-header-icon" />
                     <h4 className="md-card-title">Milestone Roadmap & Health</h4>
                   </div>
-                  <span className="md-header-hint">
-                    Progress status of all project milestones
-                  </span>
                 </div>
 
                 <div className="md-milestone-grid">

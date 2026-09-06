@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import AppShell from '../../components/shared/layout/AppShell';
+import { coordinatorMenuItems } from '../../components/shared/Sidebar';
 import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
 import GradebookTable from '../../components/coordinator/GradebookTable';
 import SupervisorReportPanel from '../../components/coordinator/SupervisorReportPanel';
 import { ApprovedGroupRequest } from '../../components/coordinator/groupRequestTypes';
+import { useAuth } from '../../context/AuthContext';
 import './CoordinatorDashboard.css';
 import './CoordinatorLevelPage.css';
 
@@ -24,6 +26,7 @@ interface CoordinatorLevelPageProps {
 }
 
 const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('stages');
   const [prefillRequest, setPrefillRequest] = useState<ApprovedGroupRequest | null>(null);
 
@@ -34,11 +37,11 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   };
 
   return (
-    <AppShell>
+    <AppShell navItems={coordinatorMenuItems}>
       <div className="coordinator-level-shell">
         <div className="dashboard-content">
             <div className="dashboard-header-section">
-              <h2 className="overview-title">Level {levelNumber} Management</h2>
+              <h2 className="overview-title" style={{ wordSpacing: '3px', letterSpacing: '0.2px' }}>Level {levelNumber} Management</h2>
               <p className="overview-subtitle">
                 Manage and create project stages and groups for Level {levelNumber} students
               </p>
@@ -73,7 +76,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                   onPrefillHandled={() => setPrefillRequest(null)}
                 />
               ) : activeTab === 'reports' ? (
-                <SupervisorReportPanel levelNumber={levelNumber} />
+                <SupervisorReportPanel levelNumber={levelNumber} coordinatorId={user?.id} />
               ) : (
                 <GradebookTable levelNumber={levelNumber} />
               )}

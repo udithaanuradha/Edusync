@@ -37,6 +37,28 @@ export const fetchConversationsV2 = async (userId: number): Promise<Conversation
 };
 
 /**
+ * Fetches total unread message count (1:1 + group chats) for the current user.
+ */
+export const fetchUnreadMessageCountV2 = async (userId: number): Promise<number> => {
+  try {
+    const response = await fetch(`${API_BASE}/unread-total?user_id=${userId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      return 0;
+    }
+
+    const data = await response.json();
+    return typeof data.total_unread === 'number' ? data.total_unread : 0;
+  } catch (error) {
+    console.error("[ChatV2 API] Error fetching unread message count:", error);
+    return 0;
+  }
+};
+
+/**
  * Fetches paginated message history between current user and partner with normalized JOINs.
  */
 export const fetchMessageHistoryV2 = async (

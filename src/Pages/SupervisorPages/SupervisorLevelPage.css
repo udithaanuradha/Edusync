@@ -336,3 +336,12 @@
   background: var(--eds-color-success-bg);
   color: var(--eds-color-success-text);
 }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

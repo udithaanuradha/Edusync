@@ -4,6 +4,15 @@
   background-color: var(--eds-color-bg-surface-soft);
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
 .admin-delays-container {
   padding: 32px;
   max-width: 1440px;

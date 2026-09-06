@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
@@ -34,11 +35,12 @@ import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import Level3mentor from "./pages/MentorPages/Level3mentor";
-import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
+import Level1mentor from "./pages/MentorPages/Level1mentor";
 import MentorSetupForm from "./pages/auth/MentorSetupForm";
 import ResetPasswordForm from "./pages/auth/ResetPasswordForm";
 import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
 import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
+import MentorCommunicationPage from "./pages/MentorPages/MentorCommunicationPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
 import AdminProjectDelaysPage from "./pages/AdminPages/AdminProjectDelaysPage";
 
@@ -57,6 +59,27 @@ function App() {
   const { user } = useAuth();
   const userObj = user as any; // Cast to bypass strict type check for designation field
   const effectiveRole = String(userObj?.effectiveRole || userObj?.designation || userObj?.role || '').toLowerCase();
+
+  // A coordinator's assigned level (assignCoordinator sets users.level to
+  // the level they coordinate) gates which /dashboard/level-N page they may
+  // actually view. Without this, Level1Page/Level2Page/etc. below rendered
+  // for ANY coordinator regardless of level — so a coordinator assigned to
+  // Level 2 could navigate straight to /dashboard/level-1 (via the sidebar,
+  // which still lists every level, or by typing the URL) and see another
+  // coordinator's real submissions and marksheet. Redirect them back to
+  // their own level instead; leave access unrestricted if the account has
+  // no valid level on it yet, so that edge case doesn't lock anyone out.
+  const coordinatorAssignedLevel = Number(userObj?.level);
+  const hasKnownCoordinatorLevel =
+    Number.isFinite(coordinatorAssignedLevel) &&
+    coordinatorAssignedLevel >= 1 &&
+    coordinatorAssignedLevel <= 4;
+  const renderCoordinatorLevelPage = (levelNumber: number, page: ReactElement) =>
+    hasKnownCoordinatorLevel && coordinatorAssignedLevel !== levelNumber ? (
+      <Navigate to={`/dashboard/level-${coordinatorAssignedLevel}`} />
+    ) : (
+      page
+    );
 
   return (
     <Routes>
@@ -157,7 +180,7 @@ function App() {
             <Level1Student />
           ) : userObj?.role === "lecturer" ? (
             (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
-              <Level1Page />
+              renderCoordinatorLevelPage(1, <Level1Page />)
             ) : (
               <SupervisorLevelPage levelNumber={1} />
             )
@@ -166,7 +189,7 @@ function App() {
           ) : userObj?.role === "admin" ? (
             <AdminLevelPage levelNumber={1} />
           ) : userObj?.role === "mentor" ? (
-            <MentorLevel1Blocked />
+            <Level1mentor />
           ) : (
             <Navigate to="/login" />
           )
@@ -180,7 +203,7 @@ function App() {
             <Level2Student />
           ) : userObj?.role === "lecturer" ? (
             (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
-              <Level2Page />
+              renderCoordinatorLevelPage(2, <Level2Page />)
             ) : (
               <SupervisorLevelPage levelNumber={2} />
             )
@@ -203,7 +226,7 @@ function App() {
             <Level3Student />
           ) : userObj?.role === "lecturer" ? (
             (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
-              <Level3Page />
+              renderCoordinatorLevelPage(3, <Level3Page />)
             ) : (
               <SupervisorLevelPage levelNumber={3} />
             )
@@ -226,7 +249,7 @@ function App() {
             <Level4Student />
           ) : userObj?.role === "lecturer" ? (
             (userObj.designation === "coordinator" || effectiveRole === "coordinator") ? (
-              <Level4Page />
+              renderCoordinatorLevelPage(4, <Level4Page />)
             ) : (
               <SupervisorLevelPage levelNumber={4} />
             )
@@ -314,18 +337,55 @@ function App() {
           now lands on the same real-time V2 chat /dashboard/communication-v2
           already used. */}
       <Route
+        path="/communication"
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route
         path="/dashboard/communication"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route
         path="/dashboard/communication-v2"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route
         path="/communication-v2"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route
