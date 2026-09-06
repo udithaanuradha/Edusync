@@ -27,6 +27,19 @@ const formatDay = (date: string): { day: string; month: string } => {
   };
 };
 
+// startTime comes straight from the DB's TIME column (e.g. "09:30:00", 24hr
+// with seconds) via dashboardController's upcomingDeadlinesQuery — only used
+// for display here.
+const formatTime12Hour = (value: string): string => {
+  const match = /^(\d{1,2}):(\d{2})/.exec(value.trim());
+  if (!match) return value;
+  const hours24 = Number(match[1]);
+  const minutes = match[2];
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 || 12;
+  return `${hours12}:${minutes} ${period}`;
+};
+
 const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] }) => {
   return (
     <div className="deadlines-card">
@@ -59,7 +72,7 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] })
                   <h4 className="deadline-title">{deadline.title}</h4>
                   <p className="deadline-subtitle">
                     {deadline.targetGroup || displayLevel}
-                    {deadline.startTime ? ` • ${deadline.startTime}` : ''}
+                    {deadline.startTime ? ` • ${formatTime12Hour(deadline.startTime)}` : ''}
                   </p>
                 </div>
               </div>

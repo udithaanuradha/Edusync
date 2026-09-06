@@ -59,26 +59,17 @@ function App() {
   const userObj = user as any; // Cast to bypass strict type check for designation field
   const effectiveRole = String(userObj?.effectiveRole || userObj?.designation || userObj?.role || '').toLowerCase();
 
-  // A coordinator's assigned level (assignCoordinator sets users.level to
-  // the level they coordinate) gates which /dashboard/level-N page they may
-  // actually view. Without this, Level1Page/Level2Page/etc. below rendered
-  // for ANY coordinator regardless of level — so a coordinator assigned to
-  // Level 2 could navigate straight to /dashboard/level-1 (via the sidebar,
-  // which still lists every level, or by typing the URL) and see another
-  // coordinator's real submissions and marksheet. Redirect them back to
-  // their own level instead; leave access unrestricted if the account has
-  // no valid level on it yet, so that edge case doesn't lock anyone out.
-  const coordinatorAssignedLevel = Number(userObj?.level);
-  const hasKnownCoordinatorLevel =
-    Number.isFinite(coordinatorAssignedLevel) &&
-    coordinatorAssignedLevel >= 1 &&
-    coordinatorAssignedLevel <= 4;
-  const renderCoordinatorLevelPage = (levelNumber: number, page: ReactElement) =>
-    hasKnownCoordinatorLevel && coordinatorAssignedLevel !== levelNumber ? (
-      <Navigate to={`/dashboard/level-${coordinatorAssignedLevel}`} />
-    ) : (
-      page
-    );
+  // A coordinator can browse any /dashboard/level-N page — the actual
+  // access boundary lives server-side now: every coordinator-facing
+  // endpoint (Reports, Submissions, Calendar, group member search, ...)
+  // resolves the requesting coordinator's own assigned level *and*
+  // department straight from their users row and returns nothing for a
+  // level/department that isn't theirs, regardless of what's in the URL.
+  // This used to redirect a coordinator straight back to their own level
+  // instead of letting them open another one at all — once the backend
+  // itself was made to enforce the restriction, that redirect just got in
+  // the way of legitimately browsing the sidebar.
+  const renderCoordinatorLevelPage = (levelNumber: number, page: ReactElement) => page;
 
   return (
     <Routes>

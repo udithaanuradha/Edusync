@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Send,
   Loader,
@@ -86,6 +87,8 @@ interface ChatWindowV2Props {
 
 const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const {
     isConnected,
     onlineUserIds,
@@ -112,6 +115,7 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastHandledNavStateRef = useRef<unknown>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -450,6 +454,39 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
       setMessages([]);
     }
   };
+
+  // Lets another page deep-link straight into a conversation — e.g. the
+  // coordinator's "Send Warning" action on an overdue submission navigates
+  // here with { startConversationWith, prefillMessage } in router state,
+  // the same "navigate with state" pattern already used elsewhere (see
+  // SupervisorTaskScheduler's openTimelineScheduler flag). Waits for the
+  // real conversation list to finish loading first so an existing thread
+  // with that person is reused instead of a duplicate temporary one, then
+  // clears the state so revisiting/refreshing this page doesn't replay it.
+  useEffect(() => {
+    if (loadingConversations) return;
+
+    const navState = location.state as
+      | { startConversationWith?: UserV2; prefillMessage?: string }
+      | null
+      | undefined;
+
+    if (!navState?.startConversationWith) return;
+    if (lastHandledNavStateRef.current === location.state) return;
+    lastHandledNavStateRef.current = location.state;
+
+    handleSelectUserFromModal(navState.startConversationWith);
+    if (navState.prefillMessage) {
+      setInputText(navState.prefillMessage);
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+    // Only re-run once the conversation list (re)loads or the incoming nav
+    // state actually changes — handleSelectUserFromModal itself is
+    // intentionally left out, since it closes over `conversations` and
+    // would otherwise re-fire this on every conversation list update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingConversations, location.state]);
 
   const isPartnerTyping =
     selectedConversation && !!typingUsers.get(selectedConversation.partner_id);

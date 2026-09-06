@@ -370,6 +370,13 @@
   color: #1d4ed8;
 }
 
+.supervisor-duplicate-warning {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
 .member-search-row {
   display: flex;
   gap: 10px;

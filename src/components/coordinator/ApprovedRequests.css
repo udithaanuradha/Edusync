@@ -61,16 +61,15 @@
   gap: 12px;
 }
 
+/* Border/radius/background/shadow now come entirely from BaseCard (see
+   shared/ui/BaseCard.module.css) — this only adds the internal layout, so
+   there's nothing here to fight the shared 1px solid var(--eds-color-border)
+   card styling every other role's cards already use. */
 .approved-card {
-  border: 1px solid var(--eds-color-border-soft);
-  border-left: 4px solid var(--eds-color-success-solid);
-  border-radius: var(--eds-radius-md);
-  background: var(--eds-color-bg-surface);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: var(--eds-shadow-sm);
 }
 
 .approved-badge-row {
@@ -117,22 +116,36 @@
   font-weight: var(--eds-font-weight-bold);
 }
 
-.approved-info-list {
+/* Project Name / Supervisor / Group Leader — one label-left, value-right
+   row each, instead of "Label: value" paragraphs. */
+.approved-meta-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
-.approved-card p {
-  margin: 0;
-  color: var(--eds-color-text-body);
-  font-size: 12.5px;
-  line-height: 1.4;
+.approved-meta-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
 }
 
-.approved-card p strong {
+.approved-meta-label {
+  color: var(--eds-color-text-muted);
+  font-size: 11px;
+  font-weight: var(--eds-font-weight-medium);
+  white-space: nowrap;
+}
+
+.approved-meta-value {
   color: var(--eds-color-text-strong);
+  font-size: 12.5px;
   font-weight: var(--eds-font-weight-semibold);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .approved-members-box {
@@ -149,11 +162,55 @@
   font-size: 11px;
 }
 
-.approved-members-content {
+.approved-members-empty {
   margin: 4px 0 0;
-  white-space: pre-wrap;
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+}
+
+.approved-members-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.approved-member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.approved-member-row + .approved-member-row {
+  border-top: 1px solid var(--eds-color-border-soft);
+}
+
+.approved-member-avatar {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  font-size: 10px;
+  font-weight: var(--eds-font-weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.approved-member-name {
   font-size: 12.5px;
-  line-height: 1.4;
+  color: var(--eds-color-text-strong);
+  font-weight: var(--eds-font-weight-medium);
+}
+
+.approved-member-meta {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--eds-color-text-muted);
 }
 
 .approved-action-row {

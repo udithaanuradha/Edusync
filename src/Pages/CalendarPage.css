@@ -268,37 +268,38 @@
 .upcoming-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .upcoming-item {
   border: 1px solid #e2e8f0;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .upcoming-item-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .upcoming-item-titleblock {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 
 .upcoming-item-group {
   color: #0f172a;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 800;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -307,16 +308,17 @@
 .upcoming-item-badges {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .upcoming-level-pill,
 .upcoming-stage-pill {
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 2px 8px;
+  line-height: 1.5;
   white-space: nowrap;
 }
 
@@ -332,15 +334,15 @@
 
 .upcoming-date-chip {
   flex-shrink: 0;
-  min-width: 58px;
   height: fit-content;
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 9px;
+  padding: 5px 9px;
   background: #eff6ff;
   color: #1d4ed8;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-align: center;
+  white-space: nowrap;
 }
 
 /* Icon-led detail rows (date/time, location, meeting link, panel members) —
@@ -349,23 +351,27 @@
 .upcoming-item-rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .upcoming-item-row {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 12.5px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
   color: #334155;
-  line-height: 1.5;
+  line-height: 1.4;
+}
+
+.upcoming-item-row-people {
+  align-items: flex-start;
 }
 
 .upcoming-icon-badge {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -377,24 +383,51 @@
 .upcoming-icon-people { background: #dcfce7; color: #15803d; }
 
 .upcoming-item-row .panel-meeting-link {
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 /* Panel Members block: Supervisor on its own line (with the pastel badge),
-   Evaluators stacked directly below in muted text — a flex column next to
-   the shared people icon, instead of stringing both together inline with a
-   bullet separator. */
+   Evaluators stacked directly below with a small muted label — a flex
+   column next to the shared people icon, instead of stringing both
+   together inline with a bullet separator. */
 .upcoming-people-block {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 1px;
 }
 
 .upcoming-people-line {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
+  flex-wrap: wrap;
   color: #334155;
+}
+
+/* Small muted kicker label ("SUPERVISOR" / "EVALUATORS") that sits ahead of
+   the names on each people-line, giving the row a clear label→value
+   hierarchy instead of a plain run of text. */
+.people-line-label {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.upcoming-people-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.upcoming-people-name.muted {
+  font-weight: 500;
+  color: #64748b;
 }
 
 /* Soft Minimal, scoped to just this Upcoming Panels card badge — a light
@@ -405,6 +438,8 @@
 .upcoming-people-line .role-badge {
   background: #dcfce7;
   color: #15803d;
+  padding: 2px 6px;
+  font-size: 9px;
 }
 
 .upcoming-people-muted {
@@ -435,19 +470,19 @@
 .panel-action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .panel-action-btn {
   border: 1px solid #cbd5e1;
   border-radius: 999px;
-  padding: 7px 10px;
+  padding: 4px 9px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
   background: #fff;
   color: #139858;

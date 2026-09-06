@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './ApprovedRequests.css';
+import BaseCard from '../shared/ui/BaseCard';
 import PrimaryButton from '../shared/ui/PrimaryButton';
 import { ApprovedGroupRequest, ApprovedRequestMember } from './groupRequestTypes';
 
@@ -121,6 +122,46 @@ const enrichMembersList = (item: ApiRecord, resolvedMembers?: ApprovedRequestMem
     .join(', ');
 
   return names ? `Members: ${names}` : '';
+};
+
+// request.createdAt is a raw DB timestamp string (ISO or "YYYY-MM-DD
+// HH:MM:SS") — only used for display here, e.g. "Sep 3, 2026".
+const formatSubmittedDate = (value?: string): string => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+type DisplayMember = { name: string; meta?: string };
+
+// Fallback only: naively splits the raw comma/newline-joined membersList
+// string (see enrichMembersList/formatResolvedMembers above for how that
+// string gets built) into individual rows, for requests where
+// resolvedMembers — actual structured member records — isn't available.
+const parseMembersListString = (raw: string): DisplayMember[] => {
+  if (!raw.trim()) return [];
+
+  return raw
+    .split(/[,\n]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const cleaned = part.replace(/^(Leader|Members?):\s*/i, '').trim();
+      const match = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(cleaned);
+      return match ? { name: match[1].trim(), meta: match[2].trim() } : { name: cleaned };
+    })
+    .filter((member) => member.name.length > 0);
+};
+
+const getDisplayMembers = (request: ApprovedGroupRequest): DisplayMember[] => {
+  if (request.resolvedMembers && request.resolvedMembers.length > 0) {
+    return request.resolvedMembers.map((member) => ({
+      name: member.name,
+      meta: member.university_id || undefined,
+    }));
+  }
+  return parseMembersListString(request.membersList);
 };
 
 const isRealStudentSubmission = (request: ApprovedGroupRequest): boolean => {
@@ -322,8 +363,10 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
             asTruthyBoolean(request.raw?.createdGroupId) ||
             existingGroupNames.has(request.groupName.trim().toLowerCase());
 
+          const displayMembers = getDisplayMembers(request);
+
           return (
-            <article className="approved-card" key={request.id}>
+            <BaseCard key={request.id} className="approved-card" padding="none">
               <div className="approved-badge-row">
                 <span className="approved-status-badge">
                   <CheckCircle2 size={14} /> Supervisor Approved
@@ -340,18 +383,43 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                   <span className="approved-meta">Student ID: {request.studentId}</span>
                 )}
                 {request.status && <span className="approved-meta">Status: {request.status}</span>}
-                {request.createdAt && <span className="approved-meta">Submitted: {request.createdAt}</span>}
+                {request.createdAt && (
+                  <span className="approved-meta">Submitted: {formatSubmittedDate(request.createdAt)}</span>
+                )}
               </div>
 
-              <div className="approved-info-list">
-                <p><strong>Project Name:</strong> {request.projectName}</p>
-                <p><strong>Supervisor:</strong> {request.supervisorName}</p>
-                <p><strong>Group Leader:</strong> {request.groupLeader}</p>
+              <div className="approved-meta-list">
+                <div className="approved-meta-line">
+                  <span className="approved-meta-label">Project Name</span>
+                  <span className="approved-meta-value">{request.projectName}</span>
+                </div>
+                <div className="approved-meta-line">
+                  <span className="approved-meta-label">Supervisor</span>
+                  <span className="approved-meta-value">{request.supervisorName}</span>
+                </div>
+                <div className="approved-meta-line">
+                  <span className="approved-meta-label">Group Leader</span>
+                  <span className="approved-meta-value">{request.groupLeader}</span>
+                </div>
               </div>
 
               <div className="approved-members-box">
-                <p className="approved-members-title">Submitted Members List:</p>
-                <p className="approved-members-content">{request.membersList || 'No members submitted.'}</p>
+                <p className="approved-members-title">Submitted Members</p>
+                {displayMembers.length > 0 ? (
+                  <ul className="approved-members-list">
+                    {displayMembers.map((member, index) => (
+                      <li className="approved-member-row" key={`${member.name}-${index}`}>
+                        <span className="approved-member-avatar">
+                          {member.name.charAt(0).toUpperCase() || '?'}
+                        </span>
+                        <span className="approved-member-name">{member.name}</span>
+                        {member.meta && <span className="approved-member-meta">{member.meta}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="approved-members-empty">No members submitted.</p>
+                )}
               </div>
 
               <div className="approved-action-row">
@@ -369,7 +437,7 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
                   </PrimaryButton>
                 )}
               </div>
-            </article>
+            </BaseCard>
           );
         })}
       </div>

@@ -30,6 +30,27 @@ interface StageManagementProps {
   levelNumber: number;
 }
 
+// Extensions allowed by the file picker's `accept` attribute — re-checked
+// here in JS because `accept` is only a picker hint: it does nothing to
+// restrict files dropped in via drag-and-drop, so without this a
+// same-named-but-wrong-type (or oversized) file could reach the upload
+// endpoint untouched.
+const ALLOWED_STAGE_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xlsx', '.ppt', '.pptx', '.txt'];
+const MAX_STAGE_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+const getFileExtension = (fileName: string): string => {
+  const dotIndex = fileName.lastIndexOf('.');
+  return dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
+};
+
+const getTodayDateString = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
   const { user } = useAuth();
   const effectiveRole = (user as any)?.effectiveRole || (user as any)?.designation || user?.role || 'coordinator';
@@ -102,7 +123,24 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
   };
 
   const handleAddStage = async () => {
-    if (!formData.name) return;
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      alert('Please enter a stage name.');
+      return;
+    }
+
+    // A stage's deadline is what drives "Late Submission" status everywhere
+    // else in the app (Submissions tab, student view) — leaving it blank
+    // meant that logic silently had nothing to compare against, and nothing
+    // stopped picking a date that had already passed the moment it was set.
+    if (!formData.deadline) {
+      alert('Please set a deadline for this stage.');
+      return;
+    }
+    if (formData.deadline < getTodayDateString()) {
+      alert('Deadline cannot be in the past. Please choose today or a later date.');
+      return;
+    }
 
     try {
       setUploadingFiles(true);
@@ -115,9 +153,9 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
         },
         body: JSON.stringify({
           level: levelNumber,
-          stage_name: formData.name,
+          stage_name: trimmedName,
           description: formData.description,
-          deadline: formData.deadline || null,
+          deadline: formData.deadline,
           resource_link: formData.resource_link.trim() || null,
           created_by: user?.id || 1,
           user_role: effectiveRole,
@@ -182,9 +220,9 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
       // Step 3: Add the stage to local state with real data from backend
       const newStage: Stage = {
         stage_id: realStageId.toString(),
-        stage_name: formData.name,
+        stage_name: trimmedName,
         description: formData.description,
-        deadline: formData.deadline || undefined,
+        deadline: formData.deadline,
         resource_links: formData.resource_link.trim() || undefined,
         level: levelNumber.toString(),
         files: filesData,
@@ -262,7 +300,22 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
   };
 
   const handleSaveEdit = async () => {
-    if (!editingStage || !editFormData.stage_name) return;
+    if (!editingStage) return;
+
+    const trimmedName = editFormData.stage_name.trim();
+    if (!trimmedName) {
+      alert('Please enter a stage name.');
+      return;
+    }
+
+    if (!editFormData.deadline) {
+      alert('Please set a deadline for this stage.');
+      return;
+    }
+    if (editFormData.deadline < getTodayDateString()) {
+      alert('Deadline cannot be in the past. Please choose today or a later date.');
+      return;
+    }
 
     try {
       const response = await fetch(`http://localhost:5000/api/projects/update/${editingStage.stage_id}`, {
@@ -272,9 +325,9 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          stage_name: editFormData.stage_name,
+          stage_name: trimmedName,
           description: editFormData.description,
-          deadline: editFormData.deadline || null,
+          deadline: editFormData.deadline,
           // Trim first — a whitespace-only leftover (e.g. from clearing the
           // field) is still truthy and would round-trip as a "link" that
           // renders (and looks impossible to clear) even though it's blank.
@@ -289,7 +342,7 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
 
       const updatedStages = stages.map(s =>
         s.stage_id === editingStage.stage_id
-          ? { ...s, ...editFormData, resource_links: editFormData.resource_link.trim() || undefined }
+          ? { ...s, ...editFormData, stage_name: trimmedName, resource_links: editFormData.resource_link.trim() || undefined }
           : s
       );
       setStages(updatedStages);
@@ -306,13 +359,33 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
     setEditingStage(null);
   };
 
+  // Re-validates extension + size in JS (not just the input's `accept` hint)
+  // since handleDrop below feeds files here too, and drag-and-drop never
+  // goes through `accept` at all.
   const handleFilesSelected = (files: FileList) => {
-    const newFiles = Array.from(files).map(file => ({
-      name: file.name,
-      size: file.size,
-      file: file,
-    }));
-    setUploadedFiles([...uploadedFiles, ...newFiles]);
+    const accepted: FormFile[] = [];
+    const rejected: string[] = [];
+
+    Array.from(files).forEach((file) => {
+      const extension = getFileExtension(file.name);
+      if (!ALLOWED_STAGE_FILE_EXTENSIONS.includes(extension)) {
+        rejected.push(`${file.name} — unsupported file type`);
+        return;
+      }
+      if (file.size > MAX_STAGE_FILE_SIZE_BYTES) {
+        rejected.push(`${file.name} — exceeds the 10MB limit`);
+        return;
+      }
+      accepted.push({ name: file.name, size: file.size, file });
+    });
+
+    if (rejected.length > 0) {
+      alert(`The following file(s) were not added:\n${rejected.join('\n')}`);
+    }
+
+    if (accepted.length > 0) {
+      setUploadedFiles((prev) => [...prev, ...accepted]);
+    }
   };
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>, isDragging: boolean) => {
@@ -539,12 +612,14 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
               </div>
 
               <div className="form-group">
-                <label>Deadline</label>
+                <label>Deadline *</label>
                 <input
                   type="date"
                   name="deadline"
                   value={formData.deadline}
                   onChange={handleInputChange}
+                  min={getTodayDateString()}
+                  required
                 />
               </div>
 
@@ -673,12 +748,14 @@ const StageManagement: React.FC<StageManagementProps> = ({ levelNumber }) => {
               </div>
 
               <div className="form-group">
-                <label>Deadline</label>
+                <label>Deadline *</label>
                 <input
                   type="date"
                   name="deadline"
                   value={editFormData.deadline ? editFormData.deadline.split('T')[0] : ''}
                   onChange={handleEditInputChange}
+                  min={getTodayDateString()}
+                  required
                 />
               </div>
 

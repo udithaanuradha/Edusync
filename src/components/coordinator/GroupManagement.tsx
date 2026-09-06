@@ -161,11 +161,23 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [saving, setSaving] = useState(false);
   const [department, setDepartment] = useState<string>('');
 
+  // Zero supervisors is a legitimate state at some levels (not every group
+  // has one assigned yet), so neither slot is required — but the same
+  // person filling both is never legitimate, and would silently break
+  // anything that expects the two to be distinct (evaluation panel
+  // scheduling's Group Supervisor(s) detection, grading rubrics that
+  // compare primary vs. second supervisor marks).
+  const supervisorsAreDuplicate =
+    !!selectedSupervisor &&
+    !!selectedSupervisor2 &&
+    String(selectedSupervisor.id) === String(selectedSupervisor2.id);
+
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
     if (members.length === 0) return false;
+    if (supervisorsAreDuplicate) return false;
     return members.some((m) => String(m.id) === leaderId);
-  }, [groupName, members, leaderId]);
+  }, [groupName, members, leaderId, supervisorsAreDuplicate]);
 
   const isEditMode = editingGroup !== null;
   const canSubmit = canCreate;
@@ -632,6 +644,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     const trimmedGroupName = groupName.trim();
 
     if (isEditMode) {
+      if (supervisorsAreDuplicate) {
+        alert('The primary and second supervisor must be different people.');
+        return;
+      }
+
       if (!canCreate) {
         alert('Enter a group name, add at least one member, and select a group leader.');
         return;
@@ -715,6 +732,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         setSaving(false);
       }
 
+      return;
+    }
+
+    if (supervisorsAreDuplicate) {
+      alert('The primary and second supervisor must be different people.');
       return;
     }
 
@@ -1007,6 +1029,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                   {selectedSupervisor2 && (
                     <p className="supervisor-selected-text">
                       Selected: {selectedSupervisor2.name}
+                    </p>
+                  )}
+                  {supervisorsAreDuplicate && (
+                    <p className="supervisor-duplicate-warning">
+                      The primary and second supervisor must be different people.
                     </p>
                   )}
                 </div>

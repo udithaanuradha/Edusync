@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Clock3, Edit2, Save, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Check, Clock3, Edit2, MessageSquare, Save, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import DataTable, { type DataTableColumn } from '../shared/ui/DataTable';
+import type { UserV2 } from '../../types/chatV2';
 import './GradebookTable.css';
 
-type SubmissionStatus = 'all' | 'on_time' | 'late';
+type SubmissionStatus = 'all' | 'on_time' | 'late' | 'not_submitted';
 
 interface GroupMark {
   group_id: number;
@@ -20,6 +22,17 @@ interface GroupMark {
   submitted_at?: string | null;
   student_name?: string;
   file_paths?: string[];
+  leader_id?: number | null;
+  leader_name?: string | null;
+  leader_email?: string | null;
+}
+
+interface ActiveGroup {
+  group_id: number;
+  group_name: string;
+  leader_id: number | null;
+  leader_name: string | null;
+  leader_email: string | null;
 }
 
 interface GradebookTableProps {
@@ -28,6 +41,7 @@ interface GradebookTableProps {
 
 const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [marks, setMarks] = useState<GroupMark[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +51,7 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const [filterStage, setFilterStage] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<SubmissionStatus>('all');
   const [stages, setStages] = useState<Array<{ stage_id: number; stage_name: string }>>([]);
+  const [activeGroups, setActiveGroups] = useState<ActiveGroup[]>([]);
 
   const parseFileLinks = (rawValue: unknown): string[] => {
     if (Array.isArray(rawValue)) {
@@ -62,6 +77,10 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
 
   const normalizeStatus = (mark: GroupMark): Exclude<SubmissionStatus, 'all'> => {
     const explicitStatus = String(mark.current_status ?? '').trim().toLowerCase();
+
+    if (explicitStatus === 'not_submitted' || explicitStatus === 'missing' || explicitStatus === 'pending') {
+      return 'not_submitted';
+    }
 
     if (explicitStatus === 'late') return 'late';
     if (explicitStatus === 'on time' || explicitStatus === 'ontime' || explicitStatus === 'submitted' || explicitStatus === 'on_time') {
@@ -188,6 +207,81 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     fetchMarks();
   }, [levelNumber, user?.id]);
 
+  // Fetch the coordinator's active groups for this level separately from
+  // submissions — the submissions endpoint only ever returns rows for
+  // groups that already have a submission/evaluation record, so a group
+  // that hasn't uploaded anything for a stage never appears there. This
+  // list is what lets the "Not Submitted" tab work out which groups are
+  // missing, by diffing it against the submission records above.
+  useEffect(() => {
+    const fetchActiveGroups = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/groups/coordinator/${user?.id}/${levelNumber}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          setActiveGroups([]);
+          return;
+        }
+
+        const payload = await response.json();
+        const list: Record<string, unknown>[] = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload?.groups)
+              ? payload.groups
+              : [];
+
+        const normalized = list
+          .map((g) => {
+            // The group record doesn't carry a dedicated leader id field —
+            // the leader is whichever member has the is_leader flag set,
+            // same convention used across the supervisor/mentor group views.
+            const membersRaw = Array.isArray(g.members) ? (g.members as Record<string, unknown>[]) : [];
+            const leaderMember = membersRaw.find(
+              (m) => Number(m.is_leader) === 1 || m.is_leader === true || m.isLeader === true
+            );
+            const rawLeaderId = leaderMember?.id ?? g.leader_id ?? g.leaderId ?? null;
+            const leaderId = rawLeaderId !== null ? Number(rawLeaderId) : null;
+            const leaderName =
+              (leaderMember?.name as string | undefined) ??
+              (leaderMember?.student_name as string | undefined) ??
+              (g.leader_name as string | undefined) ??
+              (g.leaderName as string | undefined) ??
+              null;
+            const leaderEmail =
+              (leaderMember?.email as string | undefined) ??
+              (g.leader_email as string | undefined) ??
+              null;
+
+            return {
+              group_id: Number(g.group_id ?? g.id ?? g.groupId ?? g.groupID ?? 0),
+              group_name: String(g.group_name ?? g.groupName ?? g.name ?? 'Unnamed Group'),
+              leader_id: leaderId !== null && Number.isFinite(leaderId) ? leaderId : null,
+              leader_name: leaderName,
+              leader_email: leaderEmail,
+            };
+          })
+          .filter((g) => g.group_id > 0);
+
+        setActiveGroups(normalized);
+      } catch {
+        // Not fatal — the "Not Submitted" tab just has nothing to compare
+        // against, so it renders empty instead of breaking the page.
+        setActiveGroups([]);
+      }
+    };
+
+    fetchActiveGroups();
+  }, [levelNumber, user?.id]);
+
   const handleEditStart = (mark: GroupMark) => {
     setEditingId(`${mark.group_id}-${mark.stage_id}`);
     setEditValue(mark.mark);
@@ -249,6 +343,43 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     setEditValue(null);
   };
 
+  const isDeadlinePassed = (deadline?: string | null) => {
+    if (!deadline) return false;
+    const deadlineDate = new Date(deadline);
+    if (Number.isNaN(deadlineDate.getTime())) return false;
+    return deadlineDate < new Date();
+  };
+
+  // Hands off to the real-time Chat/Communication system (ChatWindowV2, at
+  // /dashboard/communication): navigating there with this router state lets
+  // it auto-select (or start) a 1:1 conversation with the group leader and
+  // pre-fill the message box, the same "navigate with state" convention
+  // already used to auto-open things elsewhere (e.g. SupervisorTaskScheduler's
+  // openTimelineScheduler flag).
+  const handleSendWarning = (mark: GroupMark) => {
+    if (!mark.leader_id || !mark.leader_name) {
+      alert('No group leader is on record for this group, so a warning message cannot be sent yet.');
+      return;
+    }
+
+    const leaderContact: UserV2 = {
+      id: mark.leader_id,
+      name: mark.leader_name,
+      email: mark.leader_email ?? '',
+      role: 'group_leader',
+    };
+
+    const deadlineText = formatDateTime(mark.deadline);
+    const prefillMessage =
+      `Hi ${mark.leader_name}, this is a reminder that ${mark.group_name}'s submission for ` +
+      `"${mark.stage_name}" was due on ${deadlineText} and hasn't been received yet. ` +
+      `Please submit as soon as possible, or reach out if you're facing any issues.`;
+
+    navigate('/dashboard/communication', {
+      state: { startConversationWith: leaderContact, prefillMessage },
+    });
+  };
+
   const formatDateTime = (dateStr?: string | null) => {
     if (!dateStr) return '—';
     const d = new Date(dateStr);
@@ -296,16 +427,78 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     };
   }, [selectedStageMarks]);
 
+  // Groups that are active for this level but have no submission/evaluation
+  // record for the stage(s) currently in scope. When "All Stages" is
+  // selected this is computed per stage so each missing group still lands
+  // under the right stage section below; a single stage just narrows that
+  // down to one. A group's own stage-level deadline (from any real
+  // submission row for that stage) is reused so the row can still show a
+  // due date even though nothing was uploaded.
+  const notSubmittedMarks = useMemo<GroupMark[]>(() => {
+    if (activeGroups.length === 0) return [];
+
+    const stagesInScope =
+      filterStage === 'all' ? stages : stages.filter((s) => s.stage_id === Number(filterStage));
+
+    const entries: GroupMark[] = [];
+
+    stagesInScope.forEach((stage) => {
+      const submittedGroupIds = new Set(
+        marks.filter((m) => m.stage_id === stage.stage_id).map((m) => m.group_id)
+      );
+      const stageDeadline =
+        marks.find((m) => m.stage_id === stage.stage_id && m.deadline)?.deadline ?? null;
+
+      activeGroups.forEach((group) => {
+        if (submittedGroupIds.has(group.group_id)) return;
+
+        entries.push({
+          group_id: group.group_id,
+          group_name: group.group_name,
+          stage_id: stage.stage_id,
+          stage_name: stage.stage_name,
+          mark: null,
+          evaluator_name: '',
+          submission_date: null,
+          mark_type: 'evaluation',
+          deadline: stageDeadline,
+          current_status: 'not_submitted',
+          submitted_at: null,
+          student_name: undefined,
+          file_paths: [],
+          leader_id: group.leader_id,
+          leader_name: group.leader_name,
+          leader_email: group.leader_email,
+        });
+      });
+    });
+
+    return entries;
+  }, [activeGroups, stages, marks, filterStage]);
+
+  // The progress summary's denominator must be every group assigned to the
+  // stage(s) in scope, not just the ones that already have a submission
+  // row — submissionStats.total only ever counted real rows, so a stage
+  // with 1 real submission and 4 groups that hadn't submitted yet
+  // misreported "1/1 Groups Submitted, 100% complete" instead of the
+  // correct "1/5, 20%".
+  const totalGroupsInScope = submissionStats.submitted + notSubmittedMarks.length;
+  const completionPercent =
+    totalGroupsInScope > 0 ? Math.round((submissionStats.submitted / totalGroupsInScope) * 100) : 0;
+
   const statusTabs: Array<{ key: SubmissionStatus; label: string; count: number }> = [
     { key: 'all', label: 'All Submissions', count: submissionStats.total },
     { key: 'on_time', label: 'On Time', count: submissionStats.on_time },
     { key: 'late', label: 'Late Submissions', count: submissionStats.late },
+    { key: 'not_submitted', label: 'Not Submitted', count: notSubmittedMarks.length },
   ];
 
   const filteredMarks =
     filterStatus === 'all'
       ? selectedStageMarks
-      : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
+      : filterStatus === 'not_submitted'
+        ? notSubmittedMarks
+        : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
 
   // Group marks by normalized stage name so we render one table per stage
   const groupedByStageName: Record<string, { stage_id: number; stage_name: string; marks: GroupMark[] }> = {};
@@ -394,8 +587,16 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     {
       key: 'status',
       header: 'Status',
-      render: (mark) =>
-        normalizeStatus(mark) === 'late' ? (
+      render: (mark) => {
+        const status = normalizeStatus(mark);
+        if (status === 'not_submitted') {
+          return (
+            <span className="status-badge missing">
+              <Clock3 size={14} /> Not Submitted
+            </span>
+          );
+        }
+        return status === 'late' ? (
           <span className="status-badge late">
             <AlertTriangle size={14} /> Late Submission
           </span>
@@ -403,12 +604,31 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
           <span className="status-badge submitted">
             <Check size={14} /> On Time
           </span>
-        ),
+        );
+      },
     },
     {
       key: 'download',
       header: 'Download',
       render: (mark) => {
+        if (normalizeStatus(mark) === 'not_submitted') {
+          if (!isDeadlinePassed(mark.deadline)) {
+            return <span>—</span>;
+          }
+
+          return (
+            <button
+              type="button"
+              className="warning-btn-ghost"
+              onClick={() => handleSendWarning(mark)}
+              title="Send a late-submission warning to the group leader"
+            >
+              <MessageSquare size={13} />
+              Send Warning
+            </button>
+          );
+        }
+
         const primaryFile = (mark.file_paths ?? [])[0] ?? '';
         return primaryFile ? (
           <a
@@ -461,14 +681,14 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
           <div>
             <div className="submission-tracker-meta">
               <span className="submission-tracker-count">
-                {submissionStats.submitted}/{submissionStats.total} Groups Submitted
+                {submissionStats.submitted}/{totalGroupsInScope} Groups Submitted
               </span>
-              <span className="submission-tracker-percent">{submissionStats.progress}% complete</span>
+              <span className="submission-tracker-percent">{completionPercent}% complete</span>
             </div>
             <div className="submission-progress-bar" aria-label="Submission progress">
               <div
                 className="submission-progress-fill"
-                style={{ width: `${submissionStats.progress}%` }}
+                style={{ width: `${completionPercent}%` }}
               />
             </div>
           </div>
