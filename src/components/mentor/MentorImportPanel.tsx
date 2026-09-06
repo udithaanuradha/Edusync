@@ -591,57 +591,21 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
       {/* Clean Amber Pending Notice with 1-Click Reminder */}
       {!allGroupsCovered && missingGroupNames.length > 0 && (
         <div style={{ 
-          padding: '14px 18px', 
+          padding: '12px 18px', 
           borderRadius: '10px', 
           fontSize: '14px', 
           margin: '16px 0',
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
+          gap: '10px',
           backgroundColor: '#fffbeb',
           color: '#92400e',
           border: '1px solid #fde047'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
-            <span>
-              <strong>Mentor details pending:</strong> The following group(s) haven't filled their mentor details yet: <strong>{missingGroupNames.join(', ')}</strong>
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSendAllMissingReminders}
-            disabled={isRemindingAll || allReminded}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              backgroundColor: allReminded ? '#dcfce7' : '#f59e0b',
-              color: allReminded ? '#166534' : '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: (isRemindingAll || allReminded) ? 'default' : 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {allReminded ? (
-              <>
-                <Check size={14} />
-                Reminders Sent to Leader(s)
-              </>
-            ) : (
-              <>
-                <MessageSquare size={14} />
-                {isRemindingAll ? 'Sending...' : 'Notify Group Leader(s) via Chat'}
-              </>
-            )}
-          </button>
+          <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Mentor details pending:</strong> The following group(s) haven't filled their mentor details yet: <strong>{missingGroupNames.join(', ')}</strong>
+          </span>
         </div>
       )}
 

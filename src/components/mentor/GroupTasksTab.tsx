@@ -545,12 +545,12 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
         console.warn('Tasks fetch warning:', tErr);
       }
 
-      // Default to milestone that has tasks if current selection is ALL/invalid
-      const isCurrentMilestoneValid =
+      // Default to milestone that has tasks if current selection is ALL or invalid
+      const hasValidSelectedMilestone =
         selectedMilestoneId !== 'ALL' &&
         milestonesList.some((m) => Number(m.id) === Number(selectedMilestoneId));
 
-      if (!isCurrentMilestoneValid || selectedMilestoneId === 'ALL') {
+      if (!hasValidSelectedMilestone) {
         const firstWithTasks = milestonesList.find((m) =>
           tasksList.some((t) => Number(t.milestone_id) === Number(m.id) || t.milestone_title === m.title)
         );
