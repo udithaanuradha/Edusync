@@ -1,12 +1,17 @@
 .announcement-widget-card {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.announcement-widget-card:hover {
+  border-color: #cfd6ef;
+  box-shadow: 0 8px 18px rgba(91, 103, 151, 0.06);
 }
 
 .announcement-widget-header {
@@ -33,7 +38,7 @@
 }
 
 .announcement-widget-title-wrap svg {
-  color: #2563eb;
+  color: #6370b8;
   flex-shrink: 0;
 }
 
@@ -84,8 +89,8 @@
 
 .announcement-widget-item {
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 12px;
+  background: #f7f8fc;
   padding: 16px;
   transition: all 0.2s ease;
   position: relative;
@@ -95,7 +100,6 @@
 .announcement-widget-item:hover {
   border-color: #cbd5e1;
   background: #fff;
-  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.05);
   transform: translateY(-1px);
 }
 
@@ -140,8 +144,8 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background: #3b82f6;
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.12);
+  background: #7c88c9;
+  box-shadow: 0 0 0 3px rgb(124 136 201 / 0.14);
   flex-shrink: 0;
 }
 

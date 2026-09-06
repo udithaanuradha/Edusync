@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import Sidebar from '../../components/shared/Sidebar'; 
-import Header from '../../components/shared/Header';
+import { FolderKanban, Users, AlertCircle, CheckCircle2 } from 'lucide-react';
+import AppShell from '../../components/shared/layout/AppShell';
+import { coordinatorMenuItems } from '../../components/shared/Sidebar';
+import StatCard from '../../components/shared/ui/StatCard';
 import { useAuth } from '../../context/AuthContext';
-import StatCards from '../../components/coordinator/StatCards';
 import RecentProjects from '../../components/coordinator/RecentProjects';
-import './CoordinatorDashboard.css'; 
+import './CoordinatorDashboard.css';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 
@@ -90,13 +91,13 @@ const CoordinatorDashboard: React.FC = () => {
 
   const loadingState = (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '420px' }}>
-      <div style={{ textAlign: 'center', color: '#475569' }}>
+      <div style={{ textAlign: 'center', color: 'var(--eds-color-text-muted)' }}>
         <div
           style={{
             width: '42px',
             height: '42px',
             border: '4px solid #cbd5e1',
-            borderTopColor: '#2563eb',
+            borderTopColor: 'var(--eds-color-primary)',
             borderRadius: '50%',
             margin: '0 auto 14px',
             animation: 'spin 0.9s linear infinite',
@@ -118,48 +119,69 @@ const CoordinatorDashboard: React.FC = () => {
     (project) => project.groupName.trim().toLowerCase() !== 'innovex'
   );
 
+  const stats = dashboardData?.stats;
+  const completionRate =
+    stats && stats.totalProjects > 0 ? Math.round((stats.completedProjects / stats.totalProjects) * 100) : 0;
+
   return (
-    <div className="app-layout" style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
-      
-      <div className="main-viewport" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header />
-        
-        <main className="content-container">
-          <div className="dashboard-content">
-            
-            <div className="dashboard-header-section">
-              <h2 className="overview-title" style={{ color: '#1e293b' }}>
-                Dashboard Overview
-              </h2>
-              <p className="overview-subtitle" style={{ color: '#64748b' }}>
-                Welcome back! Here's what's happening.
-              </p>
+    <AppShell navItems={coordinatorMenuItems}>
+      <div className="dashboard-content">
+
+        <div className="dashboard-header-section">
+          <h2 className="overview-title">Dashboard Overview</h2>
+          <p className="overview-subtitle">Welcome back! Here's what's happening.</p>
+        </div>
+
+        {loading ? (
+          loadingState
+        ) : (
+          <>
+            <div className="stat-grid">
+              <StatCard
+                title="Total Projects"
+                value={stats?.totalProjects ?? 0}
+                subtext="Across all coordinator groups"
+                icon={<FolderKanban size={22} />}
+                tone="primary"
+              />
+              <StatCard
+                title="Active Students"
+                value={stats?.activeStudents ?? 0}
+                subtext="Registered student accounts"
+                icon={<Users size={22} />}
+                tone="primary"
+              />
+              <StatCard
+                title="Pending Evaluations"
+                value={stats?.pendingEvaluations ?? 0}
+                subtext="Still waiting for marks"
+                icon={<AlertCircle size={22} />}
+                tone="warning"
+              />
+              <StatCard
+                title="Completed Projects"
+                value={stats?.completedProjects ?? 0}
+                subtext={`${completionRate}% completion rate`}
+                icon={<CheckCircle2 size={22} />}
+                tone="success"
+              />
             </div>
+            <div className="dashboard-grid">
+              <div className="main-content-column">
+                <RecentProjects projects={filteredRecentProjects} />
+              </div>
 
-            {loading ? (
-              loadingState
-            ) : (
-              <>
-                <StatCards stats={dashboardData?.stats ?? null} />
-                <div className="dashboard-grid">
-                  <div className="main-content-column">
-                    <RecentProjects projects={filteredRecentProjects} />
-                  </div>
+              <div className="side-content-column">
+                <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines ?? []} />
+                <AnnouncementWidget title="Announcements" maxItems={3} showEditDeleteButtons={false} recentDays={30} />
+              </div>
+            </div>
+            {errorState}
+          </>
+        )}
 
-                  <div className="side-content-column">
-                    <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines ?? []} />
-                    <AnnouncementWidget title="Announcements" maxItems={3} showEditDeleteButtons={false} />
-                  </div>
-                </div>
-                {errorState}
-              </>
-            )}
-
-          </div>
-        </main>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

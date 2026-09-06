@@ -16,6 +16,7 @@ type PendingRequest = {
   levelLabel: string;
   supervisorId: string;
   supervisorName: string;
+  projectType: 'group' | 'individual';
 };
 
 const API_BASE = 'http://localhost:5000/api/groups';
@@ -65,6 +66,7 @@ const normalizeRequest = (item: Record<string, unknown>): PendingRequest => ({
   levelLabel: String(item.project_level ?? item.level ?? '1'),
   supervisorId: String(item.supervisor_id ?? item.supervisorId ?? item.assigned_supervisor_id ?? ''),
   supervisorName: String(item.supervisor_name ?? item.supervisorName ?? item.assigned_supervisor_name ?? ''),
+  projectType: (item.project_type ?? item.projectType) === 'individual' ? 'individual' : 'group',
 });
 
 const parseUserFromStorage = (): StoredUser => {
@@ -299,13 +301,20 @@ const SupervisorApprovalPage: React.FC = () => {
                 <article className="approval-request-card" key={request.requestId}>
                   <div className="approval-card-head">
                     <h3>{request.projectName}</h3>
-                    <span className="approval-level-badge">Level {request.levelLabel}</span>
+                    <div className="approval-badge-group">
+                      <span className="approval-level-badge">Level {request.levelLabel}</span>
+                      {request.projectType === 'individual' && (
+                        <span className="approval-level-badge approval-individual-badge">Individual</span>
+                      )}
+                    </div>
                   </div>
 
                   <p><strong>Group:</strong> {request.groupName}</p>
                   <p><strong>Leader:</strong> {request.groupLeader}</p>
                   <p><strong>Student:</strong> {request.studentName}</p>
-                  <p><strong>Members:</strong> {request.members}</p>
+                  {request.projectType !== 'individual' && (
+                    <p><strong>Members:</strong> {request.members}</p>
+                  )}
                   {request.studentMessage && <p><strong>Message:</strong> {request.studentMessage}</p>}
 
                   <div className="approval-actions">
@@ -315,7 +324,7 @@ const SupervisorApprovalPage: React.FC = () => {
                       onClick={() => handleApprove(request.requestId)}
                       disabled={actionBusy === request.requestId}
                     >
-                      {actionBusy === request.requestId ? 'Processing...' : 'Approve'}
+                      {actionBusy === request.requestId ? 'Processing...' : 'Accept'}
                     </button>
 
                     <button

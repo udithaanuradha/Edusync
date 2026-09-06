@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import { Building2, Crown, Pencil, Plus, ShieldCheck, Trash2, Users, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './GroupManagement.css';
 import { ApprovedGroupRequest } from './groupRequestTypes';
-import MemberProfileModal from '../shared/MemberProfileModal';
+import PrimaryButton from '../shared/ui/PrimaryButton';
+import BaseCard from '../shared/ui/BaseCard';
 
 type GroupApiRecord = Record<string, unknown>;
 
@@ -32,6 +33,7 @@ interface GroupView {
   name: string;
   department?: string;
   supervisor: string;
+  supervisor2?: string;
   memberCount: number;
   members: GroupMember[];
   leaderName: string;
@@ -100,6 +102,12 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
     (raw.supervisor as string | undefined) ??
     'Not assigned';
 
+  const supervisor2 =
+    (raw.supervisor2_name as string | undefined) ??
+    (raw.supervisorName2 as string | undefined) ??
+    (raw.supervisor2 as string | undefined) ??
+    undefined;
+
   const membersRaw = Array.isArray(raw.members) ? (raw.members as GroupApiRecord[]) : [];
   const members: GroupMember[] = membersRaw.map((m) => ({
     id: typeof m.id === 'number' ? m.id : undefined,
@@ -120,7 +128,7 @@ const normalizeGroup = (raw: GroupApiRecord): GroupView => {
 
   const department = (raw.department as string | undefined) ?? undefined;
 
-  return { id, name, department, supervisor, memberCount, members, leaderName };
+  return { id, name, department, supervisor, supervisor2, memberCount, members, leaderName };
 };
 
 const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialRequest = null, onPrefillHandled }) => {
@@ -136,6 +144,14 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [supervisorOptions, setSupervisorOptions] = useState<SupervisorOption[]>([]);
   const [supervisorSearching, setSupervisorSearching] = useState(false);
   const [supervisorSearchError, setSupervisorSearchError] = useState<string | null>(null);
+  // Second, optional supervisor — project_groups.supervisor_id_2 (see the
+  // backend fix: dual-supervisor group requests were silently dropping
+  // whichever approver didn't end up in supervisorQuery above).
+  const [supervisorQuery2, setSupervisorQuery2] = useState('');
+  const [selectedSupervisor2, setSelectedSupervisor2] = useState<SupervisorOption | null>(null);
+  const [supervisorOptions2, setSupervisorOptions2] = useState<SupervisorOption[]>([]);
+  const [supervisorSearching2, setSupervisorSearching2] = useState(false);
+  const [supervisorSearchError2, setSupervisorSearchError2] = useState<string | null>(null);
   const [leaderId, setLeaderId] = useState<string>('');
   const [searchIndex, setSearchIndex] = useState('');
   const [members, setMembers] = useState<Student[]>([]);
@@ -144,11 +160,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [editingGroup, setEditingGroup] = useState<GroupView | null>(null);
   const [saving, setSaving] = useState(false);
   const [department, setDepartment] = useState<string>('');
-  const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
 
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
-    if (members.length !== 5) return false;
+    if (members.length === 0) return false;
     return members.some((m) => String(m.id) === leaderId);
   }, [groupName, members, leaderId]);
 
@@ -229,7 +244,13 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const fetchAllLevelStudents = async () => {
     try {
       setStudentSearchLoading(true);
-      const response = await fetch(`http://localhost:5000/api/users/level/${levelNumber}`);
+      // coordinatorId scopes this to just this coordinator's own department
+      // (resolved server-side from their own account) — without it, every
+      // department's students at this level came back, letting a
+      // coordinator accidentally add a wrong-department student to a group.
+      const response = await fetch(
+        `http://localhost:5000/api/users/level/${levelNumber}?coordinatorId=${user?.id ?? ''}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setAllStudents(Array.isArray(data) ? data : []);
@@ -250,6 +271,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setGroupName('');
     setSupervisorQuery('');
     setSelectedSupervisor(null);
+    setSupervisorQuery2('');
+    setSelectedSupervisor2(null);
+    setSupervisorOptions2([]);
+    setSupervisorSearchError2(null);
     setSupervisorOptions([]);
     setSupervisorSearchError(null);
     setLeaderId('');
@@ -266,6 +291,10 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setSelectedSupervisor(null);
     setSupervisorOptions([]);
     setSupervisorSearchError(null);
+    setSupervisorQuery2(group.supervisor2 || '');
+    setSelectedSupervisor2(null);
+    setSupervisorOptions2([]);
+    setSupervisorSearchError2(null);
     setLeaderId('');
     setSearchIndex('');
     setMembers([]);
@@ -342,11 +371,19 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       .filter((item): item is SupervisorOption => item !== null);
   };
 
-  const fetchSupervisors = async (query: string): Promise<SupervisorOption[]> => {
+  const fetchSupervisors = async (
+    query: string,
+    setters: {
+      setOptions: (options: SupervisorOption[]) => void;
+      setSearching: (value: boolean) => void;
+      setError: (value: string | null) => void;
+    } = { setOptions: setSupervisorOptions, setSearching: setSupervisorSearching, setError: setSupervisorSearchError },
+  ): Promise<SupervisorOption[]> => {
+    const { setOptions, setSearching, setError } = setters;
     const q = query.trim();
     if (!q) {
-      setSupervisorOptions([]);
-      setSupervisorSearchError(null);
+      setOptions([]);
+      setError(null);
       return [];
     }
 
@@ -368,8 +405,8 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
       `http://localhost:5000/api/admin/users?role=supervisor&search=${encodeURIComponent(q)}`,
     ];
 
-    setSupervisorSearching(true);
-    setSupervisorSearchError(null);
+    setSearching(true);
+    setError(null);
     try {
       let hadRouteError = false;
       for (const url of endpoints) {
@@ -385,8 +422,8 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           const data = await response.json();
           const mapped = mapSupervisors(data);
           if (mapped.length > 0) {
-            setSupervisorOptions(mapped);
-            setSupervisorSearchError(null);
+            setOptions(mapped);
+            setError(null);
             return mapped;
           }
         } catch {
@@ -394,21 +431,24 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         }
       }
 
-      setSupervisorOptions([]);
+      setOptions([]);
       if (hadRouteError) {
-        setSupervisorSearchError(
+        setError(
           'Supervisor list API is not available. Please add a backend endpoint for supervisor search or set VITE_SUPERVISOR_SEARCH_ENDPOINT.'
         );
       }
       return [];
     } finally {
-      setSupervisorSearching(false);
+      setSearching(false);
     }
   };
 
   const fetchStudentByIndex = async (indexNumber: string): Promise<Student | null> => {
+    // coordinatorId scopes this lookup to the coordinator's own department
+    // (resolved server-side) — without it, a coordinator could add any
+    // student system-wide by index number, regardless of department.
     const response = await fetch(
-      `http://localhost:5000/api/users/search?uniId=${encodeURIComponent(indexNumber)}&level=${levelNumber}`
+      `http://localhost:5000/api/users/search?uniId=${encodeURIComponent(indexNumber)}&level=${levelNumber}&coordinatorId=${user?.id ?? ''}`
     );
 
     if (!response.ok) {
@@ -430,18 +470,34 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     setSearchIndex('');
     setDepartment(request.department || '');
 
-    const supervisorName = request.supervisorName?.trim() || '';
-    setSupervisorQuery(supervisorName);
-    if (supervisorName) {
-      const supervisorCandidates = await fetchSupervisors(supervisorName);
-      const normalizedTarget = supervisorName.toLowerCase();
-      const exact = supervisorCandidates.find(
-        (candidate) => candidate.name.toLowerCase() === normalizedTarget
-      );
+    const [firstName, secondName] = (request.supervisorName || '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
+
+    setSupervisorQuery(firstName || '');
+    if (firstName) {
+      const candidates = await fetchSupervisors(firstName);
+      const exact = candidates.find((c) => c.name.toLowerCase() === firstName.toLowerCase());
       if (exact) {
         setSelectedSupervisor(exact);
         setSupervisorQuery(exact.name);
         setSupervisorOptions([]);
+      }
+    }
+
+    setSupervisorQuery2(secondName || '');
+    if (secondName) {
+      const candidates2 = await fetchSupervisors(secondName, {
+        setOptions: setSupervisorOptions2,
+        setSearching: setSupervisorSearching2,
+        setError: setSupervisorSearchError2,
+      });
+      const exact2 = candidates2.find((c) => c.name.toLowerCase() === secondName.toLowerCase());
+      if (exact2) {
+        setSelectedSupervisor2(exact2);
+        setSupervisorQuery2(exact2.name);
+        setSupervisorOptions2([]);
       }
     }
 
@@ -509,6 +565,20 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     return () => window.clearTimeout(timer);
   }, [supervisorQuery, isModalOpen]);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const timer = window.setTimeout(() => {
+      fetchSupervisors(supervisorQuery2, {
+        setOptions: setSupervisorOptions2,
+        setSearching: setSupervisorSearching2,
+        setError: setSupervisorSearchError2,
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [supervisorQuery2, isModalOpen]);
+
 
   const handleRemoveMember = (studentId: number) => {
     setMembers((prev) => prev.filter((m) => m.id !== studentId));
@@ -563,7 +633,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
     if (isEditMode) {
       if (!canCreate) {
-        alert('Enter a group name, keep exactly 5 members, and select a group leader.');
+        alert('Enter a group name, add at least one member, and select a group leader.');
         return;
       }
 
@@ -597,6 +667,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           level: levelNumber,
           supervisorName: selectedSupervisor?.name ?? (supervisorQuery.trim() || null),
           supervisorId: selectedSupervisor?.id ?? null,
+          supervisorId2: selectedSupervisor2?.id ?? null,
           leaderId: leader.id,
           memberIds: members.map((m) => m.id),
           createdBy: user?.id,
@@ -648,7 +719,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     }
 
     if (!canCreate) {
-      alert('Enter a group name, add exactly 5 members, and select a group leader.');
+      alert('Enter a group name, add at least one member, and select a group leader.');
       return;
     }
 
@@ -683,6 +754,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         level: levelNumber,
         supervisorName: selectedSupervisor?.name ?? null,
         supervisorId: selectedSupervisor?.id ?? null,
+        supervisorId2: selectedSupervisor2?.id ?? null,
         leaderId: leader.id,
         memberIds: members.map((m) => m.id),
         createdBy: user?.id,
@@ -721,8 +793,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
   return (
     <div className="group-management-container">
-      <div className="groups-list-card">
-        {loading ? (
+      {loading ? (
           <div className="groups-empty-state">
             <h4>Loading groups...</h4>
           </div>
@@ -737,52 +808,72 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
             <p>Create the first group to get started.</p>
           </div>
         ) : (
-          <div className="groups-grid">
+          <div className="coordinator-groups-grid">
             {groups.map((group) => (
-              <article key={group.id} className="group-card">
-                <div className="group-card-head">
+              <BaseCard key={group.id} className="coordinator-group-card" padding="lg" hoverable>
+                <div className="coordinator-group-card-head">
                   <h3>{group.name}</h3>
-                  <span className="group-meta-pill">{group.memberCount} members</span>
+                  <span className="coordinator-group-meta-pill">{group.memberCount} members</span>
                 </div>
-                <p className="group-meta">Leader: {group.leaderName}</p>
-                <p className="group-meta">Supervisor: {group.supervisor}</p>
-                <p className="group-meta">Department: {group.department || 'Not set'}</p>
+
+                <div className="coordinator-group-meta-list">
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-heading">
+                      <span className="coordinator-group-meta-icon"><Crown size={13} /></span>
+                      <span className="coordinator-group-meta-label">Leader</span>
+                    </span>
+                    <span className="coordinator-group-meta-value">{group.leaderName}</span>
+                  </div>
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-heading">
+                      <span className="coordinator-group-meta-icon"><ShieldCheck size={13} /></span>
+                      <span className="coordinator-group-meta-label">Supervisor</span>
+                    </span>
+                    <span className="coordinator-group-meta-value">{group.supervisor}</span>
+                  </div>
+                  {group.supervisor2 && (
+                    <div className="coordinator-group-meta-row">
+                      <span className="coordinator-group-meta-heading">
+                        <span className="coordinator-group-meta-icon"><ShieldCheck size={13} /></span>
+                        <span className="coordinator-group-meta-label">Second Supervisor</span>
+                      </span>
+                      <span className="coordinator-group-meta-value">{group.supervisor2}</span>
+                    </div>
+                  )}
+                  <div className="coordinator-group-meta-row">
+                    <span className="coordinator-group-meta-heading">
+                      <span className="coordinator-group-meta-icon"><Building2 size={13} /></span>
+                      <span className="coordinator-group-meta-label">Degree</span>
+                    </span>
+                    <span className="coordinator-group-meta-value">{group.department || 'Not set'}</span>
+                  </div>
+                </div>
+
                 {group.members.length > 0 && (
-                  <ul className="group-members-preview">
+                  <ul className="coordinator-group-members-preview">
                     {group.members.map((member) => (
-                      <li key={`${group.id}-${member.id ?? member.name}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Users size={14} />
+                      <li key={`${group.id}-${member.id ?? member.name}`} className="coordinator-group-member-row">
+                        <span className="coordinator-group-member-name-wrap">
+                          <Users size={12} />
                           <span>{member.name}</span>
                         </span>
-                        {typeof member.id === 'number' && (
-                          <button
-                            type="button"
-                            onClick={() => setViewingProfileId(member.id as number)}
-                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
-                          >
-                            View Profile
-                          </button>
-                        )}
                       </li>
                     ))}
                   </ul>
                 )}
-                <div className="group-card-actions">
-                  <button type="button" className="group-edit-btn" onClick={() => void openEditModal(group)}>
-                    <Pencil size={14} />
+                <div className="coordinator-group-card-actions">
+                  <PrimaryButton type="button" variant="secondary" className="group-edit-btn" icon={<Pencil size={13} />} onClick={() => void openEditModal(group)}>
                     Edit
-                  </button>
+                  </PrimaryButton>
                   <button type="button" className="group-delete-btn" onClick={() => void handleDeleteGroup(group)}>
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                     Delete
                   </button>
                 </div>
-              </article>
+              </BaseCard>
             ))}
           </div>
         )}
-      </div>
 
       {isModalOpen && (
         <div className="group-modal-overlay" role="dialog" aria-modal="true" aria-label="Create Group Modal">
@@ -867,6 +958,61 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               </label>
 
               <label>
+                Supervisor 2 (optional)
+                <div className="supervisor-picker-wrap">
+                  <input
+                    type="text"
+                    value={supervisorQuery2}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setSupervisorQuery2(next);
+                      setSupervisorSearchError2(null);
+                      if (selectedSupervisor2 && selectedSupervisor2.name !== next) {
+                        setSelectedSupervisor2(null);
+                      }
+                    }}
+                    placeholder="Search supervisor by name or email"
+                  />
+
+                  {supervisorQuery2.trim() && (
+                    <div className="supervisor-options-box">
+                      {supervisorSearching2 ? (
+                        <p>Searching supervisors...</p>
+                      ) : supervisorSearchError2 ? (
+                        <p>{supervisorSearchError2}</p>
+                      ) : supervisorOptions2.length === 0 ? (
+                        <p>No supervisors found.</p>
+                      ) : (
+                        <ul>
+                          {supervisorOptions2.map((supervisor) => (
+                            <li key={supervisor.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSupervisor2(supervisor);
+                                  setSupervisorQuery2(supervisor.name);
+                                  setSupervisorOptions2([]);
+                                }}
+                              >
+                                <span>{supervisor.name}</span>
+                                <small>{supervisor.email}</small>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedSupervisor2 && (
+                    <p className="supervisor-selected-text">
+                      Selected: {selectedSupervisor2.name}
+                    </p>
+                  )}
+                </div>
+              </label>
+
+              <label>
                 Department
                 <select
                   value={department}
@@ -900,7 +1046,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                 <select
                   value={searchIndex}
                   onChange={(e) => setSearchIndex(e.target.value)}
-                  disabled={studentSearchLoading || members.length >= 5}
+                  disabled={studentSearchLoading}
                   style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
                 >
                   <option value="">{studentSearchLoading ? 'Loading students...' : 'Choose a student...'}</option>
@@ -924,7 +1070,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                       setSearchIndex('');
                     }
                   }} 
-                  disabled={!searchIndex || members.length >= 5}
+                  disabled={!searchIndex}
                 >
                   <Plus size={14} />
                   Add
@@ -932,7 +1078,7 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               </div>
 
               <div className="selected-members-box">
-                <h4>Selected Members ({members.length}/5)</h4>
+                <h4>Selected Members ({members.length})</h4>
                 {members.length === 0 ? (
                   <p>No members added yet.</p>
                 ) : (
@@ -962,17 +1108,14 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
               >
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleCreateGroup} disabled={saving || !canSubmit}>
+              <PrimaryButton onClick={handleCreateGroup} disabled={saving || !canSubmit}>
                 {saving ? (isEditMode ? 'Saving...' : 'Creating...') : isEditMode ? 'Save Changes' : 'Create Group'}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
       )}
 
-      {viewingProfileId !== null && (
-        <MemberProfileModal memberId={viewingProfileId} onClose={() => setViewingProfileId(null)} />
-      )}
     </div>
   );
 };

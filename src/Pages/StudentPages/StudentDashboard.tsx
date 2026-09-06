@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../../components/shared/Sidebar';
-import Header from '../../components/shared/Header';
+import AppShell from '../../components/shared/layout/AppShell';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
-import RecentProjects from '../../components/coordinator/RecentProjects';
 
 import './StudentDashboard.css';
 
@@ -42,33 +40,23 @@ const StudentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="app-layout">
-      {/* 1. SIDEBAR: Stays on the left */}
-      <Sidebar />
-      
-      <div className="main-viewport">
-        {/* 2. HEADER: Stays at the top */}
-        <Header />
-        
-        <main className="content-container">
-          <div className="dashboard-content">
-            
-            <div className="dashboard-header-section">
-              <h2 className="overview-title">
-                Dashboard Overview
-              </h2>
-              <p className="overview-subtitle">
-                Welcome back! Here's what's happening.
-              </p>
+    <AppShell>
+      <div className="student-dashboard-shell">
+        <div className="dashboard-content">
+
+            <div className="dashboard-header-section student-dashboard-header">
+              <div>
+                <h2 className="overview-title">
+                  Dashboard Overview
+                </h2>
+                <p className="overview-subtitle">
+                  Welcome back! Here's what's happening.
+                </p>
+              </div>
             </div>
 
             {/* ROW 1: Project Cards */}
-            <MyProjectStatus />
-
-            {/* ROW 2: Full Width Section */}
-            <div className="dashboard-row">
-              <RecentProjects projects={dashboardData?.recentProjects || []} />
-            </div>
+            <MyProjectStatus stats={dashboardData?.stats} loading={loading} />
 
             {/* ROW 3: Split View */}
             <div className="dashboard-row equal-split">
@@ -76,10 +64,9 @@ const StudentDashboard: React.FC = () => {
               <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines || []} />
             </div>
 
-          </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

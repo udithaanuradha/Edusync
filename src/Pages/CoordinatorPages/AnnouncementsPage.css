@@ -4,6 +4,11 @@
   padding: 0;
 }
 
+.announcements-page-shell .dashboard-content {
+  width: 100%;
+  max-width: 1080px;
+}
+
 .dashboard-header-section {
   margin-bottom: 24px;
   padding-bottom: 20px;

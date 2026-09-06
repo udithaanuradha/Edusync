@@ -8,6 +8,7 @@ interface User {
   designation?: string;
   effectiveRole?: string;
   level?: number;
+  academic_unit?: string;
 }
 
 const normalizeUserData = (userData: User): User => {
@@ -33,6 +34,7 @@ const normalizeUserData = (userData: User): User => {
 interface AuthContextType {
   user: User | null;
   login: (userData: User) => void;
+  updateUser: (updatedData: Partial<User>) => void;
   switchRole: (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => void;
   logout: () => void;
 }
@@ -52,6 +54,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('user', JSON.stringify(normalizedUser));
   };
 
+  const updateUser = (updatedData: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = normalizeUserData({ ...prev, ...updatedData });
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const switchRole = (newRole: 'admin' | 'supervisor' | 'mentor' | 'coordinator' | 'student') => {
     setUser(prev => {
       if (!prev) return null;
@@ -67,7 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, switchRole, logout }}>
+    <AuthContext.Provider value={{ user, login, updateUser, switchRole, logout }}>
       {children}
     </AuthContext.Provider>
   );
