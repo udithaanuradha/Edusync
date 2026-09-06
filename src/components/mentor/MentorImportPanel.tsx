@@ -100,7 +100,6 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
     setUnfilledGroups([]);
     setAllGroupsCovered(false);
     setMissingGroupNames([]);
-    setAllReminded(false);
     setIsJustSent(false);
     setStatusMessage({ type: 'info', text: `Checking CSV against registered Level ${levelNumber} groups...` });
 
