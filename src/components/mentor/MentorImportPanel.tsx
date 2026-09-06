@@ -58,10 +58,6 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success' | 'info' | 'warning' | ''; text: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  
-  // Chat Reminder States
-  const [isRemindingAll, setIsRemindingAll] = useState(false);
-  const [allReminded, setAllReminded] = useState(false);
   const [isJustSent, setIsJustSent] = useState(false);
 
   // Persistent tracking across page navigation/refresh for this Level
@@ -188,40 +184,7 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
     setMissingGroupNames([]);
     setFileName('');
     setStatusMessage(null);
-    setAllReminded(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  // Send Chat Reminder to ALL missing groups at once
-  const handleSendAllMissingReminders = async () => {
-    if (unfilledGroups.length === 0) return;
-    setIsRemindingAll(true);
-
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/mentors/remind-all-missing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          missingGroups: unfilledGroups,
-          adminId: currentUserId
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setAllReminded(true);
-        setStatusMessage({
-          type: 'success',
-          text: `Chat reminder sent successfully to group leader(s) across ${unfilledGroups.length} missing group(s)!`
-        });
-      } else {
-        setStatusMessage({ type: 'error', text: data.error || 'Failed to send reminders.' });
-      }
-    } catch (error) {
-      setStatusMessage({ type: 'error', text: 'Network error sending reminders.' });
-    } finally {
-      setIsRemindingAll(false);
-    }
   };
 
   // Broadcast transactional invitations to all filled group mentors
@@ -597,51 +560,15 @@ export const MentorImportPanel: React.FC<MentorImportPanelProps> = ({
           margin: '16px 0',
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
+          gap: '10px',
           backgroundColor: '#fffbeb',
           color: '#92400e',
           border: '1px solid #fde047'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
-            <span>
-              <strong>Mentor details pending:</strong> The following group(s) haven't filled their mentor details yet: <strong>{missingGroupNames.join(', ')}</strong>
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSendAllMissingReminders}
-            disabled={isRemindingAll || allReminded}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              backgroundColor: allReminded ? '#dcfce7' : '#f59e0b',
-              color: allReminded ? '#166534' : '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: (isRemindingAll || allReminded) ? 'default' : 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {allReminded ? (
-              <>
-                <Check size={14} />
-                Reminders Sent to Leader(s)
-              </>
-            ) : (
-              <>
-                <MessageSquare size={14} />
-                {isRemindingAll ? 'Sending...' : 'Notify Group Leader(s) via Chat'}
-              </>
-            )}
-          </button>
+          <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Mentor details pending:</strong> The following group(s) haven't filled their mentor details yet: <strong>{missingGroupNames.join(', ')}</strong>
+          </span>
         </div>
       )}
 

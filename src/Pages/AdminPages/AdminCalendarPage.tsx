@@ -1143,7 +1143,7 @@ const AdminCalendarPage: React.FC = () => {
               </div>
 
               <p style={{ fontSize: '13px', color: 'var(--eds-color-text-muted)', margin: '0 0 16px 0', lineHeight: 1.4 }}>
-                Freezing a date marks it university-wide (e.g. for study leave, public holiday, sports meet). Coordinators cannot schedule evaluation panels on frozen dates.
+                Freezing a date marks it university-wide. Coordinators cannot schedule evaluation panels on frozen dates.
               </p>
 
               {freezeError && (
@@ -1175,7 +1175,7 @@ const AdminCalendarPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Faculty Sports Meet, Study Holiday, Semester Exam"
+                  placeholder="Enter reason or occasion"
                   value={freezeReasonInput}
                   onChange={e => setFreezeReasonInput(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--eds-color-border)', marginBottom: '22px', boxSizing: 'border-box', outline: 'none' }}

@@ -68,6 +68,7 @@ type ScheduledPanel = {
   meetingLink: string;
   notes: string;
   kind: string;
+  department?: string;
 };
 
 type DrawerMode = "schedule" | "freeze";
@@ -240,6 +241,7 @@ const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => 
   meetingLink: String(row.meeting_link ?? row.meetingLink ?? ""),
   notes: String(row.notes ?? ""),
   kind: String(row.kind ?? "Coordinator scheduled panel"),
+  department: String(row.department ?? row.academic_unit ?? "ITM"),
 });
 
 const makeMonthKey = (date: Date) =>
@@ -698,18 +700,34 @@ const CalendarPage: React.FC = () => {
 
           if (byDateRes.ok) {
             const rawPanelsJson = await byDateRes.json();
-            const rawPanels = rawPanelsJson.data || [];
+            const rawPanels = Array.isArray(rawPanelsJson.data)
+              ? rawPanelsJson.data
+              : Array.isArray(rawPanelsJson)
+                ? rawPanelsJson
+                : [];
             const linkMap = new Map<string, string>();
+            const statusMap = new Map<string, string>();
+            const deptMap = new Map<string, string>();
             rawPanels.forEach((rp: any) => {
               if (rp.meeting_link) {
                 linkMap.set(String(rp.id), rp.meeting_link);
                 if (rp.target_group) linkMap.set(String(rp.target_group), rp.meeting_link);
+              }
+              if (rp.status) {
+                statusMap.set(String(rp.id), rp.status);
+                if (rp.target_group) statusMap.set(String(rp.target_group), rp.status);
+              }
+              if (rp.department) {
+                deptMap.set(String(rp.id), rp.department);
+                if (rp.target_group) deptMap.set(String(rp.target_group), rp.department);
               }
             });
 
             panelsList = panelsList.map((p) => ({
               ...p,
               meeting_link: p.meeting_link || linkMap.get(String(p.panel_id)) || linkMap.get(String(p.group_name)) || "",
+              status: p.status || statusMap.get(String(p.panel_id)) || statusMap.get(String(p.group_name)) || "scheduled",
+              department: p.department || deptMap.get(String(p.panel_id)) || deptMap.get(String(p.group_name)) || "ITM",
             }));
           }
 
@@ -843,23 +861,22 @@ const CalendarPage: React.FC = () => {
   }, [supervisors, supervisorSearchQuery, groupSupervisorIds]);
 
   const displayedSupervisorPanels = useMemo(() => {
-    const todayStr = toDateValue(new Date());
-    // Filter only upcoming evaluation panels (today or future dates) - exclude overdue/past panels
-    const upcomingPanels = supervisorAssignedPanels.filter((p) => {
-      const pDate = getLocalDateStr(p.panel_date);
-      if (!pDate) return true;
-      return pDate >= todayStr;
+    // Only exclude panels that are already completed by the coordinator.
+    // Overdue panels that have NOT been completed by coordinator MUST still be shown!
+    const activePanels = supervisorAssignedPanels.filter((p) => {
+      const pStatus = (p.status || p.panel_status || "").toLowerCase();
+      return pStatus !== "completed";
     });
 
     if (!selectedCalendarDate) {
-      return [...upcomingPanels].sort((a, b) => {
+      return [...activePanels].sort((a, b) => {
         const dateA = `${getLocalDateStr(a.panel_date)} ${a.start_time || "00:00"}`;
         const dateB = `${getLocalDateStr(b.panel_date)} ${b.start_time || "00:00"}`;
         return dateA.localeCompare(dateB);
       });
     }
 
-    return upcomingPanels.filter(
+    return activePanels.filter(
       (p) => getLocalDateStr(p.panel_date) === selectedCalendarDate
     );
   }, [supervisorAssignedPanels, selectedCalendarDate]);
@@ -879,11 +896,13 @@ const CalendarPage: React.FC = () => {
     const mapped = new Map<number, CalendarGridMarker>();
 
     if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
-      const todayStr = toDateValue(new Date());
       supervisorAssignedPanels.forEach((p) => {
+        // Exclude completed panels - all active/pending panels (including overdue) show on calendar
+        const pStatus = (p.status || p.panel_status || "").toLowerCase();
+        if (pStatus === "completed") return;
+
         const dateStr = getLocalDateStr(p.panel_date);
-        // Only mark upcoming/active panels (today or future) on the calendar
-        if (dateStr && dateStr >= todayStr) {
+        if (dateStr) {
           const pDate = parseDateValue(dateStr);
           if (pDate.getFullYear() === year && pDate.getMonth() === month) {
             const day = pDate.getDate();
@@ -901,6 +920,10 @@ const CalendarPage: React.FC = () => {
       });
     } else {
       scheduledPanels.forEach((panel) => {
+        // Exclude completed panels
+        const pStatus = ((panel as any).status || "").toLowerCase();
+        if (pStatus === "completed") return;
+
         const panelDate = parseDateValue(panel.date);
         if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
           return;
@@ -1340,9 +1363,41 @@ const CalendarPage: React.FC = () => {
                                   Leader: {panel.leader_name || 'Assigned Student'} • {panel.members?.length || 0} members
                                 </span>
                               </div>
-                              <div className="supervisor-badges-row">
+                              <div className="supervisor-badges-row" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span
+                                  style={{
+                                    backgroundColor: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#f3e8ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#e0f2fe' : '#fef3c7',
+                                    color: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#6b21a8' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#0369a1' : '#92400e',
+                                    border: `1px solid ${(panel.department || 'ITM').toUpperCase() === 'AI' ? '#e9d5ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#bae6fd' : '#fde68a'}`,
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    padding: '2px 7px',
+                                    borderRadius: '5px',
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'uppercase'
+                                  }}
+                                >
+                                  {panel.department || 'ITM'}
+                                </span>
                                 <span className="level-badge">Level {panel.academic_level || 2}</span>
                                 <span className="stage-badge">{panel.stage_name || panel.evaluation_type}</span>
+                                {localDate && localDate < toDateValue(new Date()) && (
+                                  <span
+                                    style={{
+                                      fontSize: '10px',
+                                      backgroundColor: '#fee2e2',
+                                      color: '#b91c1c',
+                                      border: '1px solid #fca5a5',
+                                      fontWeight: '800',
+                                      padding: '1px 6px',
+                                      borderRadius: '4px',
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.03em'
+                                    }}
+                                  >
+                                    Overdue
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -1469,7 +1524,22 @@ const CalendarPage: React.FC = () => {
                                 <span className="upcoming-item-group">
                                   {panel.groupName}
                                 </span>
-                                <div className="upcoming-item-badges">
+                                <div className="upcoming-item-badges" style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                                  <span
+                                    style={{
+                                      backgroundColor: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#f3e8ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#e0f2fe' : '#fef3c7',
+                                      color: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#6b21a8' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#0369a1' : '#92400e',
+                                      border: `1px solid ${(panel.department || 'ITM').toUpperCase() === 'AI' ? '#e9d5ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#bae6fd' : '#fde68a'}`,
+                                      fontSize: '10.5px',
+                                      fontWeight: '800',
+                                      padding: '2px 7px',
+                                      borderRadius: '5px',
+                                      letterSpacing: '0.02em',
+                                      textTransform: 'uppercase'
+                                    }}
+                                  >
+                                    {panel.department || 'ITM'}
+                                  </span>
                                   <span className="upcoming-level-pill">
                                     Level {panel.level}
                                   </span>

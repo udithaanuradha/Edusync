@@ -18,7 +18,8 @@ import {
   Bell,
   MessageSquare,
   LogIn,
-  UserCheck
+  UserCheck,
+  Briefcase
 } from 'lucide-react';
 
 export interface LoginRow {
@@ -31,6 +32,8 @@ export interface LoginRow {
   lastAction?: string;
   isOnline?: boolean;
   isVerified?: boolean;
+  assignedGroupsCount?: number;
+  assignedGroups?: string;
 }
 
 const columnHeaderStyle: React.CSSProperties = {
@@ -93,6 +96,27 @@ const LoginTable: React.FC = () => {
   const renderActionBadge = (login: LoginRow) => {
     const act = (login.lastAction || '').toLowerCase();
     
+    if (login.assignedGroups || act.includes('mentoring')) {
+      return (
+        <span style={{
+          fontSize: '11px',
+          fontWeight: '600',
+          color: '#b45309',
+          backgroundColor: '#fffbeb',
+          padding: '2px 8px',
+          borderRadius: '5px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          width: 'fit-content',
+          border: '1px solid #fde68a'
+        }}>
+          <Briefcase size={12} color="#d97706" />
+          {login.lastAction && login.lastAction.startsWith('Mentoring:') ? login.lastAction : `Mentoring: ${login.assignedGroups}`}
+        </span>
+      );
+    }
+
     if (act.includes('milestone') || act.includes('submitted')) {
       return (
         <span style={{
@@ -311,9 +335,11 @@ const LoginTable: React.FC = () => {
               role: u.role || 'user',
               designation: u.designation,
               time: u.last_action_time || u.last_login || u.created_at || u.updated_at || new Date().toISOString(),
-              lastAction: u.last_action || (u.last_login ? 'Logged In to Portal' : 'Enrolled User'),
+              lastAction: (u.role === 'mentor' && u.assigned_groups) ? `Mentoring: ${u.assigned_groups}` : (u.last_action || (u.last_login ? 'Logged In to Portal' : 'Enrolled User')),
               isOnline: Boolean(u.has_logged_in || u.last_login),
               isVerified: checkVerification(u),
+              assignedGroupsCount: Number(u.assigned_groups_count || 0),
+              assignedGroups: u.assigned_groups || '',
             }));
         } else {
           const [studentRes, lecturerRes, mentorRes, adminRes] = await Promise.all([
@@ -363,9 +389,11 @@ const LoginTable: React.FC = () => {
               email: u.email || u.user_email || u.userEmail || u.mail || '',
               role: 'mentor',
               time: u.last_action_time || u.last_login || u.created_at || u.updated_at || new Date().toISOString(),
-              lastAction: u.last_action || (u.last_login ? 'Logged In to Portal' : 'Enrolled User'),
+              lastAction: (u.role === 'mentor' && u.assigned_groups) ? `Mentoring: ${u.assigned_groups}` : (u.last_action || (u.last_login ? 'Logged In to Portal' : 'Enrolled User')),
               isOnline: Boolean(u.has_logged_in || u.last_login),
               isVerified: checkVerification(u),
+              assignedGroupsCount: Number(u.assigned_groups_count || 0),
+              assignedGroups: u.assigned_groups || '',
             })),
             ...adminList.map((u: any) => ({
               id: u.id,
@@ -396,6 +424,8 @@ const LoginTable: React.FC = () => {
             designation: match?.designation || r.designation,
             lastAction: match?.lastAction || 'Logged In to Portal',
             isVerified: match ? match.isVerified : true,
+            assignedGroupsCount: match?.assignedGroupsCount || 0,
+            assignedGroups: match?.assignedGroups || '',
           };
         }).filter((r) => r.role.toLowerCase() !== 'supervisor' && r.role.toLowerCase() !== 'coordinator');
         setRecentLogins(enrichedRecent);
@@ -493,9 +523,16 @@ const LoginTable: React.FC = () => {
     }
   };
 
+  const isAssignedMentor = (u: LoginRow): boolean => {
+    return (
+      u.role.toLowerCase() === 'mentor' &&
+      ((u.assignedGroupsCount || 0) > 0 || Boolean(u.assignedGroups && u.assignedGroups.trim().length > 0))
+    );
+  };
+
   const studentCount = useMemo(() => allUsers.filter((u) => u.role.toLowerCase() === 'student' && isUserVerified(u)).length, [allUsers, verifiedUserIds]);
   const lecturerCount = useMemo(() => allUsers.filter((u) => u.role.toLowerCase() === 'lecturer' && isUserVerified(u)).length, [allUsers, verifiedUserIds]);
-  const mentorCount = useMemo(() => allUsers.filter((u) => u.role.toLowerCase() === 'mentor' && isUserVerified(u)).length, [allUsers, verifiedUserIds]);
+  const mentorCount = useMemo(() => allUsers.filter((u) => isAssignedMentor(u) && isUserVerified(u)).length, [allUsers, verifiedUserIds]);
 
   const verifiedCount = useMemo(() => allUsers.filter((u) => isUserVerified(u)).length, [allUsers, verifiedUserIds]);
   const unverifiedCount = useMemo(() => allUsers.filter((u) => !isUserVerified(u)).length, [allUsers, verifiedUserIds]);
@@ -512,6 +549,7 @@ const LoginTable: React.FC = () => {
             (u.email && u.email.toLowerCase().includes(q)) ||
             u.role.toLowerCase().includes(q) ||
             (u.designation && u.designation.toLowerCase().includes(q)) ||
+            (u.assignedGroups && u.assignedGroups.toLowerCase().includes(q)) ||
             (u.id && String(u.id).includes(q))
         );
     }
@@ -526,7 +564,7 @@ const LoginTable: React.FC = () => {
           return allUsers.filter((u) => u.role.toLowerCase() === 'lecturer' && isUserVerified(u));
         }
         if (activeFilter === 'mentor') {
-          return allUsers.filter((u) => u.role.toLowerCase() === 'mentor' && isUserVerified(u));
+          return allUsers.filter((u) => isAssignedMentor(u) && isUserVerified(u));
         }
         if (activeFilter === 'unverified') {
           return allUsers.filter((u) => !isUserVerified(u));

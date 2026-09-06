@@ -210,13 +210,19 @@ const SupervisorGroupMarks: React.FC<SupervisorGroupMarksProps> = ({
           }
         });
 
+        const stageRank = (name: string) => {
+          const n = name.toLowerCase();
+          if (n.includes('proposal')) return 1;
+          if (n.includes('interim')) return 2;
+          if (n.includes('code') || n.includes('review')) return 3;
+          if (n.includes('final')) return 4;
+          return 5;
+        };
+
         const canonicalList = Array.from(stageGroupMap.values()).sort((a, b) => {
-          const order = ['proposal', 'interim', 'final'];
-          const idxA = order.indexOf(a.stage_name.toLowerCase());
-          const idxB = order.indexOf(b.stage_name.toLowerCase());
-          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-          if (idxA !== -1) return -1;
-          if (idxB !== -1) return 1;
+          const rankA = stageRank(a.stage_name);
+          const rankB = stageRank(b.stage_name);
+          if (rankA !== rankB) return rankA - rankB;
           return a.stage_name.localeCompare(b.stage_name);
         });
 
