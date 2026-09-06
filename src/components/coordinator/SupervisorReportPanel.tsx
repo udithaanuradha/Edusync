@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { 
-  Award, 
-  BarChart3, 
-  CheckCircle2, 
-  FileSpreadsheet, 
-  GraduationCap, 
-  Layers, 
-  Search, 
-  TrendingUp, 
-  Users 
+import {
+  Award,
+  BarChart3,
+  CheckCircle2,
+  FileSpreadsheet,
+  GraduationCap,
+  Layers,
+  Search,
+  TrendingUp,
+  Users
 } from 'lucide-react';
+import PrimaryButton from '../shared/ui/PrimaryButton';
 import './SupervisorReportPanel.css';
 
 interface SupervisorReportPanelProps {
@@ -19,6 +20,11 @@ interface SupervisorReportPanelProps {
   allowedGroupNames?: string[];
   allowedGroupIds?: Array<number | string>;
   isSupervisorView?: boolean;
+  // The logged-in coordinator's own id, used server-side to resolve and
+  // scope this report to their own department — never send a department
+  // string directly, the backend looks it up from this id. Left undefined
+  // by callers that intentionally see every department (AdminLevelPage.tsx).
+  coordinatorId?: string | number;
 }
 
 // Grading Scale definition strictly based on Dhofar / UoM University Grading System
@@ -45,18 +51,22 @@ const GRADING_SCALE: GradeDefinition[] = [
   { min: 0, max: 34.99, letter: 'I', badgeBg: '#fee2e2', badgeColor: '#b91c1c', borderColor: '#fca5a5' },
 ];
 
+// Soft Minimal palette for the distribution bar — muted pastels instead of
+// saturated status colors, running from pastel green (top passing grades)
+// through soft blues/purples (mid grades) to a soft peach/coral for the
+// failing grade, so the bar reads as calm data rather than an alert.
 const DISTRIBUTION_COLORS: Record<string, string> = {
-  'A+': '#10b981',
-  A: '#059669',
-  'A-': '#14b8a6',
-  'B+': '#3b82f6',
-  B: '#2563eb',
-  'B-': '#06b6d4',
-  'C+': '#f59e0b',
-  C: '#f97316',
-  'C-': '#ea580c',
-  D: '#64748b',
-  I: '#ef4444',
+  'A+': '#9bd8ae',
+  A: '#a9dfb8',
+  'A-': '#bfe6c9',
+  'B+': '#b7c6ea',
+  B: '#c7d0f0',
+  'B-': '#d3d9f5',
+  'C+': '#dcd0f0',
+  C: '#e3d6f2',
+  'C-': '#f0dde9',
+  D: '#f3d9c9',
+  I: '#f5c6b8',
 };
 
 const calculateGrade = (finalScore: number): GradeDefinition => {
@@ -123,6 +133,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   allowedGroupNames,
   allowedGroupIds,
   isSupervisorView = false,
+  coordinatorId,
 }) => {
   const [students, setStudents] = useState<StudentReportItem[]>([]);
   const [stages, setStages] = useState<Array<{ stage_id: number | string; stage_name: string }>>([]);
@@ -133,6 +144,18 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   // Keyed by `${group_name}::${stage_name}` — tracks which single (group,
   // stage) cell is mid-request, so only that button shows a loading state.
   const [completingKey, setCompletingKey] = useState<string | null>(null);
+  // Normalized `${group_name}::${stage_name}` keys (see normalizePanelKey)
+  // for every (group, stage) that currently has an ACTIVE, non-completed
+  // panel on the Calendar — fetched from GET /api/calendar/panels, which
+  // reads evaluation_panels.status straight from the database. A row is
+  // "Complete"-able only while its key is in this set; once
+  // completePanelsForGroups flips that panel's status to 'completed'
+  // server-side, its key drops out (see handleCompleteGroupStage) and the
+  // "✓ Completed" state is what a page refresh will also show, since it's
+  // re-derived from this same persisted status on every mount — unlike the
+  // old session-only completedKeys flag this replaces.
+  const [activePanelKeys, setActivePanelKeys] = useState<Set<string>>(new Set());
+  const [panelsLoaded, setPanelsLoaded] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Degree helper directly from users table's academic_unit column
@@ -216,7 +239,15 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
         }
       }
 
-      const response = await fetch(`http://localhost:5000/api/marks/summary/level/${levelNumber}`, {
+      // coordinatorId lets the backend scope this to just this coordinator's
+      // own department (resolved server-side from their own account) —
+      // omitted entirely when this panel is rendered for an admin
+      // (AdminLevelPage.tsx doesn't pass it), so admins keep seeing every
+      // department.
+      const summaryUrl = coordinatorId
+        ? `http://localhost:5000/api/marks/summary/level/${levelNumber}?coordinatorId=${coordinatorId}`
+        : `http://localhost:5000/api/marks/summary/level/${levelNumber}`;
+      const response = await fetch(summaryUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
         },
@@ -389,9 +420,48 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
     }
   };
 
+  // `${group_name}::${stage_name}`, case/whitespace-insensitive so it lines
+  // up regardless of how a group or stage name happens to be cased.
+  const normalizePanelKey = (groupName: string, stageName: string) =>
+    `${String(groupName).trim().toLowerCase()}::${String(stageName).trim().toLowerCase()}`;
+
+  // Fetch which (group, stage) panels are still active (not yet marked
+  // completed) so the marksheet's "Complete" button reflects real,
+  // persisted panel status instead of only what happened this session.
+  // Deliberately NOT /api/calendar/panels ("upcoming panels") — that list
+  // drops any panel whose date has passed, which is true of nearly every
+  // panel by the time marks are being reviewed here, so it can't tell
+  // "completed" apart from "just old". This hits the dedicated status
+  // endpoint instead, which ignores panel_date entirely.
+  const fetchActivePanels = async () => {
+    try {
+      const panelsUrl = coordinatorId
+        ? `http://localhost:5000/api/calendar/panels/status/level/${levelNumber}?coordinatorId=${coordinatorId}`
+        : `http://localhost:5000/api/calendar/panels/status/level/${levelNumber}`;
+      const res = await fetch(panelsUrl, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+      });
+      if (!res.ok) return;
+      const rows: any[] = await res.json();
+      const keys = new Set<string>();
+      (Array.isArray(rows) ? rows : []).forEach((row) => {
+        if (row.status === 'completed') return;
+        if (row.target_group && row.evaluation_type) {
+          keys.add(normalizePanelKey(row.target_group, row.evaluation_type));
+        }
+      });
+      setActivePanelKeys(keys);
+    } catch (err) {
+      console.warn('Could not fetch active evaluation panels:', err);
+    } finally {
+      setPanelsLoaded(true);
+    }
+  };
+
   useEffect(() => {
     fetchReportData();
-  }, [levelNumber, supervisorId, supervisorName, JSON.stringify(allowedGroupNames), JSON.stringify(allowedGroupIds), isSupervisorView]);
+    void fetchActivePanels();
+  }, [levelNumber, supervisorId, supervisorName, JSON.stringify(allowedGroupNames), JSON.stringify(allowedGroupIds), isSupervisorView, coordinatorId]);
 
   // Filter students based on selected degree, search query, and grade filter
   const filteredStudents = useMemo(() => {
@@ -506,6 +576,15 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
       if (!response.ok || !result.success) {
         throw new Error(result.message || 'Failed to complete panel.');
       }
+      // Drop this (group, stage) out of the active set immediately so the
+      // button flips to "✓ Completed" right away — the next fetch of this
+      // panel (including after a refresh) will agree, since the backend
+      // just persisted status = 'completed' for it.
+      setActivePanelKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(normalizePanelKey(groupName, stageName));
+        return next;
+      });
       alert(`Done — ${result.panelsUpdated} panel(s) removed from the Calendar for "${groupName}".`);
     } catch (err) {
       alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -522,7 +601,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
   const handleDownloadPdfReport = async () => {
     setDownloadingPdf(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/marks/report/level/${levelNumber}/pdf`);
+      const pdfUrl = coordinatorId
+        ? `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf?coordinatorId=${coordinatorId}`
+        : `http://localhost:5000/api/marks/report/level/${levelNumber}/pdf`;
+      const response = await fetch(pdfUrl);
       if (!response.ok) {
         // Errors come back as JSON, not a PDF — surface the real message if present.
         const contentType = response.headers.get('content-type') || '';
@@ -663,45 +745,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={handleDownloadPdfReport}
-            disabled={downloadingPdf}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '9px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: downloadingPdf ? '#93c5fd' : '#2563eb',
-              color: '#ffffff',
-              fontWeight: '600',
-              fontSize: '13px',
-              cursor: downloadingPdf ? 'default' : 'pointer',
-              boxShadow: '0 2px 5px rgba(37, 99, 235, 0.25)',
-            }}
-          >
+          <PrimaryButton type="button" onClick={handleDownloadPdfReport} disabled={downloadingPdf}>
             {downloadingPdf ? 'Generating…' : 'Download PDF Report'}
-          </button>
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '9px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: '#16a34a',
-              color: '#ffffff',
-              fontWeight: '600',
-              fontSize: '13px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 5px rgba(22, 163, 74, 0.25)',
-            }}
-          >
+          </PrimaryButton>
+          <button type="button" onClick={handleExportCSV} className="report-btn-ghost">
             Download CSV
           </button>
         </div>
@@ -726,9 +773,9 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
             gap: '8px',
             padding: '12px 20px',
             border: 'none',
-            borderBottom: selectedDegree === 'ALL' ? '3px solid #2563eb' : '3px solid transparent',
+            borderBottom: selectedDegree === 'ALL' ? '3px solid var(--eds-color-primary)' : '3px solid transparent',
             backgroundColor: 'transparent',
-            color: selectedDegree === 'ALL' ? '#2563eb' : '#64748b',
+            color: selectedDegree === 'ALL' ? 'var(--eds-color-primary)' : '#64748b',
             fontWeight: selectedDegree === 'ALL' ? '700' : '600',
             fontSize: '14px',
             cursor: 'pointer',
@@ -1158,8 +1205,10 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
                   <th style={{ padding: '12px 14px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569' }}>Student Details</th>
                   <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Index No</th>
-                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Degree</th>
-                  <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569', whiteSpace: 'nowrap' }}>Project Group</th>
+                  {/* Degree and Project Group columns are dropped in favor of
+                      one section-header row per group (name, degree badge,
+                      member count) below — repeating them on every student
+                      row got noisy fast with more groups. */}
                   {stages.map((st) => (
                     <th key={st.stage_id} style={{ padding: '12px 8px', textAlign: 'center' }}>
                       <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>{st.stage_name}</div>
@@ -1177,14 +1226,50 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                   const gInfo = student.gradeInfo;
                   const isFirstRowOfGroup =
                     rowIndex === 0 || filteredStudents[rowIndex - 1].group_name !== student.group_name;
+                  // Student Details, Index No, Final Mark, Grade + one column per stage.
+                  const totalColumns = 4 + stages.length;
 
                   return (
-                    <tr 
-                      key={student.student_id} 
-                      style={{ 
-                        borderBottom: '1px solid #f1f5f9', 
-                        borderTop: isFirstRowOfGroup && rowIndex > 0 ? '2px solid #e2e8f0' : 'none',
-                        transition: 'background-color 0.15s ease' 
+                    <React.Fragment key={student.student_id}>
+                    {isFirstRowOfGroup && (
+                      <tr>
+                        <td
+                          colSpan={totalColumns}
+                          style={{
+                            padding: '10px 14px',
+                            backgroundColor: '#f1f5f9',
+                            borderTop: rowIndex === 0 ? 'none' : '2px solid #e2e8f0',
+                            borderBottom: '1px solid #e2e8f0',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontWeight: '800', fontSize: '13.5px', color: '#0f172a' }}>
+                              {student.group_name}
+                            </span>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                ...degreeBadgeStyle(student.degree),
+                              }}
+                            >
+                              {student.degree}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              {groupMemberCounts.get(student.group_name)} member
+                              {groupMemberCounts.get(student.group_name) === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr
+                      style={{
+                        borderBottom: '1px solid #f1f5f9',
+                        transition: 'background-color 0.15s ease'
                       }}
                       onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                       onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -1245,61 +1330,8 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                         {student.university_id || '—'}
                       </td>
 
-                      {/* Degree Badge */}
-                      <td style={{ padding: '12px 10px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            backgroundColor:
-                              student.degree === 'IT'
-                                ? '#e0f2fe'
-                                : student.degree === 'AI'
-                                ? '#f3e8ff'
-                                : '#fef3c7',
-                            color:
-                              student.degree === 'IT'
-                                ? '#0369a1'
-                                : student.degree === 'AI'
-                                ? '#6b21a8'
-                                : '#92400e',
-                            border: `1px solid ${
-                              student.degree === 'IT'
-                                ? '#bae6fd'
-                                : student.degree === 'AI'
-                                ? '#e9d5ff'
-                                : '#fde68a'
-                            }`,
-                          }}
-                        >
-                          {student.degree}
-                        </span>
-                      </td>
-
-                      {/* Project Group */}
-                      <td style={{ padding: '12px 10px', color: '#0f172a', fontWeight: '600', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: '5px',
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            fontSize: '10.5px',
-                            fontWeight: '700',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            {student.group_name ? student.group_name.charAt(0).toUpperCase() : 'G'}
-                          </div>
-                          <span style={{ fontSize: '12.5px' }}>{student.group_name}</span>
-                        </div>
-                      </td>
+                      {/* Degree and Project Group are shown once in the group
+                          section header above instead of repeating per row. */}
 
                       {/* Stage Marks with Evaluator-wise breakdown */}
                       {stages.map((st) => {
@@ -1338,6 +1370,77 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                                     {stgData.evaluators.map((ev, i) => `E${i + 1}:${ev.mark}`).join(' ')}
                                   </div>
                                 )}
+
+                                {/* One "Complete" action per group per stage — shown once,
+                                    on the group's first visible row, not repeated per member.
+                                    Marks this stage's evaluation done and removes just that
+                                    stage's panel from the Calendar for this group. */}
+                                {isFirstRowOfGroup && (() => {
+                                  const key = `${student.group_name}::${st.stage_name}`;
+                                  const isCompleting = completingKey === key;
+                                  // Derived from the real, persisted panel
+                                  // status (see activePanelKeys) rather than
+                                  // a session-only flag, so this stays
+                                  // correct across a page refresh: no active
+                                  // panel for this (group, stage) means it's
+                                  // already completed (or was never
+                                  // scheduled — either way there's nothing
+                                  // left to complete). Before that fetch
+                                  // resolves, default to "not completed" so
+                                  // the button doesn't flash the wrong state.
+                                  const isCompleted =
+                                    panelsLoaded &&
+                                    !activePanelKeys.has(normalizePanelKey(student.group_name, st.stage_name));
+
+                                  // Swap in a visibly different, disabled
+                                  // badge instead of re-rendering the same
+                                  // "Complete" button — otherwise a
+                                  // successful click had no lasting sign it
+                                  // had ever happened.
+                                  if (isCompleted) {
+                                    return (
+                                      <span
+                                        title={`${st.stage_name} marked complete for "${student.group_name}"`}
+                                        style={{
+                                          marginTop: '4px',
+                                          padding: '2px 7px',
+                                          borderRadius: '5px',
+                                          backgroundColor: '#f1f5f9',
+                                          color: '#16a34a',
+                                          fontWeight: '700',
+                                          fontSize: '9px',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '3px',
+                                        }}
+                                      >
+                                        ✓ Completed
+                                      </span>
+                                    );
+                                  }
+
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
+                                      disabled={isCompleting}
+                                      title={`Mark ${st.stage_name} complete for "${student.group_name}" — removes just this stage's panel from the Calendar for this group`}
+                                      style={{
+                                        marginTop: '4px',
+                                        padding: '2px 7px',
+                                        borderRadius: '5px',
+                                        border: 'none',
+                                        backgroundColor: isCompleting ? '#a7f3d0' : '#16a34a',
+                                        color: '#ffffff',
+                                        fontWeight: '600',
+                                        fontSize: '9px',
+                                        cursor: isCompleting ? 'default' : 'pointer',
+                                      }}
+                                    >
+                                      {isCompleting ? 'Completing…' : 'Complete'}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             ) : (
                               <span style={{ color: '#cbd5e1', fontSize: '15px', fontWeight: '500' }}>—</span>
@@ -1387,6 +1490,7 @@ const SupervisorReportPanel: React.FC<SupervisorReportPanelProps> = ({
                         </span>
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
