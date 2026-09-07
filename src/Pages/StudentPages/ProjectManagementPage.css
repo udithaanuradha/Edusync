@@ -683,7 +683,35 @@
 
 /* Task Action Buttons */
 .task-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
+}
+
+/* Moves a task backward a step (In Progress -> To Do, Completed -> In
+   Progress) — muted on purpose, so it reads as "undo this" rather than
+   competing with the primary Start/Done action. */
+.task-back-btn {
+  background: var(--eds-color-bg-surface-soft);
+  color: var(--eds-color-text-muted);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.task-back-btn:hover {
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-strong);
+}
+
+.task-back-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .task-start-btn {
@@ -906,6 +934,13 @@
   gap: 8px;
 }
 
+.task-board-card-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .task-board-card-grip {
   color: var(--eds-color-border);
   flex-shrink: 0;
@@ -915,6 +950,34 @@
 .task-board-card:hover .task-board-card-grip,
 .task-board-card:focus-visible .task-board-card-grip {
   color: var(--eds-color-primary);
+}
+
+/* Always visible, same as the card's other action buttons (Start/Done) —
+   a permanent, no-undo action shouldn't be something you have to discover
+   by hovering. */
+.task-board-card-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--eds-color-bg-surface-soft);
+  color: var(--eds-color-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.task-board-card-delete:hover {
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-solid);
+}
+
+.task-board-card-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .task-board-card-milestone {

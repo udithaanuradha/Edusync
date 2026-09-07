@@ -57,12 +57,40 @@
   gap: 8px;
 }
 
+.gc-bar-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
 .gc-bar-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.gc-bar-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--eds-color-text-muted);
+}
+
+.gc-bar-percent {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--eds-color-success-solid);
 }
 
 .gc-bar-name {
@@ -112,4 +140,59 @@
   border-radius: 999px;
   background: var(--eds-color-success-solid);
   transition: width 0.4s ease;
+}
+
+/* Revealed when a member's row is expanded — their actual tasks, not just
+   the count/bar above. */
+.gc-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 12px;
+}
+
+.gc-task-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+  text-align: center;
+}
+
+.gc-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border-soft);
+  border-radius: 8px;
+}
+
+.gc-task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gc-task-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gc-task-milestone {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eds-color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
