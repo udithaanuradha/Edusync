@@ -123,11 +123,14 @@ const AdminAnnouncements: React.FC = () => {
         setStaffDepartment('All');
         await fetchAnnouncements();
         setStatusFeedback({ type: 'success', message: `✅ Announcement posted and dispatched to "${target_audience}" successfully!` });
+        setTimeout(() => setStatusFeedback(null), 3500);
       } else {
         setStatusFeedback({ type: 'error', message: '❌ Failed to post announcement. Please check server connection.' });
+        setTimeout(() => setStatusFeedback(null), 3500);
       }
     } catch (error) {
       setStatusFeedback({ type: 'error', message: '❌ Failed to connect to server.' });
+      setTimeout(() => setStatusFeedback(null), 3500);
     } finally {
       setIsPosting(false);
     }
@@ -240,6 +243,7 @@ const AdminAnnouncements: React.FC = () => {
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '10px',
               fontSize: '13px',
               fontWeight: '500',
@@ -247,6 +251,23 @@ const AdminAnnouncements: React.FC = () => {
               color: statusFeedback.type === 'success' ? '#15803d' : '#b91c1c',
               border: `1px solid ${statusFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
             }}>
+              <span>{statusFeedback.message}</span>
+              <button
+                type="button"
+                onClick={() => setStatusFeedback(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'inherit',
+                  fontWeight: '700',
+                  fontSize: '16px',
+                  padding: '0 4px',
+                  lineHeight: '1',
+                }}
+              >
+                ×
+              </button>
             </div>
           )}
 

@@ -120,14 +120,14 @@ const SupervisorEvaluationPanel: React.FC = () => {
   }, []);
 
   // Fetch groups assigned for evaluation
-  const fetchAssignedGroups = async (levelNum: number) => {
+  const fetchAssignedGroups = async (levelNum: number, targetPanelKey?: string) => {
     setLoading(true);
     setMessage(null);
     try {
       const token = localStorage.getItem("token");
       const url = `http://localhost:5000/api/evaluation-panels/my-groups?level=${levelNum}&evaluatorName=${encodeURIComponent(
         currentEvaluator.name
-      )}`;
+      )}&includeCompleted=true`;
 
       const [response, byDateResponse] = await Promise.all([
         fetch(url, {
@@ -183,45 +183,32 @@ const SupervisorEvaluationPanel: React.FC = () => {
           }));
         }
 
-        // Filter only upcoming evaluation panels (today or future dates), excluding completed or overdue ones
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const upcomingGroups = loadedGroups.filter((g) => {
-          const gStatus = (g.status || g.panel_status || "").toLowerCase();
-          if (gStatus === "completed") return false;
-          if (!g.panel_date) return true;
-          const pDate = new Date(g.panel_date);
-          if (isNaN(pDate.getTime())) return true;
-          pDate.setHours(0, 0, 0, 0);
-          return pDate.getTime() >= today.getTime();
-        });
-
-        // Sort upcoming panels chronologically (earliest first)
-        upcomingGroups.sort((a, b) => {
+        // Sort all assigned panels chronologically (earliest first)
+        loadedGroups.sort((a, b) => {
           const dateA = a.panel_date ? new Date(a.panel_date).getTime() : 0;
           const dateB = b.panel_date ? new Date(b.panel_date).getTime() : 0;
           return dateA - dateB;
         });
 
-        setGroups(upcomingGroups);
+        setGroups(loadedGroups);
 
-        if (upcomingGroups.length > 0) {
+        if (loadedGroups.length > 0) {
           const urlPanelId = searchParams.get("panelId");
           const urlGroupId = searchParams.get("groupId");
+          const desiredKey = targetPanelKey || selectedPanelKey;
 
           let chosenGroup: GroupData | undefined;
-          if (urlPanelId) {
-            chosenGroup = upcomingGroups.find((g) => String(g.panel_id) === String(urlPanelId));
+          if (desiredKey) {
+            chosenGroup = loadedGroups.find((g) => getPanelKey(g) === String(desiredKey));
+          }
+          if (!chosenGroup && urlPanelId) {
+            chosenGroup = loadedGroups.find((g) => String(g.panel_id) === String(urlPanelId));
           }
           if (!chosenGroup && urlGroupId) {
-            chosenGroup = upcomingGroups.find((g) => String(g.group_id) === String(urlGroupId));
-          }
-          if (!chosenGroup && selectedPanelKey) {
-            chosenGroup = upcomingGroups.find((g) => getPanelKey(g) === String(selectedPanelKey));
+            chosenGroup = loadedGroups.find((g) => String(g.group_id) === String(urlGroupId));
           }
           if (!chosenGroup) {
-            chosenGroup = upcomingGroups[0];
+            chosenGroup = loadedGroups[0];
           }
 
           const chosenKey = getPanelKey(chosenGroup);
@@ -397,8 +384,16 @@ const SupervisorEvaluationPanel: React.FC = () => {
           type: "success",
           text: `Marks and feedback for ${selectedGroup.group_name} (${selectedGroup.evaluation_type || "Stage"}) saved successfully out of ${totalMaxMarks}!`,
         });
-        // Re-fetch groups to update the calculated stage averages
-        fetchAssignedGroups(selectedLevel);
+        // Stay on the currently evaluated panel and refresh marks and calculated stage averages
+        const currentKey = selectedGroup ? getPanelKey(selectedGroup) : selectedPanelKey;
+        if (selectedGroup) {
+          setSearchParams({
+            level: String(selectedLevel),
+            groupId: String(selectedGroup.group_id),
+            panelId: String(selectedGroup.panel_id || ""),
+          });
+        }
+        await fetchAssignedGroups(selectedLevel, currentKey);
       } else {
         const errorData = await response.json().catch(() => ({}));
         setMessage({
