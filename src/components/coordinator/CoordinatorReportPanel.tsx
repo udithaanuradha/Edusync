@@ -214,13 +214,9 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
 
         setStages(canonicalList.map((s) => ({ stage_id: s.canonical_id, stage_name: s.stage_name })));
 
-        // Groups that have an evaluation panel set (scheduled or completed) or have marks
-        const panelGroupNames = new Set<string>();
+        // Collect completed panels
         const completedPanelsSet = new Set<string>();
         (payload.panels || []).forEach((p: any) => {
-          if (p.target_group) {
-            panelGroupNames.add(String(p.target_group).trim().toLowerCase());
-          }
           if (String(p.status || '').toLowerCase() === 'completed') {
             if (p.target_group && p.evaluation_type) {
               completedPanelsSet.add(normalizePanelKey(p.target_group, p.evaluation_type));
@@ -228,10 +224,10 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
           }
         });
 
+        // Only show groups that have actual evaluated marks submitted
         const targetData = rawData.filter((item: any) => {
-          const gName = String(item.group_name || '').trim().toLowerCase();
           const hasMarks = item.stages && Object.values(item.stages).some((s: any) => s && (s.average_mark !== null || (s.evaluators && s.evaluators.length > 0)));
-          return panelGroupNames.has(gName) || hasMarks;
+          return Boolean(hasMarks);
         });
 
         // Process student marks
@@ -1262,8 +1258,8 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
                                   <span style={{ color: '#cbd5e1', fontSize: '15px', fontWeight: '500' }}>—</span>
                                 )}
 
-                                {/* Complete button: shown on group's 1st row ONLY when this stage has an active/pending panel */}
-                                {isFirstRowOfGroup && isPending && (
+                                {/* Complete button: shown on group's 1st row ONLY when this stage has an active/pending panel AND evaluators have entered marks */}
+                                {isFirstRowOfGroup && isPending && stgData && (stgData.average_mark !== null || (stgData.evaluators && stgData.evaluators.length > 0)) && (
                                   <button
                                     type="button"
                                     onClick={() => handleCompleteGroupStage(student.group_name, st.stage_name)}
