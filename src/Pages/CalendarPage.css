@@ -275,12 +275,63 @@
   border: 1px solid #e2e8f0;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 14px;
-  padding: 12px;
+  padding: 14px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upcoming-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.upcoming-item-titleblock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.upcoming-item-group {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-item-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.upcoming-level-pill,
+.upcoming-stage-pill {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.upcoming-level-pill {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.upcoming-stage-pill {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .upcoming-date-chip {
+  flex-shrink: 0;
   min-width: 58px;
   height: fit-content;
   border-radius: 12px;
@@ -292,28 +343,73 @@
   text-align: center;
 }
 
-.upcoming-copy {
+/* Icon-led detail rows (date/time, location, meeting link, panel members) —
+   each icon sits in its own tinted square so the card scans like a short
+   list of labeled facts instead of a run-on paragraph of plain text. */
+.upcoming-item-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upcoming-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.upcoming-icon-badge {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upcoming-icon-time { background: #fef3c7; color: #b45309; }
+.upcoming-icon-location { background: #dbeafe; color: #1d4ed8; }
+.upcoming-icon-meeting { background: #e0f2fe; color: #0369a1; }
+.upcoming-icon-people { background: #dcfce7; color: #15803d; }
+
+.upcoming-item-row .panel-meeting-link {
+  font-size: 12.5px;
+}
+
+/* Panel Members block: Supervisor on its own line (with the pastel badge),
+   Evaluators stacked directly below in muted text — a flex column next to
+   the shared people icon, instead of stringing both together inline with a
+   bullet separator. */
+.upcoming-people-block {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.upcoming-copy strong {
-  color: #1e293b;
-  font-size: 14px;
+.upcoming-people-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
 }
 
-.upcoming-copy span {
-  color: #64748b;
+/* Soft Minimal, scoped to just this Upcoming Panels card badge — a light
+   pastel pill matching the visual weight of the stage tag (e.g.
+   .upcoming-stage-pill), instead of .supervisor-role-badge's solid fill
+   used everywhere else (e.g. the Schedule Panel drawer's Group
+   Supervisor(s) chip), which stays as-is. */
+.upcoming-people-line .role-badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.upcoming-people-muted {
+  color: #94a3b8;
   font-size: 12px;
-}
-
-/* Wins over .upcoming-copy span above (higher specificity) so the
-   Supervisor pill keeps its own color/size instead of inheriting the plain
-   metadata line styling. */
-.upcoming-copy .role-badge {
-  color: #fff;
-  font-size: 10px;
 }
 
 .empty-state-card {

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Download, FileText, Calendar, CheckCircle2, AlertCircle, User, Award, Layers, Clock } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Download, FileText, Calendar, CheckCircle2, AlertCircle, User, Award, Layers, Clock, Users } from 'lucide-react';
 import './MentorStudentSubmissions.css';
 
 interface SubmissionFile {
@@ -32,6 +32,7 @@ interface MentorStudentSubmissionsProps {
 
 const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ levelNumber }) => {
   const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<number | 'ALL'>('ALL');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,6 +101,23 @@ const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ lev
     fetchSubmissions();
   }, [levelNumber]);
 
+  // Extract unique groups if submissions contain multiple groups
+  const uniqueGroups = useMemo(() => {
+    const map = new Map<number, string>();
+    submissions.forEach((s) => {
+      if (s.group_id && s.group_name) {
+        map.set(s.group_id, s.group_name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [submissions]);
+
+  // Filter submissions by selected group
+  const displayedSubmissions = useMemo(() => {
+    if (selectedGroupFilter === 'ALL') return submissions;
+    return submissions.filter((s) => s.group_id === selectedGroupFilter);
+  }, [submissions, selectedGroupFilter]);
+
   if (loading) {
     return (
       <div className="mss-loading-container">
@@ -110,16 +128,15 @@ const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ lev
   }
 
   const groupName = submissions.length > 0 ? submissions[0].group_name : `Level ${levelNumber} Group`;
-  const totalSubmissions = submissions.length;
-  const onTimeCount = submissions.filter((s) => s.status === 'On Time').length;
-  const lateCount = submissions.filter((s) => s.status === 'Late').length;
+  const totalSubmissions = displayedSubmissions.length;
+  const onTimeCount = displayedSubmissions.filter((s) => s.status === 'On Time').length;
+  const lateCount = displayedSubmissions.filter((s) => s.status === 'Late').length;
 
   return (
     <div className="mss-container">
       {/* ── Top Header Section ── */}
       <div className="mss-header-card">
         <div className="mss-header-left">
-          <div className="mss-header-badge">Level {levelNumber} Submissions</div>
           <h3>Student Submissions & Reports</h3>
           <p className="mss-subtitle">
             Review and download reports, project documents, and stage deliverables submitted by your assigned group members.
@@ -153,6 +170,36 @@ const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ lev
         </div>
       </div>
 
+      {/* ── Group Filter Pills (When mentor has multiple groups with submissions) ── */}
+      {uniqueGroups.length > 1 && (
+        <div className="mss-group-filter-bar">
+          <div className="mss-group-filter-label">
+            <Users size={15} />
+            <span>Filter by Group:</span>
+          </div>
+          <div className="mss-group-filter-pills">
+            <button
+              className={`mss-group-pill ${selectedGroupFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setSelectedGroupFilter('ALL')}
+            >
+              All Groups ({submissions.length})
+            </button>
+            {uniqueGroups.map((g) => {
+              const count = submissions.filter((s) => s.group_id === g.id).length;
+              return (
+                <button
+                  key={g.id}
+                  className={`mss-group-pill ${selectedGroupFilter === g.id ? 'active' : ''}`}
+                  onClick={() => setSelectedGroupFilter(g.id)}
+                >
+                  {g.name} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── Submissions List Section ── */}
       {error && (
         <div className="mss-error-banner">
@@ -161,9 +208,9 @@ const MentorStudentSubmissions: React.FC<MentorStudentSubmissionsProps> = ({ lev
         </div>
       )}
 
-      {submissions.length > 0 ? (
+      {displayedSubmissions.length > 0 ? (
         <div className="mss-cards-grid">
-          {submissions.map((sub, index) => {
+          {displayedSubmissions.map((sub, index) => {
             const formattedDate = sub.submitted_at
               ? new Date(sub.submitted_at).toLocaleString(undefined, {
                   year: 'numeric',

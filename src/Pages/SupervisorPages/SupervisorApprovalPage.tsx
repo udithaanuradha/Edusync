@@ -172,13 +172,20 @@ const SupervisorApprovalPage: React.FC = () => {
                 <article className="approval-request-card" key={request.requestId}>
                   <div className="approval-card-head">
                     <h3>{request.projectName}</h3>
-                    <span className="approval-level-badge">Level {request.levelLabel}</span>
+                    <div className="approval-badge-group">
+                      <span className="approval-level-badge">Level {request.levelLabel}</span>
+                      {request.projectType === 'individual' && (
+                        <span className="approval-level-badge approval-individual-badge">Individual</span>
+                      )}
+                    </div>
                   </div>
 
                   <p><strong>Group:</strong> {request.groupName}</p>
                   <p><strong>Leader:</strong> {request.groupLeader}</p>
                   <p><strong>Student:</strong> {request.studentName}</p>
-                  <p><strong>Members:</strong> {request.members}</p>
+                  {request.projectType !== 'individual' && (
+                    <p><strong>Members:</strong> {request.members}</p>
+                  )}
                   {request.studentMessage && <p><strong>Message:</strong> {request.studentMessage}</p>}
 
                   <div className="approval-actions">

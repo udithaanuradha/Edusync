@@ -331,7 +331,7 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
                     {claimingId === section.id
                       ? 'Claiming…'
                       : myClaimedSection
-                      ? 'Already claimed elsewhere'
+                      ? "You've claimed one already"
                       : '☐ Tick to claim'}
                   </button>
                 )}

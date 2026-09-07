@@ -15,6 +15,7 @@ export type PendingRequest = {
   levelLabel: string;
   supervisorId: string;
   supervisorName: string;
+  projectType: 'group' | 'individual';
 };
 
 const API_BASE = 'http://localhost:5000/api/groups';
@@ -64,6 +65,7 @@ const normalizeRequest = (item: Record<string, unknown>): PendingRequest => ({
   levelLabel: String(item.project_level ?? item.level ?? '1'),
   supervisorId: String(item.supervisor_id ?? item.supervisorId ?? item.assigned_supervisor_id ?? ''),
   supervisorName: String(item.supervisor_name ?? item.supervisorName ?? item.assigned_supervisor_name ?? ''),
+  projectType: (item.project_type ?? item.projectType) === 'individual' ? 'individual' : 'group',
 });
 
 const parseUserFromStorage = (): StoredUser => {

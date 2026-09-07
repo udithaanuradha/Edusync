@@ -137,11 +137,18 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       try {
         setLoading(true);
 
-        const response = await fetch(`http://localhost:5000/api/submissions/level/${levelNumber}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+        // coordinatorId lets the backend scope this to just this
+        // coordinator's own department (resolved server-side from their own
+        // account) — without it, every department's submissions at this
+        // level would come back.
+        const response = await fetch(
+          `http://localhost:5000/api/submissions/level/${levelNumber}?coordinatorId=${user?.id ?? ''}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           throw new Error(response.statusText || 'Failed to fetch submissions');
@@ -179,7 +186,7 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     };
 
     fetchMarks();
-  }, [levelNumber]);
+  }, [levelNumber, user?.id]);
 
   const handleEditStart = (mark: GroupMark) => {
     setEditingId(`${mark.group_id}-${mark.stage_id}`);

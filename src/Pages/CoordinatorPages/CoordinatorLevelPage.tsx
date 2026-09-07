@@ -5,8 +5,9 @@ import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
 import GradebookTable from '../../components/coordinator/GradebookTable';
-import SupervisorReportPanel from '../../components/coordinator/SupervisorReportPanel';
+import CoordinatorReportPanel from '../../components/coordinator/CoordinatorReportPanel';
 import { ApprovedGroupRequest } from '../../components/coordinator/groupRequestTypes';
+import { useAuth } from '../../context/AuthContext';
 import './CoordinatorDashboard.css';
 import './CoordinatorLevelPage.css';
 
@@ -25,6 +26,7 @@ interface CoordinatorLevelPageProps {
 }
 
 const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('stages');
   const [prefillRequest, setPrefillRequest] = useState<ApprovedGroupRequest | null>(null);
 
@@ -74,7 +76,7 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                   onPrefillHandled={() => setPrefillRequest(null)}
                 />
               ) : activeTab === 'reports' ? (
-                <SupervisorReportPanel levelNumber={levelNumber} />
+                <CoordinatorReportPanel levelNumber={levelNumber} coordinatorId={user?.id} />
               ) : (
                 <GradebookTable levelNumber={levelNumber} />
               )}

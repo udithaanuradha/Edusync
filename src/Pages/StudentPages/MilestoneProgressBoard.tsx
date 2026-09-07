@@ -26,6 +26,13 @@ type MilestoneProgressBoardProps = {
   /** Adds a new, self-assigned task — same save path the old TaskCreation.tsx used. */
   onAddTask: (task: ProjectTask) => void;
   currentUser: CurrentUser;
+  /** Total member count of the underlying group record — an Individual
+      Project is a "group of one" that reuses this exact board, so the
+      "Who's working on this milestone" panel, the duplicate-task warning,
+      and the "you haven't claimed a scope section" warning (nothing to
+      claim solo) only make sense with more than one member. Undefined
+      (still loading) defaults to showing them, same as today. */
+  memberCount?: number;
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -162,6 +169,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
   onStatusChange,
   onAddTask,
   currentUser,
+  memberCount,
 }) => {
   // Which milestone's quick-add form is currently open (at most one at a time).
   const [openAddFormId, setOpenAddFormId] = useState<string | null>(null);
@@ -370,8 +378,12 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
           const group = focusedGroup;
           const stats = summarizeMilestone(group.teamTasks, optimisticStatus);
           const isAddFormOpen = openAddFormId === group.id;
-          const duplicateTask = isAddFormOpen ? findDuplicateTask(quickAddForm.title, group.teamTasks) : null;
+          // Both of these compare against teammates, so neither applies to
+          // an Individual Project's group-of-one (memberCount === 1).
+          const duplicateTask =
+            memberCount !== 1 && isAddFormOpen ? findDuplicateTask(quickAddForm.title, group.teamTasks) : null;
           const scopeWarningVisible =
+            memberCount !== 1 &&
             isAddFormOpen && scopeCheck?.milestoneId === group.id && !scopeCheck.loading && !scopeCheck.hasClaim;
 
           return (
@@ -403,7 +415,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                 </div>
               )}
 
-              {group.teamTasks.length > 0 && (
+              {memberCount !== 1 && group.teamTasks.length > 0 && (
                 <div className="mpb-who-panel">
                   <p className="mpb-who-title"><Users size={14} /> Who&apos;s working on this milestone</p>
                   <div className="mpb-who-list">

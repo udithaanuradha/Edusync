@@ -183,11 +183,13 @@ const SupervisorEvaluationPanel: React.FC = () => {
           }));
         }
 
-        // Filter only upcoming evaluation panels (today or future dates), excluding overdue/past ones
+        // Filter only upcoming evaluation panels (today or future dates), excluding completed or overdue ones
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const upcomingGroups = loadedGroups.filter((g) => {
+          const gStatus = (g.status || g.panel_status || "").toLowerCase();
+          if (gStatus === "completed") return false;
           if (!g.panel_date) return true;
           const pDate = new Date(g.panel_date);
           if (isNaN(pDate.getTime())) return true;

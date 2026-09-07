@@ -136,16 +136,25 @@ const Sidebar: FC<SidebarProps> = ({ navItems }) => {
     // now (see App.tsx), so a second nav entry was pure duplication. The
     // /dashboard/communication-v2 route itself is untouched, just unlinked.
     { path: announcementsPath, icon: ClipboardList, label: "Announcements" },
-    // Supervisor gets a separate "Approval" nav (rendered via SupervisorSidebar
-    // alongside this one) and has no use for Project Delays, so the link is
-    // dropped just for that role below — every other role falling back to
-    // this default list keeps it.
+    // Project Delays is dropped for two roles: supervisors get a separate
+    // "Approval" nav (via SupervisorSidebar) and have no use for it, and
+    // /dashboard/project-delays only actually renders a page for
+    // admin/mentor (see App.tsx) — every other role, students included,
+    // just gets redirected straight back to /dashboard, so the link is dead
+    // weight for both. Every other role (Coordinator/Admin/Mentor, whether
+    // via this default list or custom navItems) keeps it.
     {
       path: "/dashboard/project-delays",
       icon: AlertTriangle,
       label: "Project Delays",
     },
-  ].filter((item) => !(isSupervisorUser && item.label === "Project Delays"));
+  ].filter(
+    (item) =>
+      !(
+        (isSupervisorUser || userObj?.role === "student") &&
+        item.label === "Project Delays"
+      ),
+  );
 
   const menuItems = navItems ?? defaultMenuItems;
 

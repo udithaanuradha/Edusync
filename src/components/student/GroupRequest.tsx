@@ -52,6 +52,16 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
   // State for dynamic member selection
   const [selectedMembers, setSelectedMembers] = useState<Student[]>([]);
   const [currentSelection, setCurrentSelection] = useState<string>('');
+  // Search text narrows which <option>s show in the member/supervisor
+  // <select>s below — the select + Add/Request flow itself is unchanged,
+  // this only filters what's offered.
+  const [memberSearch, setMemberSearch] = useState('');
+  const [supervisorSearch, setSupervisorSearch] = useState<[string, string]>(['', '']);
+  // Whether each typeahead's suggestion list is currently shown (opened on
+  // focus, closed on blur — with a short delay so a click on a suggestion
+  // registers before the list unmounts).
+  const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
+  const [supervisorDropdownOpen, setSupervisorDropdownOpen] = useState<[boolean, boolean]>([false, false]);
   // university_ids parsed out of a saved request's members_list, waiting on
   // allStudents to finish loading (separate fetch, may resolve after
   // checkExistingRequest) so they can be matched back into full Student
@@ -140,6 +150,31 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
     setPendingMemberIds([]);
   }, [pendingMemberIds, allStudents]);
 
+  // The supervisor search boxes are plain text inputs now (not a native
+  // <select>, which used to derive its own display straight from
+  // slot.supervisorId) — so when checkExistingRequest restores a saved
+  // request's slots on load, the matching name needs to be filled in here
+  // too, once the (separately-fetched) supervisors list has arrived. Only
+  // fills a slot whose search box is still empty, so it never overwrites
+  // something the student is actively typing.
+  useEffect(() => {
+    if (supervisors.length === 0) return;
+    setSupervisorSearch(prev => {
+      const next = [...prev] as [string, string];
+      let changed = false;
+      ([0, 1] as const).forEach(i => {
+        if (!next[i] && slots[i].supervisorId) {
+          const match = supervisors.find(s => s.id === slots[i].supervisorId);
+          if (match) {
+            next[i] = match.name;
+            changed = true;
+          }
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [slots, supervisors]);
+
   const checkExistingRequest = async () => {
     const userString = localStorage.getItem('user');
     const user = userString ? JSON.parse(userString) : null;
@@ -219,6 +254,7 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
     if (student && !selectedMembers.some(m => m.id === student.id)) {
       setSelectedMembers([...selectedMembers, student]);
       setCurrentSelection(''); // Reset selection
+      setMemberSearch(''); // Clear the search box so it's ready for the next student
     }
   };
 
@@ -325,6 +361,25 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
 
   // Filter out already selected students from the dropdown
   const availableStudents = allStudents.filter(s => !selectedMembers.some(m => m.id === s.id));
+  const memberSearchResults = memberSearch.trim()
+    ? availableStudents.filter(s => s.name.toLowerCase().includes(memberSearch.trim().toLowerCase()))
+    : availableStudents;
+
+  const setSlotSupervisorSearch = (index: 0 | 1, value: string) => {
+    setSupervisorSearch(prev => {
+      const next = [...prev] as [string, string];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const setSlotDropdownOpen = (index: 0 | 1, open: boolean) => {
+    setSupervisorDropdownOpen(prev => {
+      const next = [...prev] as [boolean, boolean];
+      next[index] = open;
+      return next;
+    });
+  };
 
   // activeGroup takes priority over requestStatus — a student already in a
   // real, live group sees a locked notice instead of the form, regardless
@@ -386,18 +441,41 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
 
           <div className="input-group">
             <label>Add Group Members (Max 4)</label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-              <select
-                value={currentSelection}
-                onChange={(e) => setCurrentSelection(e.target.value)}
-                disabled={requestStatus !== 'none' && requestStatus !== 'rejected' || selectedMembers.length >= 4}
-                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid var(--eds-color-border)' }}
-              >
-                <option value="">Choose a student...</option>
-                {availableStudents.map(s => (
-                  <option key={s.id} value={s.id}>{s.name} - {s.university_id}</option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'flex-start' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input
+                  type="text"
+                  value={memberSearch}
+                  onChange={(e) => { setMemberSearch(e.target.value); setCurrentSelection(''); }}
+                  onFocus={() => setMemberDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setMemberDropdownOpen(false), 150)}
+                  placeholder="Search students by name..."
+                  disabled={requestStatus !== 'none' && requestStatus !== 'rejected' || selectedMembers.length >= 4}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--eds-color-border)', boxSizing: 'border-box' }}
+                />
+                {memberDropdownOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: '4px', background: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border)', borderRadius: '6px', maxHeight: '220px', overflowY: 'auto', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
+                    {memberSearchResults.length === 0 ? (
+                      <div style={{ padding: '10px 12px', color: 'var(--eds-color-text-faint)', fontSize: '13px' }}>No students match your search.</div>
+                    ) : (
+                      memberSearchResults.map(s => (
+                        <div
+                          key={s.id}
+                          onMouseDown={() => { setCurrentSelection(String(s.id)); setMemberSearch(s.name); }}
+                          style={{
+                            padding: '10px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            background: String(s.id) === currentSelection ? 'var(--eds-color-primary-soft)' : 'transparent',
+                          }}
+                        >
+                          {s.name} - {s.university_id}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={addMember}
@@ -451,19 +529,46 @@ const GroupRequest: React.FC<GroupRequestProps> = ({ levelNumber = 2 }) => {
             return (
               <div className="supervisor-slot" key={i}>
                 <label className="supervisor-slot-label">Supervisor {i + 1}</label>
-                <select
-                  value={slot.supervisorId ?? ''}
-                  onChange={(e) => setSlotSupervisor(i, e.target.value ? Number(e.target.value) : null)}
-                  disabled={isLocked || supervisorsLoading}
-                  className="supervisor-slot-select"
-                >
-                  <option value="">
-                    {supervisorsLoading ? 'Loading supervisors...' : 'Choose a supervisor...'}
-                  </option>
-                  {supervisors.filter(s => s.id !== otherId).map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={supervisorSearch[i]}
+                    onChange={(e) => { setSlotSupervisorSearch(i, e.target.value); setSlotSupervisor(i, null); }}
+                    onFocus={() => setSlotDropdownOpen(i, true)}
+                    onBlur={() => setTimeout(() => setSlotDropdownOpen(i, false), 150)}
+                    placeholder={supervisorsLoading ? 'Loading supervisors...' : 'Search supervisors by name...'}
+                    disabled={isLocked || supervisorsLoading}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--eds-color-border)', boxSizing: 'border-box' }}
+                  />
+                  {supervisorDropdownOpen[i] && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: '4px', background: 'var(--eds-color-bg-surface)', border: '1px solid var(--eds-color-border)', borderRadius: '6px', maxHeight: '220px', overflowY: 'auto', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
+                      {supervisors
+                        .filter(s => s.id !== otherId)
+                        .filter(s => !supervisorSearch[i].trim() || s.name.toLowerCase().includes(supervisorSearch[i].trim().toLowerCase()))
+                        .length === 0 ? (
+                        <div style={{ padding: '10px 12px', color: 'var(--eds-color-text-faint)', fontSize: '13px' }}>No supervisors match your search.</div>
+                      ) : (
+                        supervisors
+                          .filter(s => s.id !== otherId)
+                          .filter(s => !supervisorSearch[i].trim() || s.name.toLowerCase().includes(supervisorSearch[i].trim().toLowerCase()))
+                          .map(s => (
+                            <div
+                              key={s.id}
+                              onMouseDown={() => { setSlotSupervisor(i, s.id); setSlotSupervisorSearch(i, s.name); }}
+                              style={{
+                                padding: '10px 12px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                background: s.id === slot.supervisorId ? 'var(--eds-color-primary-soft)' : 'transparent',
+                              }}
+                            >
+                              {s.name}
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="button"

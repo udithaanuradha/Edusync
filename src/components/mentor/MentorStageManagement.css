@@ -13,8 +13,8 @@
   padding-bottom: 20px;
 }
 
-.mentor-header h3 { font-size: 24px; color: var(--eds-color-text-strong); font-weight: 700; margin: 0; }
-.subtitle { color: var(--eds-color-text-muted); font-size: 14px; margin-top: 4px; }
+.mentor-header h3 { font-size: 20px; color: var(--eds-color-text-strong); font-weight: 700; margin: 0; }
+.subtitle { color: var(--eds-color-text-muted); font-size: 13px; margin-top: 4px; }
 
 .mentor-badge {
   background: var(--eds-color-success-bg);

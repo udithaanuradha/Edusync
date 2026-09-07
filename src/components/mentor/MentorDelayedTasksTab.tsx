@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -31,6 +31,7 @@ interface MentorDelayedTasksTabProps {
 
 export const MentorDelayedTasksTab: React.FC<MentorDelayedTasksTabProps> = ({ levelNumber }) => {
   const [tasks, setTasks] = useState<DelayedTask[]>([]);
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +95,21 @@ export const MentorDelayedTasksTab: React.FC<MentorDelayedTasksTabProps> = ({ le
     fetchDelaysData();
   }, [levelNumber]);
 
+  // Extract unique groups with delayed tasks
+  const uniqueGroups = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.group_name) set.add(t.group_name);
+    });
+    return Array.from(set);
+  }, [tasks]);
+
+  // Filter tasks based on selected group
+  const displayedTasks = useMemo(() => {
+    if (selectedGroupFilter === 'ALL') return tasks;
+    return tasks.filter((t) => t.group_name === selectedGroupFilter);
+  }, [tasks, selectedGroupFilter]);
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
     try {
@@ -120,10 +136,40 @@ export const MentorDelayedTasksTab: React.FC<MentorDelayedTasksTabProps> = ({ le
             Overdue tasks that missed their scheduled completion due date for your assigned groups.
           </p>
         </div>
-        <div className={`mentor-delays-count-badge ${tasks.length === 0 ? 'ontrack' : ''}`}>
-          {tasks.length === 0 ? 'All on Track' : `${tasks.length} Overdue`}
+        <div className={`mentor-delays-count-badge ${displayedTasks.length === 0 ? 'ontrack' : ''}`}>
+          {displayedTasks.length === 0 ? 'All on Track' : `${displayedTasks.length} Overdue`}
         </div>
       </div>
+
+      {/* ── Group Filter Pills (When multiple groups have overdue tasks) ── */}
+      {uniqueGroups.length > 1 && (
+        <div className="mentor-delays-group-filter-bar">
+          <div className="mentor-delays-filter-label">
+            <Users size={15} />
+            <span>Filter by Group:</span>
+          </div>
+          <div className="mentor-delays-filter-pills">
+            <button
+              className={`mentor-delays-pill ${selectedGroupFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setSelectedGroupFilter('ALL')}
+            >
+              All Groups ({tasks.length})
+            </button>
+            {uniqueGroups.map((gName) => {
+              const count = tasks.filter((t) => t.group_name === gName).length;
+              return (
+                <button
+                  key={gName}
+                  className={`mentor-delays-pill ${selectedGroupFilter === gName ? 'active' : ''}`}
+                  onClick={() => setSelectedGroupFilter(gName)}
+                >
+                  {gName} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Loading / Error States */}
       {loading ? (
@@ -146,6 +192,13 @@ export const MentorDelayedTasksTab: React.FC<MentorDelayedTasksTabProps> = ({ le
           <h3>All Tasks On Track</h3>
           <p>There are no overdue tasks for your assigned project groups in Level {levelNumber}.</p>
         </div>
+      ) : displayedTasks.length === 0 ? (
+        /* Empty state for the filtered group */
+        <div className="mentor-delays-status-box mentor-delays-ontrack-box">
+          <CheckCircle2 size={36} color="#16a34a" />
+          <h3>All Tasks On Track for this Group</h3>
+          <p>There are no overdue tasks for {selectedGroupFilter}.</p>
+        </div>
       ) : (
         /* Table of Overdue Tasks */
         <div className="mentor-delays-table-card">
@@ -161,7 +214,7 @@ export const MentorDelayedTasksTab: React.FC<MentorDelayedTasksTabProps> = ({ le
               </tr>
             </thead>
             <tbody>
-              {tasks.map((t) => {
+              {displayedTasks.map((t) => {
                 const studentName = t.assigned_to_name || 'Unassigned';
                 const initials = studentName
                   .split(' ')

@@ -55,10 +55,15 @@ const MentorStageManagement: React.FC<{ levelNumber: number }> = ({ levelNumber 
     }
   };
 
-  // Open coordinator shared documents or Google Sheets in new tab
+  // Open coordinator shared documents or Google Sheets in Read-Only / Preview mode
   const handleOpenLink = (url: string) => {
-    const cleanUrl = getCleanResourceUrl(url);
+    let cleanUrl = getCleanResourceUrl(url);
     if (cleanUrl) {
+      // If it's a Google Docs/Sheets/Slides link, convert /edit to /preview for read-only viewing
+      if (cleanUrl.includes('docs.google.com') || cleanUrl.includes('drive.google.com')) {
+        cleanUrl = cleanUrl.replace(/\/edit(\?[^#]*)?(#.*)?$/i, '/preview');
+        cleanUrl = cleanUrl.replace(/\/view(\?[^#]*)?(#.*)?$/i, '/preview');
+      }
       window.open(cleanUrl, '_blank', 'noopener,noreferrer');
     }
   };
@@ -105,7 +110,6 @@ const MentorStageManagement: React.FC<{ levelNumber: number }> = ({ levelNumber 
           <h3>Level {levelNumber} Stage Documents</h3>
           <p className="subtitle">View stage documents and download required guidelines and attachments.</p>
         </div>
-        <div className="mentor-badge">Read Only Mode</div>
       </div>
 
       <div className="mentor-stages-list">

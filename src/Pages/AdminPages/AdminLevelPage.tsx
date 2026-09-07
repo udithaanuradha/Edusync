@@ -19,7 +19,6 @@ import {
   Percent,
   Award,
   BookOpen,
-  Trash2,
   User,
   UserCheck,
   Briefcase,
@@ -133,7 +132,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
   const [isAssignView, setIsAssignView] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [deletingStageId, setDeletingStageId] = useState<number | null>(null);
 
   // Mentor Assignment History Modal States
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -260,35 +258,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
       setReassignError('Network error during mentor reassignment.');
     } finally {
       setIsReassigning(false);
-    }
-  };
-
-  const handleDeleteStage = async (stageId: number, stageName: string) => {
-    try {
-      setDeletingStageId(stageId);
-      const response = await fetch(`http://localhost:5000/api/projects/delete/${stageId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Delete failed with status: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      if (result.success || response.ok) {
-        setStages(prev => prev.filter(s => s.stage_id !== stageId));
-        setToastMessage(`✅ Stage "${stageName}" deleted successfully.`);
-        setTimeout(() => setToastMessage(null), 3500);
-      } else {
-        throw new Error(result.message || 'Failed to delete stage');
-      }
-    } catch (err) {
-      console.error('❌ Error deleting stage:', err);
-      setToastMessage(`❌ Failed to delete stage: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setTimeout(() => setToastMessage(null), 4000);
-    } finally {
-      setDeletingStageId(null);
     }
   };
 
@@ -791,46 +760,6 @@ const AdminLevelPage: React.FC<AdminLevelPageProps> = ({ levelNumber }) => {
                                 <p style={{ color: 'var(--eds-color-text-faint)', fontSize: '14px', marginTop: '12px' }}>No documents uploaded</p>
                               )}
                             </div>
-
-                            {/* Admin Delete Stage Action */}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteStage(stage.stage_id, stage.stage_name)}
-                              disabled={deletingStageId === stage.stage_id}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                backgroundColor: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fecaca',
-                                padding: '6px 14px',
-                                borderRadius: '8px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: deletingStageId === stage.stage_id ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.15s ease',
-                                flexShrink: 0,
-                              }}
-                              onMouseOver={(e) => {
-                                if (deletingStageId !== stage.stage_id) {
-                                  e.currentTarget.style.backgroundColor = '#fee2e2';
-                                  e.currentTarget.style.borderColor = '#fca5a5';
-                                  e.currentTarget.style.color = '#b91c1c';
-                                }
-                              }}
-                              onMouseOut={(e) => {
-                                if (deletingStageId !== stage.stage_id) {
-                                  e.currentTarget.style.backgroundColor = '#fef2f2';
-                                  e.currentTarget.style.borderColor = '#fecaca';
-                                  e.currentTarget.style.color = '#dc2626';
-                                }
-                              }}
-                              title={`Delete ${stage.stage_name}`}
-                            >
-                              <Trash2 size={13} />
-                              {deletingStageId === stage.stage_id ? 'Deleting...' : 'Delete'}
-                            </button>
                           </div>
                         </div>
                       );}) : <p>No stages found.</p>}

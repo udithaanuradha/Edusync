@@ -167,7 +167,7 @@ const CoordinatorReportInner: React.FC<Props> = ({ levelNumber }) => {
   }, [degreeStudents]);
 
   const handleExportCSV = () => {
-    if (filteredStudents.length === 0) return alert('No student marks available to export.');
+    if (filteredStudents.length === 0) return;
     const headers = ['Student Name', 'Reg / Index No', 'Degree', 'Group', ...stages.map((s) => s.stage_name), 'Final Mark', 'Letter Grade'];
     const rows = filteredStudents.map((s) => [
       s.student_name,

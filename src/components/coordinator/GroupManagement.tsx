@@ -244,7 +244,13 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const fetchAllLevelStudents = async () => {
     try {
       setStudentSearchLoading(true);
-      const response = await fetch(`http://localhost:5000/api/users/level/${levelNumber}`);
+      // coordinatorId scopes this to just this coordinator's own department
+      // (resolved server-side from their own account) — without it, every
+      // department's students at this level came back, letting a
+      // coordinator accidentally add a wrong-department student to a group.
+      const response = await fetch(
+        `http://localhost:5000/api/users/level/${levelNumber}?coordinatorId=${user?.id ?? ''}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setAllStudents(Array.isArray(data) ? data : []);
@@ -438,8 +444,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   };
 
   const fetchStudentByIndex = async (indexNumber: string): Promise<Student | null> => {
+    // coordinatorId scopes this lookup to the coordinator's own department
+    // (resolved server-side) — without it, a coordinator could add any
+    // student system-wide by index number, regardless of department.
     const response = await fetch(
-      `http://localhost:5000/api/users/search?uniId=${encodeURIComponent(indexNumber)}&level=${levelNumber}`
+      `http://localhost:5000/api/users/search?uniId=${encodeURIComponent(indexNumber)}&level=${levelNumber}&coordinatorId=${user?.id ?? ''}`
     );
 
     if (!response.ok) {

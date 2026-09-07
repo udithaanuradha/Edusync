@@ -13,7 +13,7 @@ import './MentorStyles.css';
 /**
  * Mentor-specific nav items (excludes "Project Delays" so it is only available as a level tab)
  */
-const mentorMenuItems: MenuItem[] = [
+export const mentorMenuItems: MenuItem[] = [
   { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   {
     key: "academicLevel",
@@ -35,6 +35,11 @@ const mentorMenuItems: MenuItem[] = [
   },
   { path: "/dashboard/announcements", icon: ClipboardList, label: "Announcements" },
 ];
+
+export const isMentorUser = (userObj: any): boolean => {
+  const role = String(userObj?.role || "").toLowerCase();
+  return role === "mentor" || role === "industry mentor";
+};
 
 /**
  * UnassignedLevelModal Component
