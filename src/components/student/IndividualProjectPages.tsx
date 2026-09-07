@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import CoordinatorStageUpdates from "./CoordinatorStageUpdates";
 import RequestSupervisor from "./RequestSupervisor";
 import StudentSubmissions from "./StudentSubmissions";
+import { useStudentGroupStatus } from "./useStudentGroupStatus";
 import "./StudentLevelInnerPages.css";
 
 // Individual Project side of the Level 3 / Level 4 toggle. Three tabs,
@@ -24,6 +25,11 @@ const IndividualProjectPages: React.FC<{ levelNumber: number }> = ({
   levelNumber,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>("projectStages");
+  // Same "has an actual approved/formed project" check as the Group
+  // Project side's Groups tab, just for the individual path — gates the
+  // Documents tab below (see StudentSubmissions' `hasAccess` prop).
+  const { hasGroup: hasApprovedSupervisor, loading: loadingSupervisorStatus } =
+    useStudentGroupStatus(levelNumber);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -59,7 +65,15 @@ const IndividualProjectPages: React.FC<{ levelNumber: number }> = ({
         // StudentSubmissions renders its own heading internally (same as
         // it does on the Group Project side's Submissions tab) — no
         // wrapper here, or the heading would be duplicated.
-        return <StudentSubmissions levelNumber={levelNumber} />;
+        return (
+          <StudentSubmissions
+            levelNumber={levelNumber}
+            hasAccess={loadingSupervisorStatus ? null : hasApprovedSupervisor}
+            lockedMessage="Your supervisor request needs to be approved before you can submit documents."
+            lockedActionLabel="Go to Request Supervisor"
+            onLockedAction={() => setActiveTab("requestSupervisor")}
+          />
+        );
 
       default:
         return null;

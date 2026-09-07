@@ -4,7 +4,7 @@ import './ScopeDivision.css';
 
 export type ScopeSection = {
   id: number | string;
-  milestoneId: number | string;
+  groupId: number | string;
   title: string;
   description: string;
   claimedBy: number | string | null;
@@ -15,7 +15,10 @@ type CurrentUser = { id: number | string; name: string } | null;
 type Person = { id: number | string; name: string } | null;
 
 type ScopeDivisionProps = {
-  milestoneId: number | string | null;
+  /** Scope Division is project-wide now — one set of sections per group,
+      independent of whichever milestone is currently selected above it on
+      Project Overview (see ProjectOverview.tsx). */
+  groupId: number | null;
   userRole: 'leader' | 'member';
   currentUser: CurrentUser;
   supervisor: Person;
@@ -39,7 +42,7 @@ const authHeaders = (): Record<string, string> => {
 };
 
 const ScopeDivision: React.FC<ScopeDivisionProps> = ({
-  milestoneId,
+  groupId,
   userRole,
   currentUser,
   supervisor,
@@ -66,19 +69,19 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
   const loadSections = async () => {
-    if (!milestoneId) {
+    if (!groupId) {
       setSections([]);
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/${milestoneId}/scope`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/group/${groupId}/scope`, { headers: authHeaders() });
       const data = await res.json();
       if (data.success) {
         const mapped: ScopeSection[] = (data.data || []).map((s: any) => ({
           id: s.id,
-          milestoneId: s.milestone_id,
+          groupId: s.group_id,
           title: s.title,
           description: s.description || '',
           claimedBy: s.claimed_by,
@@ -98,7 +101,7 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
   useEffect(() => {
     loadSections();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [milestoneId]);
+  }, [groupId]);
 
   const handleClaim = async (sectionId: number | string) => {
     if (!currentUser) return;
@@ -125,7 +128,7 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
 
   const handleAddSection = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!milestoneId) return;
+    if (!groupId) return;
     if (!newTitle.trim()) {
       setAddError('Please enter a section title.');
       return;
@@ -133,11 +136,10 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     setAddBusy(true);
     setAddError('');
     try {
-      const res = await fetch(`${API_BASE}/${milestoneId}/scope`, {
+      const res = await fetch(`${API_BASE}/group/${groupId}/scope`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
-          milestone_id: milestoneId,
           title: newTitle.trim(),
           description: newDescription.trim(),
         }),
@@ -218,20 +220,10 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     }
   };
 
-  if (!milestoneId) {
-    return (
-      <div className="timeline-section scope-division-card">
-        <h4 className="section-title">Scope Division</h4>
-        <p className="no-tasks-text">
-          Select or create a milestone above to define and claim its scope sections.
-        </p>
-      </div>
-    );
-  }
-
-  // A student can only ever have ONE claimed section per milestone — used
-  // below to proactively disable claiming a second one, instead of only
-  // catching it after the fact via the backend's 409 response.
+  // A student can only ever have ONE claimed section for the WHOLE
+  // PROJECT — used below to proactively disable claiming a second one,
+  // instead of only catching it after the fact via the backend's 409
+  // response.
   const myClaimedSection = currentUser
     ? sections.find((s) => String(s.claimedBy) === String(currentUser.id))
     : undefined;
@@ -240,9 +232,9 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     <div className="timeline-section scope-division-card">
       <h4 className="section-title">Scope Division</h4>
       <p className="scope-division-desc">
-        Your supervisor and mentor have broken this milestone into scope sections below. Tick a
+        Your supervisor and mentor have broken this project into scope sections below. Tick a
         section to claim it — once a section is ticked, it locks to that student and disappears
-        as an option for everyone else. You can only claim one section per milestone.
+        as an option for everyone else. You can only claim one section for the whole project.
       </p>
 
       <div className="scope-division-note">
@@ -255,7 +247,7 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
       {loading ? (
         <p className="scope-division-loading">Loading scope sections…</p>
       ) : sections.length === 0 ? (
-        <div className="no-tasks-text">No scope sections defined for this milestone yet.</div>
+        <div className="no-tasks-text">No scope sections defined for this project yet.</div>
       ) : (
         <div className="scope-section-list">
           {sections.map((section) => {
@@ -324,7 +316,7 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
                     onClick={() => handleClaim(section.id)}
                     title={
                       myClaimedSection
-                        ? `You've already claimed "${myClaimedSection.title}" in this milestone.`
+                        ? `You've already claimed "${myClaimedSection.title}" for this project.`
                         : undefined
                     }
                   >

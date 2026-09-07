@@ -44,7 +44,11 @@ const ProjectManagementPage: React.FC = () => {
   const [groupMembers, setGroupMembers] = useState<{id: number | string, name: string}[] | null>(null);
   const [supervisor, setSupervisor] = useState<{id: number | string, name: string} | null>(null);
   const [mentor, setMentor] = useState<{id: number | string, name: string} | null>(null);
-  const [milestoneOptions, setMilestoneOptions] = useState<{id: number | string, title: string}[] | null>(null);
+  // startDate/endDate (each milestone's own start_date/due_date) let
+  // MilestoneProgressBoard's quick-add task form validate a task's dates
+  // against its parent milestone's range — see createStudentTask's
+  // matching server-side check.
+  const [milestoneOptions, setMilestoneOptions] = useState<{id: number | string, title: string, startDate: string, endDate: string}[] | null>(null);
   const [milestoneFeedback, setMilestoneFeedback] = useState<MilestoneFeedbackItem[]>([]);
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +114,12 @@ const ProjectManagementPage: React.FC = () => {
       console.log(`✅ [Frontend] Milestones received for Group ${gId}:`, data);
 
       if (data.success && data.data) {
-        const options = data.data.map((m: any) => ({ id: m.id, title: m.title }));
+        const options = data.data.map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          startDate: m.start_date ? String(m.start_date).split('T')[0] : '',
+          endDate: m.due_date ? String(m.due_date).split('T')[0] : '',
+        }));
         console.log(`📋 [Frontend] Populating Milestone Options:`, options);
         setMilestoneOptions(options);
 
@@ -343,7 +352,8 @@ const ProjectManagementPage: React.FC = () => {
             assigned_to: task.assignedToId,
             task_name: task.title,
             description: task.description,
-            due_date: task.endDate
+            due_date: task.endDate,
+            start_date: task.startDate
           })
         });
         
@@ -365,20 +375,34 @@ const ProjectManagementPage: React.FC = () => {
 
 
   /**
-   * REQUEST #7: DELETE a task
-   * Triggered: Leader clicks Delete icon
+   * REQUEST #7: DELETE a task — a real hard delete, no undo. Triggered by
+   * the delete button on a task's own card (My Tasks / MilestoneProgressBoard).
+   * Sends X-User-Id/X-User-Role so the backend's "only your own task"
+   * check (deleteTask, milestoneController.js) can actually run, and only
+   * removes the card locally once the server confirms the delete — a
+   * rejected request (e.g. 403) used to still be dropped from the list
+   * optimistically regardless of what the server said.
    */
-
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async (taskId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/milestones/tasks/${taskId}`, {
+      const res = await fetch(`http://localhost:5000/api/milestones/tasks/${taskId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': currentUser?.id || JSON.parse(localStorage.getItem('user') || '{}').id,
+          'X-User-Role': currentUser?.role || JSON.parse(localStorage.getItem('user') || '{}').role,
+        }
       });
+      const data = await res.json();
+      if (!data.success) {
+        return { success: false, error: data.error || 'Failed to delete task.' };
+      }
       setProjectTasks((prev) => prev.filter((task) => task.id !== taskId));
+      return { success: true };
     } catch (err) {
       console.error("Error deleting task:", err);
+      return { success: false, error: 'Server connection error while deleting this task.' };
     }
   };
 
@@ -559,12 +583,14 @@ const ProjectManagementPage: React.FC = () => {
                 tasks={visibleMyTasks}
                 allGroupTasks={projectTasks}
                 milestoneOptions={milestoneOptions || []}
+                groupId={groupId}
                 userRole={userRole}
                 optimisticStatus={optimisticStatus}
                 pendingTaskIds={pendingTaskIds}
                 taskErrors={taskErrors}
                 onStatusChange={handleBoardStatusChange}
                 onAddTask={handleSaveTask}
+                onDeleteTask={handleDeleteTask}
                 currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
                 memberCount={groupMembers?.length}
               />
@@ -594,6 +620,7 @@ const ProjectManagementPage: React.FC = () => {
                 tasks={visibleMyTasks}
                 milestoneOptions={milestoneOptions || []}
                 currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+                groupId={groupId}
               />
             )}
           </div>
