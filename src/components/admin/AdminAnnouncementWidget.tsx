@@ -36,14 +36,43 @@ const AdminAnnouncementWidget: React.FC<AdminAnnouncementWidgetProps> = ({
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const isRelevantForAdmin = (ann: Announcement) => {
+    const currentUserId = user?.id ? String(user.id).trim() : '';
+    const annAuthorId = ann.author_id ? String(ann.author_id).trim() : '';
+    const currentUserName = user?.name ? user.name.trim().toLowerCase() : '';
+    const annAuthorName = ann.author_name ? ann.author_name.trim().toLowerCase() : '';
+
+    if (
+      (currentUserId && annAuthorId && currentUserId === annAuthorId) ||
+      (currentUserName && annAuthorName && currentUserName === annAuthorName)
+    ) {
+      return true;
+    }
+
+    const aud = String(ann.target_audience || '').trim().toLowerCase();
+    if (aud.includes('admin') || aud === 'administrator' || aud === 'admins') {
+      return true;
+    }
+
+    if (aud === 'all' || aud === 'all system users' || aud.includes('all system users')) {
+      return true;
+    }
+
+    return false;
+  };
+
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:5000/api/announcements?role=admin');
+      const userIdParam = user?.id ? `&user_id=${encodeURIComponent(String(user.id))}` : '';
+      const authorParam = user?.name ? `&author_name=${encodeURIComponent(user.name)}` : '';
+      const res = await fetch(`http://localhost:5000/api/announcements?role=admin${userIdParam}${authorParam}`);
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data.announcements) ? data.announcements : (Array.isArray(data) ? data : []);
-        setAnnouncements(list);
+        const list: Announcement[] = Array.isArray(data.announcements) ? data.announcements : (Array.isArray(data) ? data : []);
+        setAnnouncements(list.filter(isRelevantForAdmin));
       } else {
         setAnnouncements([]);
       }

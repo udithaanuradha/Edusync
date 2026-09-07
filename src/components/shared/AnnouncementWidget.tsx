@@ -84,9 +84,16 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
       });
     };
 
-    const roleLabel = user?.role
-      ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
-      : "";
+    const effectiveRole = String(
+      (user as any)?.effectiveRole ||
+      (user as any)?.designation ||
+      user?.role ||
+      ""
+    ).trim().toLowerCase();
+
+    const roleLabel = effectiveRole
+      ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1).toLowerCase()
+      : (user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase() : "");
 
     const normalize = (value?: string) => value?.trim().toLowerCase() ?? "";
 
@@ -139,17 +146,22 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         } else if (showOnlyAllAudience) {
           url += '?all_audience=true';
         } else if (useRoleQuery) {
-          // Pass role, level, and user name for smart filtering based on Rule of Relevance
+          // Pass role, level, department/academic_unit, designation, and user_id for exact filtering
           const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : "";
           const nameParam = user?.name ? `&name=${encodeURIComponent(user.name)}` : "";
+          const departmentVal = (user as any)?.academic_unit || (user as any)?.department || "";
+          const departmentParam = departmentVal ? `&department=${encodeURIComponent(String(departmentVal))}` : "";
+          const designationVal = (user as any)?.designation || "";
+          const designationParam = designationVal ? `&designation=${encodeURIComponent(String(designationVal))}` : "";
+          const userIdParam = user?.id ? `&user_id=${encodeURIComponent(String(user.id))}` : "";
           const supervisorParam =
-            user?.role === "supervisor" && user?.id
+            ((user as any)?.designation === "supervisor" || user?.role === "supervisor") && user?.id
               ? `&supervisor_id=${encodeURIComponent(String(user.id))}`
               : "";
           // Exclude current user's own posts from dashboard view
           const excludeAuthorParam =
             user?.id ? `&exclude_author_id=${encodeURIComponent(String(user.id))}` : "";
-          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}${supervisorParam}${excludeAuthorParam}`;
+          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${departmentParam}${designationParam}${userIdParam}${nameParam}${supervisorParam}${excludeAuthorParam}`;
         }
 
         console.log("Fetching announcements from:", url);
