@@ -1752,7 +1752,7 @@ const CalendarPage: React.FC = () => {
                                 </span>
                                 <div className="upcoming-people-block">
                                   {panelSupervisors.length > 0 && (
-                                    <div className="upcoming-people-line">
+                                    <div className="upcoming-supervisor-row">
                                       <span className="role-badge supervisor-role-badge">
                                         Supervisor
                                       </span>
@@ -1762,7 +1762,7 @@ const CalendarPage: React.FC = () => {
                                     </div>
                                   )}
                                   {externalEvaluators.length > 0 && (
-                                    <div className="upcoming-people-line">
+                                    <div className="upcoming-evaluators-row">
                                       <span className="people-line-label">Evaluators</span>
                                       <span
                                         className="upcoming-people-name muted"

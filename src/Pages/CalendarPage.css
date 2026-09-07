@@ -398,11 +398,46 @@
   padding-top: 1px;
 }
 
+/* Fallback only (the "No panel members recorded" empty state) — the two
+   real rows below have their own dedicated classes so each can be tuned
+   independently instead of fighting over one shared rule. */
 .upcoming-people-line {
   display: flex;
   align-items: baseline;
   gap: 6px;
   flex-wrap: wrap;
+  color: #334155;
+}
+
+/* Supervisor row: badge + name(s) as a strict single-line-start flex pair.
+   flex-wrap only kicks in as a last resort on very narrow cards — the name
+   itself gets room to wrap internally (min-width: 0 below) well before
+   that, so a long name grows downward in place instead of the whole span
+   jumping to a new line under the badge, which was the "inline in some
+   cards, wraps in others" inconsistency. */
+.upcoming-supervisor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: #334155;
+}
+
+.upcoming-supervisor-row .upcoming-people-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Evaluators row: its own line below the supervisor row, left-aligned with
+   the text above it (not indented under the icon — both rows sit in the
+   same upcoming-people-block column, to the icon's right). The top margin
+   keeps it from feeling cramped against the supervisor row above. */
+.upcoming-evaluators-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
   color: #334155;
 }
 
@@ -435,7 +470,8 @@
    .upcoming-stage-pill), instead of .supervisor-role-badge's solid fill
    used everywhere else (e.g. the Schedule Panel drawer's Group
    Supervisor(s) chip), which stays as-is. */
-.upcoming-people-line .role-badge {
+.upcoming-supervisor-row .role-badge {
+  flex-shrink: 0;
   background: #dcfce7;
   color: #15803d;
   padding: 2px 6px;

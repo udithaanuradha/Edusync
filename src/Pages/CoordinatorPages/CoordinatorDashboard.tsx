@@ -20,6 +20,7 @@ type RecentProject = {
   projectId: number;
   groupName: string;
   supervisorName: string;
+  supervisorName2?: string | null;
   status: string;
   progress: number;
   updatedAt?: string | null;
