@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarPlus, X, Send } from 'lucide-react';
+import { CalendarPlus, X, Send, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './SupervisorMeetingRequest.css';
 
@@ -15,8 +15,16 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
   const [topic, setTopic] = useState('');
   const [reason, setReason] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  // Both the dropdown's options and the submit-time validation set now come
+  // from the same assigned-supervisor lookup below — a student can only
+  // ever pick (and only ever submit) a supervisor actually assigned to them.
+  const [supervisors, setSupervisors] = useState<{ id: number; name: string }[]>([]);
   const [requestsHistory, setRequestsHistory] = useState<any[]>([]);
+  // Only the first 2 history entries show by default — "See all" expands it.
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [assignedSupervisorIds, setAssignedSupervisorIds] = useState<Set<number>>(new Set());
 
   const fetchHistory = async () => {
     if (!user || !user.id) return;
@@ -32,17 +40,46 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
     }
   };
 
+  // This student's actual assigned supervisor(s) — feeds both the dropdown
+  // options and the submit-time validation set below. Served from
+  // meetingRequestModel.js's own query (not /api/groups/*) specifically so
+  // this stays confined to the meeting-request backend files — /api/groups
+  // has a route collision (mentorGroupRoutes.js and groupRoutes.js both
+  // define GET /my-status/:studentId under the same /api/groups prefix, and
+  // since mentorGroupRoutes.js is mounted first in index.js, its handler
+  // always wins there) that isn't this feature's to fix.
+  //
+  // Deliberately NOT scoped by `levelNumber` — that prop is driven by
+  // whatever level CalendarPage's own filter happens to be on (defaults to
+  // "1"), not this student's actual level, so filtering by it here could
+  // find zero groups for a student who's really at level 2+ and leave the
+  // dropdown empty. The backend query isn't level-scoped either.
+  const fetchAssignedSupervisors = async () => {
+    if (!user || !user.id) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/meeting-requests/assigned-supervisors/${user.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (!res.ok) return;
+      const list: { id: number; name: string }[] = await res.json();
+      setAssignedSupervisorIds(new Set(list.map((s) => Number(s.id))));
+      setSupervisors(Array.isArray(list) ? list : []);
+      // Nothing to choose between when there's only one — pick it so the
+      // student isn't forced to open a dropdown just to confirm it.
+      if (list.length === 1) {
+        setSupervisorId(String(list[0].id));
+      }
+    } catch (err) {
+      console.error("Failed to load assigned supervisor(s):", err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      if (supervisors.length === 0) {
-        fetch('http://localhost:5000/api/groups/supervisors')
-          .then(res => res.json())
-          .then(data => setSupervisors(data))
-          .catch(err => console.error("Failed to load supervisors:", err));
-      }
+      fetchAssignedSupervisors();
       fetchHistory();
     }
-  }, [isOpen, supervisors.length, user]);
+  }, [isOpen, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +87,20 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       alert("You must be logged in to submit a request.");
       return;
     }
-    
+
+    // Client-side pre-check — only blocks submission when we actually know
+    // who's assigned (an empty set means the lookup found nothing / hasn't
+    // finished, so this stays permissive and lets the backend's own check
+    // be the real gate rather than false-blocking a valid request).
+    if (assignedSupervisorIds.size > 0 && !assignedSupervisorIds.has(Number(supervisorId))) {
+      setErrorMessage("You can only request a meeting with your assigned supervisor.");
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 4000);
+      return;
+    }
+
     setStatus('submitting');
-    
+
     try {
       const response = await fetch('http://localhost:5000/api/meeting-requests', {
         method: 'POST',
@@ -73,7 +121,8 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit request");
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || "Failed to submit request");
       }
 
       setStatus('success');
@@ -82,15 +131,45 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       setReason('');
       setGroupName('');
       setSupervisorId('');
-      
+
       setTimeout(() => {
         setStatus('idle');
         fetchHistory(); // Refresh history
       }, 3000);
     } catch (error) {
       console.error(error);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to submit meeting request. Please try again later.");
       setStatus('error');
-      setTimeout(() => setStatus('idle'), 3000);
+      setTimeout(() => setStatus('idle'), 4000);
+    }
+  };
+
+  // Cancelling a still-pending request — the backend only allows this while
+  // status is 'pending', so an already-approved/rejected one can't be
+  // deleted even if this were somehow called on it.
+  const handleDelete = async (requestId: number) => {
+    if (!user || !user.id) return;
+    if (!window.confirm("Delete this pending meeting request?")) return;
+
+    setDeletingId(requestId);
+    try {
+      const response = await fetch(`http://localhost:5000/api/meeting-requests/${requestId}?student_id=${user.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || "Failed to delete request");
+      }
+
+      setRequestsHistory((prev) => prev.filter((r) => r.id !== requestId));
+      window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Failed to delete request.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -132,7 +211,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
 
               {status === 'error' && (
                 <div className="alert error-alert" style={{ marginBottom: '1.5rem' }}>
-                  Failed to submit meeting request. Please try again later.
+                  {errorMessage || 'Failed to submit meeting request. Please try again later.'}
                 </div>
               )}
 
@@ -142,26 +221,52 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                     Your Request History
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {requestsHistory.map(req => (
+                    {(showAllHistory ? requestsHistory : requestsHistory.slice(0, 2)).map(req => (
                       <div key={req.id} style={{ 
                         padding: '1rem', 
                         borderRadius: '8px', 
                         border: `1px solid ${req.status === 'approved' ? 'var(--eds-color-success-solid)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-border)'}`,
                         background: req.status === 'approved' ? 'var(--eds-color-success-bg)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface)' 
                       }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', gap: '0.5rem' }}>
                           <strong style={{ fontSize: '0.95rem', color: 'var(--eds-color-text-strong)' }}>{req.topic}</strong>
-                          <span style={{ 
-                            fontSize: '0.75rem', 
-                            padding: '2px 8px', 
-                            borderRadius: '12px',
-                            fontWeight: 600,
-                            textTransform: 'capitalize',
-                            backgroundColor: req.status === 'approved' ? 'var(--eds-color-success-solid)' : req.status === 'rejected' ? 'var(--eds-color-danger-solid)' : '#f59e0b',
-                            color: 'var(--eds-color-bg-surface)'
-                          }}>
-                            {req.status}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontWeight: 600,
+                              textTransform: 'capitalize',
+                              backgroundColor: req.status === 'approved' ? 'var(--eds-color-success-solid)' : req.status === 'rejected' ? 'var(--eds-color-danger-solid)' : '#f59e0b',
+                              color: 'var(--eds-color-bg-surface)'
+                            }}>
+                              {req.status}
+                            </span>
+                            {req.status === 'pending' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(req.id)}
+                                disabled={deletingId === req.id}
+                                title="Delete this pending request"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '24px',
+                                  height: '24px',
+                                  padding: 0,
+                                  border: '1px solid var(--eds-color-danger-solid)',
+                                  borderRadius: '6px',
+                                  background: 'var(--eds-color-bg-surface)',
+                                  color: 'var(--eds-color-danger-solid)',
+                                  cursor: deletingId === req.id ? 'not-allowed' : 'pointer',
+                                  opacity: deletingId === req.id ? 0.6 : 1,
+                                }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--eds-color-text-muted)', marginBottom: '0.5rem' }}>
                           {req.preferred_date
@@ -199,6 +304,24 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                       </div>
                     ))}
                   </div>
+                  {requestsHistory.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllHistory((prev) => !prev)}
+                      style={{
+                        marginTop: '0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--eds-color-primary)',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      {showAllHistory ? 'Show less' : `See all history (${requestsHistory.length})`}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -223,8 +346,11 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                       required
                       value={supervisorId}
                       onChange={(e) => setSupervisorId(e.target.value)}
+                      disabled={supervisors.length === 0}
                     >
-                      <option value="">-- Select Supervisor --</option>
+                      <option value="">
+                        {supervisors.length === 0 ? '-- No assigned supervisor yet --' : '-- Select Supervisor --'}
+                      </option>
                       {supervisors.map(sup => (
                         <option key={sup.id} value={sup.id}>{sup.name}</option>
                       ))}
