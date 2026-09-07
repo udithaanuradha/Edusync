@@ -34,6 +34,7 @@ const AdminAnnouncements: React.FC = () => {
   const [mainAudience, setMainAudience] = useState<'All System Users' | 'Student' | 'Coordinator' | 'Supervisor' | 'Mentor'>('All System Users');
   const [studentLevel, setStudentLevel] = useState<string>('All');
   const [studentDegree, setStudentDegree] = useState<string>('All');
+  const [coordinatorLevel, setCoordinatorLevel] = useState<string>('All');
   const [staffDepartment, setStaffDepartment] = useState<string>('All');
 
   const [isPosting, setIsPosting] = useState(false);
@@ -74,8 +75,13 @@ const AdminAnnouncements: React.FC = () => {
     }
 
     if (mainAudience === 'Coordinator') {
-      if (staffDepartment === 'All') return 'Coordinator';
-      return `Coordinator - ${staffDepartment}`;
+      const hasLevel = coordinatorLevel !== 'All';
+      const hasDept = staffDepartment !== 'All';
+
+      if (!hasLevel && !hasDept) return 'Coordinator';
+      if (hasLevel && !hasDept) return `Coordinator - ${coordinatorLevel}`;
+      if (!hasLevel && hasDept) return `Coordinator - ${staffDepartment}`;
+      return `Coordinator - ${coordinatorLevel} - ${staffDepartment}`;
     }
 
     if (mainAudience === 'Supervisor') {
@@ -91,6 +97,7 @@ const AdminAnnouncements: React.FC = () => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) {
       setStatusFeedback({ type: 'error', message: 'Please fill in both title and message.' });
+      setTimeout(() => setStatusFeedback(null), 3500);
       return;
     }
 
@@ -120,14 +127,18 @@ const AdminAnnouncements: React.FC = () => {
         setMainAudience('All System Users');
         setStudentLevel('All');
         setStudentDegree('All');
+        setCoordinatorLevel('All');
         setStaffDepartment('All');
         await fetchAnnouncements();
         setStatusFeedback({ type: 'success', message: `✅ Announcement posted and dispatched to "${target_audience}" successfully!` });
+        setTimeout(() => setStatusFeedback(null), 4000);
       } else {
         setStatusFeedback({ type: 'error', message: '❌ Failed to post announcement. Please check server connection.' });
+        setTimeout(() => setStatusFeedback(null), 4000);
       }
     } catch (error) {
       setStatusFeedback({ type: 'error', message: '❌ Failed to connect to server.' });
+      setTimeout(() => setStatusFeedback(null), 4000);
     } finally {
       setIsPosting(false);
     }
@@ -240,13 +251,33 @@ const AdminAnnouncements: React.FC = () => {
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '10px',
               fontSize: '13px',
               fontWeight: '500',
               backgroundColor: statusFeedback.type === 'success' ? '#f0fdf4' : '#fef2f2',
               color: statusFeedback.type === 'success' ? '#15803d' : '#b91c1c',
               border: `1px solid ${statusFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             }}>
+              <span>{statusFeedback.message}</span>
+              <button
+                type="button"
+                onClick={() => setStatusFeedback(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: statusFeedback.type === 'success' ? '#15803d' : '#b91c1c',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  padding: '2px 6px',
+                  lineHeight: 1,
+                }}
+                title="Dismiss"
+              >
+                ✕
+              </button>
             </div>
           )}
 
@@ -356,8 +387,55 @@ const AdminAnnouncements: React.FC = () => {
                 </div>
               )}
 
-              {/* Sub-Filters for Coordinator / Supervisor: Department (academic_unit) */}
-              {(mainAudience === 'Coordinator' || mainAudience === 'Supervisor') && (
+              {/* Sub-Filters for Coordinator: Academic Level and Department */}
+              {mainAudience === 'Coordinator' && (
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '12px', 
+                  marginBottom: '18px',
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0' 
+                }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
+                      Academic Level
+                    </label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                      value={coordinatorLevel}
+                      onChange={(e) => setCoordinatorLevel(e.target.value)}
+                    >
+                      <option value="All">All Levels</option>
+                      <option value="Level 1">Level 1</option>
+                      <option value="Level 2">Level 2</option>
+                      <option value="Level 3">Level 3</option>
+                      <option value="Level 4">Level 4</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
+                      Department
+                    </label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                      value={staffDepartment}
+                      onChange={(e) => setStaffDepartment(e.target.value)}
+                    >
+                      <option value="All">All Departments</option>
+                      <option value="IT">IT</option>
+                      <option value="IDS">IDS</option>
+                      <option value="CM">CM</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-Filters for Supervisor: Department */}
+              {mainAudience === 'Supervisor' && (
                 <div style={{ 
                   marginBottom: '18px',
                   padding: '12px',
