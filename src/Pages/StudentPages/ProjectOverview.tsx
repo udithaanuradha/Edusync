@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flag, CheckCircle2, CalendarClock, Plus, Trash2 } from 'lucide-react';
 import StatCard from '../../components/shared/ui/StatCard';
 import GanttChart from './GanttChart';
@@ -30,6 +30,12 @@ type ProjectOverviewProps = {
   onMilestonesChanged?: () => void;
   onNavigateSupervisorChat: () => void;
   onNavigateMentorChat: () => void;
+  /** Total member count of the underlying group record — an Individual
+      Project is a "group of one" that reuses this exact page, so Scope
+      Division (nothing to divide between one person) only renders when
+      there's more than one member. Undefined (still loading) defaults to
+      showing it, same as today. */
+  memberCount?: number;
 };
 
 const API_BASE = 'http://localhost:5000/api/milestones';
@@ -70,6 +76,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   onMilestonesChanged,
   onNavigateSupervisorChat,
   onNavigateMentorChat,
+  memberCount,
 }) => {
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
   // null = the "+ New Milestone" draft slot, not "nothing selected"
@@ -77,10 +84,24 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
+  // How many scope sections each milestone has (milestoneId -> count) —
+  // fetched alongside the milestone list so a "has content" dot can be
+  // shown on every pill, and so picking a default selection (below) can
+  // actually check where your work already is instead of guessing.
+  const [scopeCounts, setScopeCounts] = useState<Record<string, number>>({});
+
+  // Tracks the current activeId synchronously for use inside loadMilestones
+  // (which does async work before deciding whether to change the
+  // selection) — reading state directly there would see a stale closure.
+  const activeIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   // Remembers which milestone was last viewed for this group, per browser —
-  // otherwise every refresh silently falls back to the first milestone
-  // (oldest by created_at), which looks like "my scope/tasks disappeared"
-  // whenever the one you were actually working in isn't the first one.
+  // otherwise every refresh silently falls back to some guessed default,
+  // which looks like "my scope/tasks disappeared" whenever the one you were
+  // actually working in isn't that guess.
   const activeMilestoneStorageKey = groupId ? `po-active-milestone-${groupId}` : null;
 
   const [formTitle, setFormTitle] = useState('');
@@ -101,30 +122,82 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
     try {
       const res = await fetch(`${API_BASE}/group/${groupId}`, { headers: authHeaders() });
       const data = await res.json();
-      if (data.success) {
-        const mapped: MilestoneItem[] = (data.data || []).map((m: any) => ({
-          id: String(m.id),
-          title: m.title || '',
-          description: m.description || '',
-          startDate: m.start_date ? String(m.start_date).split('T')[0] : '',
-          endDate: m.due_date ? String(m.due_date).split('T')[0] : '',
-          status: (m.status || 'PENDING') as MilestoneStatus,
-        }));
-        setMilestones(mapped);
-        setActiveId((prev) => {
-          if (prev && mapped.some((m) => m.id === prev)) return prev;
-          const stored = activeMilestoneStorageKey ? localStorage.getItem(activeMilestoneStorageKey) : null;
-          if (stored && mapped.some((m) => m.id === stored)) return stored;
-          // No stored preference yet (a fresh session, or a browser that
-          // never clicked a pill here before) — default to the most
-          // recently created milestone rather than the oldest one. You're
-          // far more likely to be actively working in whatever you just
-          // created than in the very first milestone from the group.
-          return mapped[mapped.length - 1]?.id ?? null;
-        });
-      } else {
+      if (!data.success) {
         setLoadError(data.error || 'Failed to load milestones.');
+        return;
       }
+
+      const mapped: MilestoneItem[] = (data.data || []).map((m: any) => ({
+        id: String(m.id),
+        title: m.title || '',
+        description: m.description || '',
+        startDate: m.start_date ? String(m.start_date).split('T')[0] : '',
+        endDate: m.due_date ? String(m.due_date).split('T')[0] : '',
+        status: (m.status || 'PENDING') as MilestoneStatus,
+      }));
+      setMilestones(mapped);
+
+      // Every milestone's scope-section count, fetched in parallel — small,
+      // cheap per-milestone GETs. Drives the "has content" dot on each pill
+      // below, and — when there's no remembered selection yet — lets the
+      // default pick actually check where your work already is instead of
+      // guessing by creation order (which was wrong both ways: "oldest"
+      // missed newly-created milestones, "newest" missed a milestone
+      // someone had already been filling in for a while).
+      const scopeResults = await Promise.all(
+        mapped.map(async (m) => {
+          try {
+            const scopeRes = await fetch(`${API_BASE}/${m.id}/scope`, { headers: authHeaders() });
+            const scopeData = await scopeRes.json();
+            const sections: any[] = scopeData.success ? scopeData.data || [] : [];
+            return {
+              id: m.id,
+              count: sections.length,
+              hasMyClaim: currentUser
+                ? sections.some((s: any) => String(s.claimed_by) === String(currentUser.id))
+                : false,
+            };
+          } catch {
+            return { id: m.id, count: 0, hasMyClaim: false };
+          }
+        }),
+      );
+      setScopeCounts(Object.fromEntries(scopeResults.map((r) => [r.id, r.count])));
+
+      // Keep the current selection if it's still valid — this call can be
+      // triggered mid-session (e.g. right after creating a milestone), and
+      // that shouldn't be overridden by the picking logic below.
+      const currentActiveId = activeIdRef.current;
+      if (currentActiveId && mapped.some((m) => m.id === currentActiveId)) {
+        return;
+      }
+
+      if (mapped.length === 0) {
+        setActiveId(null);
+        return;
+      }
+
+      // A milestone you've actually claimed a scope section in always wins,
+      // even over a remembered choice — a stale "last viewed" pick from
+      // before you claimed anything is exactly what caused this to look
+      // broken (the remembered milestone had nothing in it, while the real
+      // work was sitting one click away). Only fall back to the remembered
+      // choice, then any milestone with content, then the newest milestone,
+      // once there's no claim of yours to anchor on.
+      const mine = scopeResults.find((r) => r.hasMyClaim);
+      if (mine) {
+        setActiveId(mine.id);
+        return;
+      }
+
+      const stored = activeMilestoneStorageKey ? localStorage.getItem(activeMilestoneStorageKey) : null;
+      if (stored && mapped.some((m) => m.id === stored)) {
+        setActiveId(stored);
+        return;
+      }
+
+      const withContent = scopeResults.find((r) => r.count > 0);
+      setActiveId(withContent?.id ?? mapped[mapped.length - 1].id);
     } catch (e) {
       setLoadError('Server connection error while loading milestones.');
     } finally {
@@ -279,7 +352,11 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
     }
   };
 
-  const showForm = Boolean(activeMilestone) || userRole === 'leader';
+  // Creating a NEW milestone (activeMilestone === null) is open to any group
+  // member — only editing fields on an EXISTING one is leader-only, matching
+  // the backend split (createMilestone has no leader check; only
+  // updateMilestoneDetails does).
+  const canEditFields = !activeMilestone || userRole === 'leader';
 
   return (
     <div className="student-inner-tab-panel">
@@ -312,126 +389,122 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
               regardless of whether any milestone exists yet — it has its
               own built-in "add a milestone to see it plotted here"
               placeholder. */}
-          {milestones.length === 0 && userRole !== 'leader' ? (
-            <div className="no-tasks-text">
-              No milestones have been planned yet. Ask your group leader to add one.
-            </div>
-          ) : (
-            <div className="milestone-selector-row">
-              {milestones.map((m) => (
+          <div className="milestone-selector-row">
+            {milestones.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`milestone-pill ${activeId === m.id ? 'active' : ''}`}
+                onClick={() => setActiveId(m.id)}
+                title={scopeCounts[m.id] > 0 ? `${scopeCounts[m.id]} scope section(s) defined` : undefined}
+              >
+                {m.title || 'Untitled milestone'}
+                {scopeCounts[m.id] > 0 && <span className="milestone-pill-dot" aria-hidden="true" />}
+              </button>
+            ))}
+            {/* Creating a milestone is open to any group member, not just
+                the leader — matches createMilestone having no leader check. */}
+            <button
+              type="button"
+              className={`milestone-pill milestone-pill-new ${activeId === null ? 'active' : ''}`}
+              onClick={() => setActiveId(null)}
+            >
+              <Plus size={14} /> New Milestone
+            </button>
+          </div>
+
+          <form className="timeline-section" onSubmit={handleSave}>
+            <div className="milestone-details-head">
+              <h4 className="section-title">Milestone Details</h4>
+              {activeMilestone && userRole === 'leader' && (
                 <button
-                  key={m.id}
                   type="button"
-                  className={`milestone-pill ${activeId === m.id ? 'active' : ''}`}
-                  onClick={() => setActiveId(m.id)}
+                  className="danger-btn milestone-delete-btn"
+                  onClick={handleDelete}
+                  disabled={deleting}
                 >
-                  {m.title || 'Untitled milestone'}
-                </button>
-              ))}
-              {userRole === 'leader' && (
-                <button
-                  type="button"
-                  className={`milestone-pill milestone-pill-new ${activeId === null ? 'active' : ''}`}
-                  onClick={() => setActiveId(null)}
-                >
-                  <Plus size={14} /> New Milestone
+                  <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}
                 </button>
               )}
             </div>
-          )}
 
-          {showForm && (
-            <form className="timeline-section" onSubmit={handleSave}>
-              <div className="milestone-details-head">
-                <h4 className="section-title">Milestone Details</h4>
-                {activeMilestone && userRole === 'leader' && (
-                  <button
-                    type="button"
-                    className="danger-btn milestone-delete-btn"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                  >
-                    <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}
-                  </button>
-                )}
+            <div className="timeline-form-grid">
+              <div className="timeline-form-group timeline-form-full">
+                <label htmlFor="milestone-name">Milestone / Workflow Name</label>
+                <input
+                  id="milestone-name"
+                  type="text"
+                  className="timeline-form-input"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  readOnly={!canEditFields}
+                  placeholder="e.g. Requirements Gathering"
+                />
               </div>
 
-              <div className="timeline-form-grid">
-                <div className="timeline-form-group timeline-form-full">
-                  <label htmlFor="milestone-name">Milestone / Workflow Name</label>
-                  <input
-                    id="milestone-name"
-                    type="text"
-                    className="timeline-form-input"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    readOnly={userRole !== 'leader'}
-                    placeholder="e.g. Requirements Gathering"
-                  />
-                </div>
-
-                <div className="timeline-form-group">
-                  <label htmlFor="milestone-start">Start Date</label>
-                  <input
-                    id="milestone-start"
-                    type="date"
-                    className="timeline-form-input"
-                    value={formStart}
-                    onChange={(e) => setFormStart(e.target.value)}
-                    disabled={userRole !== 'leader'}
-                  />
-                </div>
-
-                <div className="timeline-form-group">
-                  <label htmlFor="milestone-end">End Date</label>
-                  <input
-                    id="milestone-end"
-                    type="date"
-                    className="timeline-form-input"
-                    value={formEnd}
-                    onChange={(e) => setFormEnd(e.target.value)}
-                    disabled={userRole !== 'leader'}
-                  />
-                </div>
+              <div className="timeline-form-group">
+                <label htmlFor="milestone-start">Start Date</label>
+                <input
+                  id="milestone-start"
+                  type="date"
+                  className="timeline-form-input"
+                  value={formStart}
+                  onChange={(e) => setFormStart(e.target.value)}
+                  disabled={!canEditFields}
+                />
               </div>
 
-              {formStart && formEnd && (
-                <div className="timeline-summary">
-                  📌 This milestone runs for <strong>{durationDays} {durationDays === 1 ? 'day' : 'days'}</strong>
-                  {' — '}
-                  {formatShortDate(formStart)} to {formatShortDate(formEnd)}.
-                </div>
-              )}
+              <div className="timeline-form-group">
+                <label htmlFor="milestone-end">End Date</label>
+                <input
+                  id="milestone-end"
+                  type="date"
+                  className="timeline-form-input"
+                  value={formEnd}
+                  onChange={(e) => setFormEnd(e.target.value)}
+                  disabled={!canEditFields}
+                />
+              </div>
+            </div>
 
-              {saveMessage && (
-                <div className={`timeline-submit-message ${saveError ? 'error' : 'success'}`}>{saveMessage}</div>
-              )}
+            {formStart && formEnd && (
+              <div className="timeline-summary">
+                📌 This milestone runs for <strong>{durationDays} {durationDays === 1 ? 'day' : 'days'}</strong>
+                {' — '}
+                {formatShortDate(formStart)} to {formatShortDate(formEnd)}.
+              </div>
+            )}
 
-              {userRole === 'leader' && (
-                <div className="timeline-form-footer">
-                  <button type="submit" className="submit-btn" disabled={saving}>
-                    {saving ? 'Saving...' : activeMilestone ? 'Save Changes' : 'Create Milestone'}
-                  </button>
-                </div>
-              )}
+            {saveMessage && (
+              <div className={`timeline-submit-message ${saveError ? 'error' : 'success'}`}>{saveMessage}</div>
+            )}
 
-              {userRole !== 'leader' && !activeMilestone && (
-                <p className="role-warning">Only the group leader can create milestones.</p>
-              )}
-            </form>
-          )}
+            {canEditFields && (
+              <div className="timeline-form-footer">
+                <button type="submit" className="submit-btn" disabled={saving}>
+                  {saving ? 'Saving...' : activeMilestone ? 'Save Changes' : 'Create Milestone'}
+                </button>
+              </div>
+            )}
+
+            {!canEditFields && (
+              <p className="role-warning">Only the group leader can edit an existing milestone's details.</p>
+            )}
+          </form>
 
           <GanttChart tasks={ganttTasks} timelineStart={formStart} timelineEnd={formEnd} />
 
-          <ScopeDivision
-            milestoneId={activeMilestone?.id ?? null}
-            userRole={userRole}
-            currentUser={currentUser}
-            supervisor={supervisor}
-            mentor={mentor}
-            onNavigateSupervisorChat={onNavigateSupervisorChat}
-            onNavigateMentorChat={onNavigateMentorChat}
-          />
+          {memberCount !== 1 && (
+            <ScopeDivision
+              milestoneId={activeMilestone?.id ?? null}
+              userRole={userRole}
+              currentUser={currentUser}
+              supervisor={supervisor}
+              mentor={mentor}
+              onNavigateSupervisorChat={onNavigateSupervisorChat}
+              onNavigateMentorChat={onNavigateMentorChat}
+            />
+          )}
         </>
       )}
     </div>

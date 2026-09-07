@@ -13,6 +13,7 @@ import {
   Layers,
   Info,
   TrendingUp,
+  Users,
 } from 'lucide-react';
 import './GroupTasksTab.css';
 
@@ -507,10 +508,10 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
 
       // 2. Select target group
       const activeGroup = selectedGroupId
-        ? groups.find((g) => (g.id || g.groupId) === selectedGroupId) || groups[0]
+        ? groups.find((g) => Number(g.id || g.groupId) === Number(selectedGroupId)) || groups[0]
         : groups[0];
 
-      const activeGroupId = activeGroup.id || activeGroup.groupId;
+      const activeGroupId = Number(activeGroup.id || activeGroup.groupId);
       if (!selectedGroupId && activeGroupId) {
         setSelectedGroupId(activeGroupId);
       }
@@ -544,8 +545,12 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
         console.warn('Tasks fetch warning:', tErr);
       }
 
-      // Default to milestone that has tasks if current selection is ALL/invalid
-      if (selectedMilestoneId === 'ALL' && milestonesList.length > 0) {
+      // Default to milestone that has tasks if current selection is ALL or invalid
+      const hasValidSelectedMilestone =
+        selectedMilestoneId !== 'ALL' &&
+        milestonesList.some((m) => Number(m.id) === Number(selectedMilestoneId));
+
+      if (!hasValidSelectedMilestone) {
         const firstWithTasks = milestonesList.find((m) =>
           tasksList.some((t) => Number(t.milestone_id) === Number(m.id) || t.milestone_title === m.title)
         );
@@ -553,6 +558,8 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
           setSelectedMilestoneId(firstWithTasks.id);
         } else if (milestonesList.length > 0) {
           setSelectedMilestoneId(milestonesList[0].id);
+        } else {
+          setSelectedMilestoneId('ALL');
         }
       }
 
@@ -620,6 +627,11 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGroupChange = (newGroupId: number) => {
+    setSelectedGroupId(newGroupId);
+    setSelectedMilestoneId('ALL');
   };
 
   useEffect(() => {
@@ -860,21 +872,35 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
       {/* ── Top Group Selector Bar (if mentor has >1 group) ─────────── */}
       {assignedGroups.length > 1 && (
         <div className="gt-group-selector-bar">
-          <label htmlFor="mentor-group-select" className="gt-selector-label">
-            Select Assigned Group:
-          </label>
-          <select
-            id="mentor-group-select"
-            className="gt-group-select"
-            value={selectedGroupId || ''}
-            onChange={(e) => setSelectedGroupId(Number(e.target.value))}
-          >
-            {assignedGroups.map((g) => (
-              <option key={g.id || g.groupId} value={g.id || g.groupId}>
-                {g.groupName || g.projectName || `Group ${g.id || g.groupId}`}
-              </option>
-            ))}
-          </select>
+          <div className="gt-group-selector-info">
+            <div className="gt-group-selector-icon">
+              <Users size={18} />
+            </div>
+            <div className="gt-group-selector-text">
+              <span className="gt-selector-label">Assigned Project Groups</span>
+              <span className="gt-selector-hint">Switch between your {assignedGroups.length} assigned groups in Level {levelNumber}</span>
+            </div>
+          </div>
+          <div className="gt-group-select-wrapper">
+            <label htmlFor="mentor-group-select" className="gt-select-prefix">Active Group:</label>
+            <select
+              id="mentor-group-select"
+              className="gt-group-select"
+              value={selectedGroupId || ''}
+              onChange={(e) => handleGroupChange(Number(e.target.value))}
+            >
+              {assignedGroups.map((g) => {
+                const gId = g.id || g.groupId;
+                const gName = g.groupName || g.projectName || `Group ${gId}`;
+                const leader = g.leader || g.leaderName || g.leader_name;
+                return (
+                  <option key={gId} value={gId}>
+                    {gName} {leader ? `— (Leader: ${leader})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       )}
 
@@ -948,12 +974,9 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
         <div className="gt-milestones-nav-section">
           <div className="gt-milestones-nav-header">
             <div className="gt-milestone-nav-title">
-              <Target size={16} className="gt-target-icon" />
+              <Target size={18} className="gt-target-icon" />
               <span>Project Milestones</span>
             </div>
-            <span className="gt-milestones-count-hint">
-              Select a milestone to view tasks created by the leader under that milestone
-            </span>
           </div>
 
           {/* Horizontal Milestone Navigation Pills */}
@@ -1072,10 +1095,6 @@ const GroupTasksTab: React.FC<GroupTasksTabProps> = ({ levelNumber = 2 }) => {
                 : 'Overview of all assigned tasks grouped by member.'}
             </p>
           </div>
-          <span className="gt-feedback-hint">
-            <MessageSquare size={12} />
-            Click Feedback on any task to leave comments
-          </span>
         </div>
 
         {/* If active milestone has 0 tasks */}

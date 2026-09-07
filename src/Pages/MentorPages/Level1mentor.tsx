@@ -7,27 +7,29 @@ import MentorStageManagement from '../../components/mentor/MentorStageManagement
 import GroupTasksTab from '../../components/mentor/GroupTasksTab';
 import MentorStudentSubmissions from '../../components/mentor/MentorStudentSubmissions';
 import MentorDelayedTasksTab from '../../components/mentor/MentorDelayedTasksTab';
-import './Level3mentor.css';
-import './LevelTabs.css';
+import './Level3mentor.css';   /* Shared layout CSS for all mentor level pages */
+import './LevelTabs.css';      /* Shared tab utility styles */
 
 /**
- * Level3mentor Component
+ * Level1mentor Component
  *
- * PURPOSE: Main workspace page for Mentor's Level 3 interface.
+ * PURPOSE: Main workspace page for Mentor's Level 1 interface.
  *
  * RESTRICTION LOGIC:
- *   - Checks if the logged-in mentor has any active project groups assigned at Level 3.
+ *   - Checks if the logged-in mentor has any active project groups assigned at Level 1.
  *   - If assigned: displays operational tabs (Stage Documents, Tasks, Student Submissions, Delayed Tasks).
  *   - If not assigned: displays an access notification card with return to dashboard action.
  */
-const Level3mentor = () => {
+const Level1mentor = () => {
   const navigate = useNavigate();
 
+  /* Active tab state — 4 operational tabs (Stage Documents, Tasks, Student Submissions, Delayed Tasks) */
   const [activeTab, setActiveTab] = useState<'guidelines' | 'tasks' | 'submissions' | 'delays'>('guidelines');
   const [hasAssignedGroup, setHasAssignedGroup] = useState<boolean | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const levelNumber = 3;
+  /* This page is Level 1 */
+  const levelNumber = 1;
 
   // Check assignment status on mount
   useEffect(() => {
@@ -73,14 +75,17 @@ const Level3mentor = () => {
   return (
     <div className="app-layout">
 
+      {/* ── Sidebar ───────────────────────────────────────────── */}
       <MentorSidebarWrapper />
 
       <div className="main-viewport">
 
+        {/* ── Shared Header ─────────────────────────────────── */}
         <Header pageTitle="" />
 
         <main className="content-container">
 
+          {/* ── Page title ───────────────────── */}
           <div className="mentor-page-header">
             <h1 className="mentor-page-title">Level {levelNumber} Projects</h1>
             <p className="mentor-page-subtitle">
@@ -116,9 +121,11 @@ const Level3mentor = () => {
           ) : (
             /* ── Assigned Level Workspace ── */
             <>
+              {/* ── Tab Navigation  ────────────────── */}
               <div className="tab-container-mentor">
                 <div className="tab-buttons-mentor">
 
+                  {/* Stage Documents tab */}
                   <button
                     className={`tab-btn-mentor ${activeTab === 'guidelines' ? 'active' : ''}`}
                     onClick={() => setActiveTab('guidelines')}
@@ -126,6 +133,7 @@ const Level3mentor = () => {
                     Stage Documents
                   </button>
 
+                  {/* Tasks tab */}
                   <button
                     className={`tab-btn-mentor ${activeTab === 'tasks' ? 'active' : ''}`}
                     onClick={() => setActiveTab('tasks')}
@@ -133,6 +141,7 @@ const Level3mentor = () => {
                     Tasks
                   </button>
 
+                  {/* Student Submissions tab */}
                   <button
                     className={`tab-btn-mentor ${activeTab === 'submissions' ? 'active' : ''}`}
                     onClick={() => setActiveTab('submissions')}
@@ -140,6 +149,7 @@ const Level3mentor = () => {
                     Student Submissions
                   </button>
 
+                  {/* Delayed Tasks tab */}
                   <button
                     className={`tab-btn-mentor ${activeTab === 'delays' ? 'active' : ''}`}
                     onClick={() => setActiveTab('delays')}
@@ -150,6 +160,7 @@ const Level3mentor = () => {
                 </div>
               </div>
 
+              {/* ── Tab Content ───────────────────────────────────── */}
               <div className="tab-content-viewport">
                 {activeTab === 'guidelines' && <MentorStageManagement levelNumber={levelNumber} />}
                 {activeTab === 'tasks' && <GroupTasksTab levelNumber={levelNumber} />}
@@ -165,4 +176,4 @@ const Level3mentor = () => {
   );
 };
 
-export default Level3mentor;
+export default Level1mentor;

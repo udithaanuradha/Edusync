@@ -3,7 +3,6 @@ import AppShell from '../../components/shared/layout/AppShell';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
-import RecentProjects from '../../components/coordinator/RecentProjects';
 
 import './StudentDashboard.css';
 
@@ -57,12 +56,7 @@ const StudentDashboard: React.FC = () => {
             </div>
 
             {/* ROW 1: Project Cards */}
-            <MyProjectStatus />
-
-            {/* ROW 2: Full Width Section */}
-            <div className="dashboard-row">
-              <RecentProjects projects={dashboardData?.recentProjects || []} />
-            </div>
+            <MyProjectStatus stats={dashboardData?.stats} loading={loading} />
 
             {/* ROW 3: Split View */}
             <div className="dashboard-row equal-split">

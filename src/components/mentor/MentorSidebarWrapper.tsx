@@ -1,7 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Sidebar from '../shared/Sidebar';
+import {
+  LayoutDashboard,
+  Users as UsersGroup,
+  CalendarDays,
+  MessageSquare,
+  ClipboardList,
+} from 'lucide-react';
+import Sidebar, { type MenuItem } from '../shared/Sidebar';
 import './MentorStyles.css';
+
+/**
+ * Mentor-specific nav items (excludes "Project Delays" so it is only available as a level tab)
+ */
+export const mentorMenuItems: MenuItem[] = [
+  { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  {
+    key: "academicLevel",
+    icon: UsersGroup,
+    label: "Academic Level",
+    hasSubmenu: true,
+    submenu: [
+      { label: "Level 1", path: "/dashboard/level-1" },
+      { label: "Level 2", path: "/dashboard/level-2" },
+      { label: "Level 3", path: "/dashboard/level-3" },
+      { label: "Level 4", path: "/dashboard/level-4" },
+    ],
+  },
+  { path: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
+  {
+    path: "/dashboard/communication",
+    icon: MessageSquare,
+    label: "Communication",
+  },
+  { path: "/dashboard/announcements", icon: ClipboardList, label: "Announcements" },
+];
+
+export const isMentorUser = (userObj: any): boolean => {
+  const role = String(userObj?.role || "").toLowerCase();
+  return role === "mentor" || role === "industry mentor";
+};
 
 /**
  * UnassignedLevelModal Component
@@ -87,19 +125,7 @@ const MentorSidebarWrapper: React.FC = () => {
 
     const targetLevel = Number(match[1]);
 
-    // Check if targetLevel is Level 1 (always blocked for industry mentors)
-    if (targetLevel === 1) {
-      e.preventDefault();
-      e.stopPropagation();
-      setModalState({
-        isOpen: true,
-        level: 1,
-        message: 'Industry mentors are not assigned to Level 1 stages.',
-      });
-      return;
-    }
-
-    // Check if mentor has active group assignments at this level
+    // Check if mentor has active group assignments at this level (including Level 1, 2, 3, 4)
     if (!assignedLevels.includes(targetLevel)) {
       e.preventDefault();
       e.stopPropagation();
@@ -118,7 +144,7 @@ const MentorSidebarWrapper: React.FC = () => {
     const match = location.pathname.match(/level-(\d+)/);
     if (match) {
       const currentLvl = Number(match[1]);
-      if (!assignedLevels.includes(currentLvl) || currentLvl === 1) {
+      if (!assignedLevels.includes(currentLvl)) {
         const fallbackLevel = assignedLevels[0] || 2;
         navigate(`/dashboard/level-${fallbackLevel}`, { replace: true });
       }
@@ -132,7 +158,7 @@ const MentorSidebarWrapper: React.FC = () => {
         className="mentor-sidebar-container"
         onClickCapture={handleSidebarClick}
       >
-        <Sidebar />
+        <Sidebar navItems={mentorMenuItems} />
       </div>
 
       {modalState.isOpen && (

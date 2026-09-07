@@ -171,6 +171,8 @@ const SupervisorOverview: React.FC = () => {
 
           const upcomingList: StoredPanel[] = list
             .filter((p: any) => {
+              const pStatus = (p.status || p.panel_status || "").toLowerCase();
+              if (pStatus === "completed") return false;
               if (!p.panel_date) return false;
               const pDate = new Date(p.panel_date);
               if (isNaN(pDate.getTime())) return false;

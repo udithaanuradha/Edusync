@@ -74,6 +74,16 @@
 
 .approved-badge-row {
   display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Individual Project tag — same pill shape as .approved-status-badge, tinted
+   with the design system's primary color instead of success-green so it
+   reads as a distinct piece of info, not another status. */
+.approved-individual-badge {
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary-hover);
 }
 
 .approved-meta-row {

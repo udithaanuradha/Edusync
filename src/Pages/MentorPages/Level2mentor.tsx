@@ -6,6 +6,7 @@ import Header from '../../components/shared/Header';
 import MentorStageManagement from '../../components/mentor/MentorStageManagement';
 import GroupTasksTab from '../../components/mentor/GroupTasksTab';
 import MentorStudentSubmissions from '../../components/mentor/MentorStudentSubmissions';
+import MentorDelayedTasksTab from '../../components/mentor/MentorDelayedTasksTab';
 import './Level3mentor.css';   /* Shared layout CSS for all mentor level pages */
 import './LevelTabs.css';      /* Shared tab utility styles */
 
@@ -16,14 +17,14 @@ import './LevelTabs.css';      /* Shared tab utility styles */
  *
  * RESTRICTION LOGIC:
  *   - Checks if the logged-in mentor has any active project groups assigned at Level 2.
- *   - If assigned: displays operational tabs (Stage Documents, Tasks, Student Submissions).
+ *   - If assigned: displays operational tabs (Stage Documents, Tasks, Student Submissions, Delayed Tasks).
  *   - If not assigned: displays an access notification card with return to dashboard action.
  */
 const Level2mentor = () => {
   const navigate = useNavigate();
 
-  /* Active tab state — 3 operational tabs (Stage Documents, Tasks, Student Submissions) */
-  const [activeTab, setActiveTab] = useState<'guidelines' | 'tasks' | 'submissions'>('guidelines');
+  /* Active tab state — 4 operational tabs (Stage Documents, Tasks, Student Submissions, Delayed Tasks) */
+  const [activeTab, setActiveTab] = useState<'guidelines' | 'tasks' | 'submissions' | 'delays'>('guidelines');
   const [hasAssignedGroup, setHasAssignedGroup] = useState<boolean | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -148,6 +149,14 @@ const Level2mentor = () => {
                     Student Submissions
                   </button>
 
+                  {/* Delayed Tasks tab */}
+                  <button
+                    className={`tab-btn-mentor ${activeTab === 'delays' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('delays')}
+                  >
+                    Delayed Tasks
+                  </button>
+
                 </div>
               </div>
 
@@ -156,6 +165,7 @@ const Level2mentor = () => {
                 {activeTab === 'guidelines' && <MentorStageManagement levelNumber={levelNumber} />}
                 {activeTab === 'tasks' && <GroupTasksTab levelNumber={levelNumber} />}
                 {activeTab === 'submissions' && <MentorStudentSubmissions levelNumber={levelNumber} />}
+                {activeTab === 'delays' && <MentorDelayedTasksTab levelNumber={levelNumber} />}
               </div>
             </>
           )}

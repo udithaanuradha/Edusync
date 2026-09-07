@@ -68,6 +68,7 @@ type ScheduledPanel = {
   meetingLink: string;
   notes: string;
   kind: string;
+  department?: string;
 };
 
 type DrawerMode = "schedule" | "freeze";
@@ -287,6 +288,7 @@ const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => 
   meetingLink: String(row.meeting_link ?? row.meetingLink ?? ""),
   notes: String(row.notes ?? ""),
   kind: String(row.kind ?? "Coordinator scheduled panel"),
+  department: String(row.department ?? row.academic_unit ?? "ITM"),
 });
 
 const makeMonthKey = (date: Date) =>
@@ -646,9 +648,24 @@ const CalendarPage: React.FC = () => {
       // account) — without it, every department's panels came back, which
       // is what fed both the "Upcoming Panels" list and the month grid's
       // per-day panel-count dots with every other coordinator's panels too.
-      const panelsUrl = user?.id
-        ? `${CALENDAR_API_BASE}/panels?coordinatorId=${user.id}`
-        : `${CALENDAR_API_BASE}/panels`;
+      //
+      // Students are scoped differently: sending coordinatorId=user.id for
+      // a student made the backend resolve THEIR OWN personal
+      // academic_unit/level (via getCoordinatorScope, which just reads
+      // whatever id it's given off the users table) and filter panels by
+      // that — coincidentally similar to their department, but not their
+      // actual group, so a student never saw their group's own panel if
+      // some other quirk of that lookup didn't line up, and never saw a
+      // meeting link either since the list came back effectively empty.
+      // studentId instead resolves their own group server-side (via
+      // project_group_members/project_groups) and filters by that group's
+      // target_group, which is what they should see. Every other role's
+      // request is unchanged.
+      const panelsUrl = isStudent && user?.id
+        ? `${CALENDAR_API_BASE}/panels?studentId=${user.id}`
+        : user?.id
+          ? `${CALENDAR_API_BASE}/panels?coordinatorId=${user.id}`
+          : `${CALENDAR_API_BASE}/panels`;
       const response = await fetch(panelsUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
@@ -754,18 +771,34 @@ const CalendarPage: React.FC = () => {
 
           if (byDateRes.ok) {
             const rawPanelsJson = await byDateRes.json();
-            const rawPanels = rawPanelsJson.data || [];
+            const rawPanels = Array.isArray(rawPanelsJson.data)
+              ? rawPanelsJson.data
+              : Array.isArray(rawPanelsJson)
+                ? rawPanelsJson
+                : [];
             const linkMap = new Map<string, string>();
+            const statusMap = new Map<string, string>();
+            const deptMap = new Map<string, string>();
             rawPanels.forEach((rp: any) => {
               if (rp.meeting_link) {
                 linkMap.set(String(rp.id), rp.meeting_link);
                 if (rp.target_group) linkMap.set(String(rp.target_group), rp.meeting_link);
+              }
+              if (rp.status) {
+                statusMap.set(String(rp.id), rp.status);
+                if (rp.target_group) statusMap.set(String(rp.target_group), rp.status);
+              }
+              if (rp.department) {
+                deptMap.set(String(rp.id), rp.department);
+                if (rp.target_group) deptMap.set(String(rp.target_group), rp.department);
               }
             });
 
             panelsList = panelsList.map((p) => ({
               ...p,
               meeting_link: p.meeting_link || linkMap.get(String(p.panel_id)) || linkMap.get(String(p.group_name)) || "",
+              status: p.status || statusMap.get(String(p.panel_id)) || statusMap.get(String(p.group_name)) || "scheduled",
+              department: p.department || deptMap.get(String(p.panel_id)) || deptMap.get(String(p.group_name)) || "ITM",
             }));
           }
 
@@ -899,23 +932,22 @@ const CalendarPage: React.FC = () => {
   }, [supervisors, supervisorSearchQuery, groupSupervisorIds]);
 
   const displayedSupervisorPanels = useMemo(() => {
-    const todayStr = toDateValue(new Date());
-    // Filter only upcoming evaluation panels (today or future dates) - exclude overdue/past panels
-    const upcomingPanels = supervisorAssignedPanels.filter((p) => {
-      const pDate = getLocalDateStr(p.panel_date);
-      if (!pDate) return true;
-      return pDate >= todayStr;
+    // Only exclude panels that are already completed by the coordinator.
+    // Overdue panels that have NOT been completed by coordinator MUST still be shown!
+    const activePanels = supervisorAssignedPanels.filter((p) => {
+      const pStatus = (p.status || p.panel_status || "").toLowerCase();
+      return pStatus !== "completed";
     });
 
     if (!selectedCalendarDate) {
-      return [...upcomingPanels].sort((a, b) => {
+      return [...activePanels].sort((a, b) => {
         const dateA = `${getLocalDateStr(a.panel_date)} ${a.start_time || "00:00"}`;
         const dateB = `${getLocalDateStr(b.panel_date)} ${b.start_time || "00:00"}`;
         return dateA.localeCompare(dateB);
       });
     }
 
-    return upcomingPanels.filter(
+    return activePanels.filter(
       (p) => getLocalDateStr(p.panel_date) === selectedCalendarDate
     );
   }, [supervisorAssignedPanels, selectedCalendarDate]);
@@ -935,11 +967,13 @@ const CalendarPage: React.FC = () => {
     const mapped = new Map<number, CalendarGridMarker>();
 
     if (userRole === "supervisor" || (userRole === "lecturer" && !isCoordinator)) {
-      const todayStr = toDateValue(new Date());
       supervisorAssignedPanels.forEach((p) => {
+        // Exclude completed panels - all active/pending panels (including overdue) show on calendar
+        const pStatus = (p.status || p.panel_status || "").toLowerCase();
+        if (pStatus === "completed") return;
+
         const dateStr = getLocalDateStr(p.panel_date);
-        // Only mark upcoming/active panels (today or future) on the calendar
-        if (dateStr && dateStr >= todayStr) {
+        if (dateStr) {
           const pDate = parseDateValue(dateStr);
           if (pDate.getFullYear() === year && pDate.getMonth() === month) {
             const day = pDate.getDate();
@@ -957,6 +991,10 @@ const CalendarPage: React.FC = () => {
       });
     } else {
       scheduledPanels.forEach((panel) => {
+        // Exclude completed panels
+        const pStatus = ((panel as any).status || "").toLowerCase();
+        if (pStatus === "completed") return;
+
         const panelDate = parseDateValue(panel.date);
         if (panelDate.getFullYear() !== year || panelDate.getMonth() !== month) {
           return;
@@ -1471,9 +1509,41 @@ const CalendarPage: React.FC = () => {
                                   Leader: {panel.leader_name || 'Assigned Student'} • {panel.members?.length || 0} members
                                 </span>
                               </div>
-                              <div className="supervisor-badges-row">
+                              <div className="supervisor-badges-row" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span
+                                  style={{
+                                    backgroundColor: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#f3e8ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#e0f2fe' : '#fef3c7',
+                                    color: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#6b21a8' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#0369a1' : '#92400e',
+                                    border: `1px solid ${(panel.department || 'ITM').toUpperCase() === 'AI' ? '#e9d5ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#bae6fd' : '#fde68a'}`,
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    padding: '2px 7px',
+                                    borderRadius: '5px',
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'uppercase'
+                                  }}
+                                >
+                                  {panel.department || 'ITM'}
+                                </span>
                                 <span className="level-badge">Level {panel.academic_level || 2}</span>
                                 <span className="stage-badge">{panel.stage_name || panel.evaluation_type}</span>
+                                {localDate && localDate < toDateValue(new Date()) && (
+                                  <span
+                                    style={{
+                                      fontSize: '10px',
+                                      backgroundColor: '#fee2e2',
+                                      color: '#b91c1c',
+                                      border: '1px solid #fca5a5',
+                                      fontWeight: '800',
+                                      padding: '1px 6px',
+                                      borderRadius: '4px',
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.03em'
+                                    }}
+                                  >
+                                    Overdue
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -1577,15 +1647,26 @@ const CalendarPage: React.FC = () => {
                       </div>
                     ) : (
                       sortedPanels.map((panel) => {
+                        try {
                         // panel.evaluators is external evaluators only, so this
                         // subtraction is a no-op for panels created after the
                         // evaluators/supervisors split — kept to also render
                         // correctly for legacy rows saved before that split,
                         // where evaluators still included the supervisor names.
+                        // Defaulted to [] — legacy panels cached in
+                        // localStorage (PANEL_STORAGE_KEY, the fetch-failure
+                        // fallback) from before the evaluators/supervisors
+                        // split can be missing these fields entirely, which
+                        // crashed the whole page with no error boundary to
+                        // catch it (Cannot read properties of undefined
+                        // (reading 'map')). panelSupervisors is reused below
+                        // instead of touching panel.supervisors directly, so
+                        // every read of it stays crash-safe.
+                        const panelSupervisors = panel.supervisors || [];
                         const supervisorNamesLower = new Set(
-                          panel.supervisors.map((name) => name.toLowerCase()),
+                          panelSupervisors.map((name) => name.toLowerCase()),
                         );
-                        const externalEvaluators = panel.evaluators.filter(
+                        const externalEvaluators = (panel.evaluators || []).filter(
                           (name) => !supervisorNamesLower.has(name.toLowerCase()),
                         );
 
@@ -1600,7 +1681,22 @@ const CalendarPage: React.FC = () => {
                                 <span className="upcoming-item-group">
                                   {panel.groupName}
                                 </span>
-                                <div className="upcoming-item-badges">
+                                <div className="upcoming-item-badges" style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                                  <span
+                                    style={{
+                                      backgroundColor: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#f3e8ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#e0f2fe' : '#fef3c7',
+                                      color: (panel.department || 'ITM').toUpperCase() === 'AI' ? '#6b21a8' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#0369a1' : '#92400e',
+                                      border: `1px solid ${(panel.department || 'ITM').toUpperCase() === 'AI' ? '#e9d5ff' : (panel.department || 'ITM').toUpperCase() === 'IT' ? '#bae6fd' : '#fde68a'}`,
+                                      fontSize: '10.5px',
+                                      fontWeight: '800',
+                                      padding: '2px 7px',
+                                      borderRadius: '5px',
+                                      letterSpacing: '0.02em',
+                                      textTransform: 'uppercase'
+                                    }}
+                                  >
+                                    {panel.department || 'ITM'}
+                                  </span>
                                   <span className="upcoming-level-pill">
                                     Level {panel.level}
                                   </span>
@@ -1655,13 +1751,13 @@ const CalendarPage: React.FC = () => {
                                   <Users size={12} />
                                 </span>
                                 <div className="upcoming-people-block">
-                                  {panel.supervisors.length > 0 && (
+                                  {panelSupervisors.length > 0 && (
                                     <div className="upcoming-people-line">
                                       <span className="role-badge supervisor-role-badge">
                                         Supervisor
                                       </span>
                                       <span className="upcoming-people-name">
-                                        {panel.supervisors.join(", ")}
+                                        {panelSupervisors.join(", ")}
                                       </span>
                                     </div>
                                   )}
@@ -1680,7 +1776,7 @@ const CalendarPage: React.FC = () => {
                                       </span>
                                     </div>
                                   )}
-                                  {panel.supervisors.length === 0 &&
+                                  {panelSupervisors.length === 0 &&
                                     externalEvaluators.length === 0 && (
                                       <div className="upcoming-people-line upcoming-people-muted">
                                         No panel members recorded
@@ -1712,6 +1808,10 @@ const CalendarPage: React.FC = () => {
                             )}
                           </article>
                         );
+                        } catch (err) {
+                          console.error('[CalendarPage] Failed to render upcoming panel', panel, err);
+                          return null;
+                        }
                       })
                     )}
                   </div>

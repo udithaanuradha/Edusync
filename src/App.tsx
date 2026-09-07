@@ -35,11 +35,12 @@ import CalendarPage from "./pages/CalendarPage";
 import AdminCalendarPage from "./pages/AdminPages/AdminCalendarPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import Level3mentor from "./pages/MentorPages/Level3mentor";
-import MentorLevel1Blocked from "./pages/MentorPages/MentorLevel1Blocked";
+import Level1mentor from "./pages/MentorPages/Level1mentor";
 import MentorSetupForm from "./pages/auth/MentorSetupForm";
 import ResetPasswordForm from "./pages/auth/ResetPasswordForm";
 import MentorProjectDelaysPage from "./pages/MentorPages/MentorProjectDelaysPage";
 import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
+import MentorCommunicationPage from "./pages/MentorPages/MentorCommunicationPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
 import AdminProjectDelaysPage from "./pages/AdminPages/AdminProjectDelaysPage";
 
@@ -179,7 +180,7 @@ function App() {
           ) : userObj?.role === "admin" ? (
             <AdminLevelPage levelNumber={1} />
           ) : userObj?.role === "mentor" ? (
-            <MentorLevel1Blocked />
+            <Level1mentor />
           ) : (
             <Navigate to="/login" />
           )
@@ -328,22 +329,54 @@ function App() {
           already used. */}
       <Route
         path="/communication"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route
         path="/dashboard/communication"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route
         path="/dashboard/communication-v2"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route
         path="/communication-v2"
-        element={userObj ? <CommunicationPageV2 /> : <Navigate to="/login" />}
+        element={
+          userObj?.role === "mentor" || userObj?.role === "industry mentor" ? (
+            <MentorCommunicationPage />
+          ) : userObj ? (
+            <CommunicationPageV2 />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
 
       <Route

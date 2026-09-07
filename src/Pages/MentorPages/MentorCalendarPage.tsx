@@ -330,9 +330,6 @@ const MentorCalendarPage: React.FC = () => {
           {/* ── Page Header ── */}
           <div className="mentor-cal-header-card">
             <div className="mentor-cal-header-info">
-              <div className="mentor-cal-badge">
-                <CalendarDays size={14} /> Mentor Schedule & Deadlines
-              </div>
               <h2>Project Calendar</h2>
               <p>
                 Track student task due dates, major milestone targets, and official coordinator stage deadlines in real-time.
