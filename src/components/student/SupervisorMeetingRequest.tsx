@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarPlus, X, Send, Trash2 } from 'lucide-react';
+import { CalendarPlus, X, Send, Trash2, FileText, Eye } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './SupervisorMeetingRequest.css';
 
@@ -26,6 +26,21 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [assignedSupervisorIds, setAssignedSupervisorIds] = useState<Set<number>>(new Set());
 
+  // Meeting reports — written by the student after an approved meeting,
+  // sent to the supervisor for their own separate approval.
+  const [reportsHistory, setReportsHistory] = useState<any[]>([]);
+  const [reportModalRequestId, setReportModalRequestId] = useState<number | null>(null);
+  const [reportSummary, setReportSummary] = useState('');
+  const [reportStatus, setReportStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
+  const [reportError, setReportError] = useState('');
+  // A separate, read-only view for an already-approved report — distinct
+  // from reportModalRequestId (the "write a new report" form) so opening
+  // one never clobbers the other's state.
+  const [viewingReport, setViewingReport] = useState<any | null>(null);
+
+  // Falls back to the student's own requests only when their group isn't
+  // known yet (e.g. group-history lookup hasn't resolved). Once a group name
+  // is available, group history is fetched instead — see fetchGroupHistory.
   const fetchHistory = async () => {
     if (!user || !user.id) return;
     try {
@@ -37,6 +52,23 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
       }
     } catch (err) {
       console.error("Failed to load history", err);
+    }
+  };
+
+  // Meeting request + report history for the WHOLE assigned group (every
+  // member), not just this student's own — reuses the same group-history
+  // endpoint the supervisor's "View History" panel is built on.
+  const fetchGroupHistory = async (groupNameToFetch: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/meeting-reports/group-history/${encodeURIComponent(groupNameToFetch)}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setRequestsHistory(Array.isArray(data.meetings) ? data.meetings : []);
+      setReportsHistory(Array.isArray(data.reports) ? data.reports : []);
+    } catch (err) {
+      console.error("Failed to load group history", err);
     }
   };
 
@@ -61,16 +93,39 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       if (!res.ok) return;
-      const list: { id: number; name: string }[] = await res.json();
+      const data = await res.json();
+      const list: { id: number; name: string }[] = Array.isArray(data) ? data : (data.supervisors || []);
       setAssignedSupervisorIds(new Set(list.map((s) => Number(s.id))));
-      setSupervisors(Array.isArray(list) ? list : []);
+      setSupervisors(list);
       // Nothing to choose between when there's only one — pick it so the
       // student isn't forced to open a dropdown just to confirm it.
       if (list.length === 1) {
         setSupervisorId(String(list[0].id));
       }
+      // Auto-fill the group name from the student's own assigned group —
+      // they shouldn't have to type/remember it themselves. Also use it to
+      // pull the whole group's request/report history (not just this
+      // student's own).
+      if (!Array.isArray(data) && data.groupName) {
+        setGroupName(data.groupName);
+        fetchGroupHistory(data.groupName);
+      }
     } catch (err) {
       console.error("Failed to load assigned supervisor(s):", err);
+    }
+  };
+
+  const fetchReports = async () => {
+    if (!user || !user.id) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/meeting-reports/student/${user.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      if (res.ok) {
+        setReportsHistory(await res.json());
+      }
+    } catch (err) {
+      console.error("Failed to load meeting reports", err);
     }
   };
 
@@ -78,8 +133,62 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
     if (isOpen) {
       fetchAssignedSupervisors();
       fetchHistory();
+      fetchReports();
     }
   }, [isOpen, user]);
+
+  const openReportModal = (requestId: number) => {
+    setReportModalRequestId(requestId);
+    setReportSummary('');
+    setReportError('');
+    setReportStatus('idle');
+  };
+
+  const closeReportModal = () => {
+    setReportModalRequestId(null);
+    setReportSummary('');
+    setReportError('');
+    setReportStatus('idle');
+  };
+
+  const handleSubmitReport = async () => {
+    if (!user || !user.id || reportModalRequestId === null) return;
+    if (!reportSummary.trim()) {
+      setReportError('Please write a summary of the meeting before submitting.');
+      return;
+    }
+
+    setReportStatus('submitting');
+    setReportError('');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/meeting-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          meeting_request_id: reportModalRequestId,
+          student_id: user.id,
+          summary: reportSummary.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || "Failed to submit meeting report");
+      }
+
+      window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
+      closeReportModal();
+      fetchReports();
+    } catch (error) {
+      console.error(error);
+      setReportError(error instanceof Error ? error.message : "Failed to submit meeting report.");
+      setReportStatus('idle');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,18 +327,26 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
               {requestsHistory.length > 0 && (
                 <div style={{ marginBottom: '2rem' }}>
                   <h4 style={{ fontSize: '0.9rem', color: 'var(--eds-color-text-muted)', marginBottom: '1rem', borderBottom: '1px solid var(--eds-color-border)', paddingBottom: '0.5rem' }}>
-                    Your Request History
+                    Group Request History
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {(showAllHistory ? requestsHistory : requestsHistory.slice(0, 2)).map(req => (
-                      <div key={req.id} style={{ 
-                        padding: '1rem', 
-                        borderRadius: '8px', 
+                    {(showAllHistory ? requestsHistory : requestsHistory.slice(0, 2)).map(req => {
+                      const isOwn = Number(req.student_id) === Number(user?.id);
+                      return (
+                      <div key={req.id} style={{
+                        padding: '1rem',
+                        borderRadius: '8px',
                         border: `1px solid ${req.status === 'approved' ? 'var(--eds-color-success-solid)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-border)'}`,
-                        background: req.status === 'approved' ? 'var(--eds-color-success-bg)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface)' 
+                        background: req.status === 'approved' ? 'var(--eds-color-success-bg)' : req.status === 'rejected' ? 'var(--eds-color-danger-bg)' : 'var(--eds-color-bg-surface)'
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem', gap: '0.5rem' }}>
-                          <strong style={{ fontSize: '0.95rem', color: 'var(--eds-color-text-strong)' }}>{req.topic}</strong>
+                          <div>
+                            <strong style={{ fontSize: '0.95rem', color: 'var(--eds-color-text-strong)' }}>{req.topic}</strong>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--eds-color-text-muted)', marginTop: '2px' }}>
+                              {isOwn ? 'By you' : `By ${req.student_name || 'a group member'}`}
+                              {req.supervisor_name ? ` → ${req.supervisor_name}` : ''}
+                            </div>
+                          </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                             <span style={{
                               fontSize: '0.75rem',
@@ -242,7 +359,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                             }}>
                               {req.status}
                             </span>
-                            {req.status === 'pending' && (
+                            {isOwn && req.status === 'pending' && (
                               <button
                                 type="button"
                                 onClick={() => handleDelete(req.id)}
@@ -301,8 +418,78 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                             {req.supervisor_message}
                           </div>
                         )}
+                        {req.status === 'approved' && (() => {
+                          const report = reportsHistory.find((r) => r.meeting_request_id === req.id);
+                          const reportApproved = report?.status === 'approved';
+
+                          // Other members' requests: only ever a read-only
+                          // status glance — creating/viewing the report stays
+                          // limited to the student who owns the request.
+                          if (!isOwn) {
+                            return report ? (
+                              <div style={{ marginTop: '0.75rem' }}>
+                                <span
+                                  title={report.supervisor_message || undefined}
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    fontWeight: 600,
+                                    textTransform: 'capitalize',
+                                    backgroundColor: report.status === 'approved' ? 'var(--eds-color-success-solid)' : report.status === 'rejected' ? 'var(--eds-color-danger-solid)' : '#f59e0b',
+                                    color: 'var(--eds-color-bg-surface)',
+                                  }}
+                                >
+                                  Report: {report.status}
+                                </span>
+                              </div>
+                            ) : null;
+                          }
+
+                          return (
+                            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={() => (reportApproved ? setViewingReport(report) : openReportModal(req.id))}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  background: reportApproved ? 'var(--eds-color-primary)' : 'var(--eds-color-bg-surface)',
+                                  border: '1px solid var(--eds-color-primary)',
+                                  color: reportApproved ? 'var(--eds-color-bg-surface)' : 'var(--eds-color-primary)',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {reportApproved ? <Eye size={14} /> : <FileText size={14} />}
+                                {reportApproved ? 'View Your Report' : 'Create Meeting Report'}
+                              </button>
+                              {report && !reportApproved && (
+                                <span
+                                  title={report.supervisor_message || undefined}
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    fontWeight: 600,
+                                    textTransform: 'capitalize',
+                                    backgroundColor: report.status === 'rejected' ? 'var(--eds-color-danger-solid)' : '#f59e0b',
+                                    color: 'var(--eds-color-bg-surface)',
+                                  }}
+                                >
+                                  Report: {report.status}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {requestsHistory.length > 2 && (
                     <button
@@ -325,6 +512,7 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                 </div>
               )}
 
+
               <h4 style={{ fontSize: '0.9rem', color: 'var(--eds-color-text-muted)', marginBottom: '1rem', borderBottom: '1px solid var(--eds-color-border)', paddingBottom: '0.5rem' }}>
                 New Meeting Request
               </h4>
@@ -338,6 +526,8 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
                       placeholder="e.g., Group 05"
                       value={groupName}
                       onChange={(e) => setGroupName(e.target.value)}
+                      readOnly={!!groupName}
+                      style={groupName ? { background: 'var(--eds-color-bg-muted, #f3f4f6)', cursor: 'not-allowed' } : undefined}
                     />
                   </label>
                   <label className="drawer-field">
@@ -402,6 +592,77 @@ const SupervisorMeetingRequest: React.FC<SupervisorMeetingRequestProps> = ({ lev
               </form>
             </div>
           </aside>
+        </div>
+      )}
+
+      {reportModalRequestId !== null && (
+        <div className="report-modal-backdrop" role="dialog" aria-modal="true" onClick={closeReportModal}>
+          <div className="report-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Create Meeting Report</h3>
+            <p>Summarize what was discussed/decided in this meeting — your supervisor will review and approve it.</p>
+            <textarea
+              value={reportSummary}
+              onChange={(event) => setReportSummary(event.target.value)}
+              placeholder="What did you discuss? What are the next steps?"
+              rows={6}
+            />
+            {reportError && <p className="report-modal-error">{reportError}</p>}
+            <div className="report-modal-actions">
+              <button
+                type="button"
+                className="report-modal-submit-btn"
+                onClick={handleSubmitReport}
+                disabled={reportStatus === 'submitting'}
+              >
+                {reportStatus === 'submitting' ? 'Submitting...' : 'Submit Report'}
+              </button>
+              <button type="button" className="report-modal-cancel-btn" onClick={closeReportModal}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingReport !== null && (
+        <div className="report-modal-backdrop" role="dialog" aria-modal="true" onClick={() => setViewingReport(null)}>
+          <div className="report-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Your Meeting Report</h3>
+            <p>Submitted {new Date(viewingReport.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} — approved by your supervisor.</p>
+
+            <div style={{
+              fontSize: '0.85rem',
+              color: 'var(--eds-color-text-body)',
+              background: 'var(--eds-color-bg-surface-soft)',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              whiteSpace: 'pre-wrap',
+            }}>
+              {viewingReport.summary}
+            </div>
+
+            {viewingReport.supervisor_message && (
+              <div style={{
+                fontSize: '0.85rem',
+                color: 'var(--eds-color-text-body)',
+                background: 'var(--eds-color-success-bg)',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                borderLeft: '3px solid var(--eds-color-success-solid)',
+                marginTop: '0.75rem',
+                whiteSpace: 'pre-wrap',
+              }}>
+                <strong>Supervisor Feedback:</strong><br />
+                {viewingReport.supervisor_message}
+              </div>
+            )}
+
+            <div className="report-modal-actions">
+              <button type="button" className="report-modal-cancel-btn" onClick={() => setViewingReport(null)}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
