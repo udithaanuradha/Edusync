@@ -299,19 +299,29 @@ const SupervisorOverview: React.FC = () => {
         console.warn("Failed fetching groups:", err);
       }
 
-      // 2. Fetch pending meeting requests independently
+      // 2. Fetch pending meeting requests + meeting reports independently —
+      // the stat card below counts both together (renamed to "Meeting
+      // Request/Report Request" to reflect that).
       try {
-        const meetingRes = await fetch(`http://localhost:5000/api/meeting-requests/supervisor/${idStr}`, {
-          headers: authHeaders,
-        });
+        const [meetingRes, reportRes] = await Promise.all([
+          fetch(`http://localhost:5000/api/meeting-requests/supervisor/${idStr}`, { headers: authHeaders }),
+          fetch(`http://localhost:5000/api/meeting-reports/supervisor/${idStr}`, { headers: authHeaders }),
+        ]);
+
+        let pendingCount = 0;
         if (meetingRes.ok) {
           const meetingData = await meetingRes.json();
           const list = Array.isArray(meetingData) ? meetingData : (meetingData.data || meetingData.requests || []);
-          const pending = list.filter((r: any) => String(r.status || "").toLowerCase() === "pending");
-          setPendingMeetingsCount(pending.length);
+          pendingCount += list.filter((r: any) => String(r.status || "").toLowerCase() === "pending").length;
         }
+        if (reportRes.ok) {
+          const reportData = await reportRes.json();
+          const list = Array.isArray(reportData) ? reportData : (reportData.data || reportData.reports || []);
+          pendingCount += list.filter((r: any) => String(r.status || "").toLowerCase() === "pending").length;
+        }
+        setPendingMeetingsCount(pendingCount);
       } catch (err) {
-        console.warn("Failed fetching meeting requests:", err);
+        console.warn("Failed fetching meeting requests/reports:", err);
       }
 
       // 3. Fetch pending group-approval requests independently
@@ -462,14 +472,14 @@ const SupervisorOverview: React.FC = () => {
             }}
             role="button"
             tabIndex={0}
-            title="View Meeting Requests"
+            title="View Meeting Request/Report Request"
           >
             {pendingMeetingsCount > 0 && <span className="stat-card-badge-dot" />}
             <div className="stat-badge-icon meeting-bg">
               <Users size={18} />
             </div>
             <div className="stat-info">
-              <div className="stat-label">Meeting Requests</div>
+              <div className="stat-label">Meeting Request/Report Request</div>
               <div className="stat-value">
                 <span className="num">{pendingMeetingsCount}</span>
                 <span className="unit">pending</span>
