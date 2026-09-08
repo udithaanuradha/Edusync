@@ -319,6 +319,12 @@
   resize: vertical;
 }
 
+.mpb-quick-add-file-input {
+  width: 100%;
+  font-size: 13px;
+  color: var(--eds-color-text-muted);
+}
+
 .mpb-quick-add-dates {
   display: flex;
   gap: 14px;

@@ -66,8 +66,17 @@ const startOfToday = (): Date => {
   return d;
 };
 
-// YYYY-MM-DD, for an <input type="date">'s min/max/value.
-const toInputValue = (date: Date): string => date.toISOString().slice(0, 10);
+// YYYY-MM-DD, for an <input type="date">'s min/max/value. Built from the
+// Date object's own LOCAL year/month/day — NOT toISOString(), which
+// converts to UTC first and silently shifts the date backward by one day
+// for anyone in a positive UTC-offset timezone (e.g. local midnight on the
+// 8th becomes "the 7th" once re-expressed in UTC).
+const toInputValue = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const todayInputValue = (): string => toInputValue(startOfToday());
 
@@ -76,6 +85,18 @@ const oneYearAfterInputValue = (dateStr: string): string => {
   d.setFullYear(d.getFullYear() + 1);
   return toInputValue(d);
 };
+
+// The project window's own cap is two years (not one, like a milestone's).
+const twoYearsAfterInputValue = (dateStr: string): string => {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setFullYear(d.getFullYear() + 2);
+  return toInputValue(d);
+};
+
+// Combine two possibly-empty "YYYY-MM-DD" bounds — either side missing
+// just falls back to whichever one is actually set.
+const laterDate = (a: string, b: string): string => (a && b ? (a > b ? a : b) : a || b);
+const earlierDate = (a: string, b: string): string => (a && b ? (a < b ? a : b) : a || b);
 
 /**
  * Rebuilt from the old ProjectTimeline.tsx: instead of managing every
@@ -124,6 +145,116 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // The project's own overall window (project_overviews table) — set once
+  // per group, independent of any single milestone. Any group member may
+  // set/edit it, same as who can create a milestone. `workflowName` is
+  // round-tripped as-is on every save (never edited here) so saving the
+  // window never clobbers it — out of scope for this section.
+  const [projectStartInput, setProjectStartInput] = useState('');
+  const [projectEndInput, setProjectEndInput] = useState('');
+  // The start date as last loaded/saved from the server — used the same
+  // way activeMilestone.startDate is for the milestone form, so re-saving
+  // an already-past start date left untouched isn't treated as "newly"
+  // backdating it (see handleSaveProjectWindow).
+  const [savedProjectStart, setSavedProjectStart] = useState('');
+  const [workflowName, setWorkflowName] = useState<string | null>(null);
+  const [projectWindowLoading, setProjectWindowLoading] = useState(true);
+  const [projectWindowSaving, setProjectWindowSaving] = useState(false);
+  const [projectWindowMessage, setProjectWindowMessage] = useState('');
+  const [projectWindowError, setProjectWindowError] = useState(false);
+
+  const loadProjectOverview = async () => {
+    if (!groupId) {
+      setProjectWindowLoading(false);
+      return;
+    }
+    setProjectWindowLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/overview/group/${groupId}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const start = data.data.start_date ? String(data.data.start_date).split('T')[0] : '';
+        setProjectStartInput(start);
+        setSavedProjectStart(start);
+        setProjectEndInput(data.data.end_date ? String(data.data.end_date).split('T')[0] : '');
+        setWorkflowName(data.data.workflow_name ?? null);
+      } else {
+        setProjectStartInput('');
+        setSavedProjectStart('');
+        setProjectEndInput('');
+        setWorkflowName(null);
+      }
+    } catch (e) {
+      // Fail open — no project window loaded just means milestones aren't
+      // constrained by one yet, same as a group that never set one.
+    } finally {
+      setProjectWindowLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProjectOverview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId]);
+
+  const handleSaveProjectWindow = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setProjectWindowMessage('');
+    setProjectWindowError(false);
+
+    if (projectStartInput && projectEndInput && new Date(projectStartInput) > new Date(projectEndInput)) {
+      setProjectWindowError(true);
+      setProjectWindowMessage('Start date cannot be later than end date.');
+      return;
+    }
+    // Only when the start date is actually changing from what's already
+    // saved — re-saving an already-past start date untouched isn't
+    // blocked, but it can't be newly moved into the past.
+    const projectStartChanged = projectStartInput !== savedProjectStart;
+    if (projectStartChanged && projectStartInput && new Date(`${projectStartInput}T00:00:00`) < startOfToday()) {
+      setProjectWindowError(true);
+      setProjectWindowMessage('Start date cannot be before today.');
+      return;
+    }
+    if (
+      projectStartInput &&
+      projectEndInput &&
+      new Date(`${projectEndInput}T00:00:00`) > new Date(`${twoYearsAfterInputValue(projectStartInput)}T00:00:00`)
+    ) {
+      setProjectWindowError(true);
+      setProjectWindowMessage("A project's end date can't be more than two years after its start date.");
+      return;
+    }
+    if (!groupId) {
+      setProjectWindowError(true);
+      setProjectWindowMessage('Group not found. Please reload the page.');
+      return;
+    }
+
+    setProjectWindowSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/overview`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          group_id: groupId,
+          start_date: projectStartInput || null,
+          end_date: projectEndInput || null,
+          workflow_name: workflowName,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to save project window.');
+      setProjectWindowMessage('Project window saved.');
+      setSavedProjectStart(projectStartInput);
+    } catch (err: any) {
+      setProjectWindowError(true);
+      setProjectWindowMessage(err.message || 'Failed to save project window.');
+    } finally {
+      setProjectWindowSaving(false);
+    }
+  };
 
   const loadMilestones = async () => {
     if (!groupId) {
@@ -274,10 +405,12 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
       setSaveMessage('Start date cannot be later than end date.');
       return;
     }
-    // Creation-only — editing an existing milestone (e.g. fixing a typo in
-    // the title) shouldn't be blocked just because its original start date
-    // has since passed.
-    if (!activeMilestone && new Date(`${formStart}T00:00:00`) < startOfToday()) {
+    // Only applies when the start date is actually being changed — an edit
+    // that leaves an already-past start date untouched (e.g. fixing just
+    // the title) isn't blocked just because time has passed since it was
+    // first set, but no save can newly set a start date in the past.
+    const startDateChanged = !activeMilestone || formStart !== activeMilestone.startDate;
+    if (startDateChanged && new Date(`${formStart}T00:00:00`) < startOfToday()) {
       setSaveError(true);
       setSaveMessage('Start date cannot be before today.');
       return;
@@ -286,6 +419,29 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
       setSaveError(true);
       setSaveMessage("A milestone can't run for more than one year.");
       return;
+    }
+    // Only checked once the project has an actual window set (see the
+    // Project Window section above) — a group that hasn't set one isn't
+    // blocked here at all, same as the backend's own check.
+    if (projectStartInput || projectEndInput) {
+      const msStart = new Date(`${formStart}T00:00:00`);
+      const msEnd = new Date(`${formEnd}T00:00:00`);
+      const pStart = projectStartInput ? new Date(`${projectStartInput}T00:00:00`) : null;
+      const pEnd = projectEndInput ? new Date(`${projectEndInput}T00:00:00`) : null;
+      const outOfWindow =
+        (pStart && msStart < pStart) ||
+        (pEnd && msEnd > pEnd) ||
+        (pEnd && msStart > pEnd) ||
+        (pStart && msEnd < pStart);
+      if (outOfWindow) {
+        setSaveError(true);
+        setSaveMessage(
+          pStart && pEnd
+            ? `Milestone dates must fall within the project's ${formatShortDate(projectStartInput)} – ${formatShortDate(projectEndInput)} window.`
+            : "Milestone dates must fall within the project's own window."
+        );
+        return;
+      }
     }
     if (!groupId) {
       setSaveError(true);
@@ -373,6 +529,71 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
         </div>
       ) : (
         <>
+          {/* The project's own overall window — set once per group,
+              independent of any single milestone. Any group member may
+              set/edit it. Shown first so its constraint on the milestone
+              form below it (Start/End min/max) is visible before you ever
+              try to save one. */}
+          {/* noValidate: this form's date inputs use min/max attributes
+              that legitimately go stale mid-edit (e.g. moving Start Date
+              later than the currently-saved End Date briefly makes the End
+              Date field invalid against its own min) — without this, the
+              browser's native constraint validation silently blocks
+              onSubmit from ever firing, with no visible error. Every one of
+              these rules is already re-checked with a clear message in
+              handleSaveProjectWindow, so nothing is actually left
+              unvalidated by turning native validation off. */}
+          <form className="timeline-section project-window-section" onSubmit={handleSaveProjectWindow} noValidate>
+            <div className="milestone-details-head">
+              <h4 className="section-title">Project Window</h4>
+            </div>
+            <p className="scope-division-desc">
+              The overall start and end date your coordinator has given this project. Once set,
+              every milestone below must fall within it.
+            </p>
+            <div className="timeline-form-grid">
+              <div className="timeline-form-group">
+                <label htmlFor="project-start">Project Start Date</label>
+                <input
+                  id="project-start"
+                  type="date"
+                  className="timeline-form-input"
+                  value={projectStartInput}
+                  onChange={(e) => setProjectStartInput(e.target.value)}
+                  disabled={projectWindowLoading}
+                  // Doesn't reject an already-past value left untouched —
+                  // only a newly-picked past date is rejected, at submit
+                  // time (see handleSaveProjectWindow's projectStartChanged
+                  // check).
+                  min={todayInputValue()}
+                />
+              </div>
+              <div className="timeline-form-group">
+                <label htmlFor="project-end">Project End Date</label>
+                <input
+                  id="project-end"
+                  type="date"
+                  className="timeline-form-input"
+                  value={projectEndInput}
+                  onChange={(e) => setProjectEndInput(e.target.value)}
+                  disabled={projectWindowLoading}
+                  min={projectStartInput || undefined}
+                  max={projectStartInput ? twoYearsAfterInputValue(projectStartInput) : undefined}
+                />
+              </div>
+            </div>
+            {projectWindowMessage && (
+              <div className={`timeline-submit-message ${projectWindowError ? 'error' : 'success'}`}>
+                {projectWindowMessage}
+              </div>
+            )}
+            <div className="timeline-form-footer">
+              <button type="submit" className="submit-btn" disabled={projectWindowSaving || projectWindowLoading}>
+                {projectWindowSaving ? 'Saving...' : 'Save Project Window'}
+              </button>
+            </div>
+          </form>
+
           {/* Stacked, in order: milestone add/select, then the schedule
               preview, then scope division. The Gantt chart renders
               regardless of whether any milestone exists yet — it has its
@@ -400,7 +621,12 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
             </button>
           </div>
 
-          <form className="timeline-section" onSubmit={handleSave}>
+          {/* noValidate — same reason as the Project Window form above:
+              this form's min/max attributes (tightened further by the
+              project window) can go stale mid-edit and silently block
+              native submission; handleSave already re-checks every rule
+              itself with a clear message. */}
+          <form className="timeline-section" onSubmit={handleSave} noValidate>
             <div className="milestone-details-head">
               <h4 className="section-title">Milestone Details</h4>
               {activeMilestone && userRole === 'leader' && (
@@ -438,10 +664,14 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
                   value={formStart}
                   onChange={(e) => setFormStart(e.target.value)}
                   disabled={!canEditFields}
-                  // Only on a brand-new milestone — editing an existing one
-                  // shouldn't refuse to show/keep its original (possibly
-                  // past) start date.
-                  min={!activeMilestone ? todayInputValue() : undefined}
+                  // Applies whether creating or editing — the picker won't
+                  // offer a new past date, but this doesn't reject the
+                  // field's own already-past value if the milestone's
+                  // original start date isn't being touched (see
+                  // handleSave's startDateChanged check). Tightened further
+                  // by the project's own window once one is set, above.
+                  min={laterDate(todayInputValue(), projectStartInput)}
+                  max={projectEndInput || undefined}
                 />
               </div>
 
@@ -454,7 +684,10 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
                   value={formEnd}
                   onChange={(e) => setFormEnd(e.target.value)}
                   disabled={!canEditFields}
-                  max={formStart ? oneYearAfterInputValue(formStart) : undefined}
+                  // Whichever is tighter: the one-year cap from the
+                  // milestone's own start, or the project's own end date
+                  // once one is set.
+                  max={formStart ? earlierDate(oneYearAfterInputValue(formStart), projectEndInput) : (projectEndInput || undefined)}
                 />
               </div>
             </div>
@@ -491,7 +724,6 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
             // same regardless of which milestone is selected above.
             <ScopeDivision
               groupId={groupId}
-              userRole={userRole}
               currentUser={currentUser}
               supervisor={supervisor}
               mentor={mentor}

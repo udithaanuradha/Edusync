@@ -1011,6 +1011,24 @@
   font-weight: 600;
 }
 
+.task-board-card-file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eds-color-primary);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.task-board-card-file-link:hover {
+  text-decoration: underline;
+}
+
 .task-board-card-saving {
   display: flex;
   align-items: center;

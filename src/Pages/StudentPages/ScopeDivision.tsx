@@ -7,6 +7,9 @@ export type ScopeSection = {
   groupId: number | string;
   title: string;
   description: string;
+  /** Who created (and exclusively owns) this section — still called
+      claimedBy/claimed_by at the data layer, but there's no separate
+      "claim" step any more: creating a section sets this immediately. */
   claimedBy: number | string | null;
   claimedByName: string | null;
 };
@@ -15,11 +18,10 @@ type CurrentUser = { id: number | string; name: string } | null;
 type Person = { id: number | string; name: string } | null;
 
 type ScopeDivisionProps = {
-  /** Scope Division is project-wide now — one set of sections per group,
+  /** Scope Division is project-wide — one set of sections per group,
       independent of whichever milestone is currently selected above it on
       Project Overview (see ProjectOverview.tsx). */
   groupId: number | null;
-  userRole: 'leader' | 'member';
   currentUser: CurrentUser;
   supervisor: Person;
   mentor: Person;
@@ -41,9 +43,16 @@ const authHeaders = (): Record<string, string> => {
   };
 };
 
+/**
+ * Any group member creates their own scope section directly — no leader
+ * pre-defines a list for others to claim any more. Creating a section is
+ * the only step: it's owned by whoever created it from that moment,
+ * capped at one section per student. Editing/deleting is owner-only, with
+ * no leader override — the group's leader has no special power here
+ * beyond creating and managing their own section like everyone else.
+ */
 const ScopeDivision: React.FC<ScopeDivisionProps> = ({
   groupId,
-  userRole,
   currentUser,
   supervisor,
   mentor,
@@ -53,7 +62,6 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
   const [sections, setSections] = useState<ScopeSection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [claimingId, setClaimingId] = useState<string | number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -102,29 +110,6 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     loadSections();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
-
-  const handleClaim = async (sectionId: number | string) => {
-    if (!currentUser) return;
-    setClaimingId(sectionId);
-    setError('');
-    try {
-      const res = await fetch(`${API_BASE}/scope/${sectionId}/claim`, {
-        method: 'PUT',
-        headers: authHeaders(),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        setError(data.error || 'Could not claim this section — someone may have just taken it.');
-      }
-      // Reload either way: on success it shows the fresh lock; on conflict it
-      // shows who actually won the claim instead of a stale "still open" row.
-      await loadSections();
-    } catch (e) {
-      setError('Server connection error while claiming this section.');
-    } finally {
-      setClaimingId(null);
-    }
-  };
 
   const handleAddSection = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -220,11 +205,10 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     }
   };
 
-  // A student can only ever have ONE claimed section for the WHOLE
-  // PROJECT — used below to proactively disable claiming a second one,
-  // instead of only catching it after the fact via the backend's 409
-  // response.
-  const myClaimedSection = currentUser
+  // A student can only ever own ONE section for the whole project — used
+  // below to hide/disable "+ Add scope section" once they already have
+  // one, instead of only catching it after the fact via the backend's 409.
+  const mySection = currentUser
     ? sections.find((s) => String(s.claimedBy) === String(currentUser.id))
     : undefined;
 
@@ -232,15 +216,10 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
     <div className="timeline-section scope-division-card">
       <h4 className="section-title">Scope Division</h4>
       <p className="scope-division-desc">
-        Your supervisor and mentor have broken this project into scope sections below. Tick a
-        section to claim it — once a section is ticked, it locks to that student and disappears
-        as an option for everyone else. You can only claim one section for the whole project.
+        Create your own section describing the part of this project you&apos;re responsible for — every
+        member sees everyone else&apos;s section too. You can create one section for the whole project,
+        and only you can edit or delete it.
       </p>
-
-      <div className="scope-division-note">
-        ⚡ First to tick a section claims it. If two students tap at nearly the same time, only
-        the first one to save is kept — the other will see it&apos;s already taken.
-      </div>
 
       {error && <p className="scope-division-error">{error}</p>}
 
@@ -252,7 +231,12 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
         <div className="scope-section-list">
           {sections.map((section) => {
             const isMine = Boolean(currentUser) && String(section.claimedBy) === String(currentUser?.id);
-            const isClaimed = Boolean(section.claimedBy);
+            // Left over from before every section always got an owner at
+            // creation — nobody can be "the owner" of one of these, so
+            // anyone may clear it out (matches the backend's same
+            // allowance in deleteScopeSection) rather than it being stuck
+            // forever under the owner-only rule.
+            const isOrphaned = section.claimedBy == null;
             const isEditing = editingId === section.id;
 
             if (isEditing) {
@@ -288,56 +272,35 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
             }
 
             return (
-              <div
-                key={section.id}
-                className={`scope-section-row ${isClaimed ? 'is-claimed' : ''} ${isMine ? 'is-mine' : ''}`}
-              >
-                <span className={`scope-section-checkbox ${isClaimed ? 'checked' : ''} ${isMine ? 'mine' : ''}`}>
-                  {isClaimed ? '✓' : ''}
-                </span>
+              <div key={section.id} className={`scope-section-row is-claimed ${isMine ? 'is-mine' : ''}`}>
+                <span className={`scope-section-checkbox checked ${isMine ? 'mine' : ''}`}>✓</span>
                 <div className="scope-section-body">
                   <p className="scope-section-title">{section.title}</p>
                   {section.description && <p className="scope-section-desc">{section.description}</p>}
-                  {isClaimed && (
-                    <p className={`scope-section-claimed-by ${isMine ? 'is-mine' : ''}`}>
-                      🔒 {isMine ? `Claimed by you — ${currentUser?.name}` : `Claimed by ${section.claimedByName}`}
-                    </p>
-                  )}
+                  <p className={`scope-section-claimed-by ${isMine ? 'is-mine' : ''}`}>
+                    {isMine
+                      ? `Created by you — ${currentUser?.name}`
+                      : isOrphaned
+                      ? 'No owner on record — safe to remove'
+                      : `Created by ${section.claimedByName}`}
+                  </p>
                 </div>
-                {isClaimed ? (
-                  <span className={`scope-section-locked-chip ${isMine ? 'is-mine' : ''}`}>
-                    {isMine ? 'Locked to you' : 'Locked'}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="scope-section-claim-btn"
-                    disabled={claimingId === section.id || Boolean(myClaimedSection)}
-                    onClick={() => handleClaim(section.id)}
-                    title={
-                      myClaimedSection
-                        ? `You've already claimed "${myClaimedSection.title}" for this project.`
-                        : undefined
-                    }
-                  >
-                    {claimingId === section.id
-                      ? 'Claiming…'
-                      : myClaimedSection
-                      ? "You've claimed one already"
-                      : '☐ Tick to claim'}
-                  </button>
-                )}
-                {userRole === 'leader' && (
+                <span className={`scope-section-locked-chip ${isMine ? 'is-mine' : ''}`}>
+                  {isMine ? 'Yours' : isOrphaned ? 'Unowned' : 'Owned'}
+                </span>
+                {(isMine || isOrphaned) && (
                   <div className="scope-section-owner-actions">
-                    <button
-                      type="button"
-                      className="scope-section-icon-btn"
-                      onClick={() => startEdit(section)}
-                      title="Edit this section"
-                      aria-label="Edit this section"
-                    >
-                      <Pencil size={14} />
-                    </button>
+                    {isMine && (
+                      <button
+                        type="button"
+                        className="scope-section-icon-btn"
+                        onClick={() => startEdit(section)}
+                        title="Edit this section"
+                        aria-label="Edit this section"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="scope-section-icon-btn danger"
@@ -356,36 +319,41 @@ const ScopeDivision: React.FC<ScopeDivisionProps> = ({
         </div>
       )}
 
-      {userRole === 'leader' &&
-        (showAddForm ? (
-          <form className="scope-add-form" onSubmit={handleAddSection}>
-            <input
-              type="text"
-              placeholder="Section title (e.g. Backend reporting API)"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              autoFocus
-            />
-            <textarea
-              placeholder="Short description (optional)"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-            />
-            {addError && <p className="scope-division-error">{addError}</p>}
-            <div className="scope-add-form-actions">
-              <button type="submit" className="add-task-btn" disabled={addBusy}>
-                {addBusy ? 'Adding…' : 'Add Section'}
-              </button>
-              <button type="button" className="secondary-btn" onClick={() => setShowAddForm(false)}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <button type="button" className="scope-add-section-btn" onClick={() => setShowAddForm(true)}>
-            + Add scope section
-          </button>
-        ))}
+      {mySection ? (
+        !showAddForm && editingId !== mySection.id && (
+          <p className="scope-division-note">
+            You&apos;ve already created &quot;{mySection.title}&quot; — edit it above to make changes.
+          </p>
+        )
+      ) : showAddForm ? (
+        <form className="scope-add-form" onSubmit={handleAddSection}>
+          <input
+            type="text"
+            placeholder="Section title (e.g. Backend reporting API)"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            autoFocus
+          />
+          <textarea
+            placeholder="Short description (optional)"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+          />
+          {addError && <p className="scope-division-error">{addError}</p>}
+          <div className="scope-add-form-actions">
+            <button type="submit" className="add-task-btn" disabled={addBusy}>
+              {addBusy ? 'Adding…' : 'Add Section'}
+            </button>
+            <button type="button" className="secondary-btn" onClick={() => setShowAddForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="scope-add-section-btn" onClick={() => setShowAddForm(true)}>
+          + Add your scope section
+        </button>
+      )}
 
       {(supervisor || mentor) && (
         <div className="scope-division-people-row">

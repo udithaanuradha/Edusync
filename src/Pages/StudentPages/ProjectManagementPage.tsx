@@ -278,6 +278,8 @@ const ProjectManagementPage: React.FC = () => {
               startDate: t.created_at ? t.created_at.split('T')[0] : '',
               endDate: t.due_date ? t.due_date.split('T')[0] : '',
               completedAt: t.completed_at || null,
+              fileName: t.file_name || null,
+              fileUrl: t.file_url || null,
             })));
           } else {
             setProjectTasks([]);
@@ -332,9 +334,14 @@ const ProjectManagementPage: React.FC = () => {
 /**
    * REQUEST #5: POST Create a new task
    * Triggered: a student adds their own task via MilestoneProgressBoard's
-   * "+ Add a task for yourself in this milestone" quick-add form.
+   * "+ Add a task for yourself in this milestone" quick-add form. `file`
+   * is optional — when chosen, it's uploaded in a separate follow-up call
+   * right after the task itself is created, the same two-step pattern
+   * Stage files use (create the record, then a separate upload call
+   * attaches the file to it). A failed upload doesn't roll back the task
+   * — it's just created without a file, same as if none had been chosen.
    */
-  const handleSaveTask = async (task: ProjectTask) => {
+  const handleSaveTask = async (task: ProjectTask, file?: File | null) => {
     try {
       const token = localStorage.getItem('token');
       const isExisting = projectTasks.some((t) => t.id === task.id);
@@ -356,10 +363,42 @@ const ProjectManagementPage: React.FC = () => {
             start_date: task.startDate
           })
         });
-        
+
         const data = await res.json();
         if (data.success) {
-          setProjectTasks(prev => [...prev, { ...task, id: data.data.id.toString(), status: 'TODO' }]);
+          const newTaskId = data.data.id.toString();
+          let fileName: string | null = null;
+          let fileUrl: string | null = null;
+
+          if (file) {
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('task_id', newTaskId);
+              formData.append('uploaded_by', String(task.assignedToId));
+
+              const uploadRes = await fetch('http://localhost:5000/api/milestones/tasks/upload-file', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'X-User-Id': currentUser?.id || JSON.parse(localStorage.getItem('user') || '{}').id,
+                  'X-User-Role': currentUser?.role || JSON.parse(localStorage.getItem('user') || '{}').role,
+                },
+                body: formData,
+              });
+              const uploadData = await uploadRes.json();
+              if (uploadData.success) {
+                fileName = uploadData.file_name;
+                fileUrl = uploadData.file_url;
+              } else {
+                console.error('Failed to attach file to task:', uploadData.error);
+              }
+            } catch (uploadErr) {
+              console.error('Error uploading task file:', uploadErr);
+            }
+          }
+
+          setProjectTasks(prev => [...prev, { ...task, id: newTaskId, status: 'TODO', fileName, fileUrl }]);
         }
       } else {
         // We do not have full task edit API yet, but we have status update
