@@ -14,6 +14,30 @@ import './ProjectManagementPage.css';
 type TabKey = 'overview' | 'myTasks' | 'progress' | 'groupContributions';
 type UserRole = 'leader' | 'member';
 
+// A milestone/task date coming back from the API serializes as a UTC ISO
+// string (e.g. "2026-09-17T18:30:00.000Z" for a milestone whose actual
+// local calendar date is the 18th) — `String(value).split('T')[0]` grabs
+// the UTC calendar date directly, which is one day EARLIER than the
+// intended local date for anyone in a positive UTC-offset timezone. That
+// mismatch is exactly what silently blocked task creation in a
+// not-yet-started milestone: the quick-add form defaulted to (and allowed)
+// this one-day-early "start", but the backend validates against the true,
+// correctly-computed milestone start pulled fresh from the DB — so every
+// task submission was rejected as "before the milestone's start date," no
+// matter what the user picked. Building the YYYY-MM-DD string from the
+// Date object's own local getFullYear/getMonth/getDate (not toISOString()
+// or a raw string split) is the same fix already applied to
+// ProjectOverview.tsx/MilestoneProgressBoard.tsx/milestoneController.js.
+const toLocalDateInputValue = (value: string | null | undefined): string => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface MilestoneFeedbackItem {
   id: number | string;
   title: string;
@@ -117,8 +141,8 @@ const ProjectManagementPage: React.FC = () => {
         const options = data.data.map((m: any) => ({
           id: m.id,
           title: m.title,
-          startDate: m.start_date ? String(m.start_date).split('T')[0] : '',
-          endDate: m.due_date ? String(m.due_date).split('T')[0] : '',
+          startDate: toLocalDateInputValue(m.start_date),
+          endDate: toLocalDateInputValue(m.due_date),
         }));
         console.log(`📋 [Frontend] Populating Milestone Options:`, options);
         setMilestoneOptions(options);
@@ -275,8 +299,8 @@ const ProjectManagementPage: React.FC = () => {
               assignedToId: t.assigned_to,
               assignedTo: t.assigned_to_name || 'Unknown',
               status: t.status,
-              startDate: t.created_at ? t.created_at.split('T')[0] : '',
-              endDate: t.due_date ? t.due_date.split('T')[0] : '',
+              startDate: toLocalDateInputValue(t.created_at),
+              endDate: toLocalDateInputValue(t.due_date),
               completedAt: t.completed_at || null,
               fileName: t.file_name || null,
               fileUrl: t.file_url || null,

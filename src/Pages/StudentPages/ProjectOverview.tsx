@@ -174,10 +174,15 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
       const res = await fetch(`${API_BASE}/overview/group/${groupId}`, { headers: authHeaders() });
       const data = await res.json();
       if (data.success && data.data) {
-        const start = data.data.start_date ? String(data.data.start_date).split('T')[0] : '';
+        // `.split('T')[0]` on the raw API string grabs the UTC calendar
+        // date, which is one day EARLIER than the true local date for a
+        // positive UTC-offset timezone — toInputValue (below) converts via
+        // the Date object's own local Y/M/D instead, same as everywhere
+        // else in this file.
+        const start = data.data.start_date ? toInputValue(new Date(data.data.start_date)) : '';
         setProjectStartInput(start);
         setSavedProjectStart(start);
-        setProjectEndInput(data.data.end_date ? String(data.data.end_date).split('T')[0] : '');
+        setProjectEndInput(data.data.end_date ? toInputValue(new Date(data.data.end_date)) : '');
         setWorkflowName(data.data.workflow_name ?? null);
       } else {
         setProjectStartInput('');
@@ -275,8 +280,8 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
         id: String(m.id),
         title: m.title || '',
         description: m.description || '',
-        startDate: m.start_date ? String(m.start_date).split('T')[0] : '',
-        endDate: m.due_date ? String(m.due_date).split('T')[0] : '',
+        startDate: m.start_date ? toInputValue(new Date(m.start_date)) : '',
+        endDate: m.due_date ? toInputValue(new Date(m.due_date)) : '',
         status: (m.status || 'PENDING') as MilestoneStatus,
       }));
       setMilestones(mapped);

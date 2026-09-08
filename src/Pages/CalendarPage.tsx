@@ -265,6 +265,21 @@ const CalendarPage: React.FC = () => {
 
     return effectiveRole ?? directRole ?? null;
   }, []);
+  // scheduledPanels is cached to localStorage (see the load/save effects
+  // below) purely so a slow/failed fetch still has something to show. That
+  // cache used to live under one GLOBAL key shared by every account that
+  // ever opened this page in the same browser — on a dev/test machine where
+  // people switch between a coordinator login and several student logins,
+  // whichever role loaded last would leave its FULL panel list sitting in
+  // localStorage, and the next student to load this page (even briefly,
+  // before their own scoped fetch resolves, or on any fetch hiccup) would
+  // fall back to that stale list and appear to see every group's panels.
+  // Keying the cache by the logged-in user's own id keeps each account's
+  // cached list private to that account.
+  const panelStorageKey = useMemo(() => {
+    const id = (storedUser as { id?: unknown } | null)?.id ?? user?.id;
+    return id ? `${PANEL_STORAGE_KEY}.${id}` : PANEL_STORAGE_KEY;
+  }, [storedUser, user?.id]);
   const storedUserDesignation =
     typeof storedUser?.designation === "string" ? storedUser.designation : null;
   const userDesignation =
@@ -311,7 +326,7 @@ const CalendarPage: React.FC = () => {
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState<string | null>(null);
   const [scheduledPanels, setScheduledPanels] = useState<ScheduledPanel[]>(() =>
-    loadStoredJson<ScheduledPanel[]>(PANEL_STORAGE_KEY, []),
+    loadStoredJson<ScheduledPanel[]>(panelStorageKey, []),
   );
   const [frozenDates, setFrozenDates] = useState<FrozenDateRecord[]>(() =>
     normalizeFrozenDates(loadStoredJson(FROZEN_STORAGE_KEY, [])),
@@ -631,7 +646,7 @@ const CalendarPage: React.FC = () => {
         rows.map((row) => normalizePanelFromApi(row as Record<string, unknown>)),
       );
     } catch {
-      const fallback = loadStoredJson<ScheduledPanel[]>(PANEL_STORAGE_KEY, []);
+      const fallback = loadStoredJson<ScheduledPanel[]>(panelStorageKey, []);
       setScheduledPanels(fallback);
     }
   };
@@ -759,14 +774,14 @@ const CalendarPage: React.FC = () => {
 
   useEffect(() => {
     window.localStorage.setItem(
-      PANEL_STORAGE_KEY,
+      panelStorageKey,
       JSON.stringify(scheduledPanels),
     );
     window.localStorage.setItem(
       FROZEN_STORAGE_KEY,
       JSON.stringify(frozenDates),
     );
-  }, [frozenDates, scheduledPanels]);
+  }, [frozenDates, scheduledPanels, panelStorageKey]);
 
   useEffect(() => {
     if (!isDrawerOpen || drawerMode !== "schedule") {
