@@ -218,6 +218,7 @@ export interface SignUpValidationResult {
     role?: string;
     universityId?: string;
     degreeProgram?: string;
+    accessKey?: string;
   };
 }
 
@@ -231,6 +232,7 @@ export function validateSignUpForm(formData: {
   role: string;
   universityId?: string;
   degreeProgram?: string;
+  accessKey?: string;
 }): SignUpValidationResult {
   const fieldErrors: SignUpValidationResult['fieldErrors'] = {};
 
@@ -277,6 +279,13 @@ export function validateSignUpForm(formData: {
     if (departmentError) fieldErrors.degreeProgram = departmentError;
   }
 
+  // Validate Access Key for staff roles (Lecturer & Admin)
+  if (formData.role === 'lecturer' && (!formData.accessKey || formData.accessKey.trim() === '')) {
+    fieldErrors.accessKey = 'Lecturer Key is required';
+  } else if (formData.role === 'admin' && (!formData.accessKey || formData.accessKey.trim() === '')) {
+    fieldErrors.accessKey = 'Admin Key is required';
+  }
+
   return {
     valid: Object.keys(fieldErrors).length === 0,
     fieldErrors
@@ -314,6 +323,14 @@ export function validateField(
       return validateUniversityId(value);
     case 'degreeProgram':
       return validateDepartment(value);
+    case 'accessKey':
+      if (formData?.role === 'lecturer' && (!value || value.trim() === '')) {
+        return 'Lecturer Key is required';
+      }
+      if (formData?.role === 'admin' && (!value || value.trim() === '')) {
+        return 'Admin Key is required';
+      }
+      return '';
     default:
       return '';
   }

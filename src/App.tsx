@@ -43,6 +43,9 @@ import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
 import MentorCommunicationPage from "./pages/MentorPages/MentorCommunicationPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
 import AdminProjectDelaysPage from "./pages/AdminPages/AdminProjectDelaysPage";
+import AdminAwarenessSessionsPage from "./pages/AdminPages/AdminAwarenessSessionsPage";
+import StudentAwarenessSessionsPage from "./pages/StudentPages/StudentAwarenessSessionsPage";
+import StudentCalendarPage from "./pages/StudentPages/StudentCalendarPage";
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -289,6 +292,8 @@ function App() {
             <AdminCalendarPage />
           ) : userObj?.role === "mentor" ? (
             <MentorCalendarPage />
+          ) : userObj?.role === "student" ? (
+            <StudentCalendarPage />
           ) : userObj ? (
             <CalendarPage />
           ) : (
@@ -449,6 +454,40 @@ function App() {
         element={
           userObj?.role === "admin" ? (
             <AdminProjectDelaysPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      {/* Awareness Sessions Routes (Standalone / Isolated) */}
+      <Route
+        path="/dashboard/awareness-sessions"
+        element={
+          userObj?.role === "admin" ? (
+            <AdminAwarenessSessionsPage />
+          ) : userObj?.role === "student" ? (
+            <StudentAwarenessSessionsPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route
+        path="/admin/awareness-sessions"
+        element={
+          userObj?.role === "admin" ? (
+            <AdminAwarenessSessionsPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route
+        path="/student/awareness-sessions"
+        element={
+          userObj?.role === "student" ? (
+            <StudentAwarenessSessionsPage />
           ) : (
             <Navigate to="/login" />
           )

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
+import AdminAwarenessSessionPanel from '../../components/admin/AdminAwarenessSessionPanel';
 import { 
   Megaphone, 
   Users, 
@@ -27,6 +28,7 @@ interface Announcement {
 }
 
 const AdminAnnouncements: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'announcements' | 'awareness'>('announcements');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
@@ -136,9 +138,10 @@ const AdminAnnouncements: React.FC = () => {
     }
   };
 
-  // ✅ Delete only if this admin owns the announcement
+  // ✅ Delete only if this admin owns the announcement or is admin
   const isMyAnnouncement = (ann: Announcement) => {
     if (!user) return false;
+    if (user.role === 'admin') return true;
     if (ann.author_id && user.id && String(ann.author_id) === String(user.id)) return true;
     if (user.name && ann.author_name && ann.author_name.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
     return false;
@@ -226,16 +229,73 @@ const AdminAnnouncements: React.FC = () => {
           
           <div className="dashboard-header-section" style={{
             width: '100%', display: 'flex', flexDirection: 'column',
-            alignItems: 'flex-start', textAlign: 'left', marginBottom: '28px'
+            alignItems: 'flex-start', textAlign: 'left', marginBottom: '20px'
           }}>
             <h2 className="overview-title" style={{ textAlign: 'left', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Megaphone size={22} color="#6366f1" />
-              Manage System Announcements
+              Manage Announcements & Awareness Sessions
             </h2>
           </div>
 
-          {/* Feedback banner */}
-          {statusFeedback && (
+          {/* Navigation Tabs */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '28px',
+            borderBottom: '2px solid #e2e8f0',
+            paddingBottom: '8px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('announcements')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                backgroundColor: activeTab === 'announcements' ? '#6366f1' : '#f1f5f9',
+                color: activeTab === 'announcements' ? '#ffffff' : '#64748b',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Megaphone size={16} />
+              General Announcements
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('awareness')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                backgroundColor: activeTab === 'awareness' ? '#6366f1' : '#f1f5f9',
+                color: activeTab === 'awareness' ? '#ffffff' : '#64748b',
+                boxShadow: activeTab === 'awareness' ? '0 4px 12px rgba(99, 102, 241, 0.25)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <GraduationCap size={16} />
+              Student Awareness Sessions
+            </button>
+          </div>
+
+          {activeTab === 'awareness' ? (
+            <AdminAwarenessSessionPanel />
+          ) : (
+            <>
+              {/* Feedback banner */}
+              {statusFeedback && (
             <div style={{
               maxWidth: '650px',
               margin: '0 auto 20px auto',
@@ -539,8 +599,10 @@ const AdminAnnouncements: React.FC = () => {
               })
             )}
           </div>
+        </>
+      )}
 
-        </main>
+    </main>
       </div>
     </div>
   );
