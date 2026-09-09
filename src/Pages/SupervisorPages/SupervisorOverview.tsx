@@ -472,14 +472,14 @@ const SupervisorOverview: React.FC = () => {
             }}
             role="button"
             tabIndex={0}
-            title="View Meeting Request/Report Request"
+            title="View Meeting, Report Request"
           >
             {pendingMeetingsCount > 0 && <span className="stat-card-badge-dot" />}
             <div className="stat-badge-icon meeting-bg">
               <Users size={18} />
             </div>
             <div className="stat-info">
-              <div className="stat-label">Meeting Request/Report Request</div>
+              <div className="stat-label">Meeting, Report Request</div>
               <div className="stat-value">
                 <span className="num">{pendingMeetingsCount}</span>
                 <span className="unit">pending</span>
