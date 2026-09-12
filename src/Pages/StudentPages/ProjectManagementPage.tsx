@@ -1,42 +1,58 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Calendar, ListChecks, Award, BarChart3 } from 'lucide-react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
-import ProjectTimeline from './ProjectTimeline';
-import TaskCreation, { ProjectTask, TaskStatus } from './TaskCreation';
-import TaskKanbanBoard, { TaskCardError } from './TaskKanbanBoard';
-import MemberProfileModal from '../../components/shared/MemberProfileModal';
+import ProjectOverview from './ProjectOverview';
+import MilestoneProgressBoard from './MilestoneProgressBoard';
+import MyProgress from './MyProgress';
+import GroupContributions from './GroupContributions';
+import type { TaskCardError } from './TaskKanbanBoard';
+import type { ProjectTask, TaskStatus } from './projectTaskTypes';
 import './ProjectManagementPage.css';
 
-type TabKey = 'timeline' | 'createTasks' | 'myTasks';
+type TabKey = 'overview' | 'myTasks' | 'progress' | 'groupContributions';
 type UserRole = 'leader' | 'member';
 
+interface MilestoneFeedbackItem {
+  id: number | string;
+  title: string;
+  status: string;
+  feedback_reason: string;
+  feedback_seen_at: string | null;
+}
+
 const tabItems = [
-  { key: 'timeline', label: 'Project Timeline' },
-  { key: 'createTasks', label: 'Task Creation' },
-  { key: 'myTasks', label: 'My Tasks' },
+  { key: 'overview', label: 'Project Overview', icon: Calendar },
+  { key: 'myTasks', label: 'My Tasks', icon: ListChecks },
+  { key: 'progress', label: 'My Progress', icon: Award },
+  { key: 'groupContributions', label: 'Group Contributions', icon: BarChart3 },
 ] as const;
 
 const ProjectManagementPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   // Read level and groupId passed from StudentLevelInnerPages navigation
   const navState = (location.state as { level?: number; groupId?: number | string; groupLeader?: string } | null) || {};
 
-  const [activeTab, setActiveTab] = useState<TabKey>('timeline');
+  const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [userRole, setUserRole] = useState<UserRole>('member');
   const [groupId, setGroupId] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
 
   const [groupMembers, setGroupMembers] = useState<{id: number | string, name: string}[] | null>(null);
-  const [milestoneOptions, setMilestoneOptions] = useState<{id: number | string, title: string}[] | null>(null);
+  const [supervisor, setSupervisor] = useState<{id: number | string, name: string} | null>(null);
+  const [mentor, setMentor] = useState<{id: number | string, name: string} | null>(null);
+  // startDate/endDate (each milestone's own start_date/due_date) let
+  // MilestoneProgressBoard's quick-add task form validate a task's dates
+  // against its parent milestone's range — see createStudentTask's
+  // matching server-side check.
+  const [milestoneOptions, setMilestoneOptions] = useState<{id: number | string, title: string, startDate: string, endDate: string}[] | null>(null);
+  const [milestoneFeedback, setMilestoneFeedback] = useState<MilestoneFeedbackItem[]>([]);
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const [milestoneFilter, setMilestoneFilter] = useState('All');
-  const [selectedAssignee, setSelectedAssignee] = useState<string | number>('');
-  const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
 
   // ── UI-only state for the "My Tasks" Kanban board ──────────────────────
   // Tracks in-flight drag/click status changes so the board can move a card
@@ -49,9 +65,32 @@ const ProjectManagementPage: React.FC = () => {
   const taskErrorTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
 
+  /**
+   * Tells the backend the student has now viewed their group's currently
+   * unseen supervisor feedback, then lets Header.tsx's polling badge know
+   * to refresh immediately instead of waiting for its next poll tick.
+   */
+  const markGroupFeedbackSeen = async (gId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/milestones/feedback/mark-seen/${gId}`, {
+        method: 'PUT',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+          'X-User-Id': currentUser?.id || JSON.parse(localStorage.getItem('user') || '{}').id,
+          'X-User-Role': currentUser?.role || JSON.parse(localStorage.getItem('user') || '{}').role,
+        },
+      });
+      window.dispatchEvent(new CustomEvent('supervisor-feedback-seen'));
+    } catch (e) {
+      console.error("❌ [Frontend] Failed to mark feedback as seen", e);
+    }
+  };
+
 /**
    * REQUEST #1: GET Milestones for a specific group
-   * Triggered: Initial load & when switching to 'createTasks' tab
+   * Triggered: Initial load, and again after ProjectOverview reports a
+   * milestone was created/edited/deleted (onMilestonesChanged).
    */
   const fetchMilestones = async (gId: number) => {
     if (!gId) {
@@ -60,27 +99,52 @@ const ProjectManagementPage: React.FC = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const headers = { 
+      const headers = {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
         'X-User-Id': currentUser?.id || JSON.parse(localStorage.getItem('user') || '{}').id,
         'X-User-Role': currentUser?.role || JSON.parse(localStorage.getItem('user') || '{}').role,
       };
-      
+
       console.log(`📡 [Frontend] Fetching Milestones for Group: ${gId}`);
       const res = await fetch(`http://localhost:5000/api/milestones/group/${gId}`, { headers });
       if (!res.ok) throw new Error("Failed to fetch milestones");
-      
+
       const data = await res.json();
       console.log(`✅ [Frontend] Milestones received for Group ${gId}:`, data);
 
       if (data.success && data.data) {
-        const options = data.data.map((m: any) => ({ id: m.id, title: m.title }));
+        const options = data.data.map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          startDate: m.start_date ? String(m.start_date).split('T')[0] : '',
+          endDate: m.due_date ? String(m.due_date).split('T')[0] : '',
+        }));
         console.log(`📋 [Frontend] Populating Milestone Options:`, options);
         setMilestoneOptions(options);
+
+        // Supervisor/coordinator feedback (milestones.feedback_reason),
+        // surfaced in the "Supervisor Feedback" section on this page.
+        const feedbackItems: MilestoneFeedbackItem[] = data.data
+          .filter((m: any) => m.feedback_reason)
+          .map((m: any) => ({
+            id: m.id,
+            title: m.title,
+            status: m.status,
+            feedback_reason: m.feedback_reason,
+            feedback_seen_at: m.feedback_seen_at || null,
+          }));
+        setMilestoneFeedback(feedbackItems);
+
+        // Viewing this page counts as "seeing" any feedback that hasn't
+        // been marked seen yet — clears the red badge in Header.tsx.
+        if (feedbackItems.some((item) => !item.feedback_seen_at)) {
+          markGroupFeedbackSeen(gId);
+        }
       } else {
         console.warn(`⚠️ [Frontend] No milestones found for Group ${gId}`);
         setMilestoneOptions([]);
+        setMilestoneFeedback([]);
       }
     } catch (e) {
       console.error("❌ [Frontend] Failed to load milestones", e);
@@ -92,7 +156,10 @@ const ProjectManagementPage: React.FC = () => {
     const fetchData = async () => {
       // Reset states to prevent carryover when switching groups/levels
       setGroupMembers(null);
+      setSupervisor(null);
+      setMentor(null);
       setMilestoneOptions(null);
+      setMilestoneFeedback([]);
       setProjectTasks([]);
       setError(null);
       
@@ -171,6 +238,8 @@ const ProjectManagementPage: React.FC = () => {
           const membersData = await safeFetch(`http://localhost:5000/api/groups/${gId}/members`);
           if (membersData.success && membersData.data) {
             setGroupMembers(membersData.data);
+            setSupervisor(membersData.supervisor || null);
+            setMentor(membersData.mentor || null);
             const me = membersData.data.find((m: any) => String(m.id) === String(user.id));
             const navLeaderName = String(navState.groupLeader || '').trim().toLowerCase();
             const currentUserName = String(user.name || '').trim().toLowerCase();
@@ -178,15 +247,16 @@ const ProjectManagementPage: React.FC = () => {
             const isLeaderFromMembership = Number(me?.is_leader) === 1;
 
             setUserRole(isLeaderFromNavigation || isLeaderFromMembership ? 'leader' : 'member');
-            if (membersData.data.length > 0) {
-              setSelectedAssignee(membersData.data[0].id);
-            }
           } else {
             setGroupMembers([]);
+            setSupervisor(null);
+            setMentor(null);
           }
         } catch (e) {
           console.error("Failed to load members", e);
           setGroupMembers([]);
+          setSupervisor(null);
+          setMentor(null);
         }
 
         // ── Step 3: Milestones for this group ────────────────────────────────
@@ -207,6 +277,7 @@ const ProjectManagementPage: React.FC = () => {
               status: t.status,
               startDate: t.created_at ? t.created_at.split('T')[0] : '',
               endDate: t.due_date ? t.due_date.split('T')[0] : '',
+              completedAt: t.completed_at || null,
             })));
           } else {
             setProjectTasks([]);
@@ -228,13 +299,6 @@ const ProjectManagementPage: React.FC = () => {
   // Re-run if navigation state changes (user navigates from a different level)
   }, [navState.groupId, navState.level]);
 
-  // Sync milestones when switching to Task Creation tab
-  useEffect(() => {
-    if (activeTab === 'createTasks' && groupId) {
-      fetchMilestones(groupId);
-    }
-  }, [activeTab, groupId]);
-
   // Keep a live ref of projectTasks so the Kanban board's optimistic-update
   // wrapper can read the freshest server-confirmed status after awaiting
   // handleUpdateTaskStatus, without that value going stale in a closure.
@@ -250,36 +314,13 @@ const ProjectManagementPage: React.FC = () => {
   }, []);
 
 
-  const filteredTasks = useMemo(() => {
-    let tasks = projectTasks;
-    if (milestoneFilter !== 'All') {
-      tasks = tasks.filter((task) => task.milestone === milestoneFilter);
-    }
-    return tasks;
-  }, [projectTasks, milestoneFilter]);
-
+  // Every student — leader included — now only ever manages their own
+  // tasks (self-assign only); visibility into teammates' work comes from
+  // MilestoneProgressBoard's "Who's working on this milestone" panel instead
+  // of a leader-only assignee switcher.
   const visibleMyTasks = useMemo(() => {
-    if (userRole === 'leader') {
-      return projectTasks.filter((task) => String(task.assignedToId) === String(selectedAssignee));
-    }
     return projectTasks.filter((task) => currentUser && String(task.assignedToId) === String(currentUser.id));
-  }, [projectTasks, selectedAssignee, userRole, currentUser]);
-
-  const taskSummary = useMemo(() => {
-    const summary = {
-      TODO: 0,
-      IN_PROGRESS: 0,
-      COMPLETED: 0,
-    } as Record<'TODO' | 'IN_PROGRESS' | 'COMPLETED', number>;
-    visibleMyTasks.forEach((task) => {
-      if (task.status in summary) {
-        summary[task.status as keyof typeof summary] += 1;
-      }
-    });
-    return summary;
-  }, [visibleMyTasks]);
-
-
+  }, [projectTasks, currentUser]);
 
 
 
@@ -290,7 +331,8 @@ const ProjectManagementPage: React.FC = () => {
 
 /**
    * REQUEST #5: POST Create a new task
-   * Triggered: Leader clicks "Save" in TaskCreation component
+   * Triggered: a student adds their own task via MilestoneProgressBoard's
+   * "+ Add a task for yourself in this milestone" quick-add form.
    */
   const handleSaveTask = async (task: ProjectTask) => {
     try {
@@ -310,7 +352,8 @@ const ProjectManagementPage: React.FC = () => {
             assigned_to: task.assignedToId,
             task_name: task.title,
             description: task.description,
-            due_date: task.endDate
+            due_date: task.endDate,
+            start_date: task.startDate
           })
         });
         
@@ -332,20 +375,34 @@ const ProjectManagementPage: React.FC = () => {
 
 
   /**
-   * REQUEST #7: DELETE a task
-   * Triggered: Leader clicks Delete icon
+   * REQUEST #7: DELETE a task — a real hard delete, no undo. Triggered by
+   * the delete button on a task's own card (My Tasks / MilestoneProgressBoard).
+   * Sends X-User-Id/X-User-Role so the backend's "only your own task"
+   * check (deleteTask, milestoneController.js) can actually run, and only
+   * removes the card locally once the server confirms the delete — a
+   * rejected request (e.g. 403) used to still be dropped from the list
+   * optimistically regardless of what the server said.
    */
-
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async (taskId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/milestones/tasks/${taskId}`, {
+      const res = await fetch(`http://localhost:5000/api/milestones/tasks/${taskId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': currentUser?.id || JSON.parse(localStorage.getItem('user') || '{}').id,
+          'X-User-Role': currentUser?.role || JSON.parse(localStorage.getItem('user') || '{}').role,
+        }
       });
+      const data = await res.json();
+      if (!data.success) {
+        return { success: false, error: data.error || 'Failed to delete task.' };
+      }
       setProjectTasks((prev) => prev.filter((task) => task.id !== taskId));
+      return { success: true };
     } catch (err) {
       console.error("Error deleting task:", err);
+      return { success: false, error: 'Server connection error while deleting this task.' };
     }
   };
 
@@ -370,7 +427,9 @@ const ProjectManagementPage: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setProjectTasks((prev) =>
-          prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t)
+          prev.map((t) => t.id === taskId
+            ? { ...t, status: newStatus, completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : null }
+            : t)
         );
       }
     } catch (err) {
@@ -452,126 +511,145 @@ const ProjectManagementPage: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'timeline':
+      case 'overview':
         return (
-          <div className="student-inner-tab-panel">
+          <div className="student-inner-tab-panel" key="overview">
             <div className="student-inner-tab-heading">
-              <h3>Project Timeline ({userRole === 'leader' ? 'Leader View' : 'Member View'})</h3>
-              <p>View the timeline of your project stages and milestones.</p>
+              <div className="student-inner-tab-heading-icon"><Calendar size={20} /></div>
+              <div className="student-inner-tab-heading-text">
+                <h3>Project Overview</h3>
+                <p>Create milestones for your project, plan tasks under each one, and preview the schedule as a Gantt chart.</p>
+              </div>
             </div>
             {loading ? (
               <div className="loading-container">Loading project data...</div>
             ) : error ? (
               <div className="error-container">
                 <p><strong>Error:</strong> {error}</p>
-                <button 
+                <button
                   onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
                   className="secondary-btn"
-                  style={{ marginTop: '15px', border: '1px solid #cbd5e1' }}
+                  style={{ marginTop: '15px', border: '1px solid var(--eds-color-border)' }}
                 >
                   Retry Loading
                 </button>
               </div>
             ) : (
-              <ProjectTimeline 
-                groupIdProp={groupId} 
-                onMilestonesSubmitted={() => groupId && fetchMilestones(groupId)} 
+              <ProjectOverview
+                groupId={groupId}
+                userRole={userRole}
+                currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+                supervisor={supervisor}
+                mentor={mentor}
+                onMilestonesChanged={() => groupId && fetchMilestones(groupId)}
+                onNavigateSupervisorChat={() => navigate('/dashboard/communication-v2')}
+                onNavigateMentorChat={() => navigate('/dashboard/communication-v2')}
+                memberCount={groupMembers?.length}
               />
             )}
           </div>
         );
 
-
-    //create tasks as a leader and see what are in my tasks 
-      case 'createTasks':
+      case 'myTasks':
         return (
-          <div className="student-inner-tab-panel">
+          <div className="student-inner-tab-panel" key="myTasks">
             <div className="student-inner-tab-heading">
-              <h3>Task Creation</h3>
-              {userRole === 'leader' ? (
-                <p>Create, assign, and track tasks for each student in your project group.</p>
-              ) : (
-                <p className="role-warning">Only Leaders can create tasks. You are currently viewing as a Member.</p>
-              )}
+              <div className="student-inner-tab-heading-icon"><ListChecks size={20} /></div>
+              <div className="student-inner-tab-heading-text">
+                <h3>My Tasks</h3>
+                <p>Track assigned work, grouped by milestone — with progress and early warnings.</p>
+              </div>
             </div>
+
             {loading ? (
               <div className="loading-container">Loading project data...</div>
             ) : error ? (
               <div className="error-container">
                 <p><strong>Error:</strong> {error}</p>
                 <p style={{ marginTop: '10px', fontSize: '12px', opacity: 0.8 }}>
-                  This usually means the backend at <code>http://localhost:5000</code> is unreachable or returning HTML instead of JSON. 
+                  This usually means the backend at <code>http://localhost:5000</code> is unreachable or returning HTML instead of JSON.
                   Please ensure your backend is running and check the browser console (F12) for more details.
                 </p>
-                <button 
+                <button
                   onClick={() => { setError(null); setLoading(true); window.location.reload(); }}
                   className="secondary-btn"
-                  style={{ marginTop: '15px', border: '1px solid #cbd5e1' }}
+                  style={{ marginTop: '15px', border: '1px solid var(--eds-color-border)' }}
                 >
                   Retry Loading
                 </button>
               </div>
-            ) : userRole === 'leader' ? (
-             
-             
-              <TaskCreation
-                tasks={projectTasks}
-                onSaveTask={handleSaveTask}
-                onDeleteTask={handleDeleteTask}
-                groupMembers={groupMembers || []}
-                milestoneOptions={milestoneOptions || []}
-              />
             ) : (
-              <div className="member-task-note">
-                <p>
-                  Task creation is restricted to the project leader. Once tasks are assigned, you can see them under My Tasks.
-                </p>
-              </div>
+              <MilestoneProgressBoard
+                tasks={visibleMyTasks}
+                allGroupTasks={projectTasks}
+                milestoneOptions={milestoneOptions || []}
+                groupId={groupId}
+                userRole={userRole}
+                optimisticStatus={optimisticStatus}
+                pendingTaskIds={pendingTaskIds}
+                taskErrors={taskErrors}
+                onStatusChange={handleBoardStatusChange}
+                onAddTask={handleSaveTask}
+                onDeleteTask={handleDeleteTask}
+                currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+                memberCount={groupMembers?.length}
+              />
             )}
           </div>
         );
-      
-      
-      // my task as a member and a leader 
-        case 'myTasks':
-          return (
-          <div className="student-inner-tab-panel">
-            <div className="student-inner-tab-heading">
-              <h3>My Tasks</h3>
-              <p>Track assigned work and quickly review available, ongoing, and completed items.</p>
-            </div>
-            {userRole === 'leader' && (
-              <div className="member-filter-row">
-                <label htmlFor="assignee-filter-select">Show tasks for</label>
-                <select
-                  id="assignee-filter-select"
-                  value={selectedAssignee}
-                  onChange={(e) => setSelectedAssignee(e.target.value)}
-                >
-                  {(groupMembers || []).map((member) => (
-                    <option key={member.id} value={member.id}>{member.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
 
-    
-            <div className="my-tasks-table-card">
-              {visibleMyTasks.length === 0 ? (
-                <div className="empty-state-card">
-                  <p>No assigned tasks yet. Once a leader creates tasks, they will appear here.</p>
-                </div>
-              ) : (
-                <TaskKanbanBoard
-                  tasks={visibleMyTasks}
-                  userRole={userRole}
-                  optimisticStatus={optimisticStatus}
-                  pendingTaskIds={pendingTaskIds}
-                  taskErrors={taskErrors}
-                  onStatusChange={handleBoardStatusChange}
-                />
-              )}
+      case 'progress':
+        return (
+          <div className="student-inner-tab-panel" key="progress">
+            <div className="student-inner-tab-heading">
+              <div className="student-inner-tab-heading-icon"><Award size={20} /></div>
+              <div className="student-inner-tab-heading-text">
+                <h3>My Progress</h3>
+                <p>A read-only summary of your own contribution across the whole project.</p>
+              </div>
             </div>
+
+            {loading ? (
+              <div className="loading-container">Loading project data...</div>
+            ) : error ? (
+              <div className="error-container">
+                <p><strong>Error:</strong> {error}</p>
+              </div>
+            ) : (
+              <MyProgress
+                tasks={visibleMyTasks}
+                milestoneOptions={milestoneOptions || []}
+                currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+                groupId={groupId}
+              />
+            )}
+          </div>
+        );
+
+      case 'groupContributions':
+        return (
+          <div className="student-inner-tab-panel" key="groupContributions">
+            <div className="student-inner-tab-heading">
+              <div className="student-inner-tab-heading-icon"><BarChart3 size={20} /></div>
+              <div className="student-inner-tab-heading-text">
+                <h3>Group Contributions</h3>
+                <p>Compare completed tasks across your group, member by member.</p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="loading-container">Loading project data...</div>
+            ) : error ? (
+              <div className="error-container">
+                <p><strong>Error:</strong> {error}</p>
+              </div>
+            ) : (
+              <GroupContributions
+                allGroupTasks={projectTasks}
+                groupMembers={groupMembers || []}
+                currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+              />
+            )}
           </div>
         );
       default:
@@ -584,58 +662,50 @@ const ProjectManagementPage: React.FC = () => {
       <Sidebar />
       <div className="main-viewport">
         <Header />
-        <main className="content-container">
+        <main className="content-container project-mgmt-content-container">
           <div className="dashboard-content">
-            <div className="dashboard-header-section">
+            <div className="dashboard-header-section project-mgmt-header-row">
               <div>
                 <h2 className="overview-title">
                 Project Management{currentLevel ? ` — Level ${currentLevel}` : ''}
               </h2>
                 <p className="overview-subtitle">Manage your project milestones and tasks.</p>
               </div>
-
-              {/* ROLE BADGE — determined from database, not manually switchable */}
-              <div className={`role-badge ${userRole === 'leader' ? 'role-badge-leader' : 'role-badge-member'}`}>
-                {userRole === 'leader' ? '👑 Leader' : '👤 Member'}
-              </div>
             </div>
 
-            {groupMembers && groupMembers.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '4px 0 16px 0' }}>
-                {groupMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '6px 10px', backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0', borderRadius: '20px', fontSize: '13px',
-                    }}
-                  >
-                    <span>{member.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setViewingProfileId(Number(member.id))}
-                      style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '12px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                    >
-                      View Profile
-                    </button>
+            {/* Supervisor feedback — milestones.feedback_reason, surfaced
+                consistently across every sub-tab. */}
+            {milestoneFeedback.length > 0 && (
+              <div className="feedback-section">
+                <h4 className="feedback-section-title">📣 Supervisor Feedback</h4>
+                {milestoneFeedback.map((item) => (
+                  <div key={item.id} className="feedback-card">
+                    <div className="feedback-card-header">
+                      <span className="feedback-milestone-title">{item.title}</span>
+                      <span className={`status-pill ${item.status?.toLowerCase()}`}>{item.status}</span>
+                    </div>
+                    <p className="feedback-text">{item.feedback_reason}</p>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="student-inner-pages">
+            <div className="student-inner-pages pm-inner-workspace">
               <div className="student-inner-tabs">
-                {tabItems.map((tab) => (
-                  <button
-                    key={tab.key}
-                    className={`student-inner-tab ${activeTab === tab.key ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+                {tabItems.map((tab) => {
+                  const TabIcon = tab.icon;
+                  return (
+                    <button
+                      key={tab.key}
+                      className={`student-inner-tab ${activeTab === tab.key ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => setActiveTab(tab.key)}
+                    >
+                      <TabIcon size={16} className="student-inner-tab-icon" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
               <div className="student-inner-content">
                 <div className="student-inner-panel">{renderContent()}</div>
@@ -644,10 +714,6 @@ const ProjectManagementPage: React.FC = () => {
           </div>
         </main>
       </div>
-
-      {viewingProfileId !== null && (
-        <MemberProfileModal memberId={viewingProfileId} onClose={() => setViewingProfileId(null)} />
-      )}
     </div>
   );
 };

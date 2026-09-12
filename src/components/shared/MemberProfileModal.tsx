@@ -10,11 +10,17 @@ interface MemberProfile {
   level: number | null;
   role: string;
   phone: string | null;
+  groups?: { group_id: number; group_name: string; level: number | null }[];
 }
 
 interface MemberProfileModalProps {
   memberId: number | string;
   onClose: () => void;
+  // Opt-in only — the "Group" row is a student-facing addition for
+  // ProjectManagementPage.tsx. GroupManagement.tsx (coordinator) doesn't
+  // pass this, so its popup renders exactly as it did before that field
+  // was added — same fields, same layout, no change.
+  showGroup?: boolean;
 }
 
 // Shared "View Profile" modal used by both the coordinator's group member
@@ -22,7 +28,7 @@ interface MemberProfileModalProps {
 // (ProjectManagementPage.tsx). Fetches GET /api/users/:id/profile, which
 // only succeeds if the viewer shares a group with the target member (or is
 // viewing their own profile) — the backend enforces this, not the UI.
-const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ memberId, onClose }) => {
+const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ memberId, onClose, showGroup = false }) => {
   const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -93,6 +99,7 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ memberId, onClo
           <div>
             <h4 style={{ margin: '0 0 4px 0' }}>{profile.name}</h4>
             <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: 12, textTransform: 'capitalize' }}>{profile.role}</p>
+            {showGroup && row('Group', profile.groups?.length ? profile.groups.map((g) => g.group_name).join(', ') : undefined)}
             {row('Email', profile.email)}
             {row('University ID', profile.university_id)}
             {row('Department', profile.department)}

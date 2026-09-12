@@ -2,10 +2,9 @@
    AssignedGroupTab.css
    
    Styles for the Assigned Group tab in the Mentor pages.
-   UI-only — no data styles needed yet.
+   Supports both populated backend data and empty pending states.
    
    Layout: Three columns (Project Name | Leader | Members)
-   Each column shows an empty styled box (no shimmer, no mock data)
 ================================================================ */
 
 /* Fade-in when switching to this tab */
@@ -27,13 +26,35 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
+/* Header container inside card */
+.group-list-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
 /* Title inside the card */
 .list-box-title {
-  margin: 0 0 22px 0;
+  margin: 0;
   font-size: 17px;
   color: #1e293b;
   font-weight: 700;
   letter-spacing: -0.2px;
+}
+
+/* Group count badge */
+.group-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #dbeafe;
 }
 
 /* ── Table Header Row ────────────────────────────────────────── */
@@ -53,12 +74,102 @@
   letter-spacing: 0.6px;
 }
 
+/* ── Loading State ───────────────────────────────────────────── */
+.group-list-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 42px 0;
+  gap: 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error State ─────────────────────────────────────────────── */
+.group-list-error {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.error-text {
+  flex: 1;
+}
+
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #991b1b;
+  margin: 0 0 2px 0;
+}
+
+.error-desc {
+  font-size: 12px;
+  color: #b91c1c;
+  margin: 0;
+}
+
+.btn-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-retry:hover {
+  background-color: #fee2e2;
+}
+
+/* ── Rows Container ──────────────────────────────────────────── */
+.group-list-rows-container {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Data Row ────────────────────────────────────────────────── */
 .group-list-row {
   display: flex;
   align-items: center;
-  padding: 18px 0 12px 0;
+  padding: 18px 0 16px 0;
   border-bottom: 1px solid #f8fafc;
+  transition: background-color 0.15s ease;
+}
+
+.group-list-row--populated:hover {
+  background-color: #fafbfd;
+  border-radius: 8px;
 }
 
 /* ── Column Width Definitions ────────────────────────────────── 
@@ -88,30 +199,117 @@
   color: #334155;
 }
 
-/* ── Empty Field Box ─────────────────────────────────────────── 
-   Used for Project Name and Leader columns.
-   Looks like an unfilled input field — no shimmer, no animation.
-   Just a clean empty bordered box.
-*/
-.empty-field-box {
-  height: 38px;
-  width: 85%;
-  border-radius: 8px;
-  border: 1.5px dashed #cbd5e1;   /* dashed border = "fill me" signal */
-  background-color: #f8fafc;
+/* ── Project Name Column ─────────────────────────────────────── */
+.project-name-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.project-name-text {
+  font-weight: 600;
+  font-size: 14.5px;
+  color: #0f172a;
+  letter-spacing: -0.1px;
+}
+
+.project-supervisor-subtext {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ── Leader Column ───────────────────────────────────────────── */
+.leader-info-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leader-avatar-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.leader-name-text {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 13.5px;
 }
 
 /* ── Member Tags Row ─────────────────────────────────────────── */
 .member-tags-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
 }
 
-/* ── Member Tag Box ──────────────────────────────────────────── 
-   Small empty boxes representing each member slot.
-   Dashed border = unfilled, same visual language as empty-field-box.
-*/
+/* Populated Member Tag Chip */
+.member-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: default;
+}
+
+.member-tag-chip:hover {
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.member-tag-chip.is-leader {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  font-weight: 600;
+}
+
+.member-tag-chip.is-leader:hover {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.leader-tag-icon {
+  color: #2563eb;
+}
+
+.member-chip-name {
+  white-space: nowrap;
+}
+
+.no-members-text {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ── Empty Field Box (Placeholder fallback) ──────────────────── */
+.empty-field-box {
+  height: 38px;
+  width: 85%;
+  border-radius: 8px;
+  border: 1.5px dashed #cbd5e1;
+  background-color: #f8fafc;
+}
+
+/* ── Member Tag Box (Placeholder fallback) ────────────────────── */
 .member-tag-box {
   height: 30px;
   width: 90px;
@@ -120,10 +318,7 @@
   background-color: #f8fafc;
 }
 
-/* ── Pending Notice ──────────────────────────────────────────── 
-   Subtle notice at bottom of the card.
-   Remove when real data is connected.
-*/
+/* ── Pending Notice ──────────────────────────────────────────── */
 .pending-notice {
   display: flex;
   align-items: center;
@@ -155,10 +350,7 @@
   font-style: italic;
 }
 
-/* ── See Tasks Button Row ────────────────────────────────────── 
-   Placed below the pending notice, right-aligned.
-   Navigates mentor to the Tasks tab.
-*/
+/* ── See Tasks Button Row ────────────────────────────────────── */
 .see-tasks-row {
   display: flex;
   justify-content: flex-end;

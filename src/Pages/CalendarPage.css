@@ -75,7 +75,7 @@
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 .calendar-main-card {
@@ -125,13 +125,19 @@
 .month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(90px, 1fr));
-  gap: 8px;
+  gap: 0;
+  overflow: hidden;
+  border-top: 1px solid #e2e8f0;
+  border-left: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
 .day-cell {
   min-height: 88px;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border: 0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
   background: #fff;
   padding: 10px;
   display: flex;
@@ -144,18 +150,23 @@
 
 .clickable-day {
   cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .clickable-day:hover {
-  transform: translateY(-1px);
-  border-color: #a5b4fc;
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.08);
+  background: #f8f9ff;
+}
+
+.selected-day {
+  outline: 2px solid var(--eds-color-primary);
+  outline-offset: -2px;
+  background-color: #f5f3ff !important;
 }
 
 .day-cell-empty {
   background: transparent;
-  border-color: transparent;
+  border-right-color: #e2e8f0;
+  border-bottom-color: #e2e8f0;
   pointer-events: none;
 }
 
@@ -180,20 +191,20 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: 999px;
+  border-radius: 9999px;
   padding: 5px 8px;
   font-size: 11px;
   font-weight: 700;
 }
 
 .panel-count {
-  color: #166534;
-  background: #dcfce7;
+  color: #397a6d;
+  background: #e2f4ee;
 }
 
 .freeze-pill {
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: #6571aa;
+  background: #eef0ff;
 }
 
 .calendar-legend-row {
@@ -264,12 +275,63 @@
   border: 1px solid #e2e8f0;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 14px;
-  padding: 12px;
+  padding: 14px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upcoming-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.upcoming-item-titleblock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.upcoming-item-group {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-item-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.upcoming-level-pill,
+.upcoming-stage-pill {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.upcoming-level-pill {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.upcoming-stage-pill {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .upcoming-date-chip {
+  flex-shrink: 0;
   min-width: 58px;
   height: fit-content;
   border-radius: 12px;
@@ -281,19 +343,72 @@
   text-align: center;
 }
 
-.upcoming-copy {
+/* Icon-led detail rows (date/time, location, meeting link, panel members) —
+   each icon sits in its own tinted square so the card scans like a short
+   list of labeled facts instead of a run-on paragraph of plain text. */
+.upcoming-item-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upcoming-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.upcoming-icon-badge {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upcoming-icon-time { background: #fef3c7; color: #b45309; }
+.upcoming-icon-location { background: #dbeafe; color: #1d4ed8; }
+.upcoming-icon-meeting { background: #e0f2fe; color: #0369a1; }
+.upcoming-icon-people { background: #dcfce7; color: #15803d; }
+
+.upcoming-item-row .panel-meeting-link {
+  font-size: 12.5px;
+}
+
+/* Panel Members block: Supervisor on its own line (with the pastel badge),
+   Evaluators stacked directly below in muted text — a flex column next to
+   the shared people icon, instead of stringing both together inline with a
+   bullet separator. */
+.upcoming-people-block {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.upcoming-copy strong {
-  color: #1e293b;
-  font-size: 14px;
+.upcoming-people-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
 }
 
-.upcoming-copy span {
-  color: #64748b;
+/* Soft Minimal, scoped to just this Upcoming Panels card badge — a light
+   pastel pill matching the visual weight of the stage tag (e.g.
+   .upcoming-stage-pill), instead of .supervisor-role-badge's solid fill
+   used everywhere else (e.g. the Schedule Panel drawer's Group
+   Supervisor(s) chip), which stays as-is. */
+.upcoming-people-line .role-badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.upcoming-people-muted {
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -352,6 +467,17 @@
 
 .panel-time {
   color: #94a3b8;
+}
+
+.panel-meeting-link {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.panel-meeting-link:hover {
+  text-decoration: underline;
 }
 
 .drawer-overlay {
@@ -535,6 +661,47 @@
   color: #dc2626;
 }
 
+.supervisor-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.supervisor-search-input:focus {
+  outline: none;
+  border-color: #1d4ed8;
+}
+
+.supervisor-picker-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supervisor-dept-group + .supervisor-dept-group {
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.supervisor-dept-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.supervisor-dept-label span {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .supervisor-picker {
   display: flex;
   flex-wrap: wrap;
@@ -558,6 +725,57 @@
   background: #1d4ed8;
   color: #fff;
   border-color: #1d4ed8;
+}
+
+/* Panel Members field: "Group Supervisor(s)" (auto-filled, read-only) above
+   "External Evaluators" (the searchable picker). */
+.panel-members-section + .panel-members-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.panel-members-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.panel-members-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.panel-members-subheader .supervisor-search-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Auto-filled supervisor chips are informational, not clickable toggles. */
+.supervisor-chip-auto {
+  cursor: default;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.role-badge {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+}
+
+.supervisor-role-badge {
+  background: #10b981;
+  color: #fff;
 }
 
 .selected-summary {
@@ -704,4 +922,165 @@
   .drawer-overlay {
     align-items: stretch;
   }
+}
+
+/* Supervisor Assigned Panels Styles */
+.supervisor-panel-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.supervisor-panel-item:hover {
+  transform: translateY(-2px);
+  border-color: #818cf8;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.14);
+}
+
+.supervisor-panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.supervisor-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.supervisor-badges-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.stage-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.supervisor-panel-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--eds-color-text-body, #475569);
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.supervisor-panel-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  line-height: 1.3;
+}
+
+.panel-meta-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.panel-meta-icon.date-icon {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.panel-meta-icon.time-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.panel-meta-icon.zoom-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.panel-meta-icon.eval-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.panel-meta-icon.sup-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.evaluate-btn-action {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.evaluate-btn-action:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+}
+
+.clear-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.clear-filter-chip:hover {
+  background: #e2e8f0;
+  color: #1e293b;
 }

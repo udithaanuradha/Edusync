@@ -1,11 +1,47 @@
- /* Container for the 5-column row */
+ /* Container for the stat row */
 .student-stats-grid {
   display: grid;
-  /* FORCES 5 EQUAL COLUMNS */
-  grid-template-columns: repeat(5, 1fr); 
+  /* FORCES 4 EQUAL COLUMNS — Completion, Tasks Done, Members, Deadline
+     (no "Delayed" card: tried, not wanted on this dashboard) */
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   width: 100%;
   margin-bottom: 24px;
+}
+
+/* Matches the Coordinator Dashboard's stat-card treatment (see
+   CoordinatorDashboard.css's .stat-grid > div rules) — a colored top
+   border, a faint tint wash, and a soft circular blob bleeding off the
+   top-right corner, per card. Targets the shared StatCard/BaseCard's
+   plain rendered <div> directly, the same way the coordinator page does,
+   so nothing about the StatCard component itself needs to change. */
+.student-stats-grid > div {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(226, 232, 240, 0.9);
+}
+
+.student-stats-grid > div::after {
+  content: '';
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  right: -30px;
+  top: -34px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.035;
+  pointer-events: none;
+}
+
+.student-stats-grid > div:nth-child(1) { background: #f6fbfa; border-top: 3px solid #72b9ae; }
+.student-stats-grid > div:nth-child(2) { background: #ffffff; border-top: 3px solid #8994d1; }
+.student-stats-grid > div:nth-child(3) { background: #fffaf1; border-top: 3px solid #e5b86d; }
+.student-stats-grid > div:nth-child(4) { background: #f4fbf7; border-top: 3px solid #79c59b; }
+
+.student-stats-grid > div:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(91, 103, 151, 0.09);
 }
 
 /* Individual Card (StatCard View) */

@@ -1,0 +1,343 @@
+/* Scope Division card — lives inside Project Overview's .timeline-section
+   card styling (from ProjectOverview.css), these are just the classes
+   specific to the section list / claim UI / people row. */
+
+.scope-division-desc {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.scope-division-note {
+  background: var(--eds-color-warning-bg);
+  color: var(--eds-color-warning-text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.scope-division-error {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.scope-division-loading {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.scope-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.scope-section-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: var(--bg-main);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.scope-section-row.is-claimed {
+  border-style: solid;
+  background: var(--white);
+}
+
+.scope-section-row.is-mine {
+  border-color: var(--eds-color-success-solid);
+  background: var(--eds-color-success-bg);
+}
+
+.scope-section-checkbox {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--white);
+  margin-top: 2px;
+}
+
+.scope-section-checkbox.checked {
+  background: var(--eds-color-success-solid);
+  border-color: var(--eds-color-success-solid);
+}
+
+.scope-section-checkbox.checked.mine {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.scope-section-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.scope-section-title {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.scope-section-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.scope-section-claimed-by {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.scope-section-claimed-by.is-mine {
+  color: var(--eds-color-success-text);
+}
+
+.scope-section-locked-chip {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
+}
+
+.scope-section-locked-chip.is-mine {
+  background: var(--primary-tint);
+  color: var(--primary-hover);
+}
+
+.scope-section-claim-btn {
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.scope-section-claim-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.scope-section-claim-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.scope-add-section-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--primary);
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.scope-add-section-btn:hover {
+  background: var(--primary-tint);
+}
+
+.scope-add-form,
+.scope-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.scope-add-form input[type='text'],
+.scope-add-form textarea,
+.scope-edit-form input[type='text'],
+.scope-edit-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-dark);
+  font-family: inherit;
+}
+
+.scope-add-form textarea,
+.scope-edit-form textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.scope-add-form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Leader-only edit/delete icon buttons, shown alongside the claim button /
+   locked chip on each section row. */
+.scope-section-owner-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  align-self: center;
+}
+
+.scope-section-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.scope-section-icon-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.scope-section-icon-btn.danger:hover:not(:disabled) {
+  border-color: var(--eds-color-danger-solid);
+  color: var(--eds-color-danger-solid);
+  background: var(--eds-color-danger-bg);
+}
+
+.scope-section-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scope-division-people-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.scope-person-card {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--bg-main);
+}
+
+.scope-person-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-tint);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scope-person-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scope-person-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.scope-person-name {
+  font-size: 13px;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scope-person-chat-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.scope-person-chat-btn:hover {
+  background: var(--primary-tint);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .scope-section-row {
+    flex-wrap: wrap;
+  }
+
+  .scope-section-claim-btn,
+  .scope-section-locked-chip,
+  .scope-section-owner-actions {
+    margin-left: 34px;
+  }
+}

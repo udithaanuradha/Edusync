@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Megaphone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AnnouncementWidget from '../shared/AnnouncementWidget';
+import PrimaryButton from '../shared/ui/PrimaryButton';
 import './Announcements.css';
 
 const Announcements: React.FC = () => {
@@ -125,9 +126,9 @@ const Announcements: React.FC = () => {
 
           {statusText && <p className="announcement-status">{statusText}</p>}
 
-          <button type="button" className="view-all-btn" onClick={handlePostAnnouncement} disabled={posting}>
+          <PrimaryButton type="button" className="view-all-btn" onClick={handlePostAnnouncement} disabled={posting}>
             {posting ? 'Posting...' : 'Post Announcement'}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 

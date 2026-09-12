@@ -20,13 +20,7 @@
   color: #fff;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   cursor: pointer;
-}
-
-.groups-list-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 18px;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
 }
 
 .groups-empty-state {
@@ -35,99 +29,200 @@
   padding: 24px 8px;
 }
 
-.groups-grid {
+.coordinator-groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  /* Fixed-size tracks (not 1fr) so a handful of cards in a wide container
+     sit together at their natural width instead of each being stretched
+     into an oversized cell with a huge gap between them. */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+  gap: 18px;
+  align-items: start;
 }
 
-.group-card {
+.coordinator-group-card {
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px;
-  background: #f8fafc;
+  border-radius: var(--eds-radius-xl);
+  padding: 26px;
+  background: #ffffff;
+  box-shadow: none;
+  min-height: 220px;
+  width: 100%;
 }
 
-.group-card-head {
+.coordinator-group-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.group-card-head h3 {
+.coordinator-group-card-head h3 {
   margin: 0;
+  min-width: 0;
   color: #0f172a;
-  font-size: 16px;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.group-meta-pill {
-  font-size: 12px;
-  font-weight: 600;
+.coordinator-group-meta-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   color: #1d4ed8;
   background: #dbeafe;
   border-radius: 999px;
   padding: 4px 8px;
+  white-space: nowrap;
 }
 
-.group-meta {
-  margin: 8px 0 0;
-  color: #475569;
+.coordinator-group-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.coordinator-group-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--eds-color-text-body);
   font-size: 13px;
+  line-height: 1.4;
 }
 
-.group-members-preview {
-  margin: 10px 0 0;
+.coordinator-group-meta-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coordinator-group-meta-label {
+  color: var(--eds-color-text-muted);
+  font-size: 11px;
+  font-weight: var(--eds-font-weight-bold);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.coordinator-group-meta-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--eds-color-text-strong);
+  font-size: 13px;
+  font-weight: var(--eds-font-weight-semibold);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coordinator-group-meta-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.coordinator-group-members-preview {
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
-.group-members-preview li {
+.coordinator-group-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #1f2937;
+  font-size: 14px;
+  color: var(--eds-color-text-body);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--eds-color-border-soft);
+}
+
+.coordinator-group-member-row:last-child {
+  border-bottom: none;
+}
+
+.coordinator-group-member-name-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #334155;
-  font-size: 13px;
+  min-width: 0;
+  color: #1f2937;
 }
 
-.group-card-actions {
+.coordinator-group-member-name-wrap span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-profile-btn {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.group-profile-btn:hover {
+  text-decoration: underline;
+}
+
+.coordinator-group-card-actions {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.group-edit-btn {
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
+.group-edit-btn,
+.group-delete-btn {
+  border-radius: 9px;
   padding: 6px 10px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-weight: 600;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
+  font-size: 12px;
+}
+
+.group-edit-btn {
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .group-edit-btn:hover {
-  background: #dbeafe;
+  background: var(--eds-color-primary-soft);
 }
 
 .group-delete-btn {
   border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 6px 10px;
   background: #fef2f2;
   color: #dc2626;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
 }
 
 .group-delete-btn:hover {

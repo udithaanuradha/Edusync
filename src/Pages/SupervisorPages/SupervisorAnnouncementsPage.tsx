@@ -45,7 +45,7 @@ const SupervisorAnnouncementsPage: React.FC = () => {
                 maxItems={8}
                 showEditDeleteButtons={false}
                 scope="others"
-                useRoleQuery={false}
+                useRoleQuery={true}
               />
             </div>
 

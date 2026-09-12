@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FolderKanban, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import './StatCard.css';
 
@@ -84,7 +84,15 @@ const StatCards: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/mentor/stats');
+        const savedUser = localStorage.getItem('user');
+        const user = savedUser ? JSON.parse(savedUser) : null;
+        const mentorId = user?.id || '';
+        const url = mentorId 
+          ? `http://localhost:5000/api/mentor/stats?mentorId=${mentorId}`
+          : 'http://localhost:5000/api/mentor/stats';
+        const response = await fetch(url, {
+          headers: mentorId ? { 'x-user-id': String(mentorId) } : {}
+        });
         const data = await response.json();
         setStats(data);
       } catch (error) {

@@ -1,0 +1,75 @@
+/* Sits inside AppShell's .content (AppShell.module.css) below the Header.
+   That wrapper is a plain block, not a flex container, so `flex: 1` here
+   has no effect on it — height: 100% is what actually makes this fill the
+   available space exactly. Getting this bounded matters beyond looks: if
+   this box were left to grow to fit the chat's full content instead, the
+   conversations sidebar and message stream inside it would never get a
+   real height to scroll *within*, and AppShell's .content would become the
+   only thing that scrolls — taking both panels down together with it. */
+.v2-comm-page-content {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.chat-window-v2 {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  width: 100%;
+  background: #ffffff;
+  border-radius: var(--eds-radius-xl);
+  border: 1px solid var(--eds-color-border);
+  box-shadow: none;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.chat-container-v2 {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Without min-height: 0 here, this flex row's sidebar child defaults to
+   min-height: auto and won't shrink below its content height — so a long
+   conversation list could grow the sidebar past .chat-container-v2's own
+   height instead of scrolling internally via .conversations-list-v2. */
+.conversations-sidebar-v2 {
+  min-height: 0;
+  height: 100%;
+}
+
+.conversations-list-v2 {
+  min-height: 0;
+}
+
+.chat-main-v2 {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.messages-stream-v2 {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.chat-input-box-v2 {
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+}

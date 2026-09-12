@@ -9,6 +9,7 @@ interface Stage {
   description: string;
   deadline?: string;
   level?: string;
+  resource_links?: string;
   files?: Array<{
     file_id?: number;
     file_name: string;
@@ -27,8 +28,15 @@ const StudentStageView: React.FC<StudentStageViewProps> = ({ levelNumber }) => {
   useEffect(() => {
     const fetchStages = async () => {
       try {
+        // Scope to the student's own degree program — the backend also
+        // includes legacy/global stages (no academic_unit set) so this never
+        // hides pre-existing stages.
+        const savedUser = localStorage.getItem('user');
+        const user = savedUser ? JSON.parse(savedUser) : null;
+        const academicUnit = user?.academic_unit ? `?academicUnit=${encodeURIComponent(user.academic_unit)}` : '';
+
         // Fetching from the same backend port you confirmed (5000)
-        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}`);
+        const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}${academicUnit}`);
         const data = await response.json();
         if (data.success) setStages(data.data);
       } catch (err) {
@@ -75,6 +83,23 @@ const StudentStageView: React.FC<StudentStageViewProps> = ({ levelNumber }) => {
               </div>
 
               <p className="stage-description">{stage.description}</p>
+
+              {stage.resource_links && (
+                <div className="stage-info" style={{ marginTop: '8px' }}>
+                  <div className="info-item">
+                    <span className="info-label">Resource Link:</span>
+                    <a
+                      className="info-value"
+                      href={stage.resource_links}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--eds-color-primary)', textDecoration: 'none', wordBreak: 'break-word' }}
+                    >
+                      🔗 View attached resource
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {/* Downloadable Files Section */}
               {stage.files && stage.files.length > 0 && (

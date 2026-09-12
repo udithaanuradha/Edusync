@@ -15,7 +15,7 @@
   align-items: center;
   padding: 14px 16px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
   margin-bottom: 10px;
   gap: 14px;
@@ -24,8 +24,8 @@
 /* ── Leader Badge ────────────────────────────────────────────── */
 .leader-badge {
   margin-left: auto;
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-solid-hover);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 10px;
@@ -37,7 +37,7 @@
 .mentor-internal-tabs {
   display: flex;
   gap: 4px;
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
   padding: 5px;
   border-radius: 10px;
   margin-bottom: 20px;
@@ -50,14 +50,14 @@
   border: none;
   background: transparent;
   font-weight: 600;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   cursor: pointer;
   border-radius: 7px;
   transition: all 0.2s ease;
 }
 
 .tab-item.active {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
 }

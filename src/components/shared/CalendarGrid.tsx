@@ -13,6 +13,7 @@ type CalendarGridProps = {
   cells: Array<number | null>;
   markerMap: Map<number, CalendarGridMarker>;
   isCoordinator: boolean;
+  selectedDay?: number | null;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onDayClick: (day: number) => void;
@@ -25,6 +26,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   cells,
   markerMap,
   isCoordinator,
+  selectedDay,
   onPrevMonth,
   onNextMonth,
   onDayClick,
@@ -57,12 +59,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
           const marker = markerMap.get(day);
           const typeClass = marker ? `marker-${marker.type}` : '';
+          const isSelected = selectedDay === day;
 
           return (
             <button
               key={day}
               type="button"
-              className={`day-cell ${typeClass} ${isCoordinator ? 'clickable-day' : ''}`.trim()}
+              className={`day-cell ${typeClass} clickable-day ${isSelected ? 'selected-day' : ''}`.trim()}
               onClick={() => onDayClick(day)}
             >
               <span className="day-number">{day}</span>

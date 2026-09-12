@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -10,8 +10,8 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { AlertTriangle, GripVertical } from 'lucide-react';
-import type { ProjectTask, TaskStatus } from './TaskCreation';
+import { AlertTriangle, GripVertical, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import type { ProjectTask, TaskStatus } from './projectTaskTypes';
 
 // Error surfaced on a single card after a failed status update — includes the
 // status that was being attempted so the card can offer a one-click retry.
@@ -42,6 +42,12 @@ type TaskKanbanBoardProps = {
   taskErrors: Record<string, TaskCardError>;
   /** Called by both drag-and-drop and the Start/Done buttons */
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  /** taskId -> true while that task's delete request is in flight */
+  deletingTaskIds: Record<string, boolean>;
+  /** Permanently deletes a task (hard delete) — confirmation and error
+      handling live in the caller (MilestoneProgressBoard), this just
+      forwards the click. */
+  onDeleteTask: (task: ProjectTask) => void;
 };
 
 const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
@@ -51,6 +57,8 @@ const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
   pendingTaskIds,
   taskErrors,
   onStatusChange,
+  deletingTaskIds,
+  onDeleteTask,
 }) => {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
@@ -110,6 +118,8 @@ const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
             pendingTaskIds={pendingTaskIds}
             taskErrors={taskErrors}
             onStatusChange={onStatusChange}
+            deletingTaskIds={deletingTaskIds}
+            onDeleteTask={onDeleteTask}
           />
         ))}
       </div>
@@ -121,7 +131,9 @@ const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
             status={activeTaskStatus}
             userRole={userRole}
             isPending={false}
+            isDeleting={false}
             onStatusChange={() => {}}
+            onDeleteTask={() => {}}
             overlay
           />
         ) : null}
@@ -137,7 +149,12 @@ type KanbanColumnProps = {
   pendingTaskIds: Record<string, boolean>;
   taskErrors: Record<string, TaskCardError>;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  deletingTaskIds: Record<string, boolean>;
+  onDeleteTask: (task: ProjectTask) => void;
 };
+
+// How far one arrow click scrolls — roughly one card's width + gap.
+const CARD_SCROLL_STEP = 216;
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   column,
@@ -146,8 +163,15 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   pendingTaskIds,
   taskErrors,
   onStatusChange,
+  deletingTaskIds,
+  onDeleteTask,
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.key });
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollByStep = (direction: 1 | -1) => {
+    scrollRef.current?.scrollBy({ left: CARD_SCROLL_STEP * direction, behavior: 'smooth' });
+  };
 
   return (
     <div
@@ -161,23 +185,52 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
         <p>{column.label}</p>
       </div>
 
-      <div className="task-board-column-body">
-        {tasks.length === 0 ? (
-          <div className={`empty-state-card task-board-empty ${isOver ? 'is-drop-target' : ''}`}>
-            <p>{isOver ? 'Drop here to move this task' : 'No tasks here yet.'}</p>
-          </div>
-        ) : (
-          tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              status={column.key}
-              userRole={userRole}
-              isPending={!!pendingTaskIds[task.id]}
-              error={taskErrors[task.id]}
-              onStatusChange={onStatusChange}
-            />
-          ))
+      {/* Netflix-row style: cards scroll horizontally, showing a partial
+          peek of the next one instead of the column growing arbitrarily
+          tall — the arrows page through the rest instead of a long
+          vertical stack or list scrollbar. */}
+      <div className="task-board-column-carousel">
+        <div className="task-board-column-body" ref={scrollRef}>
+          {tasks.length === 0 ? (
+            <div className={`empty-state-card task-board-empty ${isOver ? 'is-drop-target' : ''}`}>
+              <p>{isOver ? 'Drop here to move this task' : 'No tasks here yet.'}</p>
+            </div>
+          ) : (
+            tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                status={column.key}
+                userRole={userRole}
+                isPending={!!pendingTaskIds[task.id]}
+                error={taskErrors[task.id]}
+                onStatusChange={onStatusChange}
+                isDeleting={!!deletingTaskIds[task.id]}
+                onDeleteTask={onDeleteTask}
+              />
+            ))
+          )}
+        </div>
+
+        {tasks.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="task-board-carousel-arrow prev"
+              onClick={() => scrollByStep(-1)}
+              aria-label={`Scroll ${column.label} left`}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              className="task-board-carousel-arrow next"
+              onClick={() => scrollByStep(1)}
+              aria-label={`Scroll ${column.label} right`}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -192,13 +245,27 @@ type TaskCardProps = {
   isPending: boolean;
   error?: TaskCardError;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  /** True while this task's own delete request is in flight. */
+  isDeleting: boolean;
+  /** Permanently deletes this task — confirmation happens in the caller. */
+  onDeleteTask: (task: ProjectTask) => void;
   overlay?: boolean;
 };
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, error, onStatusChange, overlay }) => {
+const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  status,
+  userRole,
+  isPending,
+  error,
+  onStatusChange,
+  isDeleting,
+  onDeleteTask,
+  overlay,
+}) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
-    disabled: overlay || isPending,
+    disabled: overlay || isPending || isDeleting,
   });
 
   const className = [
@@ -224,7 +291,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, 
     >
       <div className="task-board-card-top">
         <span className="task-board-card-milestone">{task.milestone}</span>
-        {!overlay && <GripVertical className="task-board-card-grip" size={16} aria-hidden="true" />}
+        <div className="task-board-card-top-actions">
+          {!overlay && (
+            <button
+              type="button"
+              className="task-board-card-delete"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onDeleteTask(task)}
+              disabled={isPending || isDeleting}
+              title="Delete this task"
+              aria-label="Delete this task"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+          {!overlay && <GripVertical className="task-board-card-grip" size={16} aria-hidden="true" />}
+        </div>
       </div>
 
       <h5 className="task-board-card-title">{task.title}</h5>
@@ -235,6 +317,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, 
         <div className="task-board-card-saving" aria-live="polite">
           <span className="task-board-spinner" aria-hidden="true" />
           <span>Saving…</span>
+        </div>
+      )}
+
+      {isDeleting && !overlay && (
+        <div className="task-board-card-saving" aria-live="polite">
+          <span className="task-board-spinner" aria-hidden="true" />
+          <span>Deleting…</span>
         </div>
       )}
 
@@ -266,17 +355,43 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, 
           </button>
         )}
         {status === 'IN_PROGRESS' && (
-          <button
-            type="button"
-            className="task-end-btn"
-            disabled={isPending}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => onStatusChange(task.id, 'COMPLETED')}
-          >
-            {isPending ? 'Saving…' : '✓ Done'}
-          </button>
+          <>
+            <button
+              type="button"
+              className="task-back-btn"
+              disabled={isPending}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onStatusChange(task.id, 'TODO')}
+              title="Move back to To Do"
+            >
+              ◀ Back
+            </button>
+            <button
+              type="button"
+              className="task-end-btn"
+              disabled={isPending}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onStatusChange(task.id, 'COMPLETED')}
+            >
+              {isPending ? 'Saving…' : '✓ Done'}
+            </button>
+          </>
         )}
-        {status === 'COMPLETED' && <span className="task-done-badge">✓ Completed</span>}
+        {status === 'COMPLETED' && (
+          <>
+            <button
+              type="button"
+              className="task-back-btn"
+              disabled={isPending}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onStatusChange(task.id, 'IN_PROGRESS')}
+              title="Reopen this task"
+            >
+              ↺ Reopen
+            </button>
+            <span className="task-done-badge">✓ Completed</span>
+          </>
+        )}
       </div>
     </div>
   );

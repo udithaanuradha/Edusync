@@ -1,9 +1,9 @@
- import React from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, Calendar, Bell, FilePlus, 
   CheckCircle, ClipboardList, GraduationCap, 
-  Facebook, Twitter, Instagram, Landmark 
+  Landmark, Phone, Mail, MapPin 
 } from 'lucide-react';
 
 // Make sure the path to your assets is correct
@@ -20,7 +20,7 @@ const LandingPage: React.FC = () => {
           <Landmark size={20} />
           <span>UNIV. OF MORATUWA</span>
         </div>
-        <div className="nav-title">PMS</div>
+        <div className="nav-title">EduSync</div>
       </nav>
 
       {/* 2. Hero Section */}
@@ -96,36 +96,39 @@ const LandingPage: React.FC = () => {
         <div className="footer-top">
           <div className="footer-brand">
             <div className="brand-logo">
-              <Landmark size={24} />
-              <span>UPMS</span>
+              <img 
+                src="/edusync-logo.svg" 
+                alt="EduSync Logo" 
+                style={{ width: "28px", height: "28px", borderRadius: "6px" }} 
+              />
+              <span>EduSync</span>
             </div>
             <p>
-              The University Project Management System is a secure web solution that streamlines project registration, supervisor allocation, and evaluation workflows.
+              EduSync is an integrated academic project management platform designed for the University of Moratuwa IT Faculty, streamlining student collaboration, milestone tracking, supervisor guidance, and evaluation workflows.
             </p>
-            <div className="social-links">
-              <Facebook size={18} className="social-icon" />
-              <Twitter size={18} className="social-icon" />
-              <Instagram size={18} className="social-icon" />
-            </div>
-          </div>
-
-          <div className="footer-links">
-            <h4>ABOUT US</h4>
-            <ul>
-              <li onClick={() => navigate('/')}>Home</li>
-              <li>Contact Us</li>
-              <li>Privacy Policy</li>
-            </ul>
           </div>
 
           <div className="footer-contact">
             <h4>CONTACT US</h4>
-            <button className="get-touch-btn">Get in touch</button>
+            <div className="footer-contact-list">
+              <div className="footer-contact-item">
+                <Phone size={16} className="contact-icon" />
+                <span>+94 11 2650301, +94 11 2640051</span>
+              </div>
+              <div className="footer-contact-item">
+                <Mail size={16} className="contact-icon" />
+                <a href="mailto:edusyncfit@uom.lk" style={{ color: 'inherit', textDecoration: 'none' }}>edusyncfit@uom.lk</a>
+              </div>
+              <div className="footer-contact-item" style={{ alignItems: 'flex-start' }}>
+                <MapPin size={16} className="contact-icon" style={{ marginTop: '3px' }} />
+                <span>Faculty of Information Technology, University of Moratuwa, Katubedda, Moratuwa, Sri Lanka</span>
+              </div>
+            </div>
           </div>
         </div>
         
         <div className="footer-bottom">
-          <p>© 2026 University Project Management System. All rights reserved.</p>
+          <p>© 2026 EduSync - University of Moratuwa. All rights reserved.</p>
         </div>
       </footer>
     </div>

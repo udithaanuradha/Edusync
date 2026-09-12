@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import Sidebar from '../../components/shared/Sidebar';
-import Header from '../../components/shared/Header';
+import AppShell from '../../components/shared/layout/AppShell';
+import { coordinatorMenuItems } from '../../components/shared/Sidebar';
 import StageManagement from '../../components/coordinator/StageManagement';
 import GroupManagement from '../../components/coordinator/GroupManagement';
 import ApprovedRequests from '../../components/coordinator/ApprovedRequests';
 import GradebookTable from '../../components/coordinator/GradebookTable';
-import SupervisorReportPanel from '../../components/coordinator/SupervisorReportPanel';
+import CoordinatorReportPanel from '../../components/coordinator/CoordinatorReportPanel';
 import { ApprovedGroupRequest } from '../../components/coordinator/groupRequestTypes';
+import { useAuth } from '../../context/AuthContext';
 import './CoordinatorDashboard.css';
 import './CoordinatorLevelPage.css';
 
@@ -25,6 +26,7 @@ interface CoordinatorLevelPageProps {
 }
 
 const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('stages');
   const [prefillRequest, setPrefillRequest] = useState<ApprovedGroupRequest | null>(null);
 
@@ -35,22 +37,12 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
   };
 
   return (
-    <div
-      className="app-layout coordinator-level-shell"
-      style={{ backgroundColor: '#f8fafc', display: 'flex', minHeight: '100vh' }}
-    >
-      <Sidebar />
-
-      <div className="main-viewport" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header />
-
-        <main className="content-container coordinator-level-content">
-          <div className="dashboard-content">
+    <AppShell navItems={coordinatorMenuItems}>
+      <div className="coordinator-level-shell">
+        <div className="dashboard-content">
             <div className="dashboard-header-section">
-              <h2 className="overview-title" style={{ color: '#0f172a' }}>
-                Level {levelNumber} Management
-              </h2>
-              <p className="overview-subtitle" style={{ color: '#64748b' }}>
+              <h2 className="overview-title" style={{ wordSpacing: '3px', letterSpacing: '0.2px' }}>Level {levelNumber} Management</h2>
+              <p className="overview-subtitle">
                 Manage and create project stages and groups for Level {levelNumber} students
               </p>
             </div>
@@ -84,15 +76,14 @@ const CoordinatorLevelPage: React.FC<CoordinatorLevelPageProps> = ({ levelNumber
                   onPrefillHandled={() => setPrefillRequest(null)}
                 />
               ) : activeTab === 'reports' ? (
-                <SupervisorReportPanel />
+                <CoordinatorReportPanel levelNumber={levelNumber} coordinatorId={user?.id} />
               ) : (
                 <GradebookTable levelNumber={levelNumber} />
               )}
             </section>
-          </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 };
 
