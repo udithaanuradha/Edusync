@@ -109,6 +109,8 @@ type ProgressTask = {
   status: string;
   due_date?: string;
   created_at?: string;
+  file_name?: string | null;
+  file_url?: string | null;
 };
 
 type ProgressDetail = {
@@ -1021,6 +1023,26 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
       <p className="supervisor-progress-row-subtitle">{subtitle}</p>
       {task.description && (
         <p className="supervisor-level-card-desc">{task.description}</p>
+      )}
+      {task.file_url && (
+        <a
+          href={task.file_url.startsWith("http") ? task.file_url : `http://localhost:5000${task.file_url}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="supervisor-progress-row-attachment"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            marginTop: "6px",
+            fontSize: "0.8rem",
+            color: "var(--eds-color-primary)",
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          📎 {task.file_name || "View attachment"}
+        </a>
       )}
     </div>
   );

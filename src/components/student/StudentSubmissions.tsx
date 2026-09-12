@@ -20,7 +20,33 @@ interface SubmissionItem {
   status: string;
 }
 
-const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) => {
+interface StudentSubmissionsProps {
+  levelNumber: number;
+  // Gate controlling whether this student may actually see stages/upload
+  // files for this level yet. `null` means "still checking" (renders a
+  // loading state, same as this component's own initial load, so there's
+  // no flash of the locked message before the parent's check resolves);
+  // `false` renders `lockedMessage` in place of the normal content;
+  // `true` renders exactly as this component always has. Left undefined,
+  // the gate is skipped entirely (always unlocked) — every current call
+  // site passes it explicitly.
+  hasAccess?: boolean | null;
+  lockedMessage?: string;
+  // Optional "take me there" affordance for the locked message — e.g. the
+  // Group Project side passes one that switches its own tab state to
+  // "Group Formation". Tab state lives in the parent, not here, so both
+  // the label and the click handler come from the caller.
+  lockedActionLabel?: string;
+  onLockedAction?: () => void;
+}
+
+const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
+  levelNumber,
+  hasAccess = true,
+  lockedMessage,
+  lockedActionLabel,
+  onLockedAction,
+}) => {
   const [stages, setStages] = useState<Stage[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,8 +94,15 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
   };
 
   useEffect(() => {
+    // Skip fetching stages/submissions while access is locked or still
+    // being checked — nothing to show yet, and it avoids a request the
+    // student isn't allowed to act on anyway.
+    if (hasAccess === false || hasAccess === null) {
+      setLoading(false);
+      return;
+    }
     loadData();
-  }, [levelNumber, currentUser?.id]);
+  }, [levelNumber, currentUser?.id, hasAccess]);
 
   const getDaysRemaining = (deadline?: string) => {
     if (!deadline) return null;
@@ -205,6 +238,33 @@ const StudentSubmissions: React.FC<{ levelNumber: number }> = ({ levelNumber }) 
       setDeletingSubmissionId(null);
     }
   };
+
+  if (hasAccess === null) {
+    return <div className="student-tab-empty">Checking your project status...</div>;
+  }
+
+  if (hasAccess === false) {
+    return (
+      <div className="student-inner-tab-panel">
+        <div className="student-inner-tab-heading">
+          <h3>Submissions</h3>
+        </div>
+        <div className="student-tab-empty">
+          <p>{lockedMessage || 'You need to form a group before you can submit files for this level.'}</p>
+          {lockedActionLabel && onLockedAction && (
+            <button
+              type="button"
+              className="btn-submit-work"
+              style={{ margin: '12px auto 0' }}
+              onClick={onLockedAction}
+            >
+              {lockedActionLabel}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="student-tab-empty">Loading submission tasks...</div>;

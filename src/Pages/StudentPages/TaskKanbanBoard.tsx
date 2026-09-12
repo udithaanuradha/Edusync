@@ -10,7 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { AlertTriangle, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, GripVertical, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import type { ProjectTask, TaskStatus } from './projectTaskTypes';
 
 // Error surfaced on a single card after a failed status update — includes the
@@ -42,6 +42,12 @@ type TaskKanbanBoardProps = {
   taskErrors: Record<string, TaskCardError>;
   /** Called by both drag-and-drop and the Start/Done buttons */
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  /** taskId -> true while that task's delete request is in flight */
+  deletingTaskIds: Record<string, boolean>;
+  /** Permanently deletes a task (hard delete) — confirmation and error
+      handling live in the caller (MilestoneProgressBoard), this just
+      forwards the click. */
+  onDeleteTask: (task: ProjectTask) => void;
 };
 
 const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
@@ -51,6 +57,8 @@ const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
   pendingTaskIds,
   taskErrors,
   onStatusChange,
+  deletingTaskIds,
+  onDeleteTask,
 }) => {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
@@ -110,6 +118,8 @@ const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
             pendingTaskIds={pendingTaskIds}
             taskErrors={taskErrors}
             onStatusChange={onStatusChange}
+            deletingTaskIds={deletingTaskIds}
+            onDeleteTask={onDeleteTask}
           />
         ))}
       </div>
@@ -121,7 +131,9 @@ const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
             status={activeTaskStatus}
             userRole={userRole}
             isPending={false}
+            isDeleting={false}
             onStatusChange={() => {}}
+            onDeleteTask={() => {}}
             overlay
           />
         ) : null}
@@ -137,6 +149,8 @@ type KanbanColumnProps = {
   pendingTaskIds: Record<string, boolean>;
   taskErrors: Record<string, TaskCardError>;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  deletingTaskIds: Record<string, boolean>;
+  onDeleteTask: (task: ProjectTask) => void;
 };
 
 // How far one arrow click scrolls — roughly one card's width + gap.
@@ -149,6 +163,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   pendingTaskIds,
   taskErrors,
   onStatusChange,
+  deletingTaskIds,
+  onDeleteTask,
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.key });
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -189,6 +205,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 isPending={!!pendingTaskIds[task.id]}
                 error={taskErrors[task.id]}
                 onStatusChange={onStatusChange}
+                isDeleting={!!deletingTaskIds[task.id]}
+                onDeleteTask={onDeleteTask}
               />
             ))
           )}
@@ -227,13 +245,27 @@ type TaskCardProps = {
   isPending: boolean;
   error?: TaskCardError;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  /** True while this task's own delete request is in flight. */
+  isDeleting: boolean;
+  /** Permanently deletes this task — confirmation happens in the caller. */
+  onDeleteTask: (task: ProjectTask) => void;
   overlay?: boolean;
 };
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, error, onStatusChange, overlay }) => {
+const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  status,
+  userRole,
+  isPending,
+  error,
+  onStatusChange,
+  isDeleting,
+  onDeleteTask,
+  overlay,
+}) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
-    disabled: overlay || isPending,
+    disabled: overlay || isPending || isDeleting,
   });
 
   const className = [
@@ -259,7 +291,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, 
     >
       <div className="task-board-card-top">
         <span className="task-board-card-milestone">{task.milestone}</span>
-        {!overlay && <GripVertical className="task-board-card-grip" size={16} aria-hidden="true" />}
+        <div className="task-board-card-top-actions">
+          {!overlay && (
+            <button
+              type="button"
+              className="task-board-card-delete"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onDeleteTask(task)}
+              disabled={isPending || isDeleting}
+              title="Delete this task"
+              aria-label="Delete this task"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+          {!overlay && <GripVertical className="task-board-card-grip" size={16} aria-hidden="true" />}
+        </div>
       </div>
 
       <h5 className="task-board-card-title">{task.title}</h5>
@@ -270,6 +317,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, 
         <div className="task-board-card-saving" aria-live="polite">
           <span className="task-board-spinner" aria-hidden="true" />
           <span>Saving…</span>
+        </div>
+      )}
+
+      {isDeleting && !overlay && (
+        <div className="task-board-card-saving" aria-live="polite">
+          <span className="task-board-spinner" aria-hidden="true" />
+          <span>Deleting…</span>
         </div>
       )}
 
@@ -301,17 +355,43 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, status, userRole, isPending, 
           </button>
         )}
         {status === 'IN_PROGRESS' && (
-          <button
-            type="button"
-            className="task-end-btn"
-            disabled={isPending}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => onStatusChange(task.id, 'COMPLETED')}
-          >
-            {isPending ? 'Saving…' : '✓ Done'}
-          </button>
+          <>
+            <button
+              type="button"
+              className="task-back-btn"
+              disabled={isPending}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onStatusChange(task.id, 'TODO')}
+              title="Move back to To Do"
+            >
+              ◀ Back
+            </button>
+            <button
+              type="button"
+              className="task-end-btn"
+              disabled={isPending}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onStatusChange(task.id, 'COMPLETED')}
+            >
+              {isPending ? 'Saving…' : '✓ Done'}
+            </button>
+          </>
         )}
-        {status === 'COMPLETED' && <span className="task-done-badge">✓ Completed</span>}
+        {status === 'COMPLETED' && (
+          <>
+            <button
+              type="button"
+              className="task-back-btn"
+              disabled={isPending}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onStatusChange(task.id, 'IN_PROGRESS')}
+              title="Reopen this task"
+            >
+              ↺ Reopen
+            </button>
+            <span className="task-done-badge">✓ Completed</span>
+          </>
+        )}
       </div>
     </div>
   );

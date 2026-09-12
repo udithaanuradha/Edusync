@@ -4,6 +4,18 @@
   gap: var(--eds-space-4);
 }
 
+.chevron {
+  margin-left: auto;
+  align-self: center;
+  color: var(--eds-color-text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
 .iconWrap {
   width: 44px;
   height: 44px;

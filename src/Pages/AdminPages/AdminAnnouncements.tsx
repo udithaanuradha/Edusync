@@ -36,6 +36,8 @@ const AdminAnnouncements: React.FC = () => {
   const [mainAudience, setMainAudience] = useState<'All System Users' | 'Student' | 'Coordinator' | 'Supervisor' | 'Mentor'>('All System Users');
   const [studentLevel, setStudentLevel] = useState<string>('All');
   const [studentDegree, setStudentDegree] = useState<string>('All');
+  const [coordinatorLevel, setCoordinatorLevel] = useState<string>('All');
+  const [coordinatorDepartment, setCoordinatorDepartment] = useState<string>('All');
   const [staffDepartment, setStaffDepartment] = useState<string>('All');
 
   const [isPosting, setIsPosting] = useState(false);
@@ -44,11 +46,48 @@ const AdminAnnouncements: React.FC = () => {
   // ✅ Get logged-in admin from localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  // Filter criteria:
+  // 1. Announcements posted by this admin (eya dapuwai)
+  // 2. Announcements targeted to admin role (admin role eka specific karala dapuwai)
+  // 3. Announcements mentioning All System Users (all system usersla mention karala dapuwai)
+  const isRelevantForAdmin = (ann: Announcement) => {
+    const currentUserId = user?.id ? String(user.id).trim() : '';
+    const annAuthorId = ann.author_id ? String(ann.author_id).trim() : '';
+    const currentUserName = user?.name ? user.name.trim().toLowerCase() : '';
+    const annAuthorName = ann.author_name ? ann.author_name.trim().toLowerCase() : '';
+
+    // 1. Posted by this admin
+    if (
+      (currentUserId && annAuthorId && currentUserId === annAuthorId) ||
+      (currentUserName && annAuthorName && currentUserName === annAuthorName)
+    ) {
+      return true;
+    }
+
+    // 2. Targeted to admin role
+    const aud = String(ann.target_audience || '').trim().toLowerCase();
+    if (aud.includes('admin') || aud === 'administrator' || aud === 'admins') {
+      return true;
+    }
+
+    // 3. Mentioning All System Users / All
+    if (aud === 'all' || aud === 'all system users' || aud.includes('all system users')) {
+      return true;
+    }
+
+    return false;
+  };
+
   const fetchAnnouncements = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/announcements?role=admin`);
+      setLoading(true);
+      const userIdParam = user?.id ? `&user_id=${encodeURIComponent(String(user.id))}` : '';
+      const authorParam = user?.name ? `&author_name=${encodeURIComponent(user.name)}` : '';
+      const res = await fetch(`http://localhost:5000/api/announcements?role=admin${userIdParam}${authorParam}`);
       const data = await res.json();
-      setAnnouncements(data.announcements || []);
+      const list: Announcement[] = data.announcements || (Array.isArray(data) ? data : []);
+      // Strictly filter to ensure only matching announcements are displayed
+      setAnnouncements(list.filter(isRelevantForAdmin));
       setLoading(false);
     } catch (error) {
       console.error("Error fetching announcements:", error);
@@ -76,8 +115,13 @@ const AdminAnnouncements: React.FC = () => {
     }
 
     if (mainAudience === 'Coordinator') {
-      if (staffDepartment === 'All') return 'Coordinator';
-      return `Coordinator - ${staffDepartment}`;
+      const hasLevel = coordinatorLevel !== 'All';
+      const hasDept = coordinatorDepartment !== 'All';
+
+      if (!hasLevel && !hasDept) return 'Coordinator';
+      if (hasLevel && !hasDept) return `Coordinator - ${coordinatorLevel}`;
+      if (!hasLevel && hasDept) return `Coordinator - ${coordinatorDepartment}`;
+      return `Coordinator - ${coordinatorLevel} - ${coordinatorDepartment}`;
     }
 
     if (mainAudience === 'Supervisor') {
@@ -122,6 +166,8 @@ const AdminAnnouncements: React.FC = () => {
         setMainAudience('All System Users');
         setStudentLevel('All');
         setStudentDegree('All');
+        setCoordinatorLevel('All');
+        setCoordinatorDepartment('All');
         setStaffDepartment('All');
         await fetchAnnouncements();
         setStatusFeedback({ type: 'success', message: `✅ Announcement posted and dispatched to "${target_audience}" successfully!` });
@@ -437,8 +483,55 @@ const AdminAnnouncements: React.FC = () => {
                 </div>
               )}
 
-              {/* Sub-Filters for Coordinator / Supervisor: Department (academic_unit) */}
-              {(mainAudience === 'Coordinator' || mainAudience === 'Supervisor') && (
+              {/* Sub-Filters for Coordinator: Academic Level AND Department (academic_unit) */}
+              {mainAudience === 'Coordinator' && (
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '12px', 
+                  marginBottom: '18px',
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
+                      Academic Level
+                    </label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                      value={coordinatorLevel}
+                      onChange={(e) => setCoordinatorLevel(e.target.value)}
+                    >
+                      <option value="All">All Levels</option>
+                      <option value="Level 1">Level 1</option>
+                      <option value="Level 2">Level 2</option>
+                      <option value="Level 3">Level 3</option>
+                      <option value="Level 4">Level 4</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
+                      Department
+                    </label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                      value={coordinatorDepartment}
+                      onChange={(e) => setCoordinatorDepartment(e.target.value)}
+                    >
+                      <option value="All">All Departments</option>
+                      <option value="IT">IT</option>
+                      <option value="IDS">IDS</option>
+                      <option value="CM">CM</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-Filters for Supervisor: Department (academic_unit) */}
+              {mainAudience === 'Supervisor' && (
                 <div style={{ 
                   marginBottom: '18px',
                   padding: '12px',

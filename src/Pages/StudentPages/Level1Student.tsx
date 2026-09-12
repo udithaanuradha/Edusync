@@ -6,6 +6,7 @@ const Level1Student = () => {
     <StudentLevelPageLayout
       title="Level 1 Projects"
       subtitle="Continue developing your project with regular progress tracking and milestone achievements."
+      levelNumber={1}
     >
       <div className="dashboard-row">
         <StudentLevelInnerPages levelNumber={1} />
