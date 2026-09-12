@@ -6,6 +6,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  History,
+  ArrowRight,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -24,7 +26,7 @@ type CategoryType =
   | "Evaluation"
   | "Code Review"
   | "Final Evaluation"
-  | "Group Meeting/Request Approve";
+  | "Group Meeting Request/Report Approve";
 
 type Task = {
   id?: number;
@@ -176,8 +178,24 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   });
 
   const [studentRequests, setStudentRequests] = useState<any[]>([]);
+  const [studentReports, setStudentReports] = useState<any[]>([]);
   const [selectedRequestId, setSelectedRequestId] = useState<number | "">("");
+  // Which list selectedRequestId came from — a meeting request (gets
+  // scheduled into a calendar block on approval) or a meeting report (just
+  // approved/rejected directly, nothing to schedule).
+  const [selectedRequestKind, setSelectedRequestKind] = useState<"request" | "report" | "">("");
   const [supervisorMessage, setSupervisorMessage] = useState("");
+
+  // "View History" panel — pick one of this supervisor's assigned groups,
+  // then see that group's full meeting request + report history.
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [assignedGroups, setAssignedGroups] = useState<{ groupId: number; groupName: string; level: number }[]>([]);
+  const [historyGroupName, setHistoryGroupName] = useState("");
+  const [historyData, setHistoryData] = useState<{ meetings: any[]; reports: any[] } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  // Which single request/report box (by "request-<id>" / "report-<id>") is
+  // currently expanded to show its full details — topic-only otherwise.
+  const [expandedHistoryKey, setExpandedHistoryKey] = useState<string | null>(null);
 
   // Automatically open the full scheduler drawer and modal if navigated with state flag or query param
   useEffect(() => {
@@ -201,7 +219,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
           task_date: formatDateStr(new Date()),
           start_time: "09:00",
           end_time: "10:00",
-          category: "Group Meeting/Request Approve",
+          category: "Group Meeting Request/Report Approve",
           description: "",
         });
       }
@@ -274,6 +292,16 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
         const reqData = await reqRes.json();
         setStudentRequests(reqData.filter((r: any) => r.status === "pending"));
       }
+
+      // Fetch Student Meeting Reports (pending review)
+      const repRes = await fetch(
+        `http://localhost:5000/api/meeting-reports/supervisor/${supervisorId}`,
+        { headers },
+      );
+      if (repRes.ok) {
+        const repData = await repRes.json();
+        setStudentReports(repData.filter((r: any) => r.status === "pending"));
+      }
     } catch (error) {
       console.error("Failed to load timeline scheduler data", error);
     }
@@ -330,7 +358,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
       category: "Meeting",
       description: "",
     });
-    setSelectedRequestId("");
+    setSelectedRequestId(""); setSelectedRequestKind("");
     setIsFormOpen(true);
   };
 
@@ -341,8 +369,36 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
     const safeDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
     setFormData({ ...task, task_date: safeDateStr });
-    setSelectedRequestId("");
+    setSelectedRequestId(""); setSelectedRequestKind("");
     setIsFormOpen(true);
+  };
+
+  // Approving/rejecting a meeting REPORT never creates a calendar block —
+  // the meeting already happened, this is just a review action — so it
+  // bypasses the task-scheduling API entirely, unlike a request.
+  const setReportStatus = async (status: "approved" | "rejected") => {
+    if (selectedRequestId === "") return;
+    try {
+      const token = localStorage.getItem("token") || "auth_token";
+      const res = await fetch(`http://localhost:5000/api/meeting-reports/${selectedRequestId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status, message: supervisorMessage })
+      });
+      if (res.ok) {
+        setStudentReports(studentReports.filter((r: any) => r.id !== selectedRequestId));
+        window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
+        setIsFormOpen(false);
+        setSupervisorMessage("");
+        setSelectedRequestId("");
+        setSelectedRequestKind("");
+      }
+    } catch (err) {
+      console.error("Set report status error", err);
+    }
   };
 
   const saveTask = async () => {
@@ -350,6 +406,14 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
       alert("Unable to find Supervisor ID. Please re-login.");
       return;
     }
+
+    // A meeting report has nothing to schedule — approving it is just
+    // marking it approved, not creating a task block.
+    if (selectedRequestKind === "report") {
+      await setReportStatus("approved");
+      return;
+    }
+
     try {
       const headers = {
         "Content-Type": "application/json",
@@ -363,7 +427,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
       let payload: any = formData;
       let reqDetails: any = null;
 
-      if (formData.category === "Group Meeting/Request Approve" && selectedRequestId !== "") {
+      if (formData.category === "Group Meeting Request/Report Approve" && selectedRequestKind === "request" && selectedRequestId !== "") {
         const req = studentRequests.find((r: any) => r.id === selectedRequestId);
         if (req) {
           reqDetails = req;
@@ -397,6 +461,8 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
         }
         setIsFormOpen(false);
         setSupervisorMessage("");
+        setSelectedRequestId("");
+        setSelectedRequestKind("");
         loadWeekData();
       }
     } catch (error) {
@@ -405,28 +471,112 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
   };
 
   const rejectRequest = async () => {
-    if (selectedRequestId !== "") {
-      try {
-        const token = localStorage.getItem("token") || "auth_token";
-        const res = await fetch(`http://localhost:5000/api/meeting-requests/${selectedRequestId}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: 'rejected', message: supervisorMessage })
-        });
-        if (res.ok) {
-          setStudentRequests(studentRequests.filter((r: any) => r.id !== selectedRequestId));
-          window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
-          setIsFormOpen(false);
-          setSupervisorMessage("");
-        }
-      } catch (err) {
-        console.error("Reject request error", err);
+    if (selectedRequestId === "") return;
+
+    if (selectedRequestKind === "report") {
+      await setReportStatus("rejected");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token") || "auth_token";
+      const res = await fetch(`http://localhost:5000/api/meeting-requests/${selectedRequestId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'rejected', message: supervisorMessage })
+      });
+      if (res.ok) {
+        setStudentRequests(studentRequests.filter((r: any) => r.id !== selectedRequestId));
+        window.dispatchEvent(new CustomEvent('meetingRequestUpdated'));
+        setIsFormOpen(false);
+        setSupervisorMessage("");
+        setSelectedRequestId("");
+        setSelectedRequestKind("");
       }
+    } catch (err) {
+      console.error("Reject request error", err);
     }
   };
+
+  // Every group this supervisor is actually assigned to (primary or second
+  // supervisor), with its level — the "View History" picker's group list.
+  // Same endpoint the dashboard/level pages use, so it already accounts for
+  // supervisor_id_2. Fetched fresh each time the panel opens.
+  const fetchAssignedGroups = async () => {
+    if (!supervisorId) return;
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/groupdetailstosupervisordashboard/supervisor/${supervisorId}`,
+      );
+      if (res.ok) {
+        setAssignedGroups(await res.json());
+      }
+    } catch (err) {
+      console.error("Failed to load assigned groups", err);
+    }
+  };
+
+  // group_name on supervisor_student_meeting/meeting_reports is free text
+  // typed by the student, so it's matched against the group's real name
+  // rather than an id.
+  const fetchGroupHistory = async (groupName: string) => {
+    if (!groupName) return;
+    setHistoryLoading(true);
+    setHistoryData(null);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/meeting-reports/group-history/${encodeURIComponent(groupName)}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } },
+      );
+      if (res.ok) {
+        setHistoryData(await res.json());
+      }
+    } catch (err) {
+      console.error("Failed to load group history", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const openHistoryPanel = () => {
+    setHistoryGroupName("");
+    setHistoryData(null);
+    setHistoryOpen(true);
+    fetchAssignedGroups();
+  };
+
+  const selectHistoryGroup = (groupName: string) => {
+    setHistoryGroupName(groupName);
+    setExpandedHistoryKey(null);
+    fetchGroupHistory(groupName);
+  };
+
+  // Same approved/rejected/pending color convention used throughout the
+  // meeting request/report UI (green/red/amber).
+  const renderHistoryStatusBadge = (status: string) => (
+    <span
+      style={{
+        fontSize: "0.7rem",
+        fontWeight: 600,
+        textTransform: "capitalize",
+        padding: "2px 8px",
+        borderRadius: "12px",
+        flexShrink: 0,
+        backgroundColor:
+          status === "approved"
+            ? "var(--eds-color-success-solid)"
+            : status === "rejected"
+              ? "var(--eds-color-danger-solid)"
+              : "#f59e0b",
+        color: "var(--eds-color-bg-surface)",
+      }}
+    >
+      {status}
+    </span>
+  );
 
   const deleteTask = async (taskId: number) => {
     if (!supervisorId) return;
@@ -680,14 +830,14 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                 onChange={(e) => {
                   const cat = e.target.value as CategoryType;
                   setFormData({ ...formData, category: cat });
-                  if (cat !== "Group Meeting/Request Approve") {
-                    setSelectedRequestId("");
+                  if (cat !== "Group Meeting Request/Report Approve") {
+                    setSelectedRequestId(""); setSelectedRequestKind("");
                   }
                 }}
               >
                 <option value="Meeting">Meeting</option>
-                <option value="Group Meeting/Request Approve">
-                  Group Meeting/Request Approve
+                <option value="Group Meeting Request/Report Approve">
+                  Group Meeting Request/Report Approve
                 </option>
                 <option value="Faculty Work">Faculty Work</option>
                 <option value="Personal">Personal</option>
@@ -698,16 +848,47 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
               </select>
             </label>
 
-            {formData.category === "Group Meeting/Request Approve" && (
+            {formData.category === "Group Meeting Request/Report Approve" && (
               <div className="student-request-section" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--eds-color-text-strong)" }}>
+                    Select Pending Student Request
+                  </span>
+                  <button
+                    type="button"
+                    onClick={openHistoryPanel}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      background: "var(--eds-color-primary-soft)",
+                      color: "var(--eds-color-primary)",
+                      border: "1px solid var(--eds-color-primary-soft-border)",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <History size={13} /> View History
+                  </button>
+                </div>
                 <label className="drawer-field highlight-field" style={{ margin: 0 }}>
-                  <span>Select Pending Student Request</span>
                   <select
-                    value={selectedRequestId}
+                    value={selectedRequestId !== "" ? `${selectedRequestKind}-${selectedRequestId}` : ""}
                     onChange={(e) => {
-                      const id = e.target.value ? Number(e.target.value) : "";
+                      const val = e.target.value;
+                      if (!val) {
+                        setSelectedRequestId(""); setSelectedRequestKind("");
+                        return;
+                      }
+                      const [kind, idStr] = val.split("-");
+                      const id = Number(idStr);
+                      setSelectedRequestKind(kind as "request" | "report");
                       setSelectedRequestId(id);
-                      if (id !== "") {
+
+                      if (kind === "request") {
                         const req = studentRequests.find((r) => r.id === id);
                         if (req) {
                           const reqDate = req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "");
@@ -722,24 +903,39 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                           }));
                         }
                       }
+                      // Reports have nothing to schedule, so formData's
+                      // date/time fields are left as-is for that kind.
                     }}
                   >
                     <option value="">-- Choose a Student Request --</option>
-                    {studentRequests.map((req) => {
-                      const reqDate = req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "");
-                      const slot = reqDate
-                        ? `${reqDate}${req.preferred_time ? ` ${req.preferred_time.substring(0, 5)}` : ""}`
-                        : "no date proposed";
-                      return (
-                        <option key={req.id} value={req.id}>
-                          {req.group_name || `Group #${req.group_id}`} - {req.topic || req.reason || "Meeting"} ({slot})
-                        </option>
-                      );
-                    })}
+                    {studentRequests.length > 0 && (
+                      <optgroup label="Meeting Requests">
+                        {studentRequests.map((req) => {
+                          const reqDate = req.preferred_date ? req.preferred_date.split("T")[0] : (req.date ? req.date.split("T")[0] : "");
+                          const slot = reqDate
+                            ? `${reqDate}${req.preferred_time ? ` ${req.preferred_time.substring(0, 5)}` : ""}`
+                            : "no date proposed";
+                          return (
+                            <option key={`request-${req.id}`} value={`request-${req.id}`}>
+                              {req.group_name || `Group #${req.group_id}`} - {req.topic || req.reason || "Meeting"} ({slot})
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    )}
+                    {studentReports.length > 0 && (
+                      <optgroup label="Meeting Summary Reports">
+                        {studentReports.map((rep) => (
+                          <option key={`report-${rep.id}`} value={`report-${rep.id}`}>
+                            [Report] {rep.group_name || `Group #${rep.group_id}`} - {(rep.summary || "").slice(0, 40)}{rep.summary?.length > 40 ? "…" : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </label>
 
-                {selectedRequestId !== "" && (() => {
+                {selectedRequestId !== "" && selectedRequestKind === "request" && (() => {
                   const req = studentRequests.find((r) => r.id === selectedRequestId);
                   if (!req) return null;
                   return (
@@ -772,6 +968,32 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                   );
                 })()}
 
+                {selectedRequestId !== "" && selectedRequestKind === "report" && (() => {
+                  const rep = studentReports.find((r) => r.id === selectedRequestId);
+                  if (!rep) return null;
+                  return (
+                    <div
+                      className="student-request-detail-box"
+                      style={{
+                        background: "var(--eds-color-bg-surface-soft)",
+                        border: "1px solid var(--eds-color-border)",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--eds-color-text-strong)", marginBottom: "4px" }}>
+                        📝 Meeting Summary Report
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--eds-color-text-body)", marginBottom: "4px" }}>
+                        <strong>Group:</strong> {rep.group_name || `Group #${rep.group_id}`}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--eds-color-text-muted)", background: "var(--eds-color-bg-surface)", border: "1px solid var(--eds-color-border)", padding: "6px 8px", borderRadius: "6px", margin: "4px 0", whiteSpace: "pre-wrap" }}>
+                        {rep.summary}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <label className="drawer-field" style={{ margin: 0 }}>
                   <span>Supervisor Message / Response</span>
                   <textarea
@@ -784,7 +1006,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
               </div>
             )}
 
-            {formData.category !== "Group Meeting/Request Approve" && (
+            {formData.category !== "Group Meeting Request/Report Approve" && (
               <label className="drawer-field">
                 <span>Description / Note</span>
                 <textarea
@@ -809,7 +1031,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                 </button>
               )}
 
-              {formData.category === "Group Meeting/Request Approve" && selectedRequestId !== "" ? (
+              {formData.category === "Group Meeting Request/Report Approve" && selectedRequestId !== "" ? (
                 <>
                   <button
                     type="button"
@@ -825,7 +1047,7 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
                     onClick={saveTask}
                     style={{ background: "var(--eds-color-success-solid)" }}
                   >
-                    <Save size={16} /> Approve & Save
+                    <Save size={16} /> {selectedRequestKind === "report" ? "Approve Report" : "Approve & Save"}
                   </button>
                 </>
               ) : (
@@ -839,6 +1061,179 @@ const SupervisorTaskScheduler: React.FC<SupervisorTaskSchedulerProps> = ({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {historyOpen && (
+        <div className="drawer-overlay" onClick={() => setHistoryOpen(false)}>
+          <aside
+            className="schedule-drawer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: "min(480px, 100vw)" }}
+          >
+            <div className="drawer-header">
+              <div>
+                <p className="drawer-kicker">Supervisor Tools</p>
+                <h3>Group Meeting History</h3>
+              </div>
+              <button className="drawer-close-btn" onClick={() => setHistoryOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: "0 1.5rem 1.5rem", flex: 1, overflowY: "auto" }}>
+              {!historyGroupName ? (
+                // Step 1: pick one of the assigned groups (name + level).
+                assignedGroups.length === 0 ? (
+                  <p className="supervisor-level-muted">No assigned groups found.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {assignedGroups.map((g) => (
+                      <button
+                        key={g.groupId}
+                        type="button"
+                        onClick={() => selectHistoryGroup(g.groupName)}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          textAlign: "left",
+                          border: "1px solid var(--eds-color-border)",
+                          borderRadius: "8px",
+                          padding: "10px 12px",
+                          background: "var(--eds-color-bg-surface)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--eds-color-text-strong)" }}>
+                          {g.groupName}
+                        </span>
+                        <span style={{
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: "12px",
+                          background: "var(--eds-color-primary-soft)",
+                          color: "var(--eds-color-primary)",
+                        }}>
+                          Level {g.level}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )
+              ) : (
+                // Step 2: the selected group's full meeting + report history.
+                <>
+                  <button
+                    type="button"
+                    onClick={() => { setHistoryGroupName(""); setHistoryData(null); setExpandedHistoryKey(null); }}
+                    style={{ background: "none", border: "none", color: "var(--eds-color-primary)", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: "1rem" }}
+                  >
+                    ← Back to groups
+                  </button>
+                  <h4 style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>{historyGroupName}</h4>
+
+                  {historyLoading && <p className="supervisor-level-muted">Loading history...</p>}
+
+                  {!historyLoading && historyData && (
+                    historyData.meetings.length === 0 ? (
+                      <p className="supervisor-level-muted">No meeting requests yet.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {historyData.meetings.map((m: any) => {
+                          const matchingReports = historyData.reports.filter((r: any) => r.meeting_request_id === m.id);
+                          const requestKey = `request-${m.id}`;
+                          const requestExpanded = expandedHistoryKey === requestKey;
+                          return (
+                            // Shared card groups a request with its report(s) as one
+                            // visual unit, with a connecting arrow between the two
+                            // columns making the pairing explicit rather than just
+                            // implied by being on the same row.
+                            <div
+                              key={m.id}
+                              style={{
+                                border: "1px solid var(--eds-color-border)",
+                                borderRadius: "10px",
+                                background: "var(--eds-color-bg-surface-soft)",
+                                padding: "10px",
+                                display: "grid",
+                                gridTemplateColumns: "1fr auto 1fr",
+                                gap: "8px",
+                                alignItems: "start",
+                              }}
+                            >
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setExpandedHistoryKey(requestExpanded ? null : requestKey)}
+                                style={{ background: "var(--eds-color-bg-surface)", border: "1px solid var(--eds-color-border)", borderRadius: "8px", padding: "8px 10px", cursor: "pointer" }}
+                              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", fontSize: "0.8rem", fontWeight: 600 }}>
+                                  <span>{m.topic}</span>
+                                  {renderHistoryStatusBadge(m.status)}
+                                </div>
+                                {requestExpanded && m.reason && (
+                                  <div style={{ fontSize: "0.75rem", color: "var(--eds-color-text-muted)", whiteSpace: "pre-wrap", marginTop: "6px" }}>
+                                    {m.reason}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ display: "flex", alignItems: "center", height: "100%", color: "var(--eds-color-text-faint)", paddingTop: "14px" }}>
+                                <ArrowRight size={16} />
+                              </div>
+
+                              {matchingReports.length > 0 ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                  {matchingReports.map((r: any) => {
+                                    const reportKey = `report-${r.id}`;
+                                    const reportExpanded = expandedHistoryKey === reportKey;
+                                    return (
+                                      <div
+                                        key={r.id}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => setExpandedHistoryKey(reportExpanded ? null : reportKey)}
+                                        style={{ background: "var(--eds-color-bg-surface)", border: "1px solid var(--eds-color-border)", borderRadius: "8px", padding: "8px 10px", cursor: "pointer" }}
+                                      >
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: 600 }}>
+                                          <span>Report</span>
+                                          {renderHistoryStatusBadge(r.status)}
+                                        </div>
+                                        {reportExpanded && (
+                                          <div style={{ fontSize: "0.75rem", color: "var(--eds-color-text-body)", whiteSpace: "pre-wrap", marginTop: "6px" }}>
+                                            {r.summary}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div style={{
+                                  border: "1px dashed var(--eds-color-border)",
+                                  borderRadius: "8px",
+                                  padding: "8px 10px",
+                                  fontSize: "0.75rem",
+                                  color: "var(--eds-color-text-faint)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}>
+                                  No report yet
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+            </div>
+          </aside>
         </div>
       )}
     </>

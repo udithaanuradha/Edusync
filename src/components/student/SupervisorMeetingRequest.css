@@ -117,3 +117,85 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* Meeting report creation modal */
+.report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+}
+
+.report-modal {
+  background: var(--eds-color-bg-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: min(480px, 92vw);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.report-modal h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--eds-color-text-strong);
+}
+
+.report-modal p {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--eds-color-text-muted);
+}
+
+.report-modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--eds-color-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.report-modal-error {
+  color: var(--eds-color-danger-solid);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.report-modal-submit-btn {
+  background: var(--eds-color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.report-modal-submit-btn:disabled {
+  background: var(--eds-color-text-faint);
+  cursor: not-allowed;
+}
+
+.report-modal-cancel-btn {
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-body);
+  border: 1px solid var(--eds-color-border);
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
