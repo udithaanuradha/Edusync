@@ -1,20 +1,75 @@
-import React, { useState, useRef } from 'react';
-import { Megaphone } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Megaphone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AnnouncementWidget from '../shared/AnnouncementWidget';
 import PrimaryButton from '../shared/ui/PrimaryButton';
 import './Announcements.css';
 
+const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'All', label: 'All System Users' },
+  { value: 'Student', label: 'All Students' },
+  { value: 'Supervisor', label: 'Supervisors Only' },
+  { value: 'Mentor', label: 'Industry Mentors Only' },
+  { value: 'Coordinator', label: 'Coordinators Only' },
+  { value: 'Admin', label: 'Admins Only' },
+  { value: 'Level1', label: 'Level 1 Students' },
+  { value: 'Level2', label: 'Level 2 Students' },
+  { value: 'Level3', label: 'Level 3 Students' },
+  { value: 'Level4', label: 'Level 4 Students' },
+];
+
 const Announcements: React.FC = () => {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [audience, setAudience] = useState('All');
+  // Multiple audiences can be targeted at once (e.g. Supervisors + Students)
+  // — sent to the backend as a comma-joined string. getAnnouncements already
+  // matches target_audience with a substring LIKE per viewer role, so
+  // "Supervisor,Student" already satisfies both a supervisor's and a
+  // student's query with no backend filtering changes needed.
+  const [audience, setAudience] = useState<string[]>(['All']);
+  const [isAudienceOpen, setIsAudienceOpen] = useState(false);
+  const audienceRef = useRef<HTMLDivElement>(null);
   const [priority, setPriority] = useState('normal');
   const [posting, setPosting] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const widgetRef = useRef<{ refresh: () => void }>(null);
+
+  useEffect(() => {
+    if (!isAudienceOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (audienceRef.current && !audienceRef.current.contains(event.target as Node)) {
+        setIsAudienceOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAudienceOpen]);
+
+  // "All System Users" already covers everyone, so it's mutually exclusive
+  // with every other option: picking it clears any specific selections, and
+  // picking a specific one drops "All" if it was selected.
+  const toggleAudience = (value: string) => {
+    setAudience((prev) => {
+      if (value === 'All') {
+        return prev.includes('All') ? [] : ['All'];
+      }
+      const withoutAll = prev.filter((item) => item !== 'All');
+      return withoutAll.includes(value)
+        ? withoutAll.filter((item) => item !== value)
+        : [...withoutAll, value];
+    });
+  };
+
+  const audienceSummary =
+    audience.length === 0
+      ? 'Select audience'
+      : audience.includes('All')
+        ? 'All System Users'
+        : audience
+            .map((value) => AUDIENCE_OPTIONS.find((option) => option.value === value)?.label ?? value)
+            .join(', ');
 
   const handlePostAnnouncement = async () => {
     const trimmedTitle = title.trim();
@@ -22,6 +77,11 @@ const Announcements: React.FC = () => {
 
     if (!trimmedTitle || !trimmedMessage) {
       setStatusText('Please add both title and message.');
+      return;
+    }
+
+    if (audience.length === 0) {
+      setStatusText('Please select at least one audience.');
       return;
     }
 
@@ -33,7 +93,7 @@ const Announcements: React.FC = () => {
       const payload = {
         title: trimmedTitle,
         message: trimmedMessage,
-        target_audience: audience,
+        target_audience: audience.join(','),
         priority,
         author_name: user?.name || 'Coordinator',
         coordinator_id: user?.id,
@@ -64,7 +124,7 @@ const Announcements: React.FC = () => {
 
       setTitle('');
       setMessage('');
-      setAudience('All');
+      setAudience(['All']);
       setPriority('normal');
       setStatusText('Announcement posted successfully!');
       
@@ -105,18 +165,32 @@ const Announcements: React.FC = () => {
             placeholder="Write announcement message"
           />
 
-          <select value={audience} onChange={(event) => setAudience(event.target.value)}>
-            <option value="All">All System Users</option>
-            <option value="Student">All Students</option>
-            <option value="Supervisor">Supervisors Only</option>
-            <option value="Mentor">Industry Mentors Only</option>
-            <option value="Coordinator">Coordinators Only</option>
-            <option value="Admin">Admins Only</option>
-            <option value="Level1">Level 1 Students</option>
-            <option value="Level2">Level 2 Students</option>
-            <option value="Level3">Level 3 Students</option>
-            <option value="Level4">Level 4 Students</option>
-          </select>
+          <div className="announcement-audience-select" ref={audienceRef}>
+            <button
+              type="button"
+              className="announcement-audience-trigger"
+              onClick={() => setIsAudienceOpen((open) => !open)}
+              aria-haspopup="listbox"
+              aria-expanded={isAudienceOpen}
+            >
+              <span>{audienceSummary}</span>
+              <ChevronDown size={16} />
+            </button>
+            {isAudienceOpen && (
+              <div className="announcement-audience-menu" role="listbox">
+                {AUDIENCE_OPTIONS.map((option) => (
+                  <label key={option.value} className="announcement-audience-option">
+                    <input
+                      type="checkbox"
+                      checked={audience.includes(option.value)}
+                      onChange={() => toggleAudience(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Urgent announcements are highlighted in the shared card widget. */}
           <select value={priority} onChange={(event) => setPriority(event.target.value)}>

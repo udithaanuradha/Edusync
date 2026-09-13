@@ -97,11 +97,29 @@
   gap: 4px;
 }
 
+.deadline-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .deadline-title {
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
   margin: 0;
+}
+
+.deadline-marks-badge {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 1px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
 }
 
 .deadline-subtitle {

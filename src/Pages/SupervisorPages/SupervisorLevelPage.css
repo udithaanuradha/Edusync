@@ -327,6 +327,13 @@
   color: #6d28d9;
 }
 
+.supervisor-pill-rubric {
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 11px;
+  vertical-align: middle;
+}
+
 .supervisor-pill-delayed {
   background: #ffedd5;
   color: #c2410c;
