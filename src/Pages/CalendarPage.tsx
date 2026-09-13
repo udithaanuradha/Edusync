@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Pencil, Plus, Trash2, Users, X, Calendar, Clock, Video, ExternalLink, MapPin } from "lucide-react";
+import { CalendarDays, Pencil, Plus, Trash2, Users, X, Calendar, Clock, Video, ExternalLink, MapPin, ClipboardCheck } from "lucide-react";
 import Sidebar, { coordinatorMenuItems, isCoordinatorUser } from "../components/shared/Sidebar";
 import CalendarGrid, {
   type CalendarGridMarker,
@@ -69,12 +69,20 @@ type ScheduledPanel = {
   notes: string;
   kind: string;
   department?: string;
+  // True once evaluators have submitted marks for this panel's stage, even
+  // though `status` itself only flips to 'completed' when the coordinator
+  // clicks "Complete" on the Reports tab — lets the Calendar surface "marks
+  // are already in, just needs confirming" instead of looking identical to
+  // an untouched panel.
+  marksSubmitted: boolean;
 };
 
 type DrawerMode = "schedule" | "freeze";
 
 const levelOptions = [1, 2, 3, 4];
-const evaluationTypes = ["Proposal", "Interim", "Code Review", "Final"];
+// Evaluation Type options used to be this fixed list regardless of level —
+// replaced by fetchLevelStages, which loads the real stages the coordinator
+// created for the selected level (see the drawer-open effect below).
 
 const today = new Date();
 
@@ -160,8 +168,13 @@ const parseTimeToMinutes = (time: string): number => {
 };
 
 // Two panels conflict if they're on the same day and their [start, start +
-// duration) windows overlap — not just an exact time match, so a
+// duration] windows overlap or touch — not just an exact time match, so a
 // 10:00-10:45 panel correctly blocks someone else being booked 10:30-11:00.
+// Boundary-touching windows (one ends exactly when the other starts, e.g.
+// 9:30-10:00 followed by 10:00-11:00) count as a conflict too: a person on
+// both rosters would need to end one panel and instantly start the next
+// with zero transition time, which isn't realistic even though the two
+// windows don't mathematically overlap.
 const doPanelTimesOverlap = (
   dateA: string,
   timeA: string,
@@ -175,7 +188,7 @@ const doPanelTimesOverlap = (
   const endA = startA + parseDurationMinutes(durationA);
   const startB = parseTimeToMinutes(timeB);
   const endB = startB + parseDurationMinutes(durationB);
-  return startA < endB && startB < endA;
+  return startA <= endB && startB <= endA;
 };
 
 const PANEL_STORAGE_KEY = "edusync.calendar.panels";
@@ -289,6 +302,8 @@ const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => 
   notes: String(row.notes ?? ""),
   kind: String(row.kind ?? "Coordinator scheduled panel"),
   department: String(row.department ?? row.academic_unit ?? "ITM"),
+  // MySQL returns EXISTS(...) as 0/1, not a JS boolean.
+  marksSubmitted: Boolean(Number(row.marks_submitted ?? 0)),
 });
 
 const makeMonthKey = (date: Date) =>
@@ -335,7 +350,17 @@ const CalendarPage: React.FC = () => {
     toDateValue(addDays(today, 2)),
   );
   const [freezeDate, setFreezeDate] = useState(toDateValue(addDays(today, 1)));
-  const [evaluationType, setEvaluationType] = useState(evaluationTypes[0]);
+  const [evaluationType, setEvaluationType] = useState("");
+  // Evaluation Type options for the selected Academic Level, loaded from the
+  // stages the coordinator actually created in Stage Management — previously
+  // this dropdown was a fixed ["Proposal", "Interim", "Code Review", "Final"]
+  // list regardless of level, so it could offer a stage that doesn't exist
+  // for that level at all. Scheduling a panel against a name with no
+  // matching project_stages row silently breaks every feature that links
+  // the two (marks-submitted detection, final-grade totals, the duplicate
+  // group+stage check), so the dropdown must only ever offer real stages.
+  const [levelStages, setLevelStages] = useState<string[]>([]);
+  const [levelStagesLoading, setLevelStagesLoading] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<string>("1");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedEvaluatorIds, setSelectedEvaluatorIds] = useState<number[]>(
@@ -411,7 +436,10 @@ const CalendarPage: React.FC = () => {
 
   const resetScheduleFields = () => {
     setEditingPanelId(null);
-    setEvaluationType(evaluationTypes[0]);
+    // Left blank rather than defaulting to a hardcoded stage name — the
+    // level-change effect below fetches this level's real stages and fills
+    // it in with the first one that actually exists once they load.
+    setEvaluationType("");
     setSelectedLevel("1");
     setSelectedGroupId("");
     setSelectedEvaluatorIds([]);
@@ -641,6 +669,44 @@ const CalendarPage: React.FC = () => {
     }
   };
 
+  // Real stage names for the selected Academic Level, sourced from Stage
+  // Management's own endpoint (the same one StageManagement.tsx uses) so the
+  // Evaluation Type dropdown can never offer a stage the coordinator hasn't
+  // actually created.
+  const fetchLevelStages = async (level: string) => {
+    setLevelStagesLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/projects/level/${level}?coordinatorId=${user?.id}`,
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to load stages for level ${level}.`);
+      }
+
+      const payload = await response.json();
+      const rows = Array.isArray(payload) ? payload : payload?.data;
+      const names = Array.isArray(rows)
+        ? Array.from(
+            new Set(
+              rows
+                .map((row: any) => String(row?.stage_name ?? "").trim())
+                .filter(Boolean),
+            ),
+          )
+        : [];
+
+      setLevelStages(names);
+      setEvaluationType((current) =>
+        names.includes(current) ? current : (names[0] ?? ""),
+      );
+    } catch (error) {
+      setLevelStages([]);
+      setEvaluationType("");
+    } finally {
+      setLevelStagesLoading(false);
+    }
+  };
+
   const loadPanelsFromServer = async () => {
     try {
       // coordinatorId lets the backend scope this to just the logged-in
@@ -830,6 +896,7 @@ const CalendarPage: React.FC = () => {
     }
 
     fetchGroups(selectedLevel, "schedule");
+    fetchLevelStages(selectedLevel);
   }, [drawerMode, isDrawerOpen, selectedLevel]);
 
   useEffect(() => {
@@ -1056,6 +1123,13 @@ const CalendarPage: React.FC = () => {
       (supervisor) => supervisor.name,
     );
 
+    if (!evaluationType) {
+      alert(
+        `No stages exist for Level ${selectedLevel} yet. Create one in Stage Management before scheduling a panel.`,
+      );
+      return;
+    }
+
     if (!selectedGroup) {
       alert("Please select a group before scheduling a panel.");
       return;
@@ -1080,12 +1154,18 @@ const CalendarPage: React.FC = () => {
 
     // A group shouldn't ever have two panels for the same stage — that's
     // two competing evaluations of the same thing, not two different
-    // panels. Checked by (groupId, stage), regardless of date, and skips
-    // the panel currently being edited so re-saving it doesn't flag itself.
+    // panels. Checked by (group, stage), regardless of date, and skips the
+    // panel currently being edited so re-saving it doesn't flag itself.
+    // Matched by group NAME, not groupId: evaluation_panels has no
+    // target_group_id column, so normalizePanelFromApi's groupId is always
+    // the group's name (see row.target_group there), never the numeric id
+    // selectedGroup.id holds — comparing those two directly never matched,
+    // silently letting the same group/stage be scheduled over and over.
+    const selectedGroupNameLower = selectedGroup.name.trim().toLowerCase();
     const duplicateStagePanel = scheduledPanels.find(
       (panel) =>
         panel.id !== editingPanelId &&
-        String(panel.groupId) === String(selectedGroup.id) &&
+        panel.groupName.trim().toLowerCase() === selectedGroupNameLower &&
         panel.title === evaluationType,
     );
     if (duplicateStagePanel) {
@@ -1125,7 +1205,7 @@ const CalendarPage: React.FC = () => {
         ...doubleBookedPanel.evaluators,
       ].find((name) => newRosterNamesLower.has(name.toLowerCase()));
       alert(
-        `${conflictingPerson} is already scheduled for ${doubleBookedPanel.groupName}'s ${doubleBookedPanel.title} panel at ${formatTime12Hour(doubleBookedPanel.time)} on ${formatShortDate(doubleBookedPanel.date)}, which overlaps this time slot. Choose a different time or evaluator.`,
+        `${conflictingPerson} is already scheduled for ${doubleBookedPanel.groupName}'s ${doubleBookedPanel.title} panel at ${formatTime12Hour(doubleBookedPanel.time)} on ${formatShortDate(doubleBookedPanel.date)}, which overlaps or leaves no gap before/after this time slot. Choose a different time or evaluator.`,
       );
       return;
     }
@@ -1786,6 +1866,13 @@ const CalendarPage: React.FC = () => {
                               </div>
                             </div>
 
+                            {panel.marksSubmitted && (
+                              <div className="upcoming-marks-submitted-banner">
+                                <ClipboardCheck size={12} />
+                                Marks submitted — awaiting your confirmation
+                              </div>
+                            )}
+
                             {isCoordinator && (
                               <div className="panel-action-row">
                                 <button
@@ -1896,13 +1983,25 @@ const CalendarPage: React.FC = () => {
                   <select
                     value={evaluationType}
                     onChange={(event) => setEvaluationType(event.target.value)}
+                    disabled={levelStagesLoading || levelStages.length === 0}
                   >
-                    {evaluationTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
+                    {levelStagesLoading ? (
+                      <option value="">Loading stages…</option>
+                    ) : levelStages.length === 0 ? (
+                      <option value="">No stages defined for this level</option>
+                    ) : (
+                      levelStages.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))
+                    )}
                   </select>
+                  {!levelStagesLoading && levelStages.length === 0 && (
+                    <span className="drawer-help error">
+                      Create a stage for Level {selectedLevel} in Stage Management before scheduling a panel for it.
+                    </span>
+                  )}
                 </label>
 
                 <label className="drawer-field">

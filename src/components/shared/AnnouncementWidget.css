@@ -42,24 +42,6 @@
   flex-shrink: 0;
 }
 
-.announcement-widget-refresh {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #f9fafb;
-  color: #475569;
-  padding: 8px 14px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.announcement-widget-refresh:hover {
-  background-color: #e2e8f0;
-  border-color: #94a3b8;
-  color: #334155;
-}
-
 .announcement-widget-muted {
   margin: 16px 0;
   color: #64748b;

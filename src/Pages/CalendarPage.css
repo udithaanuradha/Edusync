@@ -240,6 +240,12 @@
 
 .calendar-right-card {
   padding: 16px;
+  /* Bounds the whole card so its children can split into a fixed header +
+     an independently scrolling list, instead of the list pushing the
+     card — and the whole page — taller with every panel added. */
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
 }
 
 .calendar-side-header {
@@ -248,6 +254,16 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+  /* Stays put at the top of the card: flex-shrink:0 keeps it from being
+     compressed as the sibling list below grows, and position:sticky pins
+     it in place if this header ever ends up inside a scrolling ancestor
+     itself (defensive — the list below is the one that actually scrolls
+     today, but this keeps the header pinned either way). */
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
 }
 
 .calendar-right-card h3 {
@@ -269,6 +285,36 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* The scrollable region: flex:1 lets it fill whatever space the header
+     doesn't use, min-height:0 is required for a flex child to actually
+     shrink below its content size (without it, overflow-y:auto never
+     kicks in and the card just keeps growing instead). */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  /* Thin, unobtrusive scrollbar matching the app's soft-minimal palette —
+     Firefox via scrollbar-width/-color, WebKit/Blink via ::-webkit-*. */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.upcoming-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.upcoming-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.upcoming-list::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 999px;
+}
+
+.upcoming-list::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
 }
 
 .upcoming-item {
@@ -481,6 +527,19 @@
 .upcoming-people-muted {
   color: #94a3b8;
   font-size: 12px;
+}
+
+.upcoming-marks-submitted-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
 .empty-state-card {

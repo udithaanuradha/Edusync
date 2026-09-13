@@ -29,6 +29,10 @@ type Stage = {
   deadline?: string;
   level?: string;
   files?: StageFile[];
+  // Staff-only rubric path. The backend never sends this field to students,
+  // and it's rendered only in the supervisor's Coordinator Documents list
+  // below (with a "(Marking Rubric)" badge), never in any student view.
+  marking_criteria_file?: string | null;
 };
 
 type GroupItem = {
@@ -130,7 +134,6 @@ type ViewerIdentity = {
   name: string;
 };
 
-const MAX_STAGE_VIEW = 3;
 const GROUPS_API_BASE = "http://localhost:5000/api/groups";
 const PROGRESS_API_BASE = "http://localhost:5000/api/supervice-st-progress";
 
@@ -156,6 +159,18 @@ const toArray = (payload: unknown): Record<string, unknown>[] => {
   }
 
   return [];
+};
+
+// marking_criteria_file stores a bare path/URL, not a display name — this
+// pulls a readable filename off the end of it for the rubric link's label.
+// Strips the leading `${Date.now()}-` Cloudinary bakes into every upload's
+// stored name (see uploadBufferToCloudinary in Edusync-Backend), so this
+// matches the clean names Supporting Documents already show.
+const getFileNameFromPath = (path: string): string => {
+  const cleaned = path.split(/[?#]/)[0];
+  const segments = cleaned.split(/[/\\]/);
+  const rawName = segments[segments.length - 1] || cleaned;
+  return rawName.replace(/^\d{10,}-/, '');
 };
 
 const normalizeText = (value: string): string =>
@@ -298,8 +313,12 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
     setLoadingStages(true);
     setStagesError("");
     try {
+      // viewerRole=supervisor is what keeps marking_criteria_file in the
+      // response at all — the backend fails closed and strips that field
+      // from anyone who doesn't identify as staff (see
+      // getStagesByLevel in Edusync-Backend's projectController.js).
       const response = await fetch(
-        `http://localhost:5000/api/projects/level/${levelNumber}`,
+        `http://localhost:5000/api/projects/level/${levelNumber}?viewerRole=supervisor`,
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch stages: ${response.statusText}`);
@@ -319,10 +338,12 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             deadline: item.deadline ? String(item.deadline) : undefined,
             level: item.level ? String(item.level) : undefined,
             files: Array.isArray(item.files) ? (item.files as StageFile[]) : [],
+            marking_criteria_file: item.marking_criteria_file
+              ? String(item.marking_criteria_file)
+              : null,
           }),
         )
-        .filter((stage: Stage) => Boolean(stage.stage_id || stage.stage_name))
-        .slice(0, MAX_STAGE_VIEW);
+        .filter((stage: Stage) => Boolean(stage.stage_id || stage.stage_name));
 
       setStages(normalized);
     } catch (error) {
@@ -670,7 +691,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 <p>
                   <strong>Coordinator Documents</strong>
                 </p>
-                {coordinatorFiles.length === 0 ? (
+                {coordinatorFiles.length === 0 && !stage.marking_criteria_file ? (
                   <p className="supervisor-level-muted">
                     No coordinator documents uploaded yet.
                   </p>
@@ -691,6 +712,28 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                         </a>
                       </li>
                     ))}
+                    {/* Staff-only rubric, kept out of the shared stage_files
+                        list on the backend — rendered here for supervisors
+                        only, with a badge distinguishing it from the
+                        general reference documents above. */}
+                    {stage.marking_criteria_file && (
+                      <li key={`${stage.stage_id}-marking-criteria`}>
+                        <a
+                          href={
+                            stage.marking_criteria_file.startsWith("http")
+                              ? stage.marking_criteria_file
+                              : `http://localhost:5000${stage.marking_criteria_file}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {getFileNameFromPath(stage.marking_criteria_file)}
+                        </a>{" "}
+                        <span className="supervisor-pill supervisor-pill-rubric">
+                          Marking Rubric
+                        </span>
+                      </li>
+                    )}
                   </ul>
                 )}
               </div>

@@ -82,12 +82,11 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
               
               <div className="progress-container">
                 <div className="progress-track">
-                  <div 
-                    className="progress-fill" 
+                  <div
+                    className="progress-fill"
                     style={{ width: `${project.progress}%` }}
                   ></div>
                 </div>
-                <span className="progress-text">{project.progress}%</span>
               </div>
             </div>
 

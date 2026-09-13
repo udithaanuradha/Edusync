@@ -38,7 +38,16 @@ const StudentStageView: React.FC<StudentStageViewProps> = ({ levelNumber }) => {
         // Fetching from the same backend port you confirmed (5000)
         const response = await fetch(`http://localhost:5000/api/projects/level/${levelNumber}${academicUnit}`);
         const data = await response.json();
-        if (data.success) setStages(data.data);
+        if (data.success) {
+          // Defense in depth: the backend is expected to omit
+          // marking_criteria_file from student-facing responses entirely,
+          // but this view must never render it even if that field slips
+          // through, so it's stripped here before it ever reaches state.
+          const studentSafeStages = (Array.isArray(data.data) ? data.data : []).map(
+            ({ marking_criteria_file, ...rest }: Stage & { marking_criteria_file?: unknown }) => rest,
+          );
+          setStages(studentSafeStages);
+        }
       } catch (err) {
         console.error('❌ Error fetching stages:', err);
       } finally {

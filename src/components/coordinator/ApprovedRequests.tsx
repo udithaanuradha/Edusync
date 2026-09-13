@@ -336,11 +336,6 @@ const ApprovedRequests: React.FC<ApprovedRequestsProps> = ({ levelNumber, onCrea
             Click Create Group to prefill the group creation modal.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <PrimaryButton type="button" variant="secondary" className="approved-refresh-btn" onClick={loadApprovedRequests}>
-            Refresh
-          </PrimaryButton>
-        </div>
       </div>
 
       {loading && <p className="approved-muted">Loading approved requests...</p>}

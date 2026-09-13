@@ -476,16 +476,6 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     return entries;
   }, [activeGroups, stages, marks, filterStage]);
 
-  // The progress summary's denominator must be every group assigned to the
-  // stage(s) in scope, not just the ones that already have a submission
-  // row — submissionStats.total only ever counted real rows, so a stage
-  // with 1 real submission and 4 groups that hadn't submitted yet
-  // misreported "1/1 Groups Submitted, 100% complete" instead of the
-  // correct "1/5, 20%".
-  const totalGroupsInScope = submissionStats.submitted + notSubmittedMarks.length;
-  const completionPercent =
-    totalGroupsInScope > 0 ? Math.round((submissionStats.submitted / totalGroupsInScope) * 100) : 0;
-
   const statusTabs: Array<{ key: SubmissionStatus; label: string; count: number }> = [
     { key: 'all', label: 'All Submissions', count: submissionStats.total },
     { key: 'on_time', label: 'On Time', count: submissionStats.on_time },
@@ -677,25 +667,18 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       </div>
 
       <div className="submission-tracker-panel">
-        <div className="submission-tracker-summary">
-          <div>
-            <div className="submission-tracker-meta">
-              <span className="submission-tracker-count">
-                {submissionStats.submitted}/{totalGroupsInScope} Groups Submitted
-              </span>
-              <span className="submission-tracker-percent">{completionPercent}% complete</span>
-            </div>
-            <div className="submission-progress-bar" aria-label="Submission progress">
-              <div
-                className="submission-progress-fill"
-                style={{ width: `${completionPercent}%` }}
-              />
-            </div>
-          </div>
-          <p className="submission-tracker-hint">
-            Use the status tabs to isolate submitted, pending, or late groups instantly.
-          </p>
-        </div>
+        {/* The "X/Y Groups Submitted" fraction + progress bar used to live
+            here, but its denominator only ever made sense for a single
+            selected stage — with "All Stages" selected it summed
+            submitted/missing across every stage at once, so e.g. 4 real
+            groups across a few stages could show as "2/10 Groups
+            Submitted", a number with no direct relationship to how many
+            groups actually exist. Removed rather than special-cased per
+            filterStage, since the status tabs below already give an
+            accurate, unambiguous count for whatever's currently selected. */}
+        <p className="submission-tracker-hint">
+          Use the status tabs below to isolate submitted, on-time, late, or missing groups instantly.
+        </p>
 
         <div className="submission-status-tabs" role="tablist" aria-label="Submission status filters">
           {statusTabs.map((tab) => (
