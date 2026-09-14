@@ -13,6 +13,9 @@ interface Deadline {
 
 interface UpcomingDeadlinesProps {
   deadlines?: Deadline[];
+  title?: string;
+  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  emptyLabel?: string;
 }
 
 const formatDay = (date: string): { day: string; month: string } => {
@@ -27,18 +30,23 @@ const formatDay = (date: string): { day: string; month: string } => {
   };
 };
 
-const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [] }) => {
+const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({
+  deadlines = [],
+  title = 'Upcoming Panels',
+  icon: Icon = Calendar,
+  emptyLabel = 'No upcoming panels found.',
+}) => {
   return (
     <div className="deadlines-card">
       <div className="card-header">
-        <Calendar size={20} className="header-icon" />
-        <h3 className="card-title">Upcoming Panels</h3>
+        <Icon size={20} className="header-icon" />
+        <h3 className="card-title">{title}</h3>
       </div>
 
       <div className="deadlines-list">
         {deadlines.length === 0 ? (
           <div style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
-            No upcoming panels found.
+            {emptyLabel}
           </div>
         ) : (
           deadlines.map((deadline, index) => {
