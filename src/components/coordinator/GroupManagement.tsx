@@ -161,11 +161,23 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const [saving, setSaving] = useState(false);
   const [department, setDepartment] = useState<string>('');
 
+  // Zero supervisors is a legitimate state at some levels (not every group
+  // has one assigned yet), so neither slot is required — but the same
+  // person filling both is never legitimate, and would silently break
+  // anything that expects the two to be distinct (evaluation panel
+  // scheduling's Group Supervisor(s) detection, grading rubrics that
+  // compare primary vs. second supervisor marks).
+  const supervisorsAreDuplicate =
+    !!selectedSupervisor &&
+    !!selectedSupervisor2 &&
+    String(selectedSupervisor.id) === String(selectedSupervisor2.id);
+
   const canCreate = useMemo(() => {
     if (!groupName.trim()) return false;
     if (members.length === 0) return false;
+    if (supervisorsAreDuplicate) return false;
     return members.some((m) => String(m.id) === leaderId);
-  }, [groupName, members, leaderId]);
+  }, [groupName, members, leaderId, supervisorsAreDuplicate]);
 
   const isEditMode = editingGroup !== null;
   const canSubmit = canCreate;
@@ -287,14 +299,48 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   const openEditModal = async (group: GroupView) => {
     setEditingGroup(group);
     setGroupName(group.name);
-    setSupervisorQuery(group.supervisor === 'Not assigned' ? '' : group.supervisor);
+
+    // Resolve the group's existing supervisor(s) into real SupervisorOption
+    // objects, not just their display text — otherwise selectedSupervisor
+    // stayed null until the coordinator happened to retype/reselect that
+    // exact box themselves, and saving ANY other edit (e.g. just adding a
+    // second supervisor) sent supervisorId: null and silently wiped out
+    // whichever supervisor was already assigned. Mirrors the same
+    // name-resolution prefillFromApprovedRequest already does below.
+    const firstName = group.supervisor && group.supervisor !== 'Not assigned' ? group.supervisor.trim() : '';
+    setSupervisorQuery(firstName);
     setSelectedSupervisor(null);
     setSupervisorOptions([]);
     setSupervisorSearchError(null);
-    setSupervisorQuery2(group.supervisor2 || '');
+    if (firstName) {
+      const candidates = await fetchSupervisors(firstName);
+      const exact = candidates.find((c) => c.name.toLowerCase() === firstName.toLowerCase());
+      if (exact) {
+        setSelectedSupervisor(exact);
+        setSupervisorQuery(exact.name);
+        setSupervisorOptions([]);
+      }
+    }
+
+    const secondName = (group.supervisor2 || '').trim();
+    setSupervisorQuery2(secondName);
     setSelectedSupervisor2(null);
     setSupervisorOptions2([]);
     setSupervisorSearchError2(null);
+    if (secondName) {
+      const candidates2 = await fetchSupervisors(secondName, {
+        setOptions: setSupervisorOptions2,
+        setSearching: setSupervisorSearching2,
+        setError: setSupervisorSearchError2,
+      });
+      const exact2 = candidates2.find((c) => c.name.toLowerCase() === secondName.toLowerCase());
+      if (exact2) {
+        setSelectedSupervisor2(exact2);
+        setSupervisorQuery2(exact2.name);
+        setSupervisorOptions2([]);
+      }
+    }
+
     setLeaderId('');
     setSearchIndex('');
     setMembers([]);
@@ -343,14 +389,20 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
   };
 
   const mapSupervisors = (data: unknown): SupervisorOption[] => {
+    // /api/groups/supervisors (the endpoint CalendarPage.tsx's evaluator
+    // picker already uses successfully) responds with a plain top-level
+    // array, not one of these wrapped shapes — this never matched it, so
+    // every supervisor search here silently came back empty.
     const payload = data as Record<string, unknown> | null;
-    const list = Array.isArray(payload?.data)
-      ? payload?.data
-      : Array.isArray(payload?.users)
-        ? payload?.users
-        : Array.isArray(payload?.supervisors)
-          ? payload?.supervisors
-          : [];
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(payload?.data)
+        ? payload?.data
+        : Array.isArray(payload?.users)
+          ? payload?.users
+          : Array.isArray(payload?.supervisors)
+            ? payload?.supervisors
+            : [];
 
     return (list as Record<string, unknown>[])
       .map((item) => {
@@ -397,6 +449,12 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
 
     const endpoints = [
       ...(resolvedCustomEndpoint ? [resolvedCustomEndpoint] : []),
+      // The one endpoint that actually exists — same one CalendarPage.tsx's
+      // evaluator picker already relies on. It returns every supervisor
+      // unfiltered (no server-side search), so results are filtered by `q`
+      // below instead. The rest are speculative route shapes that don't
+      // exist in this backend; kept only as a defensive fallback.
+      'http://localhost:5000/api/groups/supervisors',
       `http://localhost:5000/api/users/supervisors?search=${encodeURIComponent(q)}`,
       `http://localhost:5000/api/users?role=supervisor&search=${encodeURIComponent(q)}`,
       `http://localhost:5000/api/users?role=supervisor&query=${encodeURIComponent(q)}`,
@@ -420,7 +478,15 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
           }
 
           const data = await response.json();
-          const mapped = mapSupervisors(data);
+          const rawMapped = mapSupervisors(data);
+          // The unfiltered /api/groups/supervisors response (and any other
+          // endpoint that ignores the query too) still needs narrowing down
+          // to what was actually typed.
+          const mapped = rawMapped.filter(
+            (supervisor) =>
+              supervisor.name.toLowerCase().includes(q.toLowerCase()) ||
+              supervisor.email.toLowerCase().includes(q.toLowerCase()),
+          );
           if (mapped.length > 0) {
             setOptions(mapped);
             setError(null);
@@ -632,6 +698,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
     const trimmedGroupName = groupName.trim();
 
     if (isEditMode) {
+      if (supervisorsAreDuplicate) {
+        alert('The primary and second supervisor must be different people.');
+        return;
+      }
+
       if (!canCreate) {
         alert('Enter a group name, add at least one member, and select a group leader.');
         return;
@@ -715,6 +786,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
         setSaving(false);
       }
 
+      return;
+    }
+
+    if (supervisorsAreDuplicate) {
+      alert('The primary and second supervisor must be different people.');
       return;
     }
 
@@ -1007,6 +1083,11 @@ const GroupManagement: React.FC<GroupManagementProps> = ({ levelNumber, initialR
                   {selectedSupervisor2 && (
                     <p className="supervisor-selected-text">
                       Selected: {selectedSupervisor2.name}
+                    </p>
+                  )}
+                  {supervisorsAreDuplicate && (
+                    <p className="supervisor-duplicate-warning">
+                      The primary and second supervisor must be different people.
                     </p>
                   )}
                 </div>

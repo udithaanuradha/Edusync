@@ -43,6 +43,9 @@ import MentorCalendarPage from "./pages/MentorPages/MentorCalendarPage";
 import MentorCommunicationPage from "./pages/MentorPages/MentorCommunicationPage";
 import SupervisorEvaluationPanel from "./pages/SupervisorPages/SupervisorEvaluationPanel";
 import AdminProjectDelaysPage from "./pages/AdminPages/AdminProjectDelaysPage";
+import AdminAwarenessSessionsPage from "./pages/AdminPages/AdminAwarenessSessionsPage";
+import StudentAwarenessSessionsPage from "./pages/StudentPages/StudentAwarenessSessionsPage";
+import StudentCalendarPage from "./pages/StudentPages/StudentCalendarPage";
 
 // A supervisor account can be shaped either as a plain `role: 'supervisor'`
 // user or as `role: 'lecturer'` with `designation: 'supervisor'`. Lecturers
@@ -60,26 +63,17 @@ function App() {
   const userObj = user as any; // Cast to bypass strict type check for designation field
   const effectiveRole = String(userObj?.effectiveRole || userObj?.designation || userObj?.role || '').toLowerCase();
 
-  // A coordinator's assigned level (assignCoordinator sets users.level to
-  // the level they coordinate) gates which /dashboard/level-N page they may
-  // actually view. Without this, Level1Page/Level2Page/etc. below rendered
-  // for ANY coordinator regardless of level — so a coordinator assigned to
-  // Level 2 could navigate straight to /dashboard/level-1 (via the sidebar,
-  // which still lists every level, or by typing the URL) and see another
-  // coordinator's real submissions and marksheet. Redirect them back to
-  // their own level instead; leave access unrestricted if the account has
-  // no valid level on it yet, so that edge case doesn't lock anyone out.
-  const coordinatorAssignedLevel = Number(userObj?.level);
-  const hasKnownCoordinatorLevel =
-    Number.isFinite(coordinatorAssignedLevel) &&
-    coordinatorAssignedLevel >= 1 &&
-    coordinatorAssignedLevel <= 4;
-  const renderCoordinatorLevelPage = (levelNumber: number, page: ReactElement) =>
-    hasKnownCoordinatorLevel && coordinatorAssignedLevel !== levelNumber ? (
-      <Navigate to={`/dashboard/level-${coordinatorAssignedLevel}`} />
-    ) : (
-      page
-    );
+  // A coordinator can browse any /dashboard/level-N page — the actual
+  // access boundary lives server-side now: every coordinator-facing
+  // endpoint (Reports, Submissions, Calendar, group member search, ...)
+  // resolves the requesting coordinator's own assigned level *and*
+  // department straight from their users row and returns nothing for a
+  // level/department that isn't theirs, regardless of what's in the URL.
+  // This used to redirect a coordinator straight back to their own level
+  // instead of letting them open another one at all — once the backend
+  // itself was made to enforce the restriction, that redirect just got in
+  // the way of legitimately browsing the sidebar.
+  const renderCoordinatorLevelPage = (levelNumber: number, page: ReactElement) => page;
 
   return (
     <Routes>
@@ -289,6 +283,8 @@ function App() {
             <AdminCalendarPage />
           ) : userObj?.role === "mentor" ? (
             <MentorCalendarPage />
+          ) : userObj?.role === "student" ? (
+            <StudentCalendarPage />
           ) : userObj ? (
             <CalendarPage />
           ) : (
@@ -449,6 +445,40 @@ function App() {
         element={
           userObj?.role === "admin" ? (
             <AdminProjectDelaysPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      {/* Awareness Sessions Routes (Standalone / Isolated) */}
+      <Route
+        path="/dashboard/awareness-sessions"
+        element={
+          userObj?.role === "admin" ? (
+            <AdminAwarenessSessionsPage />
+          ) : userObj?.role === "student" ? (
+            <StudentAwarenessSessionsPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route
+        path="/admin/awareness-sessions"
+        element={
+          userObj?.role === "admin" ? (
+            <AdminAwarenessSessionsPage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route
+        path="/student/awareness-sessions"
+        element={
+          userObj?.role === "student" ? (
+            <StudentAwarenessSessionsPage />
           ) : (
             <Navigate to="/login" />
           )

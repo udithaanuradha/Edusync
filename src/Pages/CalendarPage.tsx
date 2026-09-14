@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Pencil, Plus, Trash2, Users, X, Calendar, Clock, Video, ExternalLink, MapPin } from "lucide-react";
+import { CalendarDays, Pencil, Plus, Trash2, Users, X, Calendar, Clock, Video, ExternalLink, MapPin, ClipboardCheck } from "lucide-react";
 import Sidebar, { coordinatorMenuItems, isCoordinatorUser } from "../components/shared/Sidebar";
 import CalendarGrid, {
   type CalendarGridMarker,
@@ -69,12 +69,20 @@ type ScheduledPanel = {
   notes: string;
   kind: string;
   department?: string;
+  // True once evaluators have submitted marks for this panel's stage, even
+  // though `status` itself only flips to 'completed' when the coordinator
+  // clicks "Complete" on the Reports tab — lets the Calendar surface "marks
+  // are already in, just needs confirming" instead of looking identical to
+  // an untouched panel.
+  marksSubmitted: boolean;
 };
 
 type DrawerMode = "schedule" | "freeze";
 
 const levelOptions = [1, 2, 3, 4];
-const evaluationTypes = ["Proposal", "Interim", "Code Review", "Final"];
+// Evaluation Type options used to be this fixed list regardless of level —
+// replaced by fetchLevelStages, which loads the real stages the coordinator
+// created for the selected level (see the drawer-open effect below).
 
 const today = new Date();
 
@@ -130,6 +138,58 @@ const formatLongDate = (value: string) =>
     day: "numeric",
     year: "numeric",
   });
+
+// panel.time comes straight from the DB's TIME column (e.g. "11:00:00", 24hr
+// with seconds) via normalizePanelFromApi — only used for display here, not
+// for the <input type="date"> prefill in openEditPanelDrawer, which needs
+// that raw 24-hour "HH:MM" string as-is.
+const formatTime12Hour = (value: string) => {
+  const match = /^(\d{1,2}):(\d{2})/.exec(String(value ?? "").trim());
+  if (!match) return value;
+  const hours24 = Number(match[1]);
+  const minutes = match[2];
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+  return `${hours12}:${minutes} ${period}`;
+};
+
+// Parses "30 min"/"45 min"/"60 min"/"90 min" (the duration <select>'s fixed
+// option set) into a minute count for overlap math below.
+const parseDurationMinutes = (duration: string): number => {
+  const match = /^(\d+)/.exec(String(duration ?? "").trim());
+  return match ? Number(match[1]) : 60;
+};
+
+// "HH:MM" (or "HH:MM:SS") 24-hour time -> minutes since midnight.
+const parseTimeToMinutes = (time: string): number => {
+  const match = /^(\d{1,2}):(\d{2})/.exec(String(time ?? "").trim());
+  if (!match) return 0;
+  return Number(match[1]) * 60 + Number(match[2]);
+};
+
+// Two panels conflict if they're on the same day and their [start, start +
+// duration] windows overlap or touch — not just an exact time match, so a
+// 10:00-10:45 panel correctly blocks someone else being booked 10:30-11:00.
+// Boundary-touching windows (one ends exactly when the other starts, e.g.
+// 9:30-10:00 followed by 10:00-11:00) count as a conflict too: a person on
+// both rosters would need to end one panel and instantly start the next
+// with zero transition time, which isn't realistic even though the two
+// windows don't mathematically overlap.
+const doPanelTimesOverlap = (
+  dateA: string,
+  timeA: string,
+  durationA: string,
+  dateB: string,
+  timeB: string,
+  durationB: string,
+): boolean => {
+  if (dateA !== dateB) return false;
+  const startA = parseTimeToMinutes(timeA);
+  const endA = startA + parseDurationMinutes(durationA);
+  const startB = parseTimeToMinutes(timeB);
+  const endB = startB + parseDurationMinutes(durationB);
+  return startA <= endB && startB <= endA;
+};
 
 const PANEL_STORAGE_KEY = "edusync.calendar.panels";
 const FROZEN_STORAGE_KEY = "edusync.calendar.frozenDates";
@@ -242,6 +302,8 @@ const normalizePanelFromApi = (row: Record<string, unknown>): ScheduledPanel => 
   notes: String(row.notes ?? ""),
   kind: String(row.kind ?? "Coordinator scheduled panel"),
   department: String(row.department ?? row.academic_unit ?? "ITM"),
+  // MySQL returns EXISTS(...) as 0/1, not a JS boolean.
+  marksSubmitted: Boolean(Number(row.marks_submitted ?? 0)),
 });
 
 const makeMonthKey = (date: Date) =>
@@ -303,7 +365,17 @@ const CalendarPage: React.FC = () => {
     toDateValue(addDays(today, 2)),
   );
   const [freezeDate, setFreezeDate] = useState(toDateValue(addDays(today, 1)));
-  const [evaluationType, setEvaluationType] = useState(evaluationTypes[0]);
+  const [evaluationType, setEvaluationType] = useState("");
+  // Evaluation Type options for the selected Academic Level, loaded from the
+  // stages the coordinator actually created in Stage Management — previously
+  // this dropdown was a fixed ["Proposal", "Interim", "Code Review", "Final"]
+  // list regardless of level, so it could offer a stage that doesn't exist
+  // for that level at all. Scheduling a panel against a name with no
+  // matching project_stages row silently breaks every feature that links
+  // the two (marks-submitted detection, final-grade totals, the duplicate
+  // group+stage check), so the dropdown must only ever offer real stages.
+  const [levelStages, setLevelStages] = useState<string[]>([]);
+  const [levelStagesLoading, setLevelStagesLoading] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<string>("1");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedEvaluatorIds, setSelectedEvaluatorIds] = useState<number[]>(
@@ -379,7 +451,10 @@ const CalendarPage: React.FC = () => {
 
   const resetScheduleFields = () => {
     setEditingPanelId(null);
-    setEvaluationType(evaluationTypes[0]);
+    // Left blank rather than defaulting to a hardcoded stage name — the
+    // level-change effect below fetches this level's real stages and fills
+    // it in with the first one that actually exists once they load.
+    setEvaluationType("");
     setSelectedLevel("1");
     setSelectedGroupId("");
     setSelectedEvaluatorIds([]);
@@ -501,8 +576,17 @@ const CalendarPage: React.FC = () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
     try {
+      // Not /api/groups/level/:level — mentorGroupRoutes.js registers that
+      // exact same path (and /api/groups/display/:level) ahead of
+      // groupRoutes.js's own handler for it, so Express always routes
+      // there first, silently shadowing groupController.js's
+      // getGroupsByLevel entirely. That mentor-focused handler never
+      // carried a second-supervisor field, so a dual-supervisor group's
+      // second supervisor never showed up here no matter what
+      // getGroupsByLevel itself did. /api/groups/coordinator/:id/:level
+      // isn't shadowed by anything and already returns both.
       const response = await fetch(
-        `http://localhost:5000/api/groups/level/${level}?coordinatorId=${user?.id}`,
+        `http://localhost:5000/api/groups/coordinator/${user?.id}/${level}`,
         { headers },
       );
       if (!response.ok) {
@@ -597,6 +681,44 @@ const CalendarPage: React.FC = () => {
       }
     } finally {
       setGroupsLoading(false);
+    }
+  };
+
+  // Real stage names for the selected Academic Level, sourced from Stage
+  // Management's own endpoint (the same one StageManagement.tsx uses) so the
+  // Evaluation Type dropdown can never offer a stage the coordinator hasn't
+  // actually created.
+  const fetchLevelStages = async (level: string) => {
+    setLevelStagesLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/projects/level/${level}?coordinatorId=${user?.id}`,
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to load stages for level ${level}.`);
+      }
+
+      const payload = await response.json();
+      const rows = Array.isArray(payload) ? payload : payload?.data;
+      const names = Array.isArray(rows)
+        ? Array.from(
+            new Set(
+              rows
+                .map((row: any) => String(row?.stage_name ?? "").trim())
+                .filter(Boolean),
+            ),
+          )
+        : [];
+
+      setLevelStages(names);
+      setEvaluationType((current) =>
+        names.includes(current) ? current : (names[0] ?? ""),
+      );
+    } catch (error) {
+      setLevelStages([]);
+      setEvaluationType("");
+    } finally {
+      setLevelStagesLoading(false);
     }
   };
 
@@ -789,6 +911,7 @@ const CalendarPage: React.FC = () => {
     }
 
     fetchGroups(selectedLevel, "schedule");
+    fetchLevelStages(selectedLevel);
   }, [drawerMode, isDrawerOpen, selectedLevel]);
 
   useEffect(() => {
@@ -1015,6 +1138,13 @@ const CalendarPage: React.FC = () => {
       (supervisor) => supervisor.name,
     );
 
+    if (!evaluationType) {
+      alert(
+        `No stages exist for Level ${selectedLevel} yet. Create one in Stage Management before scheduling a panel.`,
+      );
+      return;
+    }
+
     if (!selectedGroup) {
       alert("Please select a group before scheduling a panel.");
       return;
@@ -1034,6 +1164,64 @@ const CalendarPage: React.FC = () => {
 
     if (frozenDates.some((item) => item.date === scheduleDate)) {
       alert("That date is frozen. Please choose another day.");
+      return;
+    }
+
+    // A group shouldn't ever have two panels for the same stage — that's
+    // two competing evaluations of the same thing, not two different
+    // panels. Checked by (group, stage), regardless of date, and skips the
+    // panel currently being edited so re-saving it doesn't flag itself.
+    // Matched by group NAME, not groupId: evaluation_panels has no
+    // target_group_id column, so normalizePanelFromApi's groupId is always
+    // the group's name (see row.target_group there), never the numeric id
+    // selectedGroup.id holds — comparing those two directly never matched,
+    // silently letting the same group/stage be scheduled over and over.
+    const selectedGroupNameLower = selectedGroup.name.trim().toLowerCase();
+    const duplicateStagePanel = scheduledPanels.find(
+      (panel) =>
+        panel.id !== editingPanelId &&
+        panel.groupName.trim().toLowerCase() === selectedGroupNameLower &&
+        panel.title === evaluationType,
+    );
+    if (duplicateStagePanel) {
+      alert(
+        `${selectedGroup.name} already has a ${evaluationType} panel scheduled for ${formatShortDate(duplicateStagePanel.date)}. Edit or delete that one instead of creating a second.`,
+      );
+      return;
+    }
+
+    // Block double-booking: nobody on this panel's roster (supervisor or
+    // external evaluator) may already be booked on another panel whose
+    // time window overlaps this one, even if it's for a different group.
+    const newRosterNamesLower = new Set(
+      [...supervisorNames, ...externalEvaluatorNames].map((name) => name.toLowerCase()),
+    );
+    const doubleBookedPanel = scheduledPanels.find((panel) => {
+      if (panel.id === editingPanelId) return false;
+      if (
+        !doPanelTimesOverlap(
+          scheduleDate,
+          scheduleTime,
+          duration,
+          panel.date,
+          panel.time,
+          panel.duration,
+        )
+      ) {
+        return false;
+      }
+      return [...panel.supervisors, ...panel.evaluators].some((name) =>
+        newRosterNamesLower.has(name.toLowerCase()),
+      );
+    });
+    if (doubleBookedPanel) {
+      const conflictingPerson = [
+        ...doubleBookedPanel.supervisors,
+        ...doubleBookedPanel.evaluators,
+      ].find((name) => newRosterNamesLower.has(name.toLowerCase()));
+      alert(
+        `${conflictingPerson} is already scheduled for ${doubleBookedPanel.groupName}'s ${doubleBookedPanel.title} panel at ${formatTime12Hour(doubleBookedPanel.time)} on ${formatShortDate(doubleBookedPanel.date)}, which overlaps or leaves no gap before/after this time slot. Choose a different time or evaluator.`,
+      );
       return;
     }
 
@@ -1151,6 +1339,29 @@ const CalendarPage: React.FC = () => {
 
     if (!freezeDate) {
       alert("Please choose a date to freeze.");
+      return;
+    }
+
+    if (freezeDate < toDateValue(today)) {
+      alert("Please choose today or a future date to freeze.");
+      return;
+    }
+
+    // Freezing a date that already has panels scheduled on it puts the
+    // calendar in a contradictory state — a "blocked for scheduling" day
+    // that already has scheduled panels sitting on it. Block the freeze
+    // outright rather than silently letting both exist; the coordinator
+    // needs to reschedule or delete those panels first.
+    const panelsOnFreezeDate = scheduledPanels.filter(
+      (panel) => panel.date === freezeDate,
+    );
+    if (panelsOnFreezeDate.length > 0) {
+      const summary = panelsOnFreezeDate
+        .map((panel) => `${panel.groupName} (${panel.title}, ${formatTime12Hour(panel.time)})`)
+        .join(", ");
+      alert(
+        `Cannot freeze ${formatShortDate(freezeDate)} — ${panelsOnFreezeDate.length} panel(s) are already scheduled that day: ${summary}. Reschedule or delete them first.`,
+      );
       return;
     }
 
@@ -1597,17 +1808,17 @@ const CalendarPage: React.FC = () => {
                             <div className="upcoming-item-rows">
                               <div className="upcoming-item-row">
                                 <span className="upcoming-icon-badge upcoming-icon-time">
-                                  <Clock size={14} />
+                                  <Clock size={12} />
                                 </span>
                                 <span>
-                                  {panel.time} ({panel.duration})
+                                  {formatTime12Hour(panel.time)} ({panel.duration})
                                 </span>
                               </div>
 
                               {hasLocation && (
                                 <div className="upcoming-item-row">
                                   <span className="upcoming-icon-badge upcoming-icon-location">
-                                    <MapPin size={14} />
+                                    <MapPin size={12} />
                                   </span>
                                   <span>{panel.location}</span>
                                 </div>
@@ -1616,7 +1827,7 @@ const CalendarPage: React.FC = () => {
                               {panel.meetingLink && (
                                 <div className="upcoming-item-row">
                                   <span className="upcoming-icon-badge upcoming-icon-meeting">
-                                    <Video size={14} />
+                                    <Video size={12} />
                                   </span>
                                   <a
                                     href={panel.meetingLink}
@@ -1630,22 +1841,34 @@ const CalendarPage: React.FC = () => {
                                 </div>
                               )}
 
-                              <div className="upcoming-item-row">
+                              <div className="upcoming-item-row upcoming-item-row-people">
                                 <span className="upcoming-icon-badge upcoming-icon-people">
-                                  <Users size={14} />
+                                  <Users size={12} />
                                 </span>
                                 <div className="upcoming-people-block">
                                   {panelSupervisors.length > 0 && (
-                                    <div className="upcoming-people-line">
+                                    <div className="upcoming-supervisor-row">
                                       <span className="role-badge supervisor-role-badge">
                                         Supervisor
                                       </span>
-                                      <span>{panelSupervisors.join(", ")}</span>
+                                      <span className="upcoming-people-name">
+                                        {panelSupervisors.join(", ")}
+                                      </span>
                                     </div>
                                   )}
                                   {externalEvaluators.length > 0 && (
-                                    <div className="upcoming-people-line upcoming-people-muted">
-                                      Evaluators: {externalEvaluators.join(", ")}
+                                    <div className="upcoming-evaluators-row">
+                                      <span className="people-line-label">Evaluators</span>
+                                      <span
+                                        className="upcoming-people-name muted"
+                                        title={externalEvaluators.join(", ")}
+                                      >
+                                        {externalEvaluators.length > 3
+                                          ? `${externalEvaluators
+                                              .slice(0, 3)
+                                              .join(" · ")} +${externalEvaluators.length - 3}`
+                                          : externalEvaluators.join(" · ")}
+                                      </span>
                                     </div>
                                   )}
                                   {panelSupervisors.length === 0 &&
@@ -1658,6 +1881,13 @@ const CalendarPage: React.FC = () => {
                               </div>
                             </div>
 
+                            {panel.marksSubmitted && (
+                              <div className="upcoming-marks-submitted-banner">
+                                <ClipboardCheck size={12} />
+                                Marks submitted — awaiting your confirmation
+                              </div>
+                            )}
+
                             {isCoordinator && (
                               <div className="panel-action-row">
                                 <button
@@ -1665,7 +1895,7 @@ const CalendarPage: React.FC = () => {
                                   className="panel-action-btn edit"
                                   onClick={() => openEditPanelDrawer(panel)}
                                 >
-                                  <Pencil size={13} />
+                                  <Pencil size={11} />
                                   Edit
                                 </button>
                                 <button
@@ -1673,7 +1903,7 @@ const CalendarPage: React.FC = () => {
                                   className="panel-action-btn delete"
                                   onClick={() => deletePanel(panel.id)}
                                 >
-                                  <Trash2 size={13} />
+                                  <Trash2 size={11} />
                                   Delete
                                 </button>
                               </div>
@@ -1768,13 +1998,25 @@ const CalendarPage: React.FC = () => {
                   <select
                     value={evaluationType}
                     onChange={(event) => setEvaluationType(event.target.value)}
+                    disabled={levelStagesLoading || levelStages.length === 0}
                   >
-                    {evaluationTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
+                    {levelStagesLoading ? (
+                      <option value="">Loading stages…</option>
+                    ) : levelStages.length === 0 ? (
+                      <option value="">No stages defined for this level</option>
+                    ) : (
+                      levelStages.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))
+                    )}
                   </select>
+                  {!levelStagesLoading && levelStages.length === 0 && (
+                    <span className="drawer-help error">
+                      Create a stage for Level {selectedLevel} in Stage Management before scheduling a panel for it.
+                    </span>
+                  )}
                 </label>
 
                 <label className="drawer-field">
@@ -1802,12 +2044,26 @@ const CalendarPage: React.FC = () => {
                     <option value="" disabled>
                       {groupsLoading ? "Loading groups..." : "Choose a group"}
                     </option>
-                    {groups.map((group) => (
-                      <option key={String(group.id)} value={String(group.id)}>
-                        {group.name}{" "}
-                        {group.supervisor ? `• ${group.supervisor}` : ""}
-                      </option>
-                    ))}
+                    {groups.map((group) => {
+                      // group.supervisor/supervisor2 hold the primary and
+                      // second supervisor names — this used to only ever
+                      // show the primary one, so a dual-supervisor group
+                      // (see GroupManagement.tsx's SECOND SUPERVISOR field)
+                      // looked like it only had one assigned here.
+                      const supervisorNames = [group.supervisor, group.supervisor2]
+                        .filter(
+                          (name): name is string =>
+                            !!name && name.trim().toLowerCase() !== "not assigned",
+                        );
+                      return (
+                        <option key={String(group.id)} value={String(group.id)}>
+                          {group.name}
+                          {supervisorNames.length > 0
+                            ? ` • ${supervisorNames.join(" & ")}`
+                            : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                   {groupsError && (
                     <span className="drawer-help error">{groupsError}</span>
@@ -2055,6 +2311,7 @@ const CalendarPage: React.FC = () => {
                     type="date"
                     value={freezeDate}
                     onChange={(event) => setFreezeDate(event.target.value)}
+                    min={toDateValue(today)}
                   />
                 </label>
 

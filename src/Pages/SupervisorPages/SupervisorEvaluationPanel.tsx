@@ -625,45 +625,32 @@ const SupervisorEvaluationPanel: React.FC = () => {
                     gap: "16px",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                    <label htmlFor="group-select" style={{ fontWeight: "600", color: "var(--eds-color-text-strong)", fontSize: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: "600", color: "var(--eds-color-text-muted)", fontSize: "14px" }}>
                       Assigned Group:
-                    </label>
-                    <select
-                      id="group-select"
-                      value={selectedPanelKey}
-                      onChange={(e) => {
-                        const newKey = e.target.value;
-                        setSelectedPanelKey(newKey);
-                        const target = groups.find((g) => getPanelKey(g) === newKey);
-                        if (target) {
-                          setSearchParams({
-                            level: String(selectedLevel),
-                            groupId: String(target.group_id),
-                            panelId: String(target.panel_id || ""),
-                          });
-                        }
-                      }}
+                    </span>
+                    <span
                       style={{
-                        padding: "10px 14px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 16px",
                         borderRadius: "8px",
                         border: "1px solid var(--eds-color-border)",
-                        fontSize: "14px",
-                        minWidth: "320px",
                         backgroundColor: "var(--eds-color-bg-surface)",
-                        fontWeight: "500",
+                        fontSize: "15px",
+                        fontWeight: "700",
                         color: "var(--eds-color-text-strong)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
                       }}
                     >
-                      {groups.map((group) => {
-                        const key = getPanelKey(group);
-                        return (
-                          <option key={key} value={key}>
-                            {group.group_name} — {group.evaluation_type || group.stage_name || "Evaluation"}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      <Users size={16} style={{ color: "var(--eds-color-primary)" }} />
+                      <span>{selectedGroup?.group_name || "Assigned Group"}</span>
+                      <span style={{ color: "var(--eds-color-text-muted)", fontWeight: "400" }}>—</span>
+                      <span style={{ color: "var(--eds-color-primary)", fontWeight: "600" }}>
+                        {selectedGroup?.evaluation_type || selectedGroup?.stage_name || "Evaluation"}
+                      </span>
+                    </span>
                   </div>
 
                   {selectedGroup && (

@@ -20,6 +20,7 @@ type RecentProject = {
   projectId: number;
   groupName: string;
   supervisorName: string;
+  supervisorName2?: string | null;
   status: string;
   progress: number;
   updatedAt?: string | null;
@@ -33,6 +34,7 @@ type UpcomingDeadline = {
   startTime?: string | null;
   targetGroup?: string | null;
   location?: string | null;
+  marksSubmitted?: boolean;
 };
 
 type DashboardSummary = {
@@ -172,7 +174,7 @@ const CoordinatorDashboard: React.FC = () => {
               </div>
 
               <div className="side-content-column">
-                <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines ?? []} />
+                <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines ?? []} pendingOnly />
                 <AnnouncementWidget title="Announcements" maxItems={3} showEditDeleteButtons={false} recentDays={30} />
               </div>
             </div>

@@ -16,7 +16,9 @@ const Dashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const [promoting, setPromoting] = useState(false);
+
+  const fetchStats = () => {
     fetch('http://localhost:5000/api/admin/stats')
       .then(res => res.json())
       .then(data => {
@@ -24,11 +26,21 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchStats();
   }, []);
 
-  const [promotionBanner, setPromotionBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [promotionBanner, setPromotionBanner] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   const handleBatchPromotion = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to promote eligible students to the next level?\n\nOnly students who have achieved a final grade of C- or higher (>= 40%) will be promoted.'
+    );
+    if (!confirmed) return;
+
+    setPromoting(true);
     try {
       const response = await fetch('http://localhost:5000/api/admin/promote-students', {
         method: 'PUT',
@@ -36,16 +48,25 @@ const Dashboard: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        setPromotionBanner({ type: 'success', message: `✅ Success! ${data.studentsUpdated} students were promoted to the next year.` });
-        setTimeout(() => setPromotionBanner(null), 4000);
+        const count = data.studentsUpdated || 0;
+        setPromotionBanner({ 
+          type: count > 0 ? 'success' : 'info', 
+          message: count > 0
+            ? `✅ Success! ${count} passed student(s) were promoted to the next academic level.`
+            : `ℹ️ Notice: No students currently qualify for promotion.`
+        });
+        fetchStats();
+        setTimeout(() => setPromotionBanner(null), 6000);
       } else {
-        setPromotionBanner({ type: 'error', message: '❌ Failed to promote students.' });
-        setTimeout(() => setPromotionBanner(null), 4000);
+        setPromotionBanner({ type: 'error', message: data.message || '❌ Failed to promote students.' });
+        setTimeout(() => setPromotionBanner(null), 5000);
       }
     } catch (error) {
       console.error('Error:', error);
       setPromotionBanner({ type: 'error', message: '❌ Failed to connect to server.' });
       setTimeout(() => setPromotionBanner(null), 4000);
+    } finally {
+      setPromoting(false);
     }
   };
 
@@ -64,9 +85,9 @@ const Dashboard: React.FC = () => {
               marginBottom: '20px',
               fontSize: '13px',
               fontWeight: '600',
-              backgroundColor: promotionBanner.type === 'success' ? '#f0fdf4' : '#fef2f2',
-              color: promotionBanner.type === 'success' ? '#15803d' : '#b91c1c',
-              border: `1px solid ${promotionBanner.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+              backgroundColor: promotionBanner.type === 'success' ? '#f0fdf4' : promotionBanner.type === 'info' ? '#eff6ff' : '#fef2f2',
+              color: promotionBanner.type === 'success' ? '#15803d' : promotionBanner.type === 'info' ? '#1d4ed8' : '#b91c1c',
+              border: `1px solid ${promotionBanner.type === 'success' ? '#bbf7d0' : promotionBanner.type === 'info' ? '#bfdbfe' : '#fecaca'}`,
             }}>
               {promotionBanner.message}
             </div>
@@ -149,34 +170,40 @@ const Dashboard: React.FC = () => {
                 color: 'var(--eds-color-text-muted)',
                 fontSize: '14px'
               }}>
-                Promote all eligible students to the next academic level
+                Promote all passed students to the next academic level
               </p>
             </div>
             <button
               onClick={handleBatchPromotion}
+              disabled={promoting}
               style={{
-                backgroundColor: 'var(--eds-color-border-soft)',
+                backgroundColor: promoting ? 'var(--eds-color-border)' : 'var(--eds-color-border-soft)',
                 color: 'var(--eds-color-text-strong)',
                 border: '1px solid var(--eds-color-border)',
                 padding: '12px 24px',
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: promoting ? 'not-allowed' : 'pointer',
+                opacity: promoting ? 0.7 : 1,
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
                 transition: 'all 0.2s ease',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--eds-color-border)';
-                e.currentTarget.style.borderColor = 'var(--eds-color-text-faint)';
+                if (!promoting) {
+                  e.currentTarget.style.backgroundColor = 'var(--eds-color-border)';
+                  e.currentTarget.style.borderColor = 'var(--eds-color-text-faint)';
+                }
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--eds-color-border-soft)';
-                e.currentTarget.style.borderColor = 'var(--eds-color-border)';
+                if (!promoting) {
+                  e.currentTarget.style.backgroundColor = 'var(--eds-color-border-soft)';
+                  e.currentTarget.style.borderColor = 'var(--eds-color-border)';
+                }
               }}
             >
-              Promote All Students
+              {promoting ? 'Promoting...' : 'Promote Passed Students'}
             </button>
           </div>
 

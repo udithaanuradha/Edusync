@@ -12,6 +12,7 @@ import {
   X
 } from 'lucide-react';
 import PrimaryButton from '../shared/ui/PrimaryButton';
+import { useAuth } from '../../context/AuthContext';
 import './SupervisorReportPanel.css';
 
 interface CoordinatorReportPanelProps {
@@ -126,6 +127,7 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
   levelNumber = 2,
   coordinatorId,
 }) => {
+  const { user } = useAuth();
   const [students, setStudents] = useState<StudentReportItem[]>([]);
   const [stages, setStages] = useState<Array<{ stage_id: number | string; stage_name: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -377,17 +379,18 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
 
   // Determine this coordinator's degree details
   const degreeInfo = useMemo(() => {
-    const dept = (coordinatorDept || '').toUpperCase();
-    if (dept === 'IDS' || dept === 'ITM') {
+    const rawDept = coordinatorDept || user?.academic_unit || (user as any)?.department || '';
+    const dept = String(rawDept).trim().toUpperCase();
+    if (dept === 'IT' || dept.includes('INFORMATION')) {
       return {
-        code: 'ITM' as const,
-        name: 'ITM — Info Tech & Management',
-        badgeBg: '#fef3c7',
-        badgeColor: '#92400e',
-        borderColor: '#fde68a',
+        code: 'IT' as const,
+        name: 'IT — Information Technology',
+        badgeBg: '#e0f2fe',
+        badgeColor: '#0369a1',
+        borderColor: '#bae6fd',
       };
     }
-    if (dept === 'CM' || dept === 'AI') {
+    if (dept === 'CM' || dept === 'AI' || dept.includes('ARTIFICIAL')) {
       return {
         code: 'AI' as const,
         name: 'AI — Artificial Intelligence',
@@ -396,13 +399,13 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
         borderColor: '#e9d5ff',
       };
     }
-    if (dept === 'IT') {
+    if (dept === 'IDS' || dept === 'ITM' || dept.includes('MANAGEMENT')) {
       return {
-        code: 'IT' as const,
-        name: 'IT — Information Technology',
-        badgeBg: '#e0f2fe',
-        badgeColor: '#0369a1',
-        borderColor: '#bae6fd',
+        code: 'ITM' as const,
+        name: 'ITM — Info Tech & Management',
+        badgeBg: '#fef3c7',
+        badgeColor: '#92400e',
+        borderColor: '#fde68a',
       };
     }
     // Fallback based on students
@@ -414,15 +417,18 @@ const CoordinatorReportPanel: React.FC<CoordinatorReportPanelProps> = ({
       if (firstDegree === 'IT') {
         return { code: 'IT' as const, name: 'IT — Information Technology', badgeBg: '#e0f2fe', badgeColor: '#0369a1', borderColor: '#bae6fd' };
       }
+      if (firstDegree === 'ITM') {
+        return { code: 'ITM' as const, name: 'ITM — Info Tech & Management', badgeBg: '#fef3c7', badgeColor: '#92400e', borderColor: '#fde68a' };
+      }
     }
     return {
-      code: 'ITM' as const,
-      name: 'ITM — Info Tech & Management',
-      badgeBg: '#fef3c7',
-      badgeColor: '#92400e',
-      borderColor: '#fde68a',
+      code: 'IT' as const,
+      name: 'IT — Information Technology',
+      badgeBg: '#e0f2fe',
+      badgeColor: '#0369a1',
+      borderColor: '#bae6fd',
     };
-  }, [coordinatorDept, students]);
+  }, [coordinatorDept, user, students]);
 
   // Filter students based on search query and grade filter
   const filteredStudents = useMemo(() => {

@@ -84,9 +84,16 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
       });
     };
 
-    const roleLabel = user?.role
-      ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
-      : "";
+    const effectiveRole = String(
+      (user as any)?.effectiveRole ||
+      (user as any)?.designation ||
+      user?.role ||
+      ""
+    ).trim().toLowerCase();
+
+    const roleLabel = effectiveRole
+      ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1).toLowerCase()
+      : (user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase() : "");
 
     const normalize = (value?: string) => value?.trim().toLowerCase() ?? "";
 
@@ -139,17 +146,22 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         } else if (showOnlyAllAudience) {
           url += '?all_audience=true';
         } else if (useRoleQuery) {
-          // Pass role, level, and user name for smart filtering based on Rule of Relevance
+          // Pass role, level, department/academic_unit, designation, and user_id for exact filtering
           const levelParam = user?.level ? `&level=${encodeURIComponent(String(user.level))}` : "";
           const nameParam = user?.name ? `&name=${encodeURIComponent(user.name)}` : "";
+          const departmentVal = (user as any)?.academic_unit || (user as any)?.department || "";
+          const departmentParam = departmentVal ? `&department=${encodeURIComponent(String(departmentVal))}` : "";
+          const designationVal = (user as any)?.designation || "";
+          const designationParam = designationVal ? `&designation=${encodeURIComponent(String(designationVal))}` : "";
+          const userIdParam = user?.id ? `&user_id=${encodeURIComponent(String(user.id))}` : "";
           const supervisorParam =
-            user?.role === "supervisor" && user?.id
+            ((user as any)?.designation === "supervisor" || user?.role === "supervisor") && user?.id
               ? `&supervisor_id=${encodeURIComponent(String(user.id))}`
               : "";
           // Exclude current user's own posts from dashboard view
           const excludeAuthorParam =
             user?.id ? `&exclude_author_id=${encodeURIComponent(String(user.id))}` : "";
-          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${nameParam}${supervisorParam}${excludeAuthorParam}`;
+          url += `?role=${encodeURIComponent(roleLabel)}${levelParam}${departmentParam}${designationParam}${userIdParam}${nameParam}${supervisorParam}${excludeAuthorParam}`;
         }
 
         console.log("Fetching announcements from:", url);
@@ -332,28 +344,35 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
         .trim()
         .toLowerCase();
 
+    const audienceMap: Record<string, string> = {
+      all: "All Users",
+      student: "Students",
+      supervisor: "Supervisors",
+      mentor: "Mentors",
+      coordinator: "Coordinators",
+      admin: "Admins",
+      "assigned students": "Assigned Students",
+      "level1": "Level 1 Students",
+      "level2": "Level 2 Students",
+      "level3": "Level 3 Students",
+      "level4": "Level 4 Students",
+      "level 1 assigned students": "Level 1 Assigned Students",
+      "level 2 assigned students": "Level 2 Assigned Students",
+      "level 3 assigned students": "Level 3 Assigned Students",
+      "level 4 assigned students": "Level 4 Assigned Students",
+    };
+
+    // An announcement can now target several audiences at once (e.g.
+    // "Supervisor,Student"), stored as a comma-joined string — map each part
+    // through the same lookup instead of treating the whole string as one
+    // unrecognized value.
     const getAudienceLabel = (value: string) => {
-      const normalized = value.trim().toLowerCase();
+      const parts = value.split(",").map((part) => part.trim()).filter(Boolean);
+      if (parts.length === 0) return value;
 
-      const audienceMap: Record<string, string> = {
-        all: "All Users",
-        student: "Students",
-        supervisor: "Supervisors",
-        mentor: "Mentors",
-        coordinator: "Coordinators",
-        admin: "Admins",
-        "assigned students": "Assigned Students",
-        "level1": "Level 1 Students",
-        "level2": "Level 2 Students",
-        "level3": "Level 3 Students",
-        "level4": "Level 4 Students",
-        "level 1 assigned students": "Level 1 Assigned Students",
-        "level 2 assigned students": "Level 2 Assigned Students",
-        "level 3 assigned students": "Level 3 Assigned Students",
-        "level 4 assigned students": "Level 4 Assigned Students",
-      };
-
-      return audienceMap[normalized] ?? value.replace(/_/g, " ");
+      return parts
+        .map((part) => audienceMap[part.toLowerCase()] ?? part.replace(/_/g, " "))
+        .join(", ");
     };
 
     const getAudienceTone = (value: string) => {
@@ -397,7 +416,12 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
       }
     };
 
-    const unreadCount = items.filter((item) => !readIds.includes(item.id)).length;
+    // Own posts are excluded here too — they no longer expose a way to mark
+    // them read (see isOwnPost above), so counting them as unread would keep
+    // the "X unread" pill stuck above zero even once everything else is read.
+    const unreadCount = items.filter(
+      (item) => !readIds.includes(item.id) && !isOwnedByCurrentSupervisor(item),
+    ).length;
 
     return (
       <div className="announcement-widget-card">
@@ -415,13 +439,6 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
               </span>
             )}
           </div>
-          <button
-            type="button"
-            className="announcement-widget-refresh"
-            onClick={loadAnnouncements}
-          >
-            Refresh
-          </button>
         </div>
 
         {loading && (
@@ -440,6 +457,10 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
           <ul className="announcement-widget-list">
             {items.map((item) => {
               const isRead = readIds.includes(item.id);
+              // Read/unread tracking is meaningless for your own post — you
+              // already know you wrote it, so skip the unread dot and the
+              // Mark Read/✓ Read toggle entirely when the viewer is the author.
+              const isOwnPost = isOwnedByCurrentSupervisor(item);
               return (
                 <li
                   key={item.id}
@@ -479,7 +500,7 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
                       <div className="announcement-top-row">
                         <div className="announcement-title-block">
                           <div className="announcement-title-row">
-                            {!isRead && (
+                            {!isRead && !isOwnPost && (
                               <span className="announcement-unread-dot" aria-hidden="true" />
                             )}
                             <h4 className="announcement-title">{item.title}</h4>
@@ -501,52 +522,54 @@ const AnnouncementWidget = forwardRef<{ refresh: () => void }, AnnouncementWidge
                             <Clock3 size={12} />
                             <span>{formatCompactDate(item.created_at)}</span>
                           </div>
-                          {isRead ? (
-                            <button
-                              type="button"
-                              className="announcement-dismiss-btn read-badge"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleRead(item.id);
-                              }}
-                              title="Click to mark unread"
-                              style={{
-                                background: '#f8fafc',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '6px',
-                                padding: '3px 8px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                color: '#64748b',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s'
-                              }}
-                            >
-                              ✓ Read
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="announcement-dismiss-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleRead(item.id);
-                              }}
-                              title="Click to mark as read"
-                              style={{
-                                background: '#eff6ff',
-                                border: '1px solid #bfdbfe',
-                                borderRadius: '6px',
-                                padding: '3px 8px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                color: '#1d4ed8',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s'
-                              }}
-                            >
-                              Mark Read
-                            </button>
+                          {!isOwnPost && (
+                            isRead ? (
+                              <button
+                                type="button"
+                                className="announcement-dismiss-btn read-badge"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRead(item.id);
+                                }}
+                                title="Click to mark unread"
+                                style={{
+                                  background: '#f8fafc',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '6px',
+                                  padding: '3px 8px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: '#64748b',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                ✓ Read
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="announcement-dismiss-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRead(item.id);
+                                }}
+                                title="Click to mark as read"
+                                style={{
+                                  background: '#eff6ff',
+                                  border: '1px solid #bfdbfe',
+                                  borderRadius: '6px',
+                                  padding: '3px 8px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: '#1d4ed8',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                Mark Read
+                              </button>
+                            )
                           )}
                           {showEditDeleteButtons && (
                             <div className="announcement-icon-buttons">

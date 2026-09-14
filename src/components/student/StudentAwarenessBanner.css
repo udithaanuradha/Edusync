@@ -1,0 +1,168 @@
+.student-awareness-banner-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.student-session-alert-card {
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-card-today {
+  background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  border-left: 6px solid #ef4444;
+}
+
+.alert-card-2days {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-left: 6px solid #f59e0b;
+}
+
+.alert-card-upcoming {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  border-left: 6px solid #3b82f6;
+}
+
+.alert-info-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.alert-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alert-card-today .alert-icon-box {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.alert-card-2days .alert-icon-box {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.alert-card-upcoming .alert-icon-box {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.alert-text-group h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.alert-text-group p {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.alert-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.join-session-btn {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.join-session-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.join-session-btn.live {
+  background: #dc2626;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.session-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.session-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 540px;
+  width: 100%;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}

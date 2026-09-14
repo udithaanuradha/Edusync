@@ -27,6 +27,11 @@
 
 .level-tab-btn {
   position: relative;
+  /* Matches the student inner tabs' spacing (StudentLevelInnerPages.css) —
+     stretching each tab to fill an equal share of the row is what spreads
+     them out, not the gap value (both use 6px). Layout only; nothing else
+     about the tab (colors, font, active state) changes. */
+  flex: 1 1 0;
   border: none;
   background: transparent;
   color: var(--eds-color-text-muted);
