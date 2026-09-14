@@ -173,3 +173,35 @@
   color: var(--eds-color-text-muted);
 }
 
+.mp-timeline-file-name {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The small "View" button itself, placed at the right end of its
+   timeline row (a third flex child alongside the dot and body). */
+.mp-timeline-file-btn {
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--eds-color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.mp-timeline-file-btn:hover {
+  background: var(--eds-color-primary-hover);
+}
+

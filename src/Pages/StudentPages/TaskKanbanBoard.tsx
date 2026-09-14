@@ -312,6 +312,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
       <h5 className="task-board-card-title">{task.title}</h5>
       {task.description && <p className="task-board-card-desc">{task.description}</p>}
       {userRole === 'leader' && <p className="task-board-card-assignee">Assigned to: {task.assignedTo}</p>}
+      {task.fileUrl && (
+        <a
+          className="task-board-card-file-link"
+          href={task.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onPointerDown={(e) => e.stopPropagation()}
+          title={task.fileName || 'View attached file'}
+        >
+          📎 {task.fileName || 'View file'}
+        </a>
+      )}
 
       {isPending && !overlay && (
         <div className="task-board-card-saving" aria-live="polite">

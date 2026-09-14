@@ -63,8 +63,8 @@ const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [], p
   return (
     <div className="deadlines-card">
       <div className="card-header">
-        <Calendar size={20} className="header-icon" />
-        <h3 className="card-title">Upcoming Panels</h3>
+        <Icon size={20} className="header-icon" />
+        <h3 className="card-title">{title}</h3>
       </div>
 
       <div className="deadlines-list">

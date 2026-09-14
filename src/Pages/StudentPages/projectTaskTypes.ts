@@ -20,4 +20,9 @@ export type ProjectTask = {
   /** When this task's status last became COMPLETED (null/undefined otherwise
       or if it was later moved off COMPLETED). Backs My Progress's timeline. */
   completedAt?: string | null;
+  /** One optional file attached at creation time (uploaded to Cloudinary —
+      see uploadTaskFile, milestoneController.js). Both set together or not
+      at all; undefined/null means no file was attached. */
+  fileName?: string | null;
+  fileUrl?: string | null;
 };

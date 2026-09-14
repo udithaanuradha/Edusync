@@ -208,7 +208,19 @@ const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, curren
                     {t.milestone}
                     {t.completedAt ? ` — completed ${formatDate(t.completedAt)}` : ''}
                   </p>
+                  {t.fileName && <p className="mp-timeline-file-name">📎 {t.fileName}</p>}
                 </div>
+                {t.fileUrl && (
+                  <a
+                    className="mp-timeline-file-btn"
+                    href={t.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={t.fileName || 'View attached file'}
+                  >
+                    View
+                  </a>
+                )}
               </div>
             ))}
           </div>

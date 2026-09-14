@@ -30,8 +30,10 @@ type MilestoneProgressBoardProps = {
   pendingTaskIds: Record<string, boolean>;
   taskErrors: Record<string, TaskCardError>;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
-  /** Adds a new, self-assigned task — same save path the old TaskCreation.tsx used. */
-  onAddTask: (task: ProjectTask) => void;
+  /** Adds a new, self-assigned task — same save path the old TaskCreation.tsx
+      used. `file` is the one optional attachment chosen in the quick-add
+      form, if any (see uploadTaskFile, milestoneController.js). */
+  onAddTask: (task: ProjectTask, file?: File | null) => void;
   /** Permanently deletes a task (hard delete, no undo) — see deleteTask in
       milestoneController.js. Resolves with the outcome rather than
       throwing, so this component can show a specific error instead of a
@@ -62,7 +64,17 @@ const startOfToday = () => {
   return d;
 };
 
-const todayInputValue = () => startOfToday().toISOString().slice(0, 10);
+// YYYY-MM-DD, built from LOCAL year/month/day — NOT toISOString(), which
+// converts to UTC first and silently shifts the date back by one day for
+// anyone in a positive UTC-offset timezone (local midnight on the 8th
+// becomes "the 7th" once re-expressed in UTC).
+const todayInputValue = () => {
+  const d = startOfToday();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const formatShortDate = (value: string): string => {
   if (!value) return '';
@@ -210,6 +222,10 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
   // Which milestone's quick-add form is currently open (at most one at a time).
   const [openAddFormId, setOpenAddFormId] = useState<string | null>(null);
   const [quickAddForm, setQuickAddForm] = useState<QuickAddFormState>(emptyQuickAddForm());
+  // One optional file attached at creation time — not part of
+  // QuickAddFormState since a File object isn't a plain form value; reset
+  // alongside the rest of the form whenever it opens/closes/submits.
+  const [quickAddFile, setQuickAddFile] = useState<File | null>(null);
   const [quickAddError, setQuickAddError] = useState('');
   // taskId -> true while that task's delete request is in flight — disables
   // its delete button so a slow connection can't be double-clicked into two
@@ -306,6 +322,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
   const openQuickAdd = async (milestoneId: string, milestoneStart: string) => {
     setOpenAddFormId(milestoneId);
     setQuickAddForm(emptyQuickAddForm(milestoneStart));
+    setQuickAddFile(null);
     setQuickAddError('');
     setScopeCheck({ milestoneId, loading: true, hasClaim: true });
 
@@ -343,6 +360,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
 
   const closeQuickAdd = () => {
     setOpenAddFormId(null);
+    setQuickAddFile(null);
     setQuickAddError('');
     setScopeCheck(null);
   };
@@ -406,7 +424,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
 
     // Self-assign only, always — a student can only ever create a task for
     // themselves, matching the retired leader-assign-to-anyone form.
-    onAddTask(newTask);
+    onAddTask(newTask, quickAddFile);
     closeQuickAdd();
   };
 
@@ -609,6 +627,16 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                       dates must fall within that range.
                     </p>
                   )}
+                  <div className="mpb-quick-add-row">
+                    <input
+                      type="file"
+                      className="mpb-quick-add-file-input"
+                      onChange={(e) => setQuickAddFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                  <p className="mpb-quick-add-hint">
+                    Optional — attach one file (PDF, image, Word/Excel/PowerPoint, text, or zip/rar), up to 50MB.
+                  </p>
                   {quickAddError && <p className="mpb-quick-add-error">{quickAddError}</p>}
                   <div className="mpb-quick-add-actions">
                     <button type="submit" className="mpb-quick-add-save">Add Task</button>

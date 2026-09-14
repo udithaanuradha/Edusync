@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ListChecks } from 'lucide-react';
 import AppShell from '../../components/shared/layout/AppShell';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
 // Student-only variant of AnnouncementWidget — adds the "actually assigned
@@ -64,7 +65,20 @@ const StudentDashboard: React.FC = () => {
             {/* ROW 3: Split View */}
             <div className="dashboard-row equal-split">
               <SupervisorAssignedAnnouncement />
-              <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines || []} />
+              <UpcomingDeadlines deadlines={dashboardData?.upcomingPanels || []} />
+            </div>
+
+            {/* ROW 4: Student Tasks — sits under the Upcoming Panels card,
+                kept separate so panels don't get crowded out of their own
+                top-5 by personal tasks. */}
+            <div className="dashboard-row equal-split">
+              <div />
+              <UpcomingDeadlines
+                deadlines={dashboardData?.studentTasks || []}
+                title="Student Tasks"
+                icon={ListChecks}
+                emptyLabel="No upcoming tasks found."
+              />
             </div>
 
         </div>
