@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, type LucideIcon } from 'lucide-react';
 import './UpcomingDeadlines.css';
 
 interface Deadline {
@@ -26,6 +26,12 @@ interface UpcomingDeadlinesProps {
   // attention. The Student Dashboard reuses this same component without
   // the flag, since "✓ Marked" is a useful status to a student, not noise.
   pendingOnly?: boolean;
+  // Student Dashboard reuses this same card for a second, unrelated list
+  // ("Student Tasks") by overriding these three — everyone else gets the
+  // "Upcoming Panels" defaults below.
+  title?: string;
+  icon?: LucideIcon;
+  emptyLabel?: string;
 }
 
 const formatDay = (date: string): { day: string; month: string } => {
@@ -53,12 +59,19 @@ const formatTime12Hour = (value: string): string => {
   return `${hours12}:${minutes} ${period}`;
 };
 
-const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({ deadlines = [], pendingOnly = false }) => {
+const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({
+  deadlines = [],
+  pendingOnly = false,
+  title = 'Upcoming Panels',
+  icon: Icon = Calendar,
+  emptyLabel,
+}) => {
   const visibleDeadlines = pendingOnly ? deadlines.filter((d) => !d.marksSubmitted) : deadlines;
   const emptyMessage =
-    pendingOnly && deadlines.length > 0
+    emptyLabel ??
+    (pendingOnly && deadlines.length > 0
       ? "You're all caught up — no panels waiting for evaluation."
-      : 'No upcoming panels found.';
+      : 'No upcoming panels found.');
 
   return (
     <div className="deadlines-card">
