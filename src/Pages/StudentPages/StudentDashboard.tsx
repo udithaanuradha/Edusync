@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import AppShell from '../../components/shared/layout/AppShell';
 import MyProjectStatus from '../../components/student/MyProjectStatus';
-import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
+// Student-only variant of AnnouncementWidget — adds the "actually assigned
+// to me" check for "...Assigned Students" posts. See its file header for
+// why this isn't done in AnnouncementWidget.tsx itself.
+import SupervisorAssignedAnnouncement from '../../components/supervisor/SupervisorAssignedAnnouncement';
 import UpcomingDeadlines from '../../components/coordinator/UpcomingDeadlines';
 
 import './StudentDashboard.css';
@@ -60,7 +63,7 @@ const StudentDashboard: React.FC = () => {
 
             {/* ROW 3: Split View */}
             <div className="dashboard-row equal-split">
-              <AnnouncementWidget />
+              <SupervisorAssignedAnnouncement />
               <UpcomingDeadlines deadlines={dashboardData?.upcomingDeadlines || []} />
             </div>
 

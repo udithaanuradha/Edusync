@@ -6,7 +6,11 @@ import './MyProgress.css';
 
 type CurrentUser = { id: number | string; name: string } | null;
 
-type ClaimedScopeSection = { milestoneId: string; milestoneTitle: string; title: string };
+// Scope Division is project-wide now (see ScopeDivision.tsx) — a student
+// claims at most one section for the whole project, not one per
+// milestone, so a claimed section no longer has a "home" milestone to tag
+// it with.
+type ClaimedScopeSection = { title: string };
 
 type MyProgressProps = {
   /** The logged-in student's OWN tasks only — this whole tab is a personal
@@ -15,6 +19,7 @@ type MyProgressProps = {
   tasks: ProjectTask[];
   milestoneOptions: { id: number | string; title: string }[];
   currentUser: CurrentUser;
+  groupId: number | null;
 };
 
 const API_BASE = 'http://localhost:5000/api/milestones';
@@ -45,7 +50,7 @@ const formatDate = (value?: string | null): string => {
  * sections they've claimed, per-milestone progress, and a timeline of what
  * they've actually finished.
  */
-const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, currentUser }) => {
+const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, currentUser, groupId }) => {
   const [claimedSections, setClaimedSections] = useState<ClaimedScopeSection[]>([]);
   const [loadingScope, setLoadingScope] = useState(false);
   const [scopeError, setScopeError] = useState('');
@@ -54,32 +59,21 @@ const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, curren
     let cancelled = false;
 
     const loadClaims = async () => {
-      if (!currentUser || milestoneOptions.length === 0) {
+      if (!currentUser || !groupId) {
         setClaimedSections([]);
         return;
       }
       setLoadingScope(true);
       setScopeError('');
       try {
-        const results = await Promise.all(
-          milestoneOptions.map(async (m) => {
-            try {
-              const res = await fetch(`${API_BASE}/${m.id}/scope`, { headers: authHeaders() });
-              const data = await res.json();
-              if (!data.success) return [];
-              return (data.data || [])
-                .filter((s: any) => String(s.claimed_by) === String(currentUser.id))
-                .map((s: any) => ({
-                  milestoneId: String(m.id),
-                  milestoneTitle: m.title,
-                  title: s.title,
-                }));
-            } catch {
-              return [];
-            }
-          }),
-        );
-        if (!cancelled) setClaimedSections(results.flat());
+        const res = await fetch(`${API_BASE}/group/${groupId}/scope`, { headers: authHeaders() });
+        const data = await res.json();
+        const mine = data.success
+          ? (data.data || [])
+              .filter((s: any) => String(s.claimed_by) === String(currentUser.id))
+              .map((s: any) => ({ title: s.title }))
+          : [];
+        if (!cancelled) setClaimedSections(mine);
       } catch (e) {
         if (!cancelled) setScopeError('Could not load claimed scope sections.');
       } finally {
@@ -91,17 +85,15 @@ const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, curren
     return () => {
       cancelled = true;
     };
-  }, [milestoneOptions, currentUser]);
+  }, [groupId, currentUser]);
 
   const overall = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const milestonesTouched = new Set(
-      [...tasks.map((t) => String(t.milestoneId)), ...claimedSections.map((s) => s.milestoneId)],
-    ).size;
+    const milestonesTouched = new Set(tasks.map((t) => String(t.milestoneId))).size;
     return { total, completed, percent, milestonesTouched };
-  }, [tasks, claimedSections]);
+  }, [tasks]);
 
   const byMilestone = useMemo(() => {
     const ownByMilestoneId = new Map<string, ProjectTask[]>();
@@ -117,11 +109,10 @@ const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, curren
         const own = ownByMilestoneId.get(key) || [];
         const completed = own.filter((t) => t.status === 'COMPLETED').length;
         const percent = own.length > 0 ? Math.round((completed / own.length) * 100) : 0;
-        const claimed = claimedSections.filter((s) => s.milestoneId === key);
-        return { id: key, title: m.title, total: own.length, completed, percent, claimed };
+        return { id: key, title: m.title, total: own.length, completed, percent };
       })
-      .filter((m) => m.total > 0 || m.claimed.length > 0);
-  }, [tasks, milestoneOptions, claimedSections]);
+      .filter((m) => m.total > 0);
+  }, [tasks, milestoneOptions]);
 
   const completedTimeline = useMemo(
     () =>
@@ -160,13 +151,22 @@ const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, curren
         />
       </div>
 
+      {scopeError && <p className="mp-error">{scopeError}</p>}
+      {!loadingScope && claimedSections.length > 0 && (
+        <div className="mp-section">
+          <h4 className="mp-section-title">Your Claimed Scope Section</h4>
+          <span className="mp-claimed-tags">
+            {claimedSections.map((c) => (
+              <span key={c.title} className="mp-claimed-tag">✓ {c.title}</span>
+            ))}
+          </span>
+        </div>
+      )}
+
       <div className="mp-section">
         <h4 className="mp-section-title">Progress by Milestone</h4>
-        {scopeError && <p className="mp-error">{scopeError}</p>}
-        {loadingScope && byMilestone.length === 0 ? (
-          <p className="mp-empty">Loading…</p>
-        ) : byMilestone.length === 0 ? (
-          <p className="mp-empty">No personal tasks or claimed scope sections yet.</p>
+        {byMilestone.length === 0 ? (
+          <p className="mp-empty">No personal tasks yet.</p>
         ) : (
           <div className="mp-milestone-list">
             {byMilestone.map((m) => (
@@ -186,13 +186,6 @@ const MyProgress: React.FC<MyProgressProps> = ({ tasks, milestoneOptions, curren
                 </div>
                 <div className="mp-milestone-meta">
                   <span>{m.completed}/{m.total} of your tasks completed</span>
-                  {m.claimed.length > 0 && (
-                    <span className="mp-claimed-tags">
-                      {m.claimed.map((c) => (
-                        <span key={c.title} className="mp-claimed-tag">✓ {c.title}</span>
-                      ))}
-                    </span>
-                  )}
                 </div>
               </div>
             ))}

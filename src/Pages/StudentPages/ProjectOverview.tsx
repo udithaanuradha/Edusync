@@ -60,12 +60,31 @@ const formatShortDate = (value: string): string => {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 };
 
+const startOfToday = (): Date => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// YYYY-MM-DD, for an <input type="date">'s min/max/value.
+const toInputValue = (date: Date): string => date.toISOString().slice(0, 10);
+
+const todayInputValue = (): string => toInputValue(startOfToday());
+
+const oneYearAfterInputValue = (dateStr: string): string => {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setFullYear(d.getFullYear() + 1);
+  return toInputValue(d);
+};
+
 /**
  * Rebuilt from the old ProjectTimeline.tsx: instead of managing every
  * milestone as one bulk add-and-list form, this works on ONE "active"
  * milestone at a time (picked from the pill selector), matching the new
- * Project Overview design — Milestone Details, Scope Division, and Tasks
- * for this Milestone all scope to whichever milestone is currently selected.
+ * Project Overview design — Milestone Details scope to whichever milestone
+ * is currently selected. Scope Division (below it) is project-wide instead
+ * — one set of sections for the whole group, the same regardless of which
+ * milestone is selected here (see ScopeDivision.tsx).
  */
 const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   groupId,
@@ -83,12 +102,6 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-
-  // How many scope sections each milestone has (milestoneId -> count) —
-  // fetched alongside the milestone list so a "has content" dot can be
-  // shown on every pill, and so picking a default selection (below) can
-  // actually check where your work already is instead of guessing.
-  const [scopeCounts, setScopeCounts] = useState<Record<string, number>>({});
 
   // Tracks the current activeId synchronously for use inside loadMilestones
   // (which does async work before deciding whether to change the
@@ -137,33 +150,6 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
       }));
       setMilestones(mapped);
 
-      // Every milestone's scope-section count, fetched in parallel — small,
-      // cheap per-milestone GETs. Drives the "has content" dot on each pill
-      // below, and — when there's no remembered selection yet — lets the
-      // default pick actually check where your work already is instead of
-      // guessing by creation order (which was wrong both ways: "oldest"
-      // missed newly-created milestones, "newest" missed a milestone
-      // someone had already been filling in for a while).
-      const scopeResults = await Promise.all(
-        mapped.map(async (m) => {
-          try {
-            const scopeRes = await fetch(`${API_BASE}/${m.id}/scope`, { headers: authHeaders() });
-            const scopeData = await scopeRes.json();
-            const sections: any[] = scopeData.success ? scopeData.data || [] : [];
-            return {
-              id: m.id,
-              count: sections.length,
-              hasMyClaim: currentUser
-                ? sections.some((s: any) => String(s.claimed_by) === String(currentUser.id))
-                : false,
-            };
-          } catch {
-            return { id: m.id, count: 0, hasMyClaim: false };
-          }
-        }),
-      );
-      setScopeCounts(Object.fromEntries(scopeResults.map((r) => [r.id, r.count])));
-
       // Keep the current selection if it's still valid — this call can be
       // triggered mid-session (e.g. right after creating a milestone), and
       // that shouldn't be overridden by the picking logic below.
@@ -177,27 +163,17 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
         return;
       }
 
-      // A milestone you've actually claimed a scope section in always wins,
-      // even over a remembered choice — a stale "last viewed" pick from
-      // before you claimed anything is exactly what caused this to look
-      // broken (the remembered milestone had nothing in it, while the real
-      // work was sitting one click away). Only fall back to the remembered
-      // choice, then any milestone with content, then the newest milestone,
-      // once there's no claim of yours to anchor on.
-      const mine = scopeResults.find((r) => r.hasMyClaim);
-      if (mine) {
-        setActiveId(mine.id);
-        return;
-      }
-
+      // No remembered selection for this browser yet — fall back to the
+      // newest milestone. (Scope Division no longer belongs to a specific
+      // milestone — see ScopeDivision.tsx — so there's no "which milestone
+      // has your claimed work in it" signal to prefer here any more.)
       const stored = activeMilestoneStorageKey ? localStorage.getItem(activeMilestoneStorageKey) : null;
       if (stored && mapped.some((m) => m.id === stored)) {
         setActiveId(stored);
         return;
       }
 
-      const withContent = scopeResults.find((r) => r.count > 0);
-      setActiveId(withContent?.id ?? mapped[mapped.length - 1].id);
+      setActiveId(mapped[mapped.length - 1].id);
     } catch (e) {
       setLoadError('Server connection error while loading milestones.');
     } finally {
@@ -298,6 +274,19 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
       setSaveMessage('Start date cannot be later than end date.');
       return;
     }
+    // Creation-only — editing an existing milestone (e.g. fixing a typo in
+    // the title) shouldn't be blocked just because its original start date
+    // has since passed.
+    if (!activeMilestone && new Date(`${formStart}T00:00:00`) < startOfToday()) {
+      setSaveError(true);
+      setSaveMessage('Start date cannot be before today.');
+      return;
+    }
+    if (new Date(`${formEnd}T00:00:00`) > new Date(`${oneYearAfterInputValue(formStart)}T00:00:00`)) {
+      setSaveError(true);
+      setSaveMessage("A milestone can't run for more than one year.");
+      return;
+    }
     if (!groupId) {
       setSaveError(true);
       setSaveMessage('Group not found. Please reload the page.');
@@ -396,10 +385,8 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
                 type="button"
                 className={`milestone-pill ${activeId === m.id ? 'active' : ''}`}
                 onClick={() => setActiveId(m.id)}
-                title={scopeCounts[m.id] > 0 ? `${scopeCounts[m.id]} scope section(s) defined` : undefined}
               >
                 {m.title || 'Untitled milestone'}
-                {scopeCounts[m.id] > 0 && <span className="milestone-pill-dot" aria-hidden="true" />}
               </button>
             ))}
             {/* Creating a milestone is open to any group member, not just
@@ -451,6 +438,10 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
                   value={formStart}
                   onChange={(e) => setFormStart(e.target.value)}
                   disabled={!canEditFields}
+                  // Only on a brand-new milestone — editing an existing one
+                  // shouldn't refuse to show/keep its original (possibly
+                  // past) start date.
+                  min={!activeMilestone ? todayInputValue() : undefined}
                 />
               </div>
 
@@ -463,6 +454,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
                   value={formEnd}
                   onChange={(e) => setFormEnd(e.target.value)}
                   disabled={!canEditFields}
+                  max={formStart ? oneYearAfterInputValue(formStart) : undefined}
                 />
               </div>
             </div>
@@ -495,8 +487,10 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({
           <GanttChart tasks={ganttTasks} timelineStart={formStart} timelineEnd={formEnd} />
 
           {memberCount !== 1 && (
+            // Project-wide now, not tied to activeMilestone — renders the
+            // same regardless of which milestone is selected above.
             <ScopeDivision
-              milestoneId={activeMilestone?.id ?? null}
+              groupId={groupId}
               userRole={userRole}
               currentUser={currentUser}
               supervisor={supervisor}

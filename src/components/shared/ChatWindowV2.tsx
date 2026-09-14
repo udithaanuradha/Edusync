@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Wifi,
   WifiOff,
+  ArrowDown,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocketV2 } from "../../hooks/useSocketV2";
@@ -112,18 +113,45 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
   const [isSending, setIsSending] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialTab, setModalInitialTab] = useState<string>("assigned_groups");
+  // Shown once the reader has scrolled up away from the latest message, so
+  // they have a one-click way back down instead of dragging the scrollbar.
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStreamRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastHandledNavStateRef = useRef<unknown>(null);
 
+  // Scrolls only the message stream itself (by setting its own scrollTop)
+  // rather than messagesEndRef.scrollIntoView(), which asks the browser to
+  // pick whichever scrollable ancestor it finds — if that ever resolves to
+  // a shared container instead of .messages-stream-v2, it drags the
+  // conversations sidebar's scroll position along with it.
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesStreamRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
+
+  // Toggles the "jump to latest" button based on how far the reader has
+  // scrolled up from the bottom of the stream — a small threshold so it
+  // doesn't flicker on the last pixel or two of rounding/sub-pixel scroll.
+  const handleMessagesScroll = () => {
+    const el = messagesStreamRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollToLatest(distanceFromBottom > 120);
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // A freshly opened conversation always lands at the bottom, so the button
+  // shouldn't carry over from whatever scroll position the previous one was
+  // left at.
+  useEffect(() => {
+    setShowScrollToLatest(false);
+  }, [selectedConversation]);
 
   // Loads 1:1 conversations plus every real group conversation (supervisor
   // <->group, mentor<->group) this user belongs to — backend-scoped per
@@ -626,7 +654,11 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                 </div>
               </div>
 
-              <div className="messages-stream-v2">
+              <div
+                className="messages-stream-v2"
+                ref={messagesStreamRef}
+                onScroll={handleMessagesScroll}
+              >
                 {loadingMessages ? (
                   <div className="chat-empty-state-v2">
                     <Loader size={24} className="spinner" />
@@ -668,7 +700,18 @@ const ChatWindowV2: React.FC<ChatWindowV2Props> = ({ title = "Chat System" }) =>
                     );
                   })
                 )}
-                <div ref={messagesEndRef} />
+
+                {showScrollToLatest && messages.length > 0 && (
+                  <button
+                    type="button"
+                    className="scroll-to-latest-btn-v2"
+                    onClick={scrollToBottom}
+                    title="Scroll to latest message"
+                    aria-label="Scroll to latest message"
+                  >
+                    <ArrowDown size={18} />
+                  </button>
+                )}
               </div>
 
               {isPartnerTyping && (

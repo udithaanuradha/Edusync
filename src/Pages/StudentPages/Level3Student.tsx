@@ -14,6 +14,7 @@ const Level3Student = () => {
     <StudentLevelPageLayout
       title="Level 3 Projects"
       subtitle="Focus on implementing your project solution with detailed documentation and testing."
+      levelNumber={LEVEL}
       headerRight={
         <ProjectTypeToggle levelNumber={LEVEL} value={projectType} onChange={setProjectType} />
       }

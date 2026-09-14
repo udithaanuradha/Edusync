@@ -14,6 +14,7 @@ const Level4Student = () => {
     <StudentLevelPageLayout
       title="Level 4 Projects"
       subtitle="Finalize your project with testing, presentation preparation, and evaluation."
+      levelNumber={LEVEL}
       headerRight={
         <ProjectTypeToggle levelNumber={LEVEL} value={projectType} onChange={setProjectType} />
       }

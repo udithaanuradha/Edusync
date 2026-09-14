@@ -44,6 +44,10 @@ type GroupItem = {
   supervisorId: string;
   supervisorName: string;
   level: number | null;
+  // Not a column on project_groups — parsed server-side from the
+  // group_requests row that created this group, so it's null for a group
+  // created some other way (e.g. manually by an admin/coordinator).
+  projectName: string | null;
 };
 
 type SubmissionItem = {
@@ -72,6 +76,8 @@ type ProgressGroupItem = {
   progressPercent: number;
   totalMilestones: number;
   approvedMilestones: number;
+  // See GroupItem.projectName above — same source, same null-when-unknown.
+  projectName: string | null;
 };
 
 type ProgressMilestone = {
@@ -107,6 +113,8 @@ type ProgressTask = {
   status: string;
   due_date?: string;
   created_at?: string;
+  file_name?: string | null;
+  file_url?: string | null;
 };
 
 type ProgressDetail = {
@@ -264,7 +272,13 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
   // picking a student lists that student's tasks across the whole group.
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<number | string | null>(null);
-  const [progressSubTab, setProgressSubTab] = useState<'marks' | 'tasks'>('marks');
+  // The Overview dashboard's "View Full Progress" button links here for
+  // exactly the milestone/task detail it's showing a preview of — so a
+  // groupId deep link should land on the "Milestone & Task Progress"
+  // sub-view, not the default "Student Marks & Grades" one.
+  const [progressSubTab, setProgressSubTab] = useState<'marks' | 'tasks'>(() =>
+    deepLinkGroupId ? 'tasks' : 'marks',
+  );
 
   // 🎯 Real DB Result මත පමණක් button එක පෙන්නීමට default = false කර ඇත
   const [isEvaluatorAssigned, setIsEvaluatorAssigned] = useState<boolean>(false);
@@ -411,12 +425,19 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 : item.level !== undefined && item.level !== null
                   ? Number(item.level)
                   : null,
+            projectName:
+              (item.project_name as string | null | undefined) ??
+              (item.projectName as string | null | undefined) ??
+              null,
           }),
         )
-        .filter((group) => group.level === null || group.level === levelNumber)
-        .filter((group) =>
-          belongsToViewer(group.supervisorId, group.supervisorName, viewer),
-        );
+        .filter((group) => group.level === null || group.level === levelNumber);
+      // No belongsToViewer re-filter here (unlike loadSubmissions below) —
+      // this endpoint's SQL already scopes to
+      // `supervisor_id = ? OR supervisor_id_2 = ?` server-side, and the
+      // response's single supervisorId/supervisorName field is always the
+      // *primary* supervisor, so re-filtering against it here would wrongly
+      // drop every group where the viewer is only the second supervisor.
 
       setGroups(normalized);
     } catch (error) {
@@ -563,6 +584,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
         progressPercent: Number(item.progressPercent ?? 0),
         totalMilestones: Number(item.totalMilestones ?? 0),
         approvedMilestones: Number(item.approvedMilestones ?? 0),
+        projectName: (item.projectName as string | null | undefined) ?? (item.project_name as string | null | undefined) ?? null,
       }));
 
       setProgressGroups(normalized);
@@ -770,6 +792,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               </span>
             </div>
             <p className="supervisor-level-card-meta">
+              <strong>Project:</strong> {group.projectName || "Not specified"}
+            </p>
+            <p className="supervisor-level-card-meta">
               <strong>Leader:</strong> {group.leader}
             </p>
             <p className="supervisor-level-card-meta">
@@ -892,6 +917,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
             <h4>{group.groupName}</h4>
             <span className="supervisor-pill">{group.memberCount} members</span>
           </div>
+          <p className="supervisor-level-card-meta">
+            <strong>Project:</strong> {group.projectName || "Not specified"}
+          </p>
           {renderProgressMeter(
             group.progressPercent,
             `${group.completedTasks}/${group.totalTasks} tasks`,
@@ -912,6 +940,10 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
       return <p className="supervisor-level-error">{progressError || "Failed to load group progress."}</p>;
     }
 
+    // Reuses the project name already fetched into progressGroups for this
+    // level — no separate request needed just for this label.
+    const projectName = progressGroups.find((g) => g.groupId === progressDetail.group.id)?.projectName;
+
     return (
       <div className="supervisor-progress-detail">
         <button
@@ -924,6 +956,9 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
 
         <div className="supervisor-progress-detail-head">
           <h3>{progressDetail.group.name} — Overall Progress</h3>
+          <p className="supervisor-level-card-meta">
+            <strong>Project:</strong> {projectName || "Not specified"}
+          </p>
           {renderProgressMeter(
             progressDetail.overall.percent,
             `${progressDetail.overall.completed}/${progressDetail.overall.total} tasks`,
@@ -1031,6 +1066,26 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
       <p className="supervisor-progress-row-subtitle">{subtitle}</p>
       {task.description && (
         <p className="supervisor-level-card-desc">{task.description}</p>
+      )}
+      {task.file_url && (
+        <a
+          href={task.file_url.startsWith("http") ? task.file_url : `http://localhost:5000${task.file_url}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="supervisor-progress-row-attachment"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            marginTop: "6px",
+            fontSize: "0.8rem",
+            color: "var(--eds-color-primary)",
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          📎 {task.file_name || "View attachment"}
+        </a>
       )}
     </div>
   );
@@ -1199,10 +1254,10 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               minHeight: '52px',
               padding: '8px 16px',
               borderRadius: '12px',
-              border: progressSubTab === 'tasks' ? '2px solid #16a34a' : '1px solid #e2e8f0',
+              border: progressSubTab === 'tasks' ? '2px solid var(--eds-color-primary)' : '1px solid #e2e8f0',
               backgroundColor: progressSubTab === 'tasks' ? '#ffffff' : '#ffffff',
               boxShadow: progressSubTab === 'tasks'
-                ? '0 4px 12px rgba(22, 163, 74, 0.12)'
+                ? '0 4px 12px rgba(99, 112, 184, 0.25)'
                 : '0 1px 3px rgba(15, 23, 42, 0.05)',
               display: 'flex',
               alignItems: 'center',
@@ -1217,8 +1272,8 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
                 width: '34px',
                 height: '34px',
                 borderRadius: '9px',
-                backgroundColor: '#f0fdf4',
-                color: '#16a34a',
+                backgroundColor: 'var(--eds-color-primary-soft)',
+                color: 'var(--eds-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1228,7 +1283,7 @@ const SupervisorLevelPage: React.FC<SupervisorLevelPageProps> = ({
               <ListTodo size={18} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: progressSubTab === 'tasks' ? '#15803d' : '#1e293b' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: progressSubTab === 'tasks' ? 'var(--eds-color-primary-hover)' : '#1e293b' }}>
                 Milestone & Task Progress
               </div>
               <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>

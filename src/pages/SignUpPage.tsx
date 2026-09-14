@@ -18,6 +18,7 @@ const SignUpPage: React.FC = () => {
     role: 'student',
     degreeProgram: '',
     department: '',
+    accessKey: '',
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -26,6 +27,7 @@ const SignUpPage: React.FC = () => {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showAccessKey, setShowAccessKey] = useState(false);
 
   // New states handling the OTP intercept workflow inline
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -74,9 +76,10 @@ const SignUpPage: React.FC = () => {
       const updated = {
         ...prev,
         [name]: cleanedValue,
-        // Reset universityId when switching away from student role
+        // Reset role-specific fields when switching role
         ...(name === 'role' && cleanedValue !== 'student' && { universityId: '', degreeProgram: '' }),
-        ...(name === 'role' && cleanedValue !== 'lecturer' && { department: '' })
+        ...(name === 'role' && cleanedValue !== 'lecturer' && { department: '' }),
+        ...(name === 'role' && cleanedValue === 'student' && { accessKey: '' })
       };
 
       // Real-time password matching check
@@ -195,7 +198,8 @@ const SignUpPage: React.FC = () => {
           role: formData.role,
           university_id: formData.role === 'student' ? (formData.universityId?.trim() || null) : null,
           phone: formData.phone?.trim() || null,
-          academic_unit: safeAcademicUnit && safeAcademicUnit.length > 50 ? safeAcademicUnit.slice(0, 50) : safeAcademicUnit
+          academic_unit: safeAcademicUnit && safeAcademicUnit.length > 50 ? safeAcademicUnit.slice(0, 50) : safeAcademicUnit,
+          access_key: ['lecturer', 'admin'].includes(formData.role) ? (formData.accessKey?.trim() || null) : null
         };
 
         const response = await fetch('http://localhost:5000/api/signup', {
@@ -213,6 +217,9 @@ const SignUpPage: React.FC = () => {
           } else if (rawError.toLowerCase().includes('email') || rawError.toLowerCase().includes('duplicate') || rawError.toLowerCase().includes('already registered')) {
             setFieldErrors(prev => ({ ...prev, email: 'This email address is already registered. Please use a different email or login.' }));
             throw new Error('This email address is already registered. Please use a different email or login instead.');
+          } else if (rawError.toLowerCase().includes('lecturer key') || rawError.toLowerCase().includes('admin key')) {
+            setFieldErrors(prev => ({ ...prev, accessKey: rawError }));
+            throw new Error(rawError);
           } else {
             throw new Error(rawError || 'Something went wrong while creating your account. Please try again.');
           }
@@ -475,6 +482,58 @@ const SignUpPage: React.FC = () => {
                   {formData.role === 'lecturer' && fieldErrors.department && (
                     <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>
                       {fieldErrors.department}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Key Field for Lecturer and Admin */}
+              {['lecturer', 'admin'].includes(formData.role) && (
+                <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
+                  <label>
+                    {formData.role === 'lecturer' ? 'Lecturer Key *' : 'Admin Key *'}
+                  </label>
+                  <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                    <input
+                      name="accessKey"
+                      type={showAccessKey ? 'text' : 'password'}
+                      placeholder={formData.role === 'lecturer' ? 'Enter Lecturer Key' : 'Enter Admin Key'}
+                      value={formData.accessKey}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="auth-input"
+                      style={{ 
+                        paddingLeft: '16px', 
+                        paddingRight: '44px',
+                        borderColor: fieldErrors.accessKey ? '#dc2626' : undefined 
+                      }}
+                    />
+                    <div
+                      onClick={() => setShowAccessKey(!showAccessKey)}
+                      style={{
+                        position: 'absolute',
+                        right: '14px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        cursor: 'pointer',
+                        color: '#6b7280',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10
+                      }}
+                      title={showAccessKey ? 'Hide key' : 'Show key'}
+                    >
+                      {showAccessKey ? (
+                        <EyeOff size={18} style={{ position: 'static', transform: 'none', left: 'auto' }} />
+                      ) : (
+                        <Eye size={18} style={{ position: 'static', transform: 'none', left: 'auto' }} />
+                      )}
+                    </div>
+                  </div>
+                  {fieldErrors.accessKey && (
+                    <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>
+                      {fieldErrors.accessKey}
                     </p>
                   )}
                 </div>

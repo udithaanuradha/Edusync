@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/shared/Sidebar';
 import Header from '../../components/shared/Header';
+import AdminAwarenessSessionPanel from '../../components/admin/AdminAwarenessSessionPanel';
 import { 
   Megaphone, 
   Users, 
@@ -27,6 +28,7 @@ interface Announcement {
 }
 
 const AdminAnnouncements: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'announcements' | 'awareness'>('announcements');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
@@ -34,6 +36,8 @@ const AdminAnnouncements: React.FC = () => {
   const [mainAudience, setMainAudience] = useState<'All System Users' | 'Student' | 'Coordinator' | 'Supervisor' | 'Mentor'>('All System Users');
   const [studentLevel, setStudentLevel] = useState<string>('All');
   const [studentDegree, setStudentDegree] = useState<string>('All');
+  const [coordinatorLevel, setCoordinatorLevel] = useState<string>('All');
+  const [coordinatorDepartment, setCoordinatorDepartment] = useState<string>('All');
   const [staffDepartment, setStaffDepartment] = useState<string>('All');
 
   const [isPosting, setIsPosting] = useState(false);
@@ -42,11 +46,48 @@ const AdminAnnouncements: React.FC = () => {
   // ✅ Get logged-in admin from localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  // Filter criteria:
+  // 1. Announcements posted by this admin (eya dapuwai)
+  // 2. Announcements targeted to admin role (admin role eka specific karala dapuwai)
+  // 3. Announcements mentioning All System Users (all system usersla mention karala dapuwai)
+  const isRelevantForAdmin = (ann: Announcement) => {
+    const currentUserId = user?.id ? String(user.id).trim() : '';
+    const annAuthorId = ann.author_id ? String(ann.author_id).trim() : '';
+    const currentUserName = user?.name ? user.name.trim().toLowerCase() : '';
+    const annAuthorName = ann.author_name ? ann.author_name.trim().toLowerCase() : '';
+
+    // 1. Posted by this admin
+    if (
+      (currentUserId && annAuthorId && currentUserId === annAuthorId) ||
+      (currentUserName && annAuthorName && currentUserName === annAuthorName)
+    ) {
+      return true;
+    }
+
+    // 2. Targeted to admin role
+    const aud = String(ann.target_audience || '').trim().toLowerCase();
+    if (aud.includes('admin') || aud === 'administrator' || aud === 'admins') {
+      return true;
+    }
+
+    // 3. Mentioning All System Users / All
+    if (aud === 'all' || aud === 'all system users' || aud.includes('all system users')) {
+      return true;
+    }
+
+    return false;
+  };
+
   const fetchAnnouncements = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/announcements?role=admin`);
+      setLoading(true);
+      const userIdParam = user?.id ? `&user_id=${encodeURIComponent(String(user.id))}` : '';
+      const authorParam = user?.name ? `&author_name=${encodeURIComponent(user.name)}` : '';
+      const res = await fetch(`http://localhost:5000/api/announcements?role=admin${userIdParam}${authorParam}`);
       const data = await res.json();
-      setAnnouncements(data.announcements || []);
+      const list: Announcement[] = data.announcements || (Array.isArray(data) ? data : []);
+      // Strictly filter to ensure only matching announcements are displayed
+      setAnnouncements(list.filter(isRelevantForAdmin));
       setLoading(false);
     } catch (error) {
       console.error("Error fetching announcements:", error);
@@ -74,8 +115,13 @@ const AdminAnnouncements: React.FC = () => {
     }
 
     if (mainAudience === 'Coordinator') {
-      if (staffDepartment === 'All') return 'Coordinator';
-      return `Coordinator - ${staffDepartment}`;
+      const hasLevel = coordinatorLevel !== 'All';
+      const hasDept = coordinatorDepartment !== 'All';
+
+      if (!hasLevel && !hasDept) return 'Coordinator';
+      if (hasLevel && !hasDept) return `Coordinator - ${coordinatorLevel}`;
+      if (!hasLevel && hasDept) return `Coordinator - ${coordinatorDepartment}`;
+      return `Coordinator - ${coordinatorLevel} - ${coordinatorDepartment}`;
     }
 
     if (mainAudience === 'Supervisor') {
@@ -120,22 +166,28 @@ const AdminAnnouncements: React.FC = () => {
         setMainAudience('All System Users');
         setStudentLevel('All');
         setStudentDegree('All');
+        setCoordinatorLevel('All');
+        setCoordinatorDepartment('All');
         setStaffDepartment('All');
         await fetchAnnouncements();
         setStatusFeedback({ type: 'success', message: `✅ Announcement posted and dispatched to "${target_audience}" successfully!` });
+        setTimeout(() => setStatusFeedback(null), 3500);
       } else {
         setStatusFeedback({ type: 'error', message: '❌ Failed to post announcement. Please check server connection.' });
+        setTimeout(() => setStatusFeedback(null), 3500);
       }
     } catch (error) {
       setStatusFeedback({ type: 'error', message: '❌ Failed to connect to server.' });
+      setTimeout(() => setStatusFeedback(null), 3500);
     } finally {
       setIsPosting(false);
     }
   };
 
-  // ✅ Delete only if this admin owns the announcement
+  // ✅ Delete only if this admin owns the announcement or is admin
   const isMyAnnouncement = (ann: Announcement) => {
     if (!user) return false;
+    if (user.role === 'admin') return true;
     if (ann.author_id && user.id && String(ann.author_id) === String(user.id)) return true;
     if (user.name && ann.author_name && ann.author_name.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
     return false;
@@ -223,16 +275,73 @@ const AdminAnnouncements: React.FC = () => {
           
           <div className="dashboard-header-section" style={{
             width: '100%', display: 'flex', flexDirection: 'column',
-            alignItems: 'flex-start', textAlign: 'left', marginBottom: '28px'
+            alignItems: 'flex-start', textAlign: 'left', marginBottom: '20px'
           }}>
             <h2 className="overview-title" style={{ textAlign: 'left', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Megaphone size={22} color="#6366f1" />
-              Manage System Announcements
+              Manage Announcements & Awareness Sessions
             </h2>
           </div>
 
-          {/* Feedback banner */}
-          {statusFeedback && (
+          {/* Navigation Tabs */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '28px',
+            borderBottom: '2px solid #e2e8f0',
+            paddingBottom: '8px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('announcements')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                backgroundColor: activeTab === 'announcements' ? '#6366f1' : '#f1f5f9',
+                color: activeTab === 'announcements' ? '#ffffff' : '#64748b',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Megaphone size={16} />
+              General Announcements
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('awareness')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                backgroundColor: activeTab === 'awareness' ? '#6366f1' : '#f1f5f9',
+                color: activeTab === 'awareness' ? '#ffffff' : '#64748b',
+                boxShadow: activeTab === 'awareness' ? '0 4px 12px rgba(99, 102, 241, 0.25)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <GraduationCap size={16} />
+              Student Awareness Sessions
+            </button>
+          </div>
+
+          {activeTab === 'awareness' ? (
+            <AdminAwarenessSessionPanel />
+          ) : (
+            <>
+              {/* Feedback banner */}
+              {statusFeedback && (
             <div style={{
               maxWidth: '650px',
               margin: '0 auto 20px auto',
@@ -240,6 +349,7 @@ const AdminAnnouncements: React.FC = () => {
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '10px',
               fontSize: '13px',
               fontWeight: '500',
@@ -247,6 +357,23 @@ const AdminAnnouncements: React.FC = () => {
               color: statusFeedback.type === 'success' ? '#15803d' : '#b91c1c',
               border: `1px solid ${statusFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
             }}>
+              <span>{statusFeedback.message}</span>
+              <button
+                type="button"
+                onClick={() => setStatusFeedback(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'inherit',
+                  fontWeight: '700',
+                  fontSize: '16px',
+                  padding: '0 4px',
+                  lineHeight: '1',
+                }}
+              >
+                ×
+              </button>
             </div>
           )}
 
@@ -356,8 +483,55 @@ const AdminAnnouncements: React.FC = () => {
                 </div>
               )}
 
-              {/* Sub-Filters for Coordinator / Supervisor: Department (academic_unit) */}
-              {(mainAudience === 'Coordinator' || mainAudience === 'Supervisor') && (
+              {/* Sub-Filters for Coordinator: Academic Level AND Department (academic_unit) */}
+              {mainAudience === 'Coordinator' && (
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '12px', 
+                  marginBottom: '18px',
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
+                      Academic Level
+                    </label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                      value={coordinatorLevel}
+                      onChange={(e) => setCoordinatorLevel(e.target.value)}
+                    >
+                      <option value="All">All Levels</option>
+                      <option value="Level 1">Level 1</option>
+                      <option value="Level 2">Level 2</option>
+                      <option value="Level 3">Level 3</option>
+                      <option value="Level 4">Level 4</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
+                      Department
+                    </label>
+                    <select
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                      value={coordinatorDepartment}
+                      onChange={(e) => setCoordinatorDepartment(e.target.value)}
+                    >
+                      <option value="All">All Departments</option>
+                      <option value="IT">IT</option>
+                      <option value="IDS">IDS</option>
+                      <option value="CM">CM</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-Filters for Supervisor: Department (academic_unit) */}
+              {mainAudience === 'Supervisor' && (
                 <div style={{ 
                   marginBottom: '18px',
                   padding: '12px',
@@ -518,8 +692,10 @@ const AdminAnnouncements: React.FC = () => {
               })
             )}
           </div>
+        </>
+      )}
 
-        </main>
+    </main>
       </div>
     </div>
   );

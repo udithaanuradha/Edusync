@@ -15,6 +15,7 @@
 
 .content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--eds-space-8);
   background-color: var(--eds-color-bg-page);

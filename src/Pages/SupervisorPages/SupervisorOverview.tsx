@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MessageSquare, Users, Calendar, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, MessageSquare, Users, Calendar, Megaphone, ClipboardCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import AnnouncementWidget from '../../components/shared/AnnouncementWidget';
 import { useAuth } from '../../context/AuthContext';
 import { useSocketV2 } from '../../hooks/useSocketV2';
 import { fetchConversationsV2 } from '../../utils/apiV2';
 import { ConversationV2, MessageV2 } from '../../types/chatV2';
+import { fetchPendingApprovalRequests, getViewerIdentity } from '../../utils/supervisorApprovals';
 import SupervisorTaskScheduler from './SupervisorTaskScheduler';
 import './SupervisorOverview.css';
 
@@ -74,6 +75,10 @@ type GroupItem = {
   leader: string;
   memberCount: number;
   members: string;
+  // Not a project_groups column — parsed server-side from the
+  // group_requests row that created this group, so it's null/undefined for
+  // a group created some other way (e.g. manually by an admin/coordinator).
+  projectName?: string | null;
 };
 
 // Shape returned by GET /api/supervice-st-progress/group/:groupId — the
@@ -131,6 +136,7 @@ const SupervisorOverview: React.FC = () => {
   const autoSelectedLevelRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const [pendingMeetingsCount, setPendingMeetingsCount] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [announcementsCount, setAnnouncementsCount] = useState(0);
   const [evaluationPanels, setEvaluationPanels] = useState<StoredPanel[]>([]);
   const [activeGroupProgress, setActiveGroupProgress] = useState<ActiveGroupProgress | null>(null);
@@ -293,22 +299,41 @@ const SupervisorOverview: React.FC = () => {
         console.warn("Failed fetching groups:", err);
       }
 
-      // 2. Fetch pending meeting requests independently
+      // 2. Fetch pending meeting requests + meeting reports independently —
+      // the stat card below counts both together (renamed to "Meeting
+      // Request/Report Request" to reflect that).
       try {
-        const meetingRes = await fetch(`http://localhost:5000/api/meeting-requests/supervisor/${idStr}`, {
-          headers: authHeaders,
-        });
+        const [meetingRes, reportRes] = await Promise.all([
+          fetch(`http://localhost:5000/api/meeting-requests/supervisor/${idStr}`, { headers: authHeaders }),
+          fetch(`http://localhost:5000/api/meeting-reports/supervisor/${idStr}`, { headers: authHeaders }),
+        ]);
+
+        let pendingCount = 0;
         if (meetingRes.ok) {
           const meetingData = await meetingRes.json();
           const list = Array.isArray(meetingData) ? meetingData : (meetingData.data || meetingData.requests || []);
-          const pending = list.filter((r: any) => String(r.status || "").toLowerCase() === "pending");
-          setPendingMeetingsCount(pending.length);
+          pendingCount += list.filter((r: any) => String(r.status || "").toLowerCase() === "pending").length;
         }
+        if (reportRes.ok) {
+          const reportData = await reportRes.json();
+          const list = Array.isArray(reportData) ? reportData : (reportData.data || reportData.reports || []);
+          pendingCount += list.filter((r: any) => String(r.status || "").toLowerCase() === "pending").length;
+        }
+        setPendingMeetingsCount(pendingCount);
       } catch (err) {
-        console.warn("Failed fetching meeting requests:", err);
+        console.warn("Failed fetching meeting requests/reports:", err);
       }
 
-      // 3. Fetch announcements independently
+      // 3. Fetch pending group-approval requests independently
+      try {
+        const viewer = getViewerIdentity();
+        const { requests } = await fetchPendingApprovalRequests(viewer);
+        setPendingApprovalsCount(requests.length);
+      } catch (err) {
+        console.warn("Failed fetching pending approval requests:", err);
+      }
+
+      // 4. Fetch announcements independently
       try {
         const annRes = await fetch(`http://localhost:5000/api/announcements`, { headers: authHeaders });
         if (annRes.ok) {
@@ -333,11 +358,13 @@ const SupervisorOverview: React.FC = () => {
     };
     window.addEventListener("announcementsReadUpdated", handleReadUpdate);
     window.addEventListener("meetingRequestUpdated", handleReadUpdate);
+    window.addEventListener("approvalRequestUpdated", handleReadUpdate);
     window.addEventListener("storage", handleReadUpdate);
     return () => {
       clearInterval(interval);
       window.removeEventListener("announcementsReadUpdated", handleReadUpdate);
       window.removeEventListener("meetingRequestUpdated", handleReadUpdate);
+      window.removeEventListener("approvalRequestUpdated", handleReadUpdate);
       window.removeEventListener("storage", handleReadUpdate);
     };
   }, [user]);
@@ -445,16 +472,36 @@ const SupervisorOverview: React.FC = () => {
             }}
             role="button"
             tabIndex={0}
-            title="View Meeting Requests"
+            title="View Meeting, Report Request"
           >
             {pendingMeetingsCount > 0 && <span className="stat-card-badge-dot" />}
             <div className="stat-badge-icon meeting-bg">
               <Users size={18} />
             </div>
             <div className="stat-info">
-              <div className="stat-label">Meeting Requests</div>
+              <div className="stat-label">Meeting, Report Request</div>
               <div className="stat-value">
                 <span className="num">{pendingMeetingsCount}</span>
+                <span className="unit">pending</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="header-stat-card"
+            onClick={() => navigate('/supervisor/approval')}
+            role="button"
+            tabIndex={0}
+            title="View Pending Approvals"
+          >
+            {pendingApprovalsCount > 0 && <span className="stat-card-badge-dot" />}
+            <div className="stat-badge-icon approval-bg">
+              <ClipboardCheck size={18} />
+            </div>
+            <div className="stat-info">
+              <div className="stat-label">Pending Approvals</div>
+              <div className="stat-value">
+                <span className="num">{pendingApprovalsCount}</span>
                 <span className="unit">pending</span>
               </div>
             </div>
@@ -665,6 +712,9 @@ const SupervisorOverview: React.FC = () => {
           {activeGroup && (
             <div className="group-progress" onClick={goToFullProgress} role="button" tabIndex={0}>
               <h3>{activeGroup.groupName} — Group Details</h3>
+              <p className="overall">
+                Project: <strong>{activeGroup.projectName || "Not specified"}</strong>
+              </p>
               <p className="overall">
                 Leader: <strong>{activeGroup.leader}</strong> · {activeGroup.memberCount} members
               </p>

@@ -17,7 +17,14 @@ type MilestoneProgressBoardProps = {
       milestone's team-wide status badge/progress/advisory and the
       "Who's working on this milestone" panel. */
   allGroupTasks: ProjectTask[];
-  milestoneOptions: { id: number | string; title: string }[];
+  /** startDate/endDate are the milestone's own start_date/due_date (may be
+      '' if unset) — used to keep the quick-add task form's dates within
+      its parent milestone's own range. */
+  milestoneOptions: { id: number | string; title: string; startDate?: string; endDate?: string }[];
+  /** The group's own id — Scope Division is project-wide now (see
+      ScopeDivision.tsx), so the "you haven't claimed a scope section yet"
+      check below needs the group, not whichever milestone is open. */
+  groupId: number | null;
   userRole: 'leader' | 'member';
   optimisticStatus: Record<string, TaskStatus>;
   pendingTaskIds: Record<string, boolean>;
@@ -25,6 +32,11 @@ type MilestoneProgressBoardProps = {
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
   /** Adds a new, self-assigned task — same save path the old TaskCreation.tsx used. */
   onAddTask: (task: ProjectTask) => void;
+  /** Permanently deletes a task (hard delete, no undo) — see deleteTask in
+      milestoneController.js. Resolves with the outcome rather than
+      throwing, so this component can show a specific error instead of a
+      task silently failing to disappear. */
+  onDeleteTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
   currentUser: CurrentUser;
   /** Total member count of the underlying group record — an Individual
       Project is a "group of one" that reuses this exact board, so the
@@ -51,6 +63,22 @@ const startOfToday = () => {
 };
 
 const todayInputValue = () => startOfToday().toISOString().slice(0, 10);
+
+const formatShortDate = (value: string): string => {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+};
+
+// The earliest a new task is allowed to start: today, or the milestone's
+// own start date, whichever is later. A task can't be backdated into the
+// past, and it can't start before its milestone does either — "YYYY-MM-DD"
+// strings compare correctly with plain string comparison.
+const minTaskDate = (milestoneStart: string): string => {
+  const today = todayInputValue();
+  return milestoneStart && milestoneStart > today ? milestoneStart : today;
+};
 
 /**
  * Purely UI-side "is this task falling behind" read on a task's own
@@ -146,28 +174,36 @@ const findDuplicateTask = (title: string, teamTasks: ProjectTask[]): ProjectTask
 
 type QuickAddFormState = { title: string; description: string; startDate: string; endDate: string };
 
-const emptyQuickAddForm = (): QuickAddFormState => ({
+// Defaults Start to today, unless the milestone itself starts later (a
+// future milestone shouldn't default to a start date the form's own min
+// attribute would immediately reject).
+const emptyQuickAddForm = (milestoneStart?: string): QuickAddFormState => ({
   title: '',
   description: '',
-  startDate: todayInputValue(),
+  startDate: minTaskDate(milestoneStart || ''),
   endDate: '',
 });
 
-// Whether the current student has claimed at least one scope section for a
-// given milestone — fetched on demand (only when that milestone's add-task
-// form opens) rather than eagerly for every milestone up front.
+// Whether the current student has claimed a scope section anywhere in the
+// project (Scope Division is project-wide — see ScopeDivision.tsx) —
+// fetched on demand when a quick-add form opens, rather than eagerly up
+// front. `milestoneId` here just tracks which open form this check
+// belongs to, so a stale check from a form the student has since closed
+// never gets shown against a different one.
 type ScopeCheckState = { milestoneId: string; loading: boolean; hasClaim: boolean };
 
 const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
   tasks,
   allGroupTasks,
   milestoneOptions,
+  groupId,
   userRole,
   optimisticStatus,
   pendingTaskIds,
   taskErrors,
   onStatusChange,
   onAddTask,
+  onDeleteTask,
   currentUser,
   memberCount,
 }) => {
@@ -175,6 +211,10 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
   const [openAddFormId, setOpenAddFormId] = useState<string | null>(null);
   const [quickAddForm, setQuickAddForm] = useState<QuickAddFormState>(emptyQuickAddForm());
   const [quickAddError, setQuickAddError] = useState('');
+  // taskId -> true while that task's delete request is in flight — disables
+  // its delete button so a slow connection can't be double-clicked into two
+  // overlapping DELETE requests.
+  const [deletingTaskIds, setDeletingTaskIds] = useState<Record<string, boolean>>({});
   const [scopeCheck, setScopeCheck] = useState<ScopeCheckState | null>(null);
 
   // Only one milestone is shown at a time — navigated with the prev/next
@@ -206,6 +246,8 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
     const groups = milestoneOptions.map((m) => ({
       id: String(m.id),
       title: m.title,
+      startDate: m.startDate || '',
+      endDate: m.endDate || '',
       ownTasks: ownByMilestoneId.get(String(m.id)) || [],
       teamTasks: teamByMilestoneId.get(String(m.id)) || [],
     }));
@@ -216,6 +258,10 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
         groups.push({
           id: key,
           title: teamTasksForKey[0]?.milestone || 'Other Tasks',
+          // No known milestone record for this group (e.g. renamed/removed
+          // since) — no date range to validate a new task against either.
+          startDate: '',
+          endDate: '',
           ownTasks: ownByMilestoneId.get(key) || [],
           teamTasks: teamTasksForKey,
         });
@@ -257,17 +303,23 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
     return { total, completed, inProgress, percent };
   }, [tasks, optimisticStatus]);
 
-  const openQuickAdd = async (milestoneId: string) => {
+  const openQuickAdd = async (milestoneId: string, milestoneStart: string) => {
     setOpenAddFormId(milestoneId);
-    setQuickAddForm(emptyQuickAddForm());
+    setQuickAddForm(emptyQuickAddForm(milestoneStart));
     setQuickAddError('');
     setScopeCheck({ milestoneId, loading: true, hasClaim: true });
+
+    // No group resolved yet — fail open rather than block on it.
+    if (!groupId) {
+      setScopeCheck({ milestoneId, loading: false, hasClaim: true });
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
       const userString = localStorage.getItem('user');
       const user = userString ? JSON.parse(userString) : null;
-      const res = await fetch(`${SCOPE_API_BASE}/${milestoneId}/scope`, {
+      const res = await fetch(`${SCOPE_API_BASE}/group/${groupId}/scope`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(user?.id ? { 'X-User-Id': String(user.id) } : {}),
@@ -295,7 +347,10 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
     setScopeCheck(null);
   };
 
-  const handleQuickAddSubmit = (group: { id: string; title: string }, event: React.FormEvent) => {
+  const handleQuickAddSubmit = (
+    group: { id: string; title: string; startDate: string; endDate: string },
+    event: React.FormEvent,
+  ) => {
     event.preventDefault();
     if (!currentUser?.id) {
       setQuickAddError('User session not found. Please log in again.');
@@ -308,6 +363,32 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
     if (quickAddForm.startDate && new Date(quickAddForm.startDate) > new Date(quickAddForm.endDate)) {
       setQuickAddError('Start date cannot be later than the due date.');
       return;
+    }
+    // A brand-new task can't start in the past — matches the same rule
+    // milestone creation already enforces.
+    if (quickAddForm.startDate && quickAddForm.startDate < todayInputValue()) {
+      setQuickAddError('Start date cannot be before today.');
+      return;
+    }
+    // A task can't start before its milestone starts or end after its
+    // milestone ends — only checkable when the milestone actually has both
+    // of its own dates set.
+    if (group.startDate && group.endDate) {
+      const taskStart = quickAddForm.startDate ? new Date(quickAddForm.startDate) : null;
+      const taskEnd = new Date(quickAddForm.endDate);
+      const milestoneStart = new Date(group.startDate);
+      const milestoneEnd = new Date(group.endDate);
+      const outOfRange =
+        (taskStart && taskStart < milestoneStart) ||
+        taskEnd > milestoneEnd ||
+        (taskStart && taskStart > milestoneEnd) ||
+        taskEnd < milestoneStart;
+      if (outOfRange) {
+        setQuickAddError(
+          `Task dates must fall within this milestone's ${formatShortDate(group.startDate)} – ${formatShortDate(group.endDate)} range.`,
+        );
+        return;
+      }
     }
 
     const newTask: ProjectTask = {
@@ -327,6 +408,26 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
     // themselves, matching the retired leader-assign-to-anyone form.
     onAddTask(newTask);
     closeQuickAdd();
+  };
+
+  // Hard delete — permanent, no undo — so this confirms first, then
+  // surfaces the server's own error (e.g. "not your task") rather than
+  // assuming success.
+  const handleDeleteTaskClick = async (task: ProjectTask) => {
+    if (deletingTaskIds[task.id]) return;
+    if (!window.confirm(`Delete "${task.title}"? This can't be undone.`)) return;
+
+    setDeletingTaskIds((prev) => ({ ...prev, [task.id]: true }));
+    const result = await onDeleteTask(task.id);
+    setDeletingTaskIds((prev) => {
+      const next = { ...prev };
+      delete next[task.id];
+      return next;
+    });
+
+    if (!result.success) {
+      window.alert(result.error || 'Failed to delete task.');
+    }
   };
 
   return (
@@ -445,6 +546,8 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                   pendingTaskIds={pendingTaskIds}
                   taskErrors={taskErrors}
                   onStatusChange={onStatusChange}
+                  deletingTaskIds={deletingTaskIds}
+                  onDeleteTask={handleDeleteTaskClick}
                 />
               )}
 
@@ -452,7 +555,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                 <form className="mpb-quick-add-form" onSubmit={(e) => handleQuickAddSubmit(group, e)}>
                   {scopeWarningVisible && (
                     <p className="mpb-quick-add-warning">
-                      ⚠ You haven&apos;t claimed a scope section for this milestone yet — check Project Overview,
+                      ⚠ You haven&apos;t claimed a scope section for this project yet — check Project Overview,
                       or confirm with your leader before adding this.
                     </p>
                   )}
@@ -485,6 +588,8 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                         type="date"
                         value={quickAddForm.startDate}
                         onChange={(e) => setQuickAddForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                        min={minTaskDate(group.startDate)}
+                        max={group.endDate || undefined}
                       />
                     </div>
                     <div className="mpb-quick-add-date-field">
@@ -493,9 +598,17 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                         type="date"
                         value={quickAddForm.endDate}
                         onChange={(e) => setQuickAddForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                        min={minTaskDate(group.startDate)}
+                        max={group.endDate || undefined}
                       />
                     </div>
                   </div>
+                  {group.startDate && group.endDate && (
+                    <p className="mpb-quick-add-hint">
+                      This milestone runs {formatShortDate(group.startDate)} – {formatShortDate(group.endDate)}; task
+                      dates must fall within that range.
+                    </p>
+                  )}
                   {quickAddError && <p className="mpb-quick-add-error">{quickAddError}</p>}
                   <div className="mpb-quick-add-actions">
                     <button type="submit" className="mpb-quick-add-save">Add Task</button>
@@ -506,7 +619,7 @@ const MilestoneProgressBoard: React.FC<MilestoneProgressBoardProps> = ({
                 <button
                   type="button"
                   className="mpb-add-task-btn"
-                  onClick={() => openQuickAdd(group.id)}
+                  onClick={() => openQuickAdd(group.id, group.startDate)}
                 >
                   <Plus size={15} /> Add a task for yourself in this milestone
                 </button>
