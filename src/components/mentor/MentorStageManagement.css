@@ -1,6 +1,6 @@
 .mentor-stage-container {
   padding: 32px;
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   min-height: 100vh;
 }
 
@@ -9,16 +9,16 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 32px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
   padding-bottom: 20px;
 }
 
-.mentor-header h3 { font-size: 24px; color: #1e293b; font-weight: 700; margin: 0; }
-.subtitle { color: #64748b; font-size: 14px; margin-top: 4px; }
+.mentor-header h3 { font-size: 20px; color: var(--eds-color-text-strong); font-weight: 700; margin: 0; }
+.subtitle { color: var(--eds-color-text-muted); font-size: 13px; margin-top: 4px; }
 
 .mentor-badge {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-text);
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -45,7 +45,7 @@
 .timeline-circle {
   width: 40px;
   height: 40px;
-  background: #2563eb;
+  background: var(--eds-color-primary);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -57,7 +57,7 @@
 
 .timeline-connector {
   width: 2px;
-  background: #e2e8f0;
+  background: var(--eds-color-border);
   position: absolute;
   top: 40px; /* Start at bottom of circle */
   bottom: -40px; /* Match the padding-bottom of the item */
@@ -77,11 +77,11 @@
 }
 
 .description-side { flex: 1; }
-.description-side h4 { margin: 0 0 8px 0; font-size: 18px; color: #0f172a; }
+.description-side h4 { margin: 0 0 8px 0; font-size: 18px; color: var(--eds-color-text-strong); }
 
 .description-text { font-size: 14px; line-height: 1.5; }
-.description-text .label { font-weight: 600; color: #64748b; margin-right: 8px; }
-.description-text .value { color: #334155; }
+.description-text .label { font-weight: 600; color: var(--eds-color-text-muted); margin-right: 8px; }
+.description-text .value { color: var(--eds-color-text-body); }
 
 /* Deadline Right Side */
 .deadline-side {
@@ -94,7 +94,7 @@
 .deadline-label {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   text-transform: uppercase;
   margin-bottom: 6px;
   letter-spacing: 0.5px;
@@ -104,11 +104,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff5f5;
-  color: #c53030;
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-text);
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid #fed7d7;
+  border: 1px solid var(--eds-color-danger-bg);
   font-weight: 600;
   font-size: 13px;
 }
@@ -117,12 +117,12 @@
 .stage-resources {
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--eds-color-border);
 }
 
 .stage-resources h5 {
   font-size: 13px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   margin: 0 0 12px 0;
   display: flex;
   align-items: center;
@@ -137,20 +137,22 @@
 
 .file-info-box {
   flex: 1;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   padding: 12px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: #1e293b;
+  color: var(--eds-color-text-strong);
 }
 
 .btn-download-green {
-  background: #10b981;
+  background: var(--eds-color-success-solid);
   color: white;
+  border: none;
+  cursor: pointer;
   padding: 0 20px;
   border-radius: 8px;
   display: flex;
@@ -160,17 +162,79 @@
   font-weight: 600;
   font-size: 13px;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.btn-download-green:hover { background: #059669; }
-.no-files-text { font-size: 13px; color: #94a3b8; font-style: italic; }
+.btn-download-green:hover { background: var(--eds-color-success-solid); transform: translateY(-1px); }
+
+/* Coordinator Document/Sheet Link Styling */
+.link-row {
+  margin-bottom: 12px;
+}
+
+.link-info-box {
+  background: var(--eds-color-success-bg);
+  border: 1px solid var(--eds-color-success-solid);
+  color: var(--eds-color-success-text);
+}
+
+.link-doc-icon {
+  color: var(--eds-color-success-solid);
+  flex-shrink: 0;
+}
+
+.link-meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.link-doc-title {
+  font-weight: 600;
+  color: var(--eds-color-success-text);
+  font-size: 13px;
+}
+
+.link-doc-url {
+  font-size: 11px;
+  color: var(--eds-color-success-solid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 500px;
+}
+
+.btn-open-link {
+  background: var(--eds-color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 0 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-open-link:hover {
+  background: var(--eds-color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.no-files-text { font-size: 13px; color: var(--eds-color-text-faint); font-style: italic; }
 /* Empty State Styling */
 .empty-state-wrapper {
   padding: 60px 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f8fafc; /* Light grey background for the empty area */
+  background: var(--eds-color-bg-surface-soft); /* Light grey background for the empty area */
   border-radius: 12px;
 }
 
@@ -181,24 +245,24 @@
   padding: 40px;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
 }
 
 .empty-icon {
-  color: #3b82f6; /* Blue info color */
+  color: var(--eds-color-primary); /* Blue info color */
   margin-bottom: 20px;
   opacity: 0.8;
 }
 
 .empty-state-card h4 {
   margin: 0 0 12px 0;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 20px;
   font-weight: 700;
 }
 
 .empty-state-card p {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
@@ -210,7 +274,7 @@
   justify-content: center;
   align-items: center;
   height: 200px;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-weight: 500;
   font-size: 16px;
 }

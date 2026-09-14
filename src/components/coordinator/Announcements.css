@@ -3,14 +3,16 @@
   grid-template-columns: 1fr;
   gap: 24px;
   width: 100%;
+  max-width: 800px;
+  align-self: flex-start;
 }
 
 .announcements-card {
-  background: #fff;
-  border-radius: 16px;
+  background: #ffffff;
+  border-radius: var(--eds-radius-xl);
   padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e5e7eb;
+  box-shadow: none;
+  border: 1px solid var(--eds-color-border);
 }
 
 .announcements-card:first-child {
@@ -45,7 +47,7 @@
 .announcements-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .announcements-form input,
@@ -90,6 +92,80 @@
   padding-right: 36px;
 }
 
+.announcement-audience-select {
+  position: relative;
+}
+
+.announcement-audience-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.announcement-audience-trigger:hover {
+  border-color: #cbd5e1;
+}
+
+.announcement-audience-trigger:focus,
+.announcement-audience-trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 0.1);
+}
+
+.announcement-audience-trigger svg {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.announcement-audience-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.announcement-audience-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.announcement-audience-option:hover {
+  background: #f1f5f9;
+}
+
+.announcement-audience-option input[type="checkbox"] {
+  accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 .announcement-status {
   margin: 0;
   color: #059669;
@@ -112,32 +188,10 @@
 
 .view-all-btn {
   margin-top: 8px;
-  width: 100%;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  letter-spacing: -0.2px;
-}
-
-.view-all-btn:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  box-shadow: 0 4px 12px rgb(29 78 216 / 0.4);
-  transform: translateY(-1px);
-}
-
-.view-all-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgb(29 78 216 / 0.2);
+  width: auto;
+  align-self: flex-start;
 }
 
 .view-all-btn:disabled {
   opacity: 0.6;
-  cursor: not-allowed;
-  box-shadow: none;
 }

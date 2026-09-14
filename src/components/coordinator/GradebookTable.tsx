@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Clock3, Edit2, Save, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Check, Clock3, Edit2, MessageSquare, Save, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import DataTable, { type DataTableColumn } from '../shared/ui/DataTable';
+import type { UserV2 } from '../../types/chatV2';
 import './GradebookTable.css';
 
-type SubmissionStatus = 'all' | 'submitted' | 'pending' | 'late';
+type SubmissionStatus = 'all' | 'on_time' | 'late' | 'not_submitted';
 
 interface GroupMark {
   group_id: number;
@@ -17,6 +20,19 @@ interface GroupMark {
   deadline?: string | null;
   current_status?: string | null;
   submitted_at?: string | null;
+  student_name?: string;
+  file_paths?: string[];
+  leader_id?: number | null;
+  leader_name?: string | null;
+  leader_email?: string | null;
+}
+
+interface ActiveGroup {
+  group_id: number;
+  group_name: string;
+  leader_id: number | null;
+  leader_name: string | null;
+  leader_email: string | null;
 }
 
 interface GradebookTableProps {
@@ -25,6 +41,7 @@ interface GradebookTableProps {
 
 const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [marks, setMarks] = useState<GroupMark[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,26 +51,59 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
   const [filterStage, setFilterStage] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<SubmissionStatus>('all');
   const [stages, setStages] = useState<Array<{ stage_id: number; stage_name: string }>>([]);
+  const [activeGroups, setActiveGroups] = useState<ActiveGroup[]>([]);
+
+  const parseFileLinks = (rawValue: unknown): string[] => {
+    if (Array.isArray(rawValue)) {
+      return rawValue.map((entry) => String(entry)).filter(Boolean);
+    }
+
+    if (typeof rawValue === 'string') {
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+          return parsed.map((entry) => String(entry)).filter(Boolean);
+        }
+      } catch {
+        return rawValue
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+      }
+    }
+
+    return [];
+  };
 
   const normalizeStatus = (mark: GroupMark): Exclude<SubmissionStatus, 'all'> => {
     const explicitStatus = String(mark.current_status ?? '').trim().toLowerCase();
 
-    if (explicitStatus === 'submitted' || explicitStatus === 'pending' || explicitStatus === 'late') {
-      return explicitStatus;
+    if (explicitStatus === 'not_submitted' || explicitStatus === 'missing' || explicitStatus === 'pending') {
+      return 'not_submitted';
     }
 
-    if (mark.submission_date || mark.submitted_at || mark.mark !== null) {
-      return 'submitted';
+    if (explicitStatus === 'late') return 'late';
+    if (explicitStatus === 'on time' || explicitStatus === 'ontime' || explicitStatus === 'submitted' || explicitStatus === 'on_time') {
+      return 'on_time';
     }
 
-    if (mark.deadline) {
-      const deadlineTime = new Date(mark.deadline).getTime();
-      if (!Number.isNaN(deadlineTime) && Date.now() > deadlineTime) {
-        return 'late';
-      }
+    if (!mark.submission_date && !mark.submitted_at) {
+      return 'on_time';
     }
 
-    return 'pending';
+    const submittedAtValue = mark.submission_date || mark.submitted_at;
+    if (!submittedAtValue || !mark.deadline) {
+      return 'on_time';
+    }
+
+    const submittedAt = new Date(submittedAtValue).getTime();
+    const deadline = new Date(mark.deadline).getTime();
+
+    if (Number.isNaN(submittedAt) || Number.isNaN(deadline)) {
+      return 'on_time';
+    }
+
+    return submittedAt > deadline ? 'late' : 'on_time';
   };
 
   const normalizeMark = (item: Record<string, unknown>): GroupMark => ({
@@ -96,6 +146,8 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
         : item.submittedAt !== undefined && item.submittedAt !== null
           ? String(item.submittedAt)
           : null,
+    student_name: item.student_name !== undefined && item.student_name !== null ? String(item.student_name) : undefined,
+    file_paths: parseFileLinks(item.file_paths ?? item.filePaths ?? item.files ?? []),
   });
 
   // Fetch marks from backend
@@ -104,11 +156,18 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       try {
         setLoading(true);
 
-        const response = await fetch(`http://localhost:5000/api/submissions/level/${levelNumber}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+        // coordinatorId lets the backend scope this to just this
+        // coordinator's own department (resolved server-side from their own
+        // account) — without it, every department's submissions at this
+        // level would come back.
+        const response = await fetch(
+          `http://localhost:5000/api/submissions/level/${levelNumber}?coordinatorId=${user?.id ?? ''}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           throw new Error(response.statusText || 'Failed to fetch submissions');
@@ -146,7 +205,82 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     };
 
     fetchMarks();
-  }, [levelNumber]);
+  }, [levelNumber, user?.id]);
+
+  // Fetch the coordinator's active groups for this level separately from
+  // submissions — the submissions endpoint only ever returns rows for
+  // groups that already have a submission/evaluation record, so a group
+  // that hasn't uploaded anything for a stage never appears there. This
+  // list is what lets the "Not Submitted" tab work out which groups are
+  // missing, by diffing it against the submission records above.
+  useEffect(() => {
+    const fetchActiveGroups = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/groups/coordinator/${user?.id}/${levelNumber}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          setActiveGroups([]);
+          return;
+        }
+
+        const payload = await response.json();
+        const list: Record<string, unknown>[] = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload?.groups)
+              ? payload.groups
+              : [];
+
+        const normalized = list
+          .map((g) => {
+            // The group record doesn't carry a dedicated leader id field —
+            // the leader is whichever member has the is_leader flag set,
+            // same convention used across the supervisor/mentor group views.
+            const membersRaw = Array.isArray(g.members) ? (g.members as Record<string, unknown>[]) : [];
+            const leaderMember = membersRaw.find(
+              (m) => Number(m.is_leader) === 1 || m.is_leader === true || m.isLeader === true
+            );
+            const rawLeaderId = leaderMember?.id ?? g.leader_id ?? g.leaderId ?? null;
+            const leaderId = rawLeaderId !== null ? Number(rawLeaderId) : null;
+            const leaderName =
+              (leaderMember?.name as string | undefined) ??
+              (leaderMember?.student_name as string | undefined) ??
+              (g.leader_name as string | undefined) ??
+              (g.leaderName as string | undefined) ??
+              null;
+            const leaderEmail =
+              (leaderMember?.email as string | undefined) ??
+              (g.leader_email as string | undefined) ??
+              null;
+
+            return {
+              group_id: Number(g.group_id ?? g.id ?? g.groupId ?? g.groupID ?? 0),
+              group_name: String(g.group_name ?? g.groupName ?? g.name ?? 'Unnamed Group'),
+              leader_id: leaderId !== null && Number.isFinite(leaderId) ? leaderId : null,
+              leader_name: leaderName,
+              leader_email: leaderEmail,
+            };
+          })
+          .filter((g) => g.group_id > 0);
+
+        setActiveGroups(normalized);
+      } catch {
+        // Not fatal — the "Not Submitted" tab just has nothing to compare
+        // against, so it renders empty instead of breaking the page.
+        setActiveGroups([]);
+      }
+    };
+
+    fetchActiveGroups();
+  }, [levelNumber, user?.id]);
 
   const handleEditStart = (mark: GroupMark) => {
     setEditingId(`${mark.group_id}-${mark.stage_id}`);
@@ -209,6 +343,63 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     setEditValue(null);
   };
 
+  const isDeadlinePassed = (deadline?: string | null) => {
+    if (!deadline) return false;
+    const deadlineDate = new Date(deadline);
+    if (Number.isNaN(deadlineDate.getTime())) return false;
+    return deadlineDate < new Date();
+  };
+
+  // Hands off to the real-time Chat/Communication system (ChatWindowV2, at
+  // /dashboard/communication): navigating there with this router state lets
+  // it auto-select (or start) a 1:1 conversation with the group leader and
+  // pre-fill the message box, the same "navigate with state" convention
+  // already used to auto-open things elsewhere (e.g. SupervisorTaskScheduler's
+  // openTimelineScheduler flag).
+  const handleSendWarning = (mark: GroupMark) => {
+    if (!mark.leader_id || !mark.leader_name) {
+      alert('No group leader is on record for this group, so a warning message cannot be sent yet.');
+      return;
+    }
+
+    const leaderContact: UserV2 = {
+      id: mark.leader_id,
+      name: mark.leader_name,
+      email: mark.leader_email ?? '',
+      role: 'group_leader',
+    };
+
+    const deadlineText = formatDateTime(mark.deadline);
+    const prefillMessage =
+      `Hi ${mark.leader_name}, this is a reminder that ${mark.group_name}'s submission for ` +
+      `"${mark.stage_name}" was due on ${deadlineText} and hasn't been received yet. ` +
+      `Please submit as soon as possible, or reach out if you're facing any issues.`;
+
+    navigate('/dashboard/communication', {
+      state: { startConversationWith: leaderContact, prefillMessage },
+    });
+  };
+
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const getFileUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   const selectedStageMarks = useMemo(
     () => (filterStage === 'all' ? marks : marks.filter((m) => m.stage_id === Number(filterStage))),
     [filterStage, marks]
@@ -219,39 +410,95 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       (acc, mark) => {
         const status = normalizeStatus(mark);
         acc.total += 1;
-        acc[status] += 1;
+        if (status === 'late') acc.late += 1;
+        else acc.on_time += 1;
         return acc;
       },
-      { total: 0, submitted: 0, pending: 0, late: 0 }
+      { total: 0, on_time: 0, late: 0 }
     );
 
-    const progress = totals.total > 0 ? Math.round((totals.submitted / totals.total) * 100) : 0;
+    const submitted = totals.on_time + totals.late;
+    const progress = totals.total > 0 ? Math.round((submitted / totals.total) * 100) : 0;
 
     return {
       ...totals,
+      submitted,
       progress,
     };
   }, [selectedStageMarks]);
 
+  // Groups that are active for this level but have no submission/evaluation
+  // record for the stage(s) currently in scope. When "All Stages" is
+  // selected this is computed per stage so each missing group still lands
+  // under the right stage section below; a single stage just narrows that
+  // down to one. A group's own stage-level deadline (from any real
+  // submission row for that stage) is reused so the row can still show a
+  // due date even though nothing was uploaded.
+  const notSubmittedMarks = useMemo<GroupMark[]>(() => {
+    if (activeGroups.length === 0) return [];
+
+    const stagesInScope =
+      filterStage === 'all' ? stages : stages.filter((s) => s.stage_id === Number(filterStage));
+
+    const entries: GroupMark[] = [];
+
+    stagesInScope.forEach((stage) => {
+      const submittedGroupIds = new Set(
+        marks.filter((m) => m.stage_id === stage.stage_id).map((m) => m.group_id)
+      );
+      const stageDeadline =
+        marks.find((m) => m.stage_id === stage.stage_id && m.deadline)?.deadline ?? null;
+
+      activeGroups.forEach((group) => {
+        if (submittedGroupIds.has(group.group_id)) return;
+
+        entries.push({
+          group_id: group.group_id,
+          group_name: group.group_name,
+          stage_id: stage.stage_id,
+          stage_name: stage.stage_name,
+          mark: null,
+          evaluator_name: '',
+          submission_date: null,
+          mark_type: 'evaluation',
+          deadline: stageDeadline,
+          current_status: 'not_submitted',
+          submitted_at: null,
+          student_name: undefined,
+          file_paths: [],
+          leader_id: group.leader_id,
+          leader_name: group.leader_name,
+          leader_email: group.leader_email,
+        });
+      });
+    });
+
+    return entries;
+  }, [activeGroups, stages, marks, filterStage]);
+
   const statusTabs: Array<{ key: SubmissionStatus; label: string; count: number }> = [
-    { key: 'all', label: 'All', count: submissionStats.total },
-    { key: 'submitted', label: 'Submitted', count: submissionStats.submitted },
-    { key: 'pending', label: 'Pending', count: submissionStats.pending },
-    { key: 'late', label: 'Late', count: submissionStats.late },
+    { key: 'all', label: 'All Submissions', count: submissionStats.total },
+    { key: 'on_time', label: 'On Time', count: submissionStats.on_time },
+    { key: 'late', label: 'Late Submissions', count: submissionStats.late },
+    { key: 'not_submitted', label: 'Not Submitted', count: notSubmittedMarks.length },
   ];
 
   const filteredMarks =
     filterStatus === 'all'
       ? selectedStageMarks
-      : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
+      : filterStatus === 'not_submitted'
+        ? notSubmittedMarks
+        : selectedStageMarks.filter((mark) => normalizeStatus(mark) === filterStatus);
 
-  // Group marks by stage for better display
-  const groupedMarks: Record<number, GroupMark[]> = {};
+  // Group marks by normalized stage name so we render one table per stage
+  const groupedByStageName: Record<string, { stage_id: number; stage_name: string; marks: GroupMark[] }> = {};
   filteredMarks.forEach((mark) => {
-    if (!groupedMarks[mark.stage_id]) {
-      groupedMarks[mark.stage_id] = [];
+    const rawName = String(mark.stage_name ?? `Stage ${mark.stage_id}`);
+    const key = rawName.trim().toLowerCase();
+    if (!groupedByStageName[key]) {
+      groupedByStageName[key] = { stage_id: mark.stage_id, stage_name: rawName.trim(), marks: [] };
     }
-    groupedMarks[mark.stage_id].push(mark);
+    groupedByStageName[key].marks.push(mark);
   });
 
   const renderMarkCell = (mark: GroupMark) => {
@@ -297,6 +544,99 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
     );
   };
 
+  const getFileLabel = (url: string) => {
+    try {
+      const decoded = decodeURIComponent(url.split('?')[0]);
+      let filename = decoded.split('/').pop() || 'Submission File';
+      if (/^\d{10,}-/.test(filename)) {
+        filename = filename.replace(/^\d{10,}-/, '');
+      }
+      return filename;
+    } catch {
+      return 'Submission File';
+    }
+  };
+
+  const submissionColumns: DataTableColumn<GroupMark>[] = [
+    { key: 'group', header: 'Group', render: (mark) => mark.group_name },
+    { key: 'submittedBy', header: 'Submitted By', render: (mark) => mark.student_name || mark.group_name },
+    {
+      key: 'submissionDate',
+      header: 'Submission Date',
+      render: (mark) => formatDateTime(mark.submission_date || mark.submitted_at),
+    },
+    { key: 'deadline', header: 'Deadline', render: (mark) => formatDateTime(mark.deadline) },
+    {
+      key: 'fileName',
+      header: 'File Name',
+      render: (mark) => {
+        const fileList = mark.file_paths ?? [];
+        return fileList.length > 0 ? <span>{fileList.map((f) => getFileLabel(f)).join(', ')}</span> : <span>—</span>;
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (mark) => {
+        const status = normalizeStatus(mark);
+        if (status === 'not_submitted') {
+          return (
+            <span className="status-badge missing">
+              <Clock3 size={14} /> Not Submitted
+            </span>
+          );
+        }
+        return status === 'late' ? (
+          <span className="status-badge late">
+            <AlertTriangle size={14} /> Late Submission
+          </span>
+        ) : (
+          <span className="status-badge submitted">
+            <Check size={14} /> On Time
+          </span>
+        );
+      },
+    },
+    {
+      key: 'download',
+      header: 'Download',
+      render: (mark) => {
+        if (normalizeStatus(mark) === 'not_submitted') {
+          if (!isDeadlinePassed(mark.deadline)) {
+            return <span>—</span>;
+          }
+
+          return (
+            <button
+              type="button"
+              className="warning-btn-ghost"
+              onClick={() => handleSendWarning(mark)}
+              title="Send a late-submission warning to the group leader"
+            >
+              <MessageSquare size={13} />
+              Send Warning
+            </button>
+          );
+        }
+
+        const primaryFile = (mark.file_paths ?? [])[0] ?? '';
+        return primaryFile ? (
+          <a
+            href={getFileUrl(primaryFile)}
+            target="_blank"
+            rel="noreferrer"
+            className="status-badge submitted"
+            style={{ display: 'inline-flex', textDecoration: 'none' }}
+          >
+            Download
+          </a>
+        ) : (
+          <span>—</span>
+        );
+      },
+    },
+  ];
+
   if (loading) {
     return (
       <div className="gradebook-loading">
@@ -327,25 +667,18 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
       </div>
 
       <div className="submission-tracker-panel">
-        <div className="submission-tracker-summary">
-          <div>
-            <div className="submission-tracker-meta">
-              <span className="submission-tracker-count">
-                {submissionStats.submitted}/{submissionStats.total} Groups Submitted
-              </span>
-              <span className="submission-tracker-percent">{submissionStats.progress}% complete</span>
-            </div>
-            <div className="submission-progress-bar" aria-label="Submission progress">
-              <div
-                className="submission-progress-fill"
-                style={{ width: `${submissionStats.progress}%` }}
-              />
-            </div>
-          </div>
-          <p className="submission-tracker-hint">
-            Use the status tabs to isolate submitted, pending, or late groups instantly.
-          </p>
-        </div>
+        {/* The "X/Y Groups Submitted" fraction + progress bar used to live
+            here, but its denominator only ever made sense for a single
+            selected stage — with "All Stages" selected it summed
+            submitted/missing across every stage at once, so e.g. 4 real
+            groups across a few stages could show as "2/10 Groups
+            Submitted", a number with no direct relationship to how many
+            groups actually exist. Removed rather than special-cased per
+            filterStage, since the status tabs below already give an
+            accurate, unambiguous count for whatever's currently selected. */}
+        <p className="submission-tracker-hint">
+          Use the status tabs below to isolate submitted, on-time, late, or missing groups instantly.
+        </p>
 
         <div className="submission-status-tabs" role="tablist" aria-label="Submission status filters">
           {statusTabs.map((tab) => (
@@ -371,58 +704,24 @@ const GradebookTable: React.FC<GradebookTableProps> = ({ levelNumber }) => {
 
       {filteredMarks.length === 0 ? (
         <div className="gradebook-empty">
-          <p>No marks found for the selected filter.</p>
+          <p>No submissions found for the selected filter.</p>
         </div>
       ) : (
         <div className="gradebook-wrapper">
-          {Object.entries(groupedMarks).map(([stageId, stageMark]) => {
-            const stageName = stageMark[0]?.stage_name || `Stage ${stageId}`;
+          {Object.values(groupedByStageName).map((group) => {
+            const stageId = group.stage_id;
+            const stageMark = group.marks;
+            const stageName = group.stage_name || `Stage ${stageId}`;
 
             return (
-              <div key={stageId} className="stage-section">
+              <div key={stageName} className="stage-section">
                 <h4 className="stage-title">{stageName}</h4>
-                <div className="stage-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Group Name</th>
-                        <th>Evaluator</th>
-                        <th>Mark</th>
-                        <th>Submitted</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stageMark.map((mark, idx) => (
-                        <tr key={idx} className={mark.mark !== null ? 'marked' : 'unmarked'}>
-                          <td className="group-col">{mark.group_name}</td>
-                          <td className="evaluator-col">{mark.evaluator_name || 'Not assigned'}</td>
-                          <td className="mark-col">{renderMarkCell(mark)}</td>
-                          <td className="date-col">
-                            {mark.submission_date
-                              ? new Date(mark.submission_date).toLocaleDateString()
-                              : '-'}
-                          </td>
-                          <td className="status-col">
-                            {normalizeStatus(mark) === 'submitted' ? (
-                              <span className="status-badge submitted">
-                                <Check size={14} /> Submitted
-                              </span>
-                            ) : normalizeStatus(mark) === 'late' ? (
-                              <span className="status-badge late">
-                                <AlertTriangle size={14} /> Late
-                              </span>
-                            ) : (
-                              <span className="status-badge pending">
-                                <Clock3 size={14} /> Pending
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  columns={submissionColumns}
+                  rows={stageMark}
+                  rowKey={(mark, idx) => `${mark.group_id}-${mark.stage_id}-${idx}`}
+                  emptyMessage="No submissions for this stage."
+                />
               </div>
             );
           })}

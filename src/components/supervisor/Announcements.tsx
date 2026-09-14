@@ -140,7 +140,8 @@ const Announcements: React.FC = () => {
         refreshDep={refreshTrigger}
         showEditDeleteButtons={true}
         scope="own"
-        useRoleQuery={true}
+        showOnlyMyAnnouncements={true}
+        useRoleQuery={false}
       />
     </div>
   );

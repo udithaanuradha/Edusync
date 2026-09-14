@@ -1,54 +1,173 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Sidebar from '../shared/Sidebar';
+import {
+  LayoutDashboard,
+  Users as UsersGroup,
+  CalendarDays,
+  MessageSquare,
+  ClipboardList,
+} from 'lucide-react';
+import Sidebar, { type MenuItem } from '../shared/Sidebar';
 import './MentorStyles.css';
 
-const Level1BlockedModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+/**
+ * Mentor-specific nav items (excludes "Project Delays" so it is only available as a level tab)
+ */
+export const mentorMenuItems: MenuItem[] = [
+  { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  {
+    key: "academicLevel",
+    icon: UsersGroup,
+    label: "Academic Level",
+    hasSubmenu: true,
+    submenu: [
+      { label: "Level 1", path: "/dashboard/level-1" },
+      { label: "Level 2", path: "/dashboard/level-2" },
+      { label: "Level 3", path: "/dashboard/level-3" },
+      { label: "Level 4", path: "/dashboard/level-4" },
+    ],
+  },
+  { path: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
+  {
+    path: "/dashboard/communication",
+    icon: MessageSquare,
+    label: "Communication",
+  },
+  { path: "/dashboard/announcements", icon: ClipboardList, label: "Announcements" },
+];
+
+export const isMentorUser = (userObj: any): boolean => {
+  const role = String(userObj?.role || "").toLowerCase();
+  return role === "mentor" || role === "industry mentor";
+};
+
+/**
+ * UnassignedLevelModal Component
+ *
+ * Displays an Access Restricted pop-up modal whenever a mentor clicks on
+ * an academic level (Level 1, Level 3, Level 4) they are not assigned to.
+ */
+interface BlockedModalProps {
+  level: number;
+  message: string;
+  onClose: () => void;
+}
+
+const UnassignedLevelModal: React.FC<BlockedModalProps> = ({ level, message, onClose }) => (
   <div className="mentor-modal-overlay" onClick={onClose}>
     <div className="mentor-modal-box" onClick={(e) => e.stopPropagation()}>
       <div className="mentor-modal-icon">🚫</div>
       <h3>Access Restricted</h3>
-      <p>Industry mentors are not assigned to Level 1 stages.</p>
+      <p>{message}</p>
       <button className="mentor-modal-btn" onClick={onClose}>Got it</button>
     </div>
   </div>
 );
 
-const MentorSidebarWrapper = () => {
-  const [showModal, setShowModal] = useState(false);
+/**
+ * MentorSidebarWrapper Component
+ *
+ * PURPOSE:
+ *   Wraps the shared Sidebar for all Mentor pages to:
+ *   1. Dynamically track which academic levels the mentor is actively assigned to (e.g. Level 2).
+ *   2. Intercept clicks on unassigned academic levels (e.g. Level 1, Level 3, Level 4) before navigation.
+ *   3. Pop up a clear notification modal informing the mentor they are not assigned to that level.
+ */
+const MentorSidebarWrapper: React.FC = () => {
+  const [assignedLevels, setAssignedLevels] = useState<number[]>([2]); // Default fallback Level 2
+  const [modalState, setModalState] = useState<{ isOpen: boolean; level: number; message: string }>({
+    isOpen: false,
+    level: 0,
+    message: '',
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Called by the sidebar's Level 1 link via a click interceptor on the wrapper
+  // Dynamically load mentor's assigned levels
+  useEffect(() => {
+    const fetchAssignedLevels = async () => {
+      try {
+        const savedUser = localStorage.getItem('user');
+        const user = savedUser ? JSON.parse(savedUser) : null;
+        const mentorId = user?.id;
+        if (!mentorId) return;
+
+        const res = await fetch(`http://localhost:5000/api/mentor/groups?mentorId=${mentorId}`);
+        const json = await res.json();
+        const groups = json.success && Array.isArray(json.data) ? json.data : [];
+
+        const levels: number[] = Array.from(
+          new Set(groups.map((g: any) => Number(g.level)).filter((lvl: number) => !isNaN(lvl) && lvl > 0))
+        );
+
+        if (levels.length > 0) {
+          setAssignedLevels(levels);
+        }
+      } catch (err) {
+        console.error('Failed to load mentor assigned levels for sidebar wrapper:', err);
+      }
+    };
+
+    fetchAssignedLevels();
+  }, []);
+
+  // Intercept click on any level link in the sidebar
   const handleSidebarClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    const level1Link = target.closest('a[href*="level-1"]');
+    const levelLink = target.closest('a[href*="level-"]');
 
-    if (level1Link) {
+    if (!levelLink) return;
+
+    const href = levelLink.getAttribute('href') || '';
+    const match = href.match(/level-(\d+)/);
+    if (!match) return;
+
+    const targetLevel = Number(match[1]);
+
+    // Check if mentor has active group assignments at this level (including Level 1, 2, 3, 4)
+    if (!assignedLevels.includes(targetLevel)) {
       e.preventDefault();
       e.stopPropagation();
-      setShowModal(true);
+      setModalState({
+        isOpen: true,
+        level: targetLevel,
+        message: `You are not assigned to Level ${targetLevel}. You can only access academic levels where you have active project group assignments.`,
+      });
     }
   };
 
   const handleModalClose = () => {
-    setShowModal(false);
-    // If somehow the user ended up on level-1 (e.g. direct URL), redirect away
-    if (location.pathname.includes('level-1')) {
-      navigate('/dashboard/level-2', { replace: true });
+    setModalState({ isOpen: false, level: 0, message: '' });
+
+    // If current location is an unassigned level page, redirect back to assigned level
+    const match = location.pathname.match(/level-(\d+)/);
+    if (match) {
+      const currentLvl = Number(match[1]);
+      if (!assignedLevels.includes(currentLvl)) {
+        const fallbackLevel = assignedLevels[0] || 2;
+        navigate(`/dashboard/level-${fallbackLevel}`, { replace: true });
+      }
     }
   };
 
   return (
     <>
-      {/* Capture phase on the wrapper div intercepts clicks before React Router */}
+      {/* Capture phase intercepts sidebar clicks before React Router NavLink navigation */}
       <div
         className="mentor-sidebar-container"
         onClickCapture={handleSidebarClick}
       >
-        <Sidebar />
+        <Sidebar navItems={mentorMenuItems} />
       </div>
-      {showModal && <Level1BlockedModal onClose={handleModalClose} />}
+
+      {modalState.isOpen && (
+        <UnassignedLevelModal
+          level={modalState.level}
+          message={modalState.message}
+          onClose={handleModalClose}
+        />
+      )}
     </>
   );
 };

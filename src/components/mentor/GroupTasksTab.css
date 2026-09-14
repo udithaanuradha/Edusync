@@ -1,13 +1,14 @@
 /* ================================================================
    GroupTasksTab.css
 
-   Styles for the Group Tasks tab — shown when mentor clicks
-   "See Tasks" from the Assigned Group tab.
-
-   Sections:
-   1. Fade-in animation
-   2. Overall Group Progress bar
-   3. Member task cards (Completed / Ongoing / Yet to Start)
+   Styles for the Group Tasks tab in Mentor Dashboard.
+   Features:
+   1. Overall Group Progress card with live calculation
+   2. Milestone navigation tabs (filter by specific milestone)
+   3. Active Milestone detail & progress banner
+   4. Per-member task breakdown with 3 columns (Completed/Ongoing/Yet to Start)
+   5. Rich task details: milestone badge, due dates, descriptions
+   6. Inline expandable mentor feedback drawer
 ================================================================ */
 
 /* ── Fade-in ─────────────────────────────────────────────────── */
@@ -20,24 +21,156 @@
   to   { opacity: 1; transform: translateY(0);   }
 }
 
-/* ── Section Title ───────────────────────────────────────────── */
-.gt-section-title {
-  font-size: 15px;
+/* ── Top Group Selector Bar (if mentor has >1 group) ────────── */
+.gt-group-selector-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--eds-color-bg-surface, #ffffff);
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--eds-color-border, #e2e8f0);
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  flex-wrap: wrap;
+}
+
+.gt-group-selector-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gt-group-selector-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--eds-color-primary-soft, #eff6ff);
+  color: var(--eds-color-primary, #2563eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gt-group-selector-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.gt-selector-label {
+  font-size: 13.5px;
   font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.2px;
+  color: var(--eds-color-text-strong, #0f172a);
+}
+
+.gt-selector-hint {
+  font-size: 12px;
+  color: var(--eds-color-text-muted, #64748b);
+}
+
+.gt-group-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gt-select-prefix {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted, #64748b);
+}
+
+.gt-group-select {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--eds-color-border, #cbd5e1);
+  background: var(--eds-color-bg-surface-soft, #f8fafc);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--eds-color-text-strong, #0f172a);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 220px;
+}
+
+.gt-group-select:focus {
+  border-color: var(--eds-color-primary, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* ── Loading and Error States ────────────────────────────────── */
+.gt-loading-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  background: var(--eds-color-bg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--eds-color-border);
+  margin-bottom: 20px;
+  color: var(--eds-color-text-muted);
+  font-size: 13px;
+}
+
+.gt-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid var(--eds-color-border);
+  border-top-color: var(--eds-color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.gt-error-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--eds-color-danger-bg);
+  border: 1px solid var(--eds-color-danger-bg);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.gt-error-icon {
+  color: var(--eds-color-danger-solid);
+  flex-shrink: 0;
+}
+
+.gt-error-text {
+  flex: 1;
+}
+
+.gt-error-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--eds-color-danger-text);
+  margin: 0 0 2px 0;
+}
+
+.gt-error-desc {
+  font-size: 12px;
+  color: var(--eds-color-danger-text);
+  margin: 0;
 }
 
 /* ================================================================
-   OVERALL GROUP PROGRESS CARD
+   SECTION 1 — OVERALL GROUP PROGRESS CARD
 ================================================================ */
 .gt-overall-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 14px;
   padding: 24px 28px;
-  margin-bottom: 28px;
+  margin-bottom: 36px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
@@ -49,22 +182,28 @@
 }
 
 .gt-overall-header h4 {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
-  color: #1e293b;
-  margin: 0;
+  color: var(--eds-color-text-strong);
+  margin: 0 0 4px 0;
+}
+
+.gt-group-name-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
 }
 
 .gt-overall-pct {
   font-size: 22px;
   font-weight: 800;
-  color: #2563eb;
+  color: var(--eds-color-primary);
 }
 
 /* The track + fill */
 .gt-progress-track {
   height: 10px;
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
   border-radius: 99px;
   overflow: hidden;
   margin-bottom: 18px;
@@ -73,7 +212,7 @@
 .gt-progress-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary-hover));
   transition: width 0.6s ease;
 }
 
@@ -95,21 +234,21 @@
 }
 
 .gt-stat-pill.completed {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: var(--eds-color-success-bg);
+  color: var(--eds-color-success-solid-hover);
+  border: 1px solid var(--eds-color-success-solid);
 }
 
 .gt-stat-pill.ongoing {
-  background: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary-hover);
+  border: 1px solid var(--eds-color-primary-soft-border);
 }
 
 .gt-stat-pill.yet {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-warning-bg);
+  color: #b45309;
+  border: 1px solid var(--eds-color-warning-bg);
 }
 
 .gt-stat-dot {
@@ -119,11 +258,10 @@
   flex-shrink: 0;
 }
 
-.gt-stat-dot.completed { background: #22c55e; }
-.gt-stat-dot.ongoing   { background: #f59e0b; }
-.gt-stat-dot.yet       { background: #cbd5e1; }
+.gt-stat-dot.completed { background: var(--eds-color-success-solid); }
+.gt-stat-dot.ongoing   { background: var(--eds-color-primary); }
+.gt-stat-dot.yet       { background: #f59e0b; }
 
-/* ── Pending notice for overall (no data yet) ────────────────── */
 .gt-overall-pending {
   display: flex;
   align-items: center;
@@ -147,23 +285,317 @@
 
 .gt-pending-text {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-style: italic;
 }
 
 /* ================================================================
-   MEMBER TASK CARDS SECTION
+   SECTION 2 — MILESTONE NAVIGATION TABS & ACTIVE CARD
 ================================================================ */
-.gt-members-section { margin-top: 8px; }
+.gt-milestones-nav-section {
+  margin-bottom: 38px;
+}
+
+.gt-milestones-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.gt-milestone-nav-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+}
+
+.gt-target-icon {
+  color: var(--eds-color-primary);
+}
+
+.gt-milestones-count-hint {
+  font-size: 11.5px;
+  color: var(--eds-color-text-muted);
+  font-style: italic;
+}
+
+/* Horizontal tabs container */
+.gt-milestone-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 20px;
+}
+
+.gt-milestone-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.gt-milestone-tab-btn:hover {
+  background: var(--eds-color-bg-surface-soft);
+  border-color: var(--eds-color-border);
+  color: var(--eds-color-text-strong);
+}
+
+.gt-milestone-tab-btn.active {
+  background: var(--eds-color-primary-soft);
+  border-color: var(--eds-color-primary);
+  color: var(--eds-color-primary-hover);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+}
+
+.gt-tab-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 12px;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-faint);
+}
+
+.gt-tab-badge.has-tasks {
+  background: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary-hover);
+}
+
+.gt-milestone-tab-btn.active .gt-tab-badge.has-tasks {
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
+}
+
+/* ── Active Milestone Banner Card ────────────────────────────── */
+.gt-active-milestone-card {
+  background: linear-gradient(135deg, var(--eds-color-bg-surface) 0%, var(--eds-color-bg-surface-soft) 100%);
+  border: 1px solid var(--eds-color-border);
+  border-left: 4px solid var(--eds-color-primary);
+  border-radius: 12px;
+  padding: 18px 22px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.gt-all-milestones-summary {
+  border-left-color: #6366f1;
+}
+
+.gt-milestone-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.gt-milestone-info-left {
+  flex: 1;
+}
+
+.gt-milestone-title-flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.gt-milestone-icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gt-milestone-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0;
+}
+
+.gt-milestone-status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gt-milestone-status-pill.approved { background: var(--eds-color-success-bg); color: var(--eds-color-success-solid-hover); }
+.gt-milestone-status-pill.pending  { background: var(--eds-color-warning-bg); color: #b45309; }
+.gt-milestone-status-pill.rejected { background: var(--eds-color-danger-bg); color: var(--eds-color-danger-solid); }
+
+.gt-milestone-desc {
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+  margin: 3px 0 6px 0;
+  line-height: 1.4;
+}
+
+.gt-milestone-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-border-soft);
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+
+/* Progress Box on Right side of Milestone Card */
+.gt-milestone-progress-box {
+  width: 220px;
+  background: var(--eds-color-bg-surface);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--eds-color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.gt-m-prog-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.gt-m-prog-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+}
+
+.gt-m-prog-pct {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--eds-color-primary);
+}
+
+.gt-m-prog-track {
+  height: 6px;
+  background: var(--eds-color-border-soft);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.gt-m-prog-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary));
+  transition: width 0.5s ease;
+}
+
+.gt-m-prog-stat {
+  font-size: 10.5px;
+  color: var(--eds-color-text-muted);
+  font-weight: 500;
+  display: block;
+}
+
+/* ================================================================
+   SECTION 3 — MEMBER TASK CARDS & BREAKDOWN
+================================================================ */
+.gt-members-section {
+  margin-top: 38px;
+}
+
+.gt-members-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.gt-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.2px;
+}
+
+.gt-section-sub {
+  font-size: 13px;
+  color: var(--eds-color-text-muted);
+  margin: 0;
+}
+
+.gt-feedback-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--eds-color-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Empty milestone state */
+.gt-empty-milestone-tasks {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px;
+  background: var(--eds-color-bg-surface);
+  border: 1.5px dashed var(--eds-color-border);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.gt-empty-icon {
+  color: var(--eds-color-text-faint);
+  flex-shrink: 0;
+}
+
+.gt-empty-text h6 {
+  margin: 0 0 3px 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--eds-color-text-body);
+}
+
+.gt-empty-text p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--eds-color-text-muted);
+}
 
 /* Individual member card */
 .gt-member-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface);
+  border: 1px solid var(--eds-color-border);
   border-radius: 14px;
   padding: 22px 26px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.gt-member-card.is-leader-card {
+  border-color: var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
 }
 
 /* Card top: avatar + name + mini progress */
@@ -173,15 +605,15 @@
   gap: 14px;
   margin-bottom: 18px;
   padding-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--eds-color-border-soft);
 }
 
 .gt-member-avatar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
   font-size: 14px;
   font-weight: 700;
   display: flex;
@@ -190,27 +622,127 @@
   flex-shrink: 0;
 }
 
-.gt-member-name-block { flex: 1; }
-
-.gt-member-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 2px 0;
+.gt-member-avatar.leader-avatar {
+  background: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary-hover);
 }
 
-.gt-member-role {
-  font-size: 11px;
-  color: #94a3b8;
+.gt-member-name-block { flex: 1; }
+
+.gt-member-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.gt-member-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--eds-color-text-strong);
+  margin: 0;
+}
+
+.gt-role-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.gt-role-badge.leader {
+  background: var(--eds-color-primary-soft);
+  color: var(--eds-color-primary);
+  border: 1px solid var(--eds-color-primary-soft-border);
+}
+
+.gt-role-badge.member {
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
+}
+
+.gt-member-subtitle {
+  font-size: 11.5px;
+  color: var(--eds-color-text-faint);
+  margin: 0;
   font-weight: 500;
 }
 
-/* Mini progress bar inside the member header */
-.gt-mini-progress-wrap { width: 120px; text-align: right; }
+/* Progress & Contribution Group inside member header */
+.gt-member-progress-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Overall Project Contribution Chip */
+.gt-contribution-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.gt-contribution-chip:hover {
+  background: var(--eds-color-border-soft);
+  border-color: var(--eds-color-border);
+}
+
+.gt-contrib-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gt-contrib-icon {
+  color: var(--eds-color-primary);
+}
+
+.gt-contrib-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eds-color-text-muted);
+}
+
+.gt-contrib-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gt-contrib-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--eds-color-primary-hover);
+  background: var(--eds-color-primary-soft-border);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.gt-contrib-sub {
+  font-size: 10.5px;
+  color: var(--eds-color-text-muted);
+  font-weight: 500;
+}
+
+/* Mini progress bar inside member header */
+.gt-mini-progress-wrap {
+  width: 140px;
+  text-align: right;
+}
 
 .gt-mini-bar-track {
   height: 6px;
-  background: #f1f5f9;
+  background: var(--eds-color-border-soft);
   border-radius: 99px;
   overflow: hidden;
   margin-bottom: 4px;
@@ -219,138 +751,179 @@
 .gt-mini-bar-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  background: linear-gradient(90deg, var(--eds-color-primary), var(--eds-color-primary-hover));
   transition: width 0.5s ease;
 }
 
 .gt-mini-pct {
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--eds-color-text-muted);
 }
 
 /* ── Three columns of tasks ──────────────────────────────────── */
 .gt-task-columns {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
-/* Column wrapper */
-.gt-task-col { display: flex; flex-direction: column; gap: 8px; }
+.gt-task-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-/* Column header label */
 .gt-col-label {
-  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.6px;
   padding: 0 0 6px 0;
   border-bottom: 2px solid transparent;
   margin-bottom: 2px;
 }
 
-.gt-col-label.completed { color: #15803d; border-color: #22c55e; }
-.gt-col-label.ongoing   { color: #b45309; border-color: #f59e0b; }
-.gt-col-label.yet       { color: #64748b; border-color: #cbd5e1; }
+.gt-col-label.completed { color: var(--eds-color-success-solid-hover); border-color: var(--eds-color-success-solid); }
+.gt-col-label.ongoing   { color: var(--eds-color-primary-hover); border-color: var(--eds-color-primary); }
+.gt-col-label.yet       { color: #b45309; border-color: #f59e0b; }
 
-/* Task item (empty placeholder) */
-.gt-task-item {
-  height: 36px;
-  border-radius: 7px;
-  border: 1.5px dashed #e2e8f0;
-  background: #f8fafc;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  gap: 8px;
+.gt-col-count-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--eds-color-border-soft);
+  color: var(--eds-color-text-muted);
 }
 
-/* Colour-coded left indicator on each task slot */
+.gt-col-label.completed .gt-col-count-chip { background: var(--eds-color-success-bg); color: var(--eds-color-success-solid-hover); }
+.gt-col-label.ongoing .gt-col-count-chip   { background: var(--eds-color-primary-soft-border); color: var(--eds-color-primary-hover); }
+.gt-col-label.yet .gt-col-count-chip       { background: var(--eds-color-warning-bg); color: #b45309; }
+
+.gt-no-tasks-box {
+  padding: 12px;
+  background: var(--eds-color-bg-surface-soft);
+  border-radius: 8px;
+  border: 1px dashed var(--eds-color-border);
+  text-align: center;
+}
+
+.gt-no-tasks {
+  font-size: 11.5px;
+  color: var(--eds-color-text-faint);
+  font-style: italic;
+}
+
+/* ── Task item (empty placeholder) ───────────────────────────── */
+.gt-task-item {
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 12px;
+  gap: 10px;
+}
+
 .gt-task-indicator {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 5px;
 }
 
-.gt-task-indicator.completed { background: #22c55e; }
-.gt-task-indicator.ongoing   { background: #f59e0b; }
-.gt-task-indicator.yet       { background: #cbd5e1; }
+.gt-task-indicator.completed { background: var(--eds-color-success-solid); box-shadow: 0 0 0 2px var(--eds-color-success-bg); }
+.gt-task-indicator.ongoing   { background: var(--eds-color-primary); box-shadow: 0 0 0 2px var(--eds-color-primary-soft-border); }
+.gt-task-indicator.yet       { background: #f59e0b; box-shadow: 0 0 0 2px var(--eds-color-warning-bg); }
 
-/* Empty placeholder bar inside task item */
 .gt-task-placeholder-bar {
   height: 8px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: var(--eds-color-border);
   flex: 1;
 }
 
-/* "No tasks" label when column is empty */
-.gt-no-tasks {
-  font-size: 11px;
-  color: #cbd5e1;
-  font-style: italic;
-  padding: 6px 0;
-}
-
-/* Pending notice at the bottom of member card */
-.gt-member-pending {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.gt-member-pending-text {
-  font-size: 11px;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-/* ================================================================
-   MENTOR FEEDBACK — per-task inline feedback panel
-================================================================ */
-
-/* Section header row: title + hint */
-.gt-members-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.gt-members-section-header .gt-section-title {
-  margin-bottom: 0;
-}
-
-/* "Click any task to leave feedback" hint */
-.gt-feedback-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-/* ── Real task item (has feedback button) ────────────────────── */
+/* ── Real Populated Task Item ────────────────────────────────── */
 .gt-task-item--real {
-  border: 1.5px solid #e2e8f0;
-  background: #ffffff;
+  border: 1.5px solid var(--eds-color-border);
+  background: var(--eds-color-bg-surface);
   cursor: default;
-  min-height: 38px;
+  min-height: 48px;
   height: auto;
+  transition: all 0.15s ease;
 }
 
-/* Task name text */
-.gt-task-name {
-  font-size: 12px;
-  color: #334155;
+.gt-task-item--real:hover {
+  border-color: var(--eds-color-border);
+  background: var(--eds-color-bg-surface-soft);
+}
+
+.gt-task-main-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gt-task-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--eds-color-text-strong);
   line-height: 1.4;
+}
+
+.gt-task-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.gt-task-milestone-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.gt-task-timeline-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--eds-color-text-muted);
+  background: var(--eds-color-border-soft);
+  border: 1px solid var(--eds-color-border);
+  padding: 1.5px 6.5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.gt-task-description {
+  font-size: 11px;
+  color: var(--eds-color-text-muted);
+  line-height: 1.35;
+  margin: 3px 0 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ── Feedback toggle button ──────────────────────────────────── */
@@ -358,30 +931,30 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 9px;
-  border: 1px solid #e2e8f0;
+  padding: 4px 8px;
+  border: 1px solid var(--eds-color-border);
   border-radius: 6px;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 11px;
+  background: var(--eds-color-bg-surface-soft);
+  color: var(--eds-color-text-muted);
+  font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
   transition: all 0.15s ease;
+  margin-top: 2px;
 }
 
 .gt-feedback-toggle:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #2563eb;
+  background: var(--eds-color-primary-soft);
+  border-color: var(--eds-color-primary-soft-border);
+  color: var(--eds-color-primary);
 }
 
-/* When feedback has been submitted — green tint */
 .gt-feedback-toggle.has-feedback {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background: var(--eds-color-success-bg);
+  border-color: var(--eds-color-success-solid);
+  color: var(--eds-color-success-solid-hover);
 }
 
 /* ── Task item wrapper — expands when feedback is open ───────── */
@@ -395,11 +968,11 @@
 
 .gt-task-item-wrap.expanded {
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--eds-color-primary-soft-border);
 }
 
 .gt-task-item-wrap.expanded .gt-task-item--real {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--eds-color-border);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border: none;
@@ -407,9 +980,9 @@
 
 /* ── Feedback panel (below task row) ─────────────────────────── */
 .gt-feedback-panel {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  padding: 14px 12px 12px 12px;
+  background: var(--eds-color-bg-surface-soft);
+  border-top: 1px solid var(--eds-color-border);
+  padding: 12px;
   animation: feedbackSlide 0.2s ease;
 }
 
@@ -418,10 +991,9 @@
   to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Previously submitted feedback block */
 .gt-feedback-submitted {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--eds-color-success-bg);
+  border: 1px solid var(--eds-color-success-solid);
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 10px;
@@ -434,7 +1006,7 @@
   gap: 5px;
   font-size: 10px;
   font-weight: 700;
-  color: #15803d;
+  color: var(--eds-color-success-solid-hover);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
@@ -442,14 +1014,13 @@
 
 .gt-feedback-submitted-text {
   font-size: 12px;
-  color: #166534;
+  color: var(--eds-color-success-text);
   line-height: 1.5;
   margin: 0;
-  padding-right: 56px; /* space for clear button */
+  padding-right: 56px;
   white-space: pre-wrap;
 }
 
-/* Clear button — top-right of the submitted block */
 .gt-feedback-clear-btn {
   position: absolute;
   top: 8px;
@@ -458,10 +1029,10 @@
   align-items: center;
   gap: 3px;
   padding: 3px 8px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--eds-color-success-solid);
   border-radius: 5px;
-  background: #ffffff;
-  color: #64748b;
+  background: var(--eds-color-bg-surface);
+  color: var(--eds-color-text-muted);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -469,9 +1040,9 @@
 }
 
 .gt-feedback-clear-btn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
+  background: var(--eds-color-danger-bg);
+  border-color: var(--eds-color-danger-solid);
+  color: var(--eds-color-danger-solid);
 }
 
 /* ── Textarea + Send row ─────────────────────────────────────── */
@@ -483,28 +1054,27 @@
 
 .gt-feedback-textarea {
   flex: 1;
-  padding: 9px 11px;
+  padding: 8px 10px;
   font-size: 12px;
-  color: #1e293b;
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
+  color: var(--eds-color-text-strong);
+  background: var(--eds-color-bg-surface);
+  border: 1.5px solid var(--eds-color-border);
   border-radius: 8px;
   resize: vertical;
-  min-height: 62px;
+  min-height: 56px;
   font-family: inherit;
   line-height: 1.5;
   transition: border-color 0.15s ease;
   outline: none;
 }
 
-.gt-feedback-textarea::placeholder { color: #cbd5e1; }
+.gt-feedback-textarea::placeholder { color: var(--eds-color-border); }
 
 .gt-feedback-textarea:focus {
-  border-color: #93c5fd;
+  border-color: var(--eds-color-primary-soft-border);
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
 }
 
-/* Send button */
 .gt-feedback-send-btn {
   display: inline-flex;
   flex-direction: column;
@@ -512,12 +1082,12 @@
   justify-content: center;
   gap: 4px;
   padding: 0 14px;
-  height: 62px;
-  min-width: 54px;
+  height: 56px;
+  min-width: 52px;
   border: none;
   border-radius: 8px;
-  background: #e2e8f0;
-  color: #94a3b8;
+  background: var(--eds-color-border);
+  color: var(--eds-color-text-faint);
   font-size: 10px;
   font-weight: 700;
   cursor: not-allowed;
@@ -526,14 +1096,14 @@
 }
 
 .gt-feedback-send-btn.active {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--eds-color-primary);
+  color: var(--eds-color-bg-surface);
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .gt-feedback-send-btn.active:hover {
-  background: #1d4ed8;
+  background: var(--eds-color-primary-hover);
   transform: translateY(-1px);
 }
 

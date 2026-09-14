@@ -1,4 +1,4 @@
-// src/components/mentor/StudentAttention.tsx
+﻿// src/components/mentor/StudentAttention.tsx
 import React, { useState, useEffect } from 'react';
 import { TriangleAlert, AlertCircle, Clock } from 'lucide-react';
 import './StudentAttention.css';
@@ -32,9 +32,17 @@ const StudentAttention: React.FC = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/mentor/students-attention');
+        const savedUser = localStorage.getItem('user');
+        const user = savedUser ? JSON.parse(savedUser) : null;
+        const mentorId = user?.id || '';
+        const url = mentorId 
+          ? `http://localhost:5000/api/mentor/students-attention?mentorId=${mentorId}`
+          : 'http://localhost:5000/api/mentor/students-attention';
+        const response = await fetch(url, {
+          headers: mentorId ? { 'x-user-id': String(mentorId) } : {}
+        });
         const data = await response.json();
-        setStudents(data);
+        setStudents(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Failed to fetch students needing attention:', error);
       } finally {
@@ -47,7 +55,6 @@ const StudentAttention: React.FC = () => {
 
   return (
     <div className="attention-card">
-      {/* Header always visible */}
       <div className="attention-header">
         <TriangleAlert size={20} className="attention-icon" />
         <div>
@@ -62,7 +69,6 @@ const StudentAttention: React.FC = () => {
         </div>
       </div>
 
-      {/* Skeleton while loading */}
       {loading && (
         <div className="attention-grid">
           <SkeletonCard />
@@ -71,11 +77,10 @@ const StudentAttention: React.FC = () => {
         </div>
       )}
 
-      {/* Cards only when data exists */}
       {!loading && students.length > 0 && (
         <div className="attention-grid">
           {students.map((s, i) => {
-            const initials = s.name.split(' ').map(n => n[0]).join('');
+            const initials = (s.name || 'S').split(' ').map(n => n[0]).join('');
             const progressPct = s.totalTasks > 0 ? (s.completedTasks / s.totalTasks) * 100 : 0;
 
             return (

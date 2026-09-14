@@ -1,13 +1,13 @@
 /* Supervisor Specific Button Override */
 .supervisor-freeze-btn {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-  color: #d97706 !important;
+  background: linear-gradient(135deg, var(--eds-color-warning-bg) 0%, var(--eds-color-warning-bg) 100%) !important;
+  color: #b45309 !important;
   border: 1px solid rgba(245, 158, 11, 0.2) !important;
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1) !important;
 }
 
 .supervisor-freeze-btn:hover {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  background: linear-gradient(135deg, var(--eds-color-warning-bg) 0%, var(--eds-color-warning-bg) 100%) !important;
   transform: translateY(-1px);
 }
 
@@ -35,13 +35,13 @@
   background: transparent;
 }
 .weekly-schedule-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--eds-color-border);
   border-radius: 4px;
 }
 
 .day-schedule-block {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
   border-radius: 12px;
   padding: 12px 16px;
 }
@@ -55,7 +55,7 @@
 
 .day-name {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--eds-color-text-strong);
   font-size: 14px;
 }
 
@@ -80,7 +80,7 @@
 
 .no-slots-msg {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--eds-color-text-faint);
   font-style: italic;
   padding-bottom: 4px;
 }
@@ -95,18 +95,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #ffffff;
+  background: var(--eds-color-bg-surface);
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--eds-color-border);
 }
 
 .time-input {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--eds-color-border);
   border-radius: 6px;
   padding: 6px;
   font-size: 13px;
-  color: #334155;
+  color: var(--eds-color-text-body);
   outline: none;
   font-family: inherit;
 }
@@ -116,7 +116,7 @@
 }
 
 .time-separator {
-  color: #64748b;
+  color: var(--eds-color-text-muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -129,8 +129,8 @@
 }
 
 .remove-slot-btn {
-  background: #fef2f2;
-  color: #ef4444;
+  background: var(--eds-color-danger-bg);
+  color: var(--eds-color-danger-solid);
   border: none;
   border-radius: 6px;
   width: 28px;
@@ -143,7 +143,7 @@
 }
 
 .remove-slot-btn:hover {
-  background: #fee2e2;
+  background: var(--eds-color-danger-bg);
 }
 
 .inline-add-btn {
@@ -165,7 +165,7 @@
 }
 
 .sup-drawer-actions {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--eds-color-border);
   padding-top: 16px;
   margin-top: auto;
 }

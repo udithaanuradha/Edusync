@@ -83,12 +83,12 @@
 
 .supervisor-nav-item.active {
   background: #2e4da7;
-  color: #ffffff;
+  color: var(--eds-color-bg-surface);
 }
 
 .supervisor-sidebar.compact .supervisor-nav-item.active {
   background: rgba(102, 126, 234, 0.2);
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--eds-color-primary);
 }
 
 @media (max-width: 900px) {

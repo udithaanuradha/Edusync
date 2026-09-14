@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -10,8 +10,8 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { AlertTriangle, GripVertical } from 'lucide-react';
-import type { ProjectTask, TaskStatus } from './TaskCreation';
+import { AlertTriangle, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { ProjectTask, TaskStatus } from './projectTaskTypes';
 
 // Error surfaced on a single card after a failed status update — includes the
 // status that was being attempted so the card can offer a one-click retry.
@@ -139,6 +139,9 @@ type KanbanColumnProps = {
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
 };
 
+// How far one arrow click scrolls — roughly one card's width + gap.
+const CARD_SCROLL_STEP = 216;
+
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   column,
   tasks,
@@ -148,6 +151,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onStatusChange,
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.key });
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollByStep = (direction: 1 | -1) => {
+    scrollRef.current?.scrollBy({ left: CARD_SCROLL_STEP * direction, behavior: 'smooth' });
+  };
 
   return (
     <div
@@ -161,23 +169,50 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
         <p>{column.label}</p>
       </div>
 
-      <div className="task-board-column-body">
-        {tasks.length === 0 ? (
-          <div className={`empty-state-card task-board-empty ${isOver ? 'is-drop-target' : ''}`}>
-            <p>{isOver ? 'Drop here to move this task' : 'No tasks here yet.'}</p>
-          </div>
-        ) : (
-          tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              status={column.key}
-              userRole={userRole}
-              isPending={!!pendingTaskIds[task.id]}
-              error={taskErrors[task.id]}
-              onStatusChange={onStatusChange}
-            />
-          ))
+      {/* Netflix-row style: cards scroll horizontally, showing a partial
+          peek of the next one instead of the column growing arbitrarily
+          tall — the arrows page through the rest instead of a long
+          vertical stack or list scrollbar. */}
+      <div className="task-board-column-carousel">
+        <div className="task-board-column-body" ref={scrollRef}>
+          {tasks.length === 0 ? (
+            <div className={`empty-state-card task-board-empty ${isOver ? 'is-drop-target' : ''}`}>
+              <p>{isOver ? 'Drop here to move this task' : 'No tasks here yet.'}</p>
+            </div>
+          ) : (
+            tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                status={column.key}
+                userRole={userRole}
+                isPending={!!pendingTaskIds[task.id]}
+                error={taskErrors[task.id]}
+                onStatusChange={onStatusChange}
+              />
+            ))
+          )}
+        </div>
+
+        {tasks.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="task-board-carousel-arrow prev"
+              onClick={() => scrollByStep(-1)}
+              aria-label={`Scroll ${column.label} left`}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              className="task-board-carousel-arrow next"
+              onClick={() => scrollByStep(1)}
+              aria-label={`Scroll ${column.label} right`}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
         )}
       </div>
     </div>

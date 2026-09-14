@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Crown, ShieldCheck, Users } from "lucide-react";
 import CoordinatorStageUpdates from "./CoordinatorStageUpdates";
 import GroupRequest from "./GroupRequest";
 import StudentSubmissions from "./StudentSubmissions";
+import StudentMarks from "./StudentMarks";
 import "./StudentLevelInnerPages.css";
 
 const tabItems = [
@@ -10,6 +12,7 @@ const tabItems = [
   { key: "groupFormation", label: "Group Formation" },
   { key: "groups", label: "Groups" },
   { key: "submissions", label: "Submissions" },
+  { key: "marks", label: "Marks" },
 ] as const;
 
 type TabKey = (typeof tabItems)[number]["key"];
@@ -162,28 +165,53 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
                   Group Formation tab to create one.
                 </div>
               ) : (
-                <div className="student-groups-grid">
-                  {groups.map((group) => (
-                    <div key={group.id} className="student-group-card">
-                      <div className="group-card-header">
-                        <h4>{group.name}</h4>
-                        <span className="group-status-badge">
-                          {group.status}
-                        </span>
-                      </div>
-                      <div className="group-card-body">
-                        <p className="group-meta">
-                          <strong>Supervisor:</strong> {group.supervisor}
-                        </p>
-                        <p className="group-meta">
-                          <strong>Group Leader:</strong> {group.groupLeader}
-                        </p>
-                        <p className="group-meta">
-                          <strong>Members:</strong> {group.members}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                <div className="groups-grid">
+                  {groups.map((group) => {
+                    const memberList =
+                      group.members && group.members !== "Not available"
+                        ? group.members
+                            .split(",")
+                            .map((name) => name.trim())
+                            .filter(Boolean)
+                        : [];
+
+                    return (
+                      <article key={group.id} className="group-card">
+                        <div className="group-card-head">
+                          <h3>{group.name}</h3>
+                          <span className="group-meta-pill">{group.status}</span>
+                        </div>
+
+                        <div className="group-meta-list">
+                          <div className="group-meta-row">
+                            <span className="group-meta-icon">
+                              <Crown size={13} />
+                            </span>
+                            <span>{group.groupLeader}</span>
+                          </div>
+                          <div className="group-meta-row">
+                            <span className="group-meta-icon">
+                              <ShieldCheck size={13} />
+                            </span>
+                            <span>{group.supervisor}</span>
+                          </div>
+                        </div>
+
+                        {memberList.length > 0 && (
+                          <ul className="group-members-preview">
+                            {memberList.map((name, idx) => (
+                              <li key={`${group.id}-${idx}`} className="group-member-row">
+                                <span className="group-member-name-wrap">
+                                  <Users size={12} />
+                                  <span>{name}</span>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
               {groups.length > 0 && (
@@ -219,6 +247,20 @@ const StudentLevelInnerPages: React.FC<{ levelNumber: number }> = ({
 
       case "submissions":
         return <StudentSubmissions levelNumber={levelNumber} />;
+
+      case "marks":
+        return (
+          <div className="student-inner-tab-panel">
+            <div className="student-inner-tab-heading">
+              <h3>Marks</h3>
+              <p>
+                View your final cumulative mark and feedback from your supervisor and industry mentor for Level{" "}
+                {levelNumber}.
+              </p>
+            </div>
+            <StudentMarks levelNumber={levelNumber} />
+          </div>
+        );
 
       default:
         return null;

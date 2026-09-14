@@ -5,6 +5,7 @@ import './RecentProjects.css';
 interface Project {
   groupName: string;
   supervisorName: string;
+  supervisorName2?: string | null;
   status: string;
   progress: number;
   updatedAt?: string | null;
@@ -15,6 +16,18 @@ interface RecentProjectsProps {
 }
 
 const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
+
+  // Only ever showed supervisorName — a dual-supervisor group's second
+  // supervisor (project_groups.supervisor_id_2, same as the Project Groups
+  // tab's "Second Supervisor" field) never had anywhere to appear here.
+  // Drops the backend's "Unassigned" placeholder so it doesn't show up
+  // stitched onto a real second name.
+  const getSupervisorLabel = (project: Project): string => {
+    const names = [project.supervisorName, project.supervisorName2].filter(
+      (name): name is string => !!name && name.trim().toLowerCase() !== 'unassigned',
+    );
+    return names.length > 0 ? names.join(' & ') : 'Unassigned';
+  };
 
   // Map backend status labels into stable dashboard badge styles.
   const getStatusClass = (status: string) => {
@@ -41,12 +54,12 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
     <div className="recent-projects-card">
       <div className="card-header">
         <TrendingUp size={20} className="header-icon" />
-        <h3 className="card-title">Recent Projects</h3>
+        <h3 className="card-title">Projects</h3>
       </div>
 
       <div className="projects-list">
         {projects.length === 0 ? (
-          <div style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
+          <div className="projects-empty-state" style={{ color: '#64748b', fontSize: '14px', padding: '8px 0 4px' }}>
             No recent projects found.
           </div>
         ) : (
@@ -57,7 +70,7 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
             <div className="project-info">
               <h4 className="project-title">{project.groupName}</h4>
               <p className="project-subtitle">
-                {project.supervisorName}
+                {getSupervisorLabel(project)}
               </p>
             </div>
 
@@ -69,12 +82,11 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ projects = [] }) => {
               
               <div className="progress-container">
                 <div className="progress-track">
-                  <div 
-                    className="progress-fill" 
+                  <div
+                    className="progress-fill"
                     style={{ width: `${project.progress}%` }}
                   ></div>
                 </div>
-                <span className="progress-text">{project.progress}%</span>
               </div>
             </div>
 

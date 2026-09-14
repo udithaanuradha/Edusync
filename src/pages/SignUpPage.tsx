@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import heroBg from '../assets/background.png';
 import uomLogo from '../assets/uom_logo.png';
-import { validateSignUpForm, validateField } from '../utils/validators';
+import { validateSignUpForm, validateField, getPasswordCriteria } from '../utils/validators';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +23,9 @@ const SignUpPage: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // New states handling the OTP intercept workflow inline
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -33,13 +36,14 @@ const SignUpPage: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isResending, setIsResending] = useState(false);
 
-  // All 5 system roles requested
+  // System roles available for public sign up
   const systemRoles = [
     { value: 'student', label: 'Student' },
     { value: 'lecturer', label: 'Lecturer' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'industry mentor', label: 'Industry Mentor' }
+    { value: 'admin', label: 'Admin' }
   ];
+
+  const passwordCriteria = getPasswordCriteria(formData.password);
 
   const getAcademicUnit = () => {
     if (formData.role === 'student') {
@@ -56,18 +60,45 @@ const SignUpPage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      // Reset universityId when switching away from student role
-      ...(name === 'role' && value !== 'student' && { universityId: '', degreeProgram: '' }),
-      ...(name === 'role' && value !== 'lecturer' && { department: '' })
-    }));
+    let cleanedValue = value;
+    // For phone number: only allow numbers and max 10 digits
+    if (name === 'phone') {
+      cleanedValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+    // For universityId: uppercase it for consistency
+    if (name === 'universityId') {
+      cleanedValue = value.toUpperCase();
+    }
 
-    // Clear field errors as typing/selecting happens
-    if (name === 'role') {
-      setFieldErrors(prev => ({ ...prev, role: '' }));
-    } else if (fieldErrors[name]) {
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: cleanedValue,
+        // Reset universityId when switching away from student role
+        ...(name === 'role' && cleanedValue !== 'student' && { universityId: '', degreeProgram: '' }),
+        ...(name === 'role' && cleanedValue !== 'lecturer' && { department: '' })
+      };
+
+      // Real-time password matching check
+      if (name === 'confirmPassword') {
+        if (cleanedValue && updated.password && cleanedValue !== updated.password) {
+          setFieldErrors(fe => ({ ...fe, confirmPassword: 'Passwords do not match.' }));
+        } else {
+          setFieldErrors(fe => ({ ...fe, confirmPassword: '' }));
+        }
+      } else if (name === 'password') {
+        if (updated.confirmPassword && cleanedValue && updated.confirmPassword !== cleanedValue) {
+          setFieldErrors(fe => ({ ...fe, confirmPassword: 'Passwords do not match.' }));
+        } else if (updated.confirmPassword && updated.confirmPassword === cleanedValue) {
+          setFieldErrors(fe => ({ ...fe, confirmPassword: '' }));
+        }
+      }
+
+      return updated;
+    });
+
+    // Clear field errors as typing happens (except confirmPassword handled above)
+    if (name !== 'confirmPassword') {
       setFieldErrors(prev => ({ ...prev, [name]: '' }));
     }
 
@@ -174,14 +205,18 @@ const SignUpPage: React.FC = () => {
         });
         const data = await response.json();
 
-    if (!response.ok) {
-        const rawError = data.error || '';
-    if (rawError.toLowerCase().includes('duplicate') || rawError.toLowerCase().includes('already exists')) {
-    throw new Error('This email address is already registered. Please use a different email or login instead.');
-    } else {
-    throw new Error('Something went wrong while creating your account. Please try again.');
-     }
-   }
+        if (!response.ok) {
+          const rawError = data.error || data.message || '';
+          if (rawError.toLowerCase().includes('university id') || rawError.toLowerCase().includes('university_id')) {
+            setFieldErrors(prev => ({ ...prev, universityId: 'This University ID is already registered. Please login or check your ID.' }));
+            throw new Error('This University ID is already registered. Please login or check your ID.');
+          } else if (rawError.toLowerCase().includes('email') || rawError.toLowerCase().includes('duplicate') || rawError.toLowerCase().includes('already registered')) {
+            setFieldErrors(prev => ({ ...prev, email: 'This email address is already registered. Please use a different email or login.' }));
+            throw new Error('This email address is already registered. Please use a different email or login instead.');
+          } else {
+            throw new Error(rawError || 'Something went wrong while creating your account. Please try again.');
+          }
+        }
 
         setIsOtpSent(true);
         setOtpSuccessMessage('A 6-digit verification code has been sent to your email.');
@@ -359,11 +394,15 @@ const SignUpPage: React.FC = () => {
                 <input
                   name="phone"
                   type="tel"
+                  placeholder="07XXXXXXXX"
+                  maxLength={10}
                   value={formData.phone}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   className="auth-input"
-                  style={{ paddingLeft: '16px' }}
+                  style={{ paddingLeft: '16px', borderColor: fieldErrors.phone ? '#dc2626' : undefined }}
                 />
+                {fieldErrors.phone && <p className="error-text" style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>{fieldErrors.phone}</p>}
               </div>
                 
               {/* selecting department/degree */}
@@ -373,7 +412,7 @@ const SignUpPage: React.FC = () => {
                   name="universityId"
                   type="text"
                   disabled={formData.role !== 'student'}
-                  placeholder={formData.role !== 'student' ? 'N/A' : 'e.g., STU2024001'}
+                  placeholder={formData.role !== 'student' ? 'N/A' : ''}
                   value={formData.universityId}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -443,30 +482,120 @@ const SignUpPage: React.FC = () => {
 
               {/* Row 4: Password & Confirm Password */}
               <div className="auth-input-group">
-                <label>Password * <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 'normal' }}>(min 6 chars)</span></label>
-                <input
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className="auth-input"
-                  style={{ paddingLeft: '16px', borderColor: fieldErrors.password ? '#dc2626' : undefined }}
-                />
+                <label>Password * <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 'normal' }}>(min 8 chars)</span></label>
+                <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleChange}
+                    onFocus={() => setIsPasswordFocused(true)}
+                    onBlur={(e) => {
+                      setIsPasswordFocused(false);
+                      handleBlur(e);
+                    }}
+                    className="auth-input"
+                    style={{ paddingLeft: '16px', paddingRight: '44px', borderColor: fieldErrors.password ? '#dc2626' : undefined }}
+                  />
+                  <div
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      cursor: 'pointer',
+                      color: '#6b7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10
+                    }}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} style={{ position: 'static', transform: 'none', left: 'auto' }} />
+                    ) : (
+                      <Eye size={18} style={{ position: 'static', transform: 'none', left: 'auto' }} />
+                    )}
+                  </div>
+                </div>
                 {fieldErrors.password && <p className="error-text" style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>{fieldErrors.password}</p>}
+
+                {/* Password Live Checklist */}
+                {(isPasswordFocused || formData.password.length > 0) && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '10px 12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    textAlign: 'left'
+                  }}>
+                    <span style={{ fontWeight: '600', color: '#475569', marginBottom: '2px' }}>Password must contain:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: passwordCriteria.minLength ? '#16a34a' : '#64748b' }}>
+                      <span style={{ fontWeight: 'bold' }}>{passwordCriteria.minLength ? '✓' : '○'}</span>
+                      <span>Minimum 8 characters</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: passwordCriteria.hasUpper ? '#16a34a' : '#64748b' }}>
+                      <span style={{ fontWeight: 'bold' }}>{passwordCriteria.hasUpper ? '✓' : '○'}</span>
+                      <span>At least 1 uppercase letter (A-Z)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: passwordCriteria.hasLower ? '#16a34a' : '#64748b' }}>
+                      <span style={{ fontWeight: 'bold' }}>{passwordCriteria.hasLower ? '✓' : '○'}</span>
+                      <span>At least 1 lowercase letter (a-z)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: passwordCriteria.hasNumber ? '#16a34a' : '#64748b' }}>
+                      <span style={{ fontWeight: 'bold' }}>{passwordCriteria.hasNumber ? '✓' : '○'}</span>
+                      <span>At least 1 number (0-9)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: passwordCriteria.hasSpecial ? '#16a34a' : '#64748b' }}>
+                      <span style={{ fontWeight: 'bold' }}>{passwordCriteria.hasSpecial ? '✓' : '○'}</span>
+                      <span>At least 1 special character (!@#$%^&*)</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="auth-input-group">
                 <label>Confirm Password *</label>
-                <input
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className="auth-input"
-                  style={{ paddingLeft: '16px', borderColor: fieldErrors.confirmPassword ? '#dc2626' : undefined }}
-                />
+                <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className="auth-input"
+                    style={{ paddingLeft: '16px', paddingRight: '44px', borderColor: fieldErrors.confirmPassword ? '#dc2626' : undefined }}
+                  />
+                  <div
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      cursor: 'pointer',
+                      color: '#6b7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10
+                    }}
+                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} style={{ position: 'static', transform: 'none', left: 'auto' }} />
+                    ) : (
+                      <Eye size={18} style={{ position: 'static', transform: 'none', left: 'auto' }} />
+                    )}
+                  </div>
+                </div>
                 {fieldErrors.confirmPassword && <p className="error-text" style={{ color: '#dc2626', fontSize: '12px', marginTop: '6px' }}>{fieldErrors.confirmPassword}</p>}
               </div>
           

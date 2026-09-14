@@ -1,0 +1,49 @@
+/* Group Project / Individual Project switch — Level 3 & Level 4 headers
+   only. A compact two-segment pill using the same tokens as the rest of the
+   app (tokens.css): primary color for the active segment, muted/transparent
+   for the inactive one, pill radius, semibold label — reads as part of the
+   header row, not a separate card. */
+.project-type-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--eds-radius-pill);
+  background: var(--eds-color-bg-surface-soft);
+  border: 1px solid var(--eds-color-border);
+}
+
+.project-type-toggle-segment {
+  border: none;
+  background: transparent;
+  color: var(--eds-color-text-muted);
+  font-family: inherit;
+  font-size: var(--eds-font-size-sm);
+  font-weight: var(--eds-font-weight-semibold);
+  padding: 8px 16px;
+  border-radius: var(--eds-radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.project-type-toggle-segment:hover:not(.active):not(:disabled) {
+  color: var(--eds-color-primary-hover);
+}
+
+.project-type-toggle-segment.active {
+  background: var(--eds-color-primary);
+  color: #ffffff;
+}
+
+.project-type-toggle-segment:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (max-width: 640px) {
+  .project-type-toggle-segment {
+    padding: 8px 12px;
+    font-size: var(--eds-font-size-xs);
+  }
+}
