@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, Info } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Info, CheckCircle } from 'lucide-react';
 import heroBg from '../../assets/background.png';
-import uomLogo from '../../assets/uom_logo.png';
 import { validatePassword, getPasswordCriteria } from '../../utils/validators';
 
 const MentorSetupForm: React.FC = () => {
@@ -77,103 +76,138 @@ const MentorSetupForm: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ flex: 1.2, backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '40px', left: '40px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <img src={uomLogo} alt="UOM Logo" style={{ width: '50px', height: 'auto' }} />
-          <h2 style={{ color: '#ffffff', margin: 0, fontSize: '24px', fontWeight: 'bold' }}>EDUSYNC</h2>
+    <div className="auth-container" style={{ backgroundImage: `url(${heroBg})` }}>
+      <div className="auth-overlay"></div>
+
+      <div className="auth-card" style={{ maxWidth: '440px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <img src="/edusync-logo.svg" alt="EduSync Logo" style={{ height: '76px', width: 'auto' }} />
         </div>
-      </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 80px', backgroundColor: '#ffffff' }}>
-        <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0' }}>Mentor Setup</h2>
-        <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 32px 0' }}>Configure your preferences to access the platform.</p>
+        <h2 style={{ textAlign: 'center', marginBottom: '8px', color: '#1f2937', fontSize: '24px', fontWeight: '600' }}>
+          Mentor Setup
+        </h2>
+        <p style={{ textAlign: 'center', fontSize: '13px', color: '#6b7280', margin: '0 0 24px 0', lineHeight: '1.4' }}>
+          Configure your preferences to access the platform.
+        </p>
 
-        {error && <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px' }}>{error}</div>}
-        {success && <div style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px' }}>Setup Successful! Please use this email to log in...</div>}
+        {error && (
+          <div style={{ 
+            backgroundColor: '#fee2e2', 
+            color: '#991b1b', 
+            padding: '12px', 
+            borderRadius: '6px', 
+            marginBottom: '18px',
+            fontSize: '13px'
+          }}>
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ position: 'relative' }}>
-              <User size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+        {success && (
+          <div style={{ 
+            backgroundColor: '#dcfce7', 
+            color: '#166534', 
+            padding: '12px', 
+            borderRadius: '6px', 
+            marginBottom: '18px',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <CheckCircle size={18} style={{ color: '#16a34a', flexShrink: 0 }} />
+            <span>Setup Successful! Redirecting to login...</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <div className="auth-input-group" style={{ marginBottom: '8px' }}>
+              <User size={20} />
               <input 
                 type="email" 
-                placeholder="Invited Email Address" 
+                placeholder="INVITED EMAIL ADDRESS" 
+                className="auth-input" 
                 value={invitedEmail || username}
                 readOnly
-                style={{ 
-                  width: '100%', 
-                  padding: '14px 16px 14px 48px', 
-                  border: '1px solid #e5e7eb', 
-                  borderRadius: '10px', 
-                  fontSize: '14px',
-                  backgroundColor: '#f8fafc',
-                  color: '#334155',
-                  cursor: 'not-allowed'
-                }}
+                style={{ backgroundColor: '#f1f5f9', color: '#475569', cursor: 'not-allowed' }}
                 required 
               />
             </div>
             
-            {/* Informative notice indicating they must use this invited email to log in */}
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
               gap: '8px',
               backgroundColor: '#eff6ff',
               border: '1px solid #bfdbfe',
-              borderRadius: '8px',
-              padding: '10px 12px',
+              borderRadius: '6px',
+              padding: '8px 12px',
               color: '#1e40af'
             }}>
               <Info size={16} style={{ color: '#2563eb', flexShrink: 0, marginTop: '2px' }} />
               <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.4' }}>
-                You must use this invited email address (<strong>{invitedEmail || username || 'your invitation email'}</strong>) to setup your account and login to the system.
+                You must use this invited email address (<strong>{invitedEmail || username || 'your invitation email'}</strong>) to setup your account.
               </p>
             </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
-            <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-            <input 
-              type={showPassword ? "text" : "password"} 
-              placeholder="Password" 
-              value={password}
-              onFocus={() => setIsPasswordFocused(true)}
-              onBlur={() => setIsPasswordFocused(false)}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPassword(val);
-                if (confirmPassword && val !== confirmPassword) {
-                  setFieldErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match.' }));
-                } else {
-                  setFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
-                }
-                if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
-              }}
-              style={{ 
-                width: '100%', 
-                padding: '14px 48px 14px 48px', 
-                border: fieldErrors.password ? '1px solid #dc2626' : '1px solid #e5e7eb', 
-                borderRadius: '10px', 
-                fontSize: '14px' 
-              }}
-              required 
-            />
-            <div onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#6b7280' }}>
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          <div>
+            <div className="auth-input-group" style={{ position: 'relative', marginBottom: fieldErrors.password ? '4px' : '0' }}>
+              <Lock size={20} />
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="PASSWORD" 
+                className="auth-input" 
+                value={password}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={() => setIsPasswordFocused(false)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPassword(val);
+                  if (confirmPassword && val !== confirmPassword) {
+                    setFieldErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match.' }));
+                  } else {
+                    setFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
+                  }
+                  if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
+                }}
+                style={{ 
+                  paddingRight: '44px',
+                  border: fieldErrors.password ? '1px solid #dc2626' : undefined
+                }}
+                required 
+              />
+              <div 
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ 
+                  position: 'absolute', 
+                  right: '14px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  zIndex: 2
+                }}
+              >
+                {showPassword 
+                  ? <EyeOff size={20} style={{ position: 'static', transform: 'none', left: 'auto' }} /> 
+                  : <Eye size={20} style={{ position: 'static', transform: 'none', left: 'auto' }} />}
+              </div>
             </div>
+            {fieldErrors.password && (
+              <p style={{ color: '#dc2626', fontSize: '12px', margin: '4px 0 0 0' }}>{fieldErrors.password}</p>
+            )}
           </div>
-          {fieldErrors.password && <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '-12px', marginBottom: '0' }}>{fieldErrors.password}</p>}
 
-          {/* Password Live Checklist */}
           {(isPasswordFocused || password.length > 0) && (
             <div style={{
-              marginTop: '-8px',
-              padding: '10px 12px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
+              marginTop: '-4px',
+              padding: '10px 14px',
+              backgroundColor: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
               fontSize: '11px',
               display: 'flex',
               flexDirection: 'column',
@@ -204,37 +238,57 @@ const MentorSetupForm: React.FC = () => {
             </div>
           )}
 
-          <div style={{ position: 'relative' }}>
-            <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-            <input 
-              type={showConfirmPassword ? "text" : "password"} 
-              placeholder="Confirm Password" 
-              value={confirmPassword}
-              onChange={(e) => {
-                const val = e.target.value;
-                setConfirmPassword(val);
-                if (val && val !== password) {
-                  setFieldErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match.' }));
-                } else {
-                  setFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
-                }
-              }}
-              style={{ 
-                width: '100%', 
-                padding: '14px 48px 14px 48px', 
-                border: fieldErrors.confirmPassword ? '1px solid #dc2626' : '1px solid #e5e7eb', 
-                borderRadius: '10px', 
-                fontSize: '14px' 
-              }}
-              required 
-            />
-            <div onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#6b7280' }}>
-              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          <div>
+            <div className="auth-input-group" style={{ position: 'relative', marginBottom: fieldErrors.confirmPassword ? '4px' : '0' }}>
+              <Lock size={20} />
+              <input 
+                type={showConfirmPassword ? 'text' : 'password'} 
+                placeholder="CONFIRM PASSWORD" 
+                className="auth-input" 
+                value={confirmPassword}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setConfirmPassword(val);
+                  if (val && val !== password) {
+                    setFieldErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match.' }));
+                  } else {
+                    setFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
+                  }
+                }}
+                style={{ 
+                  paddingRight: '44px',
+                  border: fieldErrors.confirmPassword ? '1px solid #dc2626' : undefined
+                }}
+                required 
+              />
+              <div 
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ 
+                  position: 'absolute', 
+                  right: '14px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  zIndex: 2
+                }}
+              >
+                {showConfirmPassword 
+                  ? <EyeOff size={20} style={{ position: 'static', transform: 'none', left: 'auto' }} /> 
+                  : <Eye size={20} style={{ position: 'static', transform: 'none', left: 'auto' }} />}
+              </div>
             </div>
+            {fieldErrors.confirmPassword && (
+              <p style={{ color: '#dc2626', fontSize: '12px', margin: '4px 0 0 0' }}>{fieldErrors.confirmPassword}</p>
+            )}
           </div>
-          {fieldErrors.confirmPassword && <p style={{ color: '#dc2626', fontSize: '12px', marginTop: '-12px', marginBottom: '0' }}>{fieldErrors.confirmPassword}</p>}
 
-          <button type="submit" className="btn-auth" disabled={isSubmitting} style={{ cursor: 'pointer' }}>
+          <button 
+            type="submit" 
+            className="btn-auth" 
+            disabled={isSubmitting} 
+            style={{ opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+          >
             {isSubmitting ? 'Setting Up...' : 'CREATE PROFILE & LOG IN'}
           </button>
         </form>

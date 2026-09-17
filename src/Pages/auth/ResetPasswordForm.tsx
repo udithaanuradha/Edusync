@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle2, Circle, ArrowLeft, Info } from 'lucide-react';
 import heroBg from '../../assets/background.png';
-import uomLogo from '../../assets/uom_logo.png';
 import { validatePassword, getPasswordCriteria } from '../../utils/validators';
 
 const ResetPasswordForm: React.FC = () => {
@@ -92,7 +91,7 @@ const ResetPasswordForm: React.FC = () => {
         }}
       >
         <div style={{ position: 'absolute', top: '40px', left: '40px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <img src={uomLogo} alt="UOM Logo" style={{ width: '50px', height: 'auto' }} />
+          <img src="/edusync-logo.svg" alt="EduSync Logo" style={{ width: '48px', height: '48px', borderRadius: '8px' }} />
           <h2 style={{ color: '#ffffff', margin: 0, fontSize: '24px', fontWeight: 'bold' }}>EDUSYNC</h2>
         </div>
       </div>

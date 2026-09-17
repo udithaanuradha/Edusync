@@ -113,7 +113,7 @@ const LandingPage: React.FC = () => {
             <div className="footer-contact-list">
               <div className="footer-contact-item">
                 <Phone size={16} className="contact-icon" />
-                <span>+94 11 2650301, +94 11 2640051</span>
+                <span>+94 11 1234051</span>
               </div>
               <div className="footer-contact-item">
                 <Mail size={16} className="contact-icon" />

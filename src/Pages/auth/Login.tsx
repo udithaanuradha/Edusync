@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import heroBg from '../../assets/background.png';
-import uomLogo from '../../assets/uom_logo.png';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -246,7 +245,7 @@ const Login: React.FC = () => {
 
       <div className="auth-card" style={{ maxWidth: '400px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
-          <img src={uomLogo} alt="UoM Logo" style={{ height: '76px' }} />
+          <img src="/edusync-logo.svg" alt="EduSync Logo" style={{ height: '76px', width: 'auto' }} />
         </div>
 
         {/* --- VIEW 1: FORGOT PASSWORD (EMAIL LINK) --- */}

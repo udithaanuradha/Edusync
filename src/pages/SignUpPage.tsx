@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import heroBg from '../assets/background.png';
-import uomLogo from '../assets/uom_logo.png';
 import { validateSignUpForm, validateField, getPasswordCriteria } from '../utils/validators';
 
 const SignUpPage: React.FC = () => {
@@ -286,7 +285,7 @@ const SignUpPage: React.FC = () => {
 
       <div className="auth-card">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-          <img src={uomLogo} alt="UoM Logo" style={{ height: '70px' }} />
+          <img src="/edusync-logo.svg" alt="EduSync Logo" style={{ height: '70px', width: 'auto' }} />
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
